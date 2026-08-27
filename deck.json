@@ -1,0 +1,158 @@
+{
+  "name": "Calling Hamburg 3rd",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "oscilio_constella_intelligence",
+      "total": 1
+    },
+    {
+      "identifier": "balance_of_justice",
+      "total": 1
+    },
+    {
+      "identifier": "bracers_of_belief",
+      "total": 1
+    },
+    {
+      "identifier": "cap_of_quick_thinking",
+      "total": 1
+    },
+    {
+      "identifier": "crown_of_providence",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "gloves_of_astral_sanctuary",
+      "total": 1
+    },
+    {
+      "identifier": "lightning_greaves",
+      "total": 1
+    },
+    {
+      "identifier": "old_knocker",
+      "total": 1
+    },
+    {
+      "identifier": "shock_charmers",
+      "total": 1
+    },
+    {
+      "identifier": "volzar_meteor_storm",
+      "total": 1
+    },
+    {
+      "identifier": "astral_bridge_red",
+      "total": 3
+    },
+    {
+      "identifier": "cloud_cover_red",
+      "total": 3
+    },
+    {
+      "identifier": "comet_collision_red",
+      "total": 3
+    },
+    {
+      "identifier": "comet_storm_shock_red",
+      "total": 1
+    },
+    {
+      "identifier": "electrostatic_discharge_red",
+      "total": 3
+    },
+    {
+      "identifier": "enlightened_strike_red",
+      "total": 3
+    },
+    {
+      "identifier": "entwine_lightning_red",
+      "total": 3
+    },
+    {
+      "identifier": "fate_foreseen_red",
+      "total": 3
+    },
+    {
+      "identifier": "flash_bolt_red",
+      "total": 2
+    },
+    {
+      "identifier": "flittering_charge_red",
+      "total": 3
+    },
+    {
+      "identifier": "flowstate_embodiment_red",
+      "total": 2
+    },
+    {
+      "identifier": "gone_in_a_flash_red",
+      "total": 3
+    },
+    {
+      "identifier": "lightning_press_red",
+      "total": 3
+    },
+    {
+      "identifier": "lightning_surge_red",
+      "total": 1
+    },
+    {
+      "identifier": "meteoric_impact_red",
+      "total": 2
+    },
+    {
+      "identifier": "ravenous_rabble_red",
+      "total": 3
+    },
+    {
+      "identifier": "scar_for_a_scar_red",
+      "total": 3
+    },
+    {
+      "identifier": "second_strike_red",
+      "total": 3
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "sigil_of_solace_red",
+      "total": 3
+    },
+    {
+      "identifier": "snatch_red",
+      "total": 1
+    },
+    {
+      "identifier": "thunderous_retort_red",
+      "total": 2
+    },
+    {
+      "identifier": "consign_to_cosmos_shock_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "constella_contemplation_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "constella_uplift_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "echoflash_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "sigil_of_brilliance_yellow",
+      "total": 3
+    }
+  ]
+}

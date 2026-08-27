@@ -1,0 +1,150 @@
+{
+  "name": "Calling Hamburg 1st",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "dash_io",
+      "total": 1
+    },
+    {
+      "identifier": "achilles_accelerator",
+      "total": 1
+    },
+    {
+      "identifier": "adaptive_plating",
+      "total": 1
+    },
+    {
+      "identifier": "bracers_of_belief",
+      "total": 1
+    },
+    {
+      "identifier": "cogwerx_tinker_rings",
+      "total": 1
+    },
+    {
+      "identifier": "crown_of_providence",
+      "total": 1
+    },
+    {
+      "identifier": "symbiosis_shot",
+      "total": 1
+    },
+    {
+      "identifier": "teklo_foundry_heart",
+      "total": 1
+    },
+    {
+      "identifier": "viziertronic_model_i",
+      "total": 1
+    },
+    {
+      "identifier": "backup_protocol_red_red",
+      "total": 3
+    },
+    {
+      "identifier": "bios_update_red",
+      "total": 2
+    },
+    {
+      "identifier": "boom_grenade_red",
+      "total": 3
+    },
+    {
+      "identifier": "convection_amplifier_red",
+      "total": 1
+    },
+    {
+      "identifier": "expedite_red",
+      "total": 3
+    },
+    {
+      "identifier": "fast_and_furious_red",
+      "total": 3
+    },
+    {
+      "identifier": "heist_red",
+      "total": 3
+    },
+    {
+      "identifier": "maximum_velocity_red",
+      "total": 3
+    },
+    {
+      "identifier": "out_pace_red",
+      "total": 3
+    },
+    {
+      "identifier": "plasma_mainline_red",
+      "total": 1
+    },
+    {
+      "identifier": "pulsewave_harpoon_red",
+      "total": 3
+    },
+    {
+      "identifier": "sprocket_rocket_red",
+      "total": 3
+    },
+    {
+      "identifier": "throttle_red",
+      "total": 3
+    },
+    {
+      "identifier": "zero_to_sixty_red",
+      "total": 3
+    },
+    {
+      "identifier": "zipper_hit_red",
+      "total": 3
+    },
+    {
+      "identifier": "boom_grenade_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "spark_of_genius_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "zero_to_sixty_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "zipper_hit_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "cerebellum_processor_blue",
+      "total": 3
+    },
+    {
+      "identifier": "null_time_zone_blue",
+      "total": 1
+    },
+    {
+      "identifier": "teklo_core_blue",
+      "total": 3
+    },
+    {
+      "identifier": "teklo_pounder_blue",
+      "total": 3
+    },
+    {
+      "identifier": "teklo_trebuchet_2000_blue",
+      "total": 3
+    },
+    {
+      "identifier": "throttle_blue",
+      "total": 2
+    },
+    {
+      "identifier": "zero_to_sixty_blue",
+      "total": 3
+    },
+    {
+      "identifier": "zipper_hit_blue",
+      "total": 2
+    }
+  ]
+}
