@@ -1,0 +1,166 @@
+{
+  "name": "Kassai",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "kassai_of_the_golden_sand",
+      "total": 1
+    },
+    {
+      "identifier": "balance_of_justice",
+      "total": 1
+    },
+    {
+      "identifier": "braveforge_bracers",
+      "total": 1
+    },
+    {
+      "identifier": "cintari_saber",
+      "total": 1
+    },
+    {
+      "identifier": "crown_of_dominion",
+      "total": 1
+    },
+    {
+      "identifier": "grains_of_bloodspill",
+      "total": 1
+    },
+    {
+      "identifier": "hot_streak",
+      "total": 1
+    },
+    {
+      "identifier": "kabuto_of_imperial_authority",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_hood",
+      "total": 1
+    },
+    {
+      "identifier": "valiant_dynamo",
+      "total": 1
+    },
+    {
+      "identifier": "blade_flurry_red",
+      "total": 3
+    },
+    {
+      "identifier": "blade_runner_red",
+      "total": 2
+    },
+    {
+      "identifier": "draw_swords_red",
+      "total": 3
+    },
+    {
+      "identifier": "fate_foreseen_red",
+      "total": 3
+    },
+    {
+      "identifier": "in_the_swing_red",
+      "total": 1
+    },
+    {
+      "identifier": "jagged_edge_red",
+      "total": 1
+    },
+    {
+      "identifier": "outland_skirmish_red",
+      "total": 3
+    },
+    {
+      "identifier": "raise_blades_red",
+      "total": 3
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "sink_below_red",
+      "total": 1
+    },
+    {
+      "identifier": "slice_and_dice_red",
+      "total": 3
+    },
+    {
+      "identifier": "spoils_of_war_red",
+      "total": 3
+    },
+    {
+      "identifier": "take_the_lead_red",
+      "total": 2
+    },
+    {
+      "identifier": "unsheathed_red",
+      "total": 3
+    },
+    {
+      "identifier": "blade_rush_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "blood_follows_blade_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "blood_on_her_hands_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "blunten_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "draw_swords_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "drawing_dead_yellow",
+      "total": 1
+    },
+    {
+      "identifier": "raise_an_army_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "slice_and_dice_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "sharpened_senses_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "donkey_blue",
+      "total": 2
+    },
+    {
+      "identifier": "glint_the_quicksilver_blue",
+      "total": 3
+    },
+    {
+      "identifier": "high_current_currency_blue",
+      "total": 1
+    },
+    {
+      "identifier": "hit_and_run_blue",
+      "total": 3
+    },
+    {
+      "identifier": "provoke_blue",
+      "total": 2
+    },
+    {
+      "identifier": "trot_along_blue",
+      "total": 3
+    },
+    {
+      "identifier": "gorganian_tome",
+      "total": 1
+    }
+  ]
+}

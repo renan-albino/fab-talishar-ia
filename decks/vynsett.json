@@ -1,0 +1,150 @@
+{
+  "name": "Vynsett",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "vynnset_iron_maiden",
+      "total": 1
+    },
+    {
+      "identifier": "dyadic_carapace",
+      "total": 1
+    },
+    {
+      "identifier": "ebon_fold",
+      "total": 1
+    },
+    {
+      "identifier": "face_purgatory",
+      "total": 1
+    },
+    {
+      "identifier": "flail_of_agony",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "grimoire_of_fellingsong",
+      "total": 1
+    },
+    {
+      "identifier": "grimoire_of_the_haunt",
+      "total": 1
+    },
+    {
+      "identifier": "spellbound_creepers",
+      "total": 1
+    },
+    {
+      "identifier": "vexing_quillhand",
+      "total": 1
+    },
+    {
+      "identifier": "beseech_the_demigon_red",
+      "total": 3
+    },
+    {
+      "identifier": "cull_red",
+      "total": 3
+    },
+    {
+      "identifier": "deadwood_dirge_red",
+      "total": 3
+    },
+    {
+      "identifier": "deathly_delight_red",
+      "total": 3
+    },
+    {
+      "identifier": "deathly_wail_red",
+      "total": 3
+    },
+    {
+      "identifier": "eloquent_eulogy_red",
+      "total": 3
+    },
+    {
+      "identifier": "envelop_in_darkness_red",
+      "total": 2
+    },
+    {
+      "identifier": "fasting_carcass_red",
+      "total": 3
+    },
+    {
+      "identifier": "funeral_moon_red",
+      "total": 2
+    },
+    {
+      "identifier": "malefic_incantation_red",
+      "total": 3
+    },
+    {
+      "identifier": "reduce_to_runechant_red",
+      "total": 3
+    },
+    {
+      "identifier": "revel_in_runeblood_red",
+      "total": 2
+    },
+    {
+      "identifier": "runeblood_incantation_red",
+      "total": 2
+    },
+    {
+      "identifier": "shadow_puppetry_red",
+      "total": 3
+    },
+    {
+      "identifier": "sonata_galaxia_red",
+      "total": 3
+    },
+    {
+      "identifier": "tear_through_the_portal_red",
+      "total": 3
+    },
+    {
+      "identifier": "widespread_ruin_red",
+      "total": 3
+    },
+    {
+      "identifier": "deathly_wail_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "malefic_incantation_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "succumb_to_temptation_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "widespread_destruction_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "deathly_wail_blue",
+      "total": 3
+    },
+    {
+      "identifier": "deep_recesses_of_existence_blue",
+      "total": 3
+    },
+    {
+      "identifier": "fasting_carcass_blue",
+      "total": 2
+    },
+    {
+      "identifier": "oblivion_blue",
+      "total": 1
+    },
+    {
+      "identifier": "widespread_annihilation_blue",
+      "total": 3
+    }
+  ]
+}

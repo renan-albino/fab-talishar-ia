@@ -31,11 +31,11 @@ def get_stats_data():
             "bot1_elo": 1200, "bot2_elo": 1200, "elo_history": [], "deck_stats": {}, "recent_matches": []
         }
 
-def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_turns, winner_id):
+def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_turns, winner_id, is_human_p1=False):
     stats = get_stats_data()
     stats["total_matches"] += 1
     
-    # Calculate Elo
+    # Calculate Global Elo
     r1 = stats.get("bot1_elo", 1200)
     r2 = stats.get("bot2_elo", 1200)
     k = 32
@@ -46,11 +46,11 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
     if winner_id == 1:
         s1, s2 = 1.0, 0.0
         stats["bot1_wins"] += 1
-        winner_name = "Bot 1 (Host)"
+        winner_name = f"👤 Humano ({p1_deck})" if is_human_p1 else f"Bot 1 ({p1_deck})"
     elif winner_id == 2:
         s1, s2 = 0.0, 1.0
         stats["bot2_wins"] += 1
-        winner_name = "Bot 2 (Join)"
+        winner_name = f"🤖 Bot 2 ({p2_deck})"
     else:
         s1, s2 = 0.5, 0.5
         stats["draws"] += 1
@@ -58,17 +58,46 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
         
     new_r1 = round(r1 + k * (s1 - e1))
     new_r2 = round(r2 + k * (s2 - e2))
-    
     stats["bot1_elo"] = new_r1
     stats["bot2_elo"] = new_r2
     
-    # Update Deck stats
-    for d_name, won in [(p1_deck, winner_id == 1), (p2_deck, winner_id == 2)]:
+    # Initialize Deck Stats if missing
+    if "deck_stats" not in stats:
+        stats["deck_stats"] = {}
+        
+    tracked_p1 = "👤 Humano (Você)" if is_human_p1 else p1_deck
+    for d_name in [tracked_p1, p2_deck]:
         if d_name not in stats["deck_stats"]:
-            stats["deck_stats"][d_name] = {"matches": 0, "wins": 0}
-        stats["deck_stats"][d_name]["matches"] += 1
-        if won:
-            stats["deck_stats"][d_name]["wins"] += 1
+            stats["deck_stats"][d_name] = {"matches": 0, "wins": 0, "losses": 0, "elo": 1200}
+
+    # Calculate Individual Deck / Human ELO
+    d1_elo = stats["deck_stats"][tracked_p1].get("elo", 1200)
+    d2_elo = stats["deck_stats"][p2_deck].get("elo", 1200)
+    ed1 = 1 / (1 + 10 ** ((d2_elo - d1_elo) / 400))
+    ed2 = 1 / (1 + 10 ** ((d1_elo - d2_elo) / 400))
+    
+    stats["deck_stats"][tracked_p1]["elo"] = round(d1_elo + k * (s1 - ed1))
+    stats["deck_stats"][p2_deck]["elo"] = round(d2_elo + k * (s2 - ed2))
+    stats["deck_stats"][tracked_p1]["matches"] += 1
+    stats["deck_stats"][p2_deck]["matches"] += 1
+
+    if winner_id == 1:
+        stats["deck_stats"][tracked_p1]["wins"] += 1
+        stats["deck_stats"][p2_deck]["losses"] += 1
+    elif winner_id == 2:
+        stats["deck_stats"][p2_deck]["wins"] += 1
+        stats["deck_stats"][tracked_p1]["losses"] += 1
+
+    if "deck_elo_history" not in stats:
+        stats["deck_elo_history"] = []
+
+    # Registrar snapshot do ELO de todos os decks e do Humano
+    deck_snapshot = {"match": stats["total_matches"]}
+    for d_k, d_v in stats["deck_stats"].items():
+        deck_snapshot[d_k] = d_v.get("elo", 1200)
+    stats["deck_elo_history"].append(deck_snapshot)
+    if len(stats["deck_elo_history"]) > 500:
+        stats["deck_elo_history"] = stats["deck_elo_history"][-500:]
 
     stats["elo_history"].append({
         "match": stats["total_matches"],
@@ -81,8 +110,8 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
         "room": room_id,
         "date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         "winner": winner_name,
-        "p1_deck": p1_deck,
-        "p2_deck": p2_deck,
+        "p1_deck": f"👤 Humano ({p1_deck})" if is_human_p1 else p1_deck,
+        "p2_deck": f"🤖 Bot ({p2_deck})" if is_human_p1 else p2_deck,
         "p1_health": p1_health,
         "p2_health": p2_health,
         "turns": total_turns
@@ -93,6 +122,20 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
     with open(STATS_FILE, "w") as f:
         json.dump(stats, f, indent=2)
     return stats
+
+def delete_deck_stat(deck_name: str):
+    """Remove um deck específico das estatísticas de ranking de competência."""
+    stats = get_stats_data()
+    if "deck_stats" in stats and deck_name in stats["deck_stats"]:
+        del stats["deck_stats"][deck_name]
+        # Limpar do deck_elo_history também
+        if "deck_elo_history" in stats:
+            for snap in stats["deck_elo_history"]:
+                snap.pop(deck_name, None)
+        with open(STATS_FILE, "w") as f:
+            json.dump(stats, f, indent=2)
+        return True
+    return False
 
 def reset_stats():
     if os.path.exists(STATS_FILE):

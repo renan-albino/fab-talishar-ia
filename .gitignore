@@ -1,8 +1,9 @@
 # Ambientes Virtuais
 venv/
+.venv/
 env/
 ENV/
-.venv/
+node_modules/
 
 # Python Cache
 __pycache__/
@@ -10,12 +11,21 @@ __pycache__/
 *$py.class
 *.so
 
-# Logs e Dados Temporários
-logs/*
-!logs/.gitkeep
+# Pastas de Clonagem/Replicação do Talishar (Evitar Redundância)
+Talishar/
+Talishar-FE/
 
-# Estatísticas Locais (opcional)
-data/training_stats.json
+# Dados Gerados, Modelos e Telemetria
+data/
+*.pt
+*.pth
+*.bin
+*.npz
+
+# Logs e Arquivos Temporários
+logs/
+*.log
+.dashboard.pid
 
 # IDEs e Sistema Operacional
 .vscode/
@@ -23,3 +33,11 @@ data/training_stats.json
 .DS_Store
 *.swp
 *.swo
+
+# Segredos
+.env
+.env.*
+!*.example
+
+# Agentes
+.gemini/

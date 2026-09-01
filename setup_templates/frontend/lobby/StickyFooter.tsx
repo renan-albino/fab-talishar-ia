@@ -1,0 +1,225 @@
+import React, { useRef, useEffect, useState } from 'react';
+import { useFormikContext } from 'formik';
+import { FaExclamationCircle } from 'react-icons/fa';
+import { DeckResponse } from 'interface/API/GetLobbyInfo.php';
+import styles from './StickyFooter.module.css';
+import classNames from 'classnames';
+import { HiClipboardCopy, HiClipboardCheck } from 'react-icons/hi';
+import { MdGames } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
+
+export type DeckSize = {
+  deckSize: number;
+  submitSideboard: boolean;
+  canUnreadySideboard?: boolean;
+  isUnreadyLoading?: boolean;
+  isSubmitting?: boolean;
+  isWidescreen: boolean;
+  needToDoDisclaimer: boolean;
+  handleLeave: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onUnreadySideboard?: () => void;
+  onSendInviteClick?: () => void;
+  onIsValidChange?: (isValid: boolean) => void;
+};
+
+const StickyFooter = ({
+  deckSize,
+  submitSideboard,
+  canUnreadySideboard = false,
+  isUnreadyLoading = false,
+  isSubmitting = false,
+  isWidescreen,
+  needToDoDisclaimer,
+  handleLeave,
+  onUnreadySideboard,
+  onSendInviteClick,
+  onIsValidChange
+}: DeckSize) => {
+  // Initial stuff to allow the lang to change
+  const { t } = useTranslation();
+
+  const { errors, values, isValid } = useFormikContext<DeckResponse>();
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorArray = [] as string[];
+  for (const [, value] of Object.entries(errors)) {
+    errorArray.push(String(value));
+  }
+
+  const needed = deckSize - values.deck.length;
+  const isConfirmEnabled = isValid && submitSideboard && !needToDoDisclaimer;
+
+  // Update CSS custom property with footer height
+  useEffect(() => {
+    const updateFooterHeight = () => {
+      if (footerRef.current) {
+        const height = footerRef.current.offsetHeight;
+        if (height > 0) {
+          document.documentElement.style.setProperty(
+            '--sticky-footer-height',
+            `${height}px`
+          );
+        }
+      }
+    };
+
+    updateFooterHeight();
+    const observer = new ResizeObserver(updateFooterHeight);
+    if (footerRef.current) {
+      observer.observe(footerRef.current);
+    }
+    window.addEventListener('resize', updateFooterHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateFooterHeight);
+    };
+  }, []);
+
+  useEffect(() => {
+    onIsValidChange?.(isValid);
+  }, [isValid, onIsValidChange]);
+
+  const triggerCopiedFeedback = () => {
+    setCopied(true);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleClipboardCopy = () => {
+    const text = window.location.href.replace('lobby', 'join');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(text)
+        .then(triggerCopiedFeedback)
+        .catch(() => {
+          fallbackCopyToClipboard(text);
+          triggerCopiedFeedback();
+        });
+    } else {
+      fallbackCopyToClipboard(text);
+      triggerCopiedFeedback();
+    }
+  };
+
+  const fallbackCopyToClipboard = (text: string) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  };
+
+  const wrapperClass = classNames(styles.dynamicContainer, 'container');
+  const leaveClass = styles.leaveButton;
+
+  const deckMetaText = isConfirmEnabled
+    ? `/${deckSize}\u00a0\u00b7\u00a0\u2713\u00a0ready`
+    : errorArray[0]
+    ? `/${deckSize}\u00a0\u00b7\u00a0${errorArray[0]}`
+    : needed > 0
+    ? `/${deckSize}\u00a0\u00b7\u00a0need\u00a0${needed}\u00a0more`
+    : `/${deckSize}`;
+
+  return (
+    <div className={styles.stickyFooter} ref={footerRef}>
+      <div className={wrapperClass}>
+        {/* Main action row: sync | deck count | confirm */}
+        <div className={styles.mainRow}>
+          {/* Left: copy + sync status */}
+          <div className={styles.syncSection}>
+            <button
+              className={classNames(styles.iconButton, {
+                [styles.iconButtonCopied]: copied
+              })}
+              onClick={handleClipboardCopy}
+              type="button"
+              title={
+                copied ? t('GAME_LOBBY.COPIED') : t('GAME_LOBBY.COPY_INVITE')
+              }
+              aria-label={
+                copied ? t('GAME_LOBBY.COPIED') : t('GAME_LOBBY.COPY_INVITE')
+              }
+            >
+              {copied ? <HiClipboardCheck /> : <HiClipboardCopy />}
+            </button>
+            {onSendInviteClick && isWidescreen && (
+              <button
+                className={styles.iconButton}
+                onClick={onSendInviteClick}
+                type="button"
+                title={t('GAME_LOBBY.SEND_INVITE_FRIEND')}
+                aria-label={t('GAME_LOBBY.SEND_INVITE_FRIEND')}
+              >
+                <MdGames />
+              </button>
+            )}
+          </div>
+
+          {/* Center: deck count and validation status */}
+          <div
+            className={`${styles.deckSection} ${
+              isConfirmEnabled ? styles.deckReady : ''
+            } ${!isValid ? styles.deckInvalid : ''}`}
+            role="status"
+            aria-live="polite"
+          >
+            <div className={styles.deckCountLine}>
+              {!isValid && errorArray[0] && (
+                <FaExclamationCircle className={styles.deckStatusIcon} />
+              )}
+              <span className={styles.deckNumber}>{values.deck.length}</span>
+              <span className={styles.deckMeta}>{deckMetaText}</span>
+            </div>
+          </div>
+
+          {/* Right: confirm / edit + optional leave */}
+          <div className={styles.actionSection}>
+            {canUnreadySideboard ? (
+              <button
+                className={styles.editButton}
+                type="button"
+                disabled={isUnreadyLoading || needToDoDisclaimer}
+                onClick={onUnreadySideboard}
+              >
+                {t('GAME_LOBBY.EDIT_DECK')}
+              </button>
+            ) : (
+              <button
+                className={`${styles.confirmButton} ${
+                  isConfirmEnabled
+                    ? styles.confirmReady
+                    : styles.confirmDisabled
+                }`}
+                type="submit"
+                aria-busy={isSubmitting}
+                disabled={!isConfirmEnabled || isSubmitting}
+              >
+                {isSubmitting
+                  ? t('GAME_LOBBY.SUBMITTING')
+                  : isWidescreen
+                  ? t('GAME_LOBBY.CONFIRM_DECK')
+                  : t('GAME_LOBBY.CONFIRM')}
+              </button>
+            )}
+            {isWidescreen && (
+              <button
+                className={leaveClass}
+                onClick={handleLeave}
+                type="button"
+              >
+                {t('GAME_LOBBY.LEAVE')}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StickyFooter;

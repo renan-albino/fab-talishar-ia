@@ -1,0 +1,170 @@
+{
+  "name": "Gravy Bones",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "gravy_bones_shipwrecked_looter",
+      "total": 1
+    },
+    {
+      "identifier": "balance_of_justice",
+      "total": 1
+    },
+    {
+      "identifier": "base_of_the_mountain",
+      "total": 1
+    },
+    {
+      "identifier": "carrion_crown",
+      "total": 1
+    },
+    {
+      "identifier": "compass_of_sunken_depths",
+      "total": 1
+    },
+    {
+      "identifier": "crown_of_providence",
+      "total": 1
+    },
+    {
+      "identifier": "dead_threads",
+      "total": 1
+    },
+    {
+      "identifier": "gold_baited_hook",
+      "total": 1
+    },
+    {
+      "identifier": "mage_master_boots",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_hood",
+      "total": 1
+    },
+    {
+      "identifier": "quickdodge_flexors",
+      "total": 1
+    },
+    {
+      "identifier": "scuttle_toes",
+      "total": 1
+    },
+    {
+      "identifier": "blood_in_the_water_red",
+      "total": 3
+    },
+    {
+      "identifier": "cheating_scoundrel_red",
+      "total": 2
+    },
+    {
+      "identifier": "conqueror_of_the_high_seas_red",
+      "total": 3
+    },
+    {
+      "identifier": "fiddlers_green_red",
+      "total": 1
+    },
+    {
+      "identifier": "saltwater_swell_red",
+      "total": 1
+    },
+    {
+      "identifier": "swiftwater_sloop_red",
+      "total": 2
+    },
+    {
+      "identifier": "anka_drag_under_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "chum_friendly_first_mate_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "loan_shark_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "prismatic_leyline_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "riches_of_tropal_dhani_yellow",
+      "total": 1
+    },
+    {
+      "identifier": "riggermortis_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "sawbones_dock_hand_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "scooba_salty_sea_dog_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "wailer_humperdinck_yellow",
+      "total": 1
+    },
+    {
+      "identifier": "avast_ye_blue",
+      "total": 3
+    },
+    {
+      "identifier": "back_alley_breakline_blue",
+      "total": 1
+    },
+    {
+      "identifier": "call_to_the_grave_blue",
+      "total": 3
+    },
+    {
+      "identifier": "eye_of_ophidia_blue",
+      "total": 1
+    },
+    {
+      "identifier": "fearless_confrontation_blue",
+      "total": 2
+    },
+    {
+      "identifier": "golden_tipple_blue",
+      "total": 3
+    },
+    {
+      "identifier": "jittery_bones_blue",
+      "total": 3
+    },
+    {
+      "identifier": "last_ditch_effort_blue",
+      "total": 1
+    },
+    {
+      "identifier": "loot_the_hold_blue",
+      "total": 3
+    },
+    {
+      "identifier": "murderous_rabble_blue",
+      "total": 3
+    },
+    {
+      "identifier": "portside_exchange_blue",
+      "total": 3
+    },
+    {
+      "identifier": "saltwater_swell_blue",
+      "total": 3
+    },
+    {
+      "identifier": "sunken_treasure_blue",
+      "total": 3
+    },
+    {
+      "identifier": "tip_the_barkeep_blue",
+      "total": 3
+    }
+  ]
+}

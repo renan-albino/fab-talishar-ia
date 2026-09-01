@@ -1,0 +1,154 @@
+{
+  "name": "Hala",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "hala_bladesaint_of_the_vow",
+      "total": 1
+    },
+    {
+      "identifier": "boots_of_omnis_ward",
+      "total": 1
+    },
+    {
+      "identifier": "crown_of_providence",
+      "total": 1
+    },
+    {
+      "identifier": "grains_of_bloodspill",
+      "total": 1
+    },
+    {
+      "identifier": "kabuto_of_imperial_authority",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_boots",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_gloves",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_hood",
+      "total": 1
+    },
+    {
+      "identifier": "reverent_rerebrace",
+      "total": 1
+    },
+    {
+      "identifier": "valiant_dynamo",
+      "total": 1
+    },
+    {
+      "identifier": "zenith_blade",
+      "total": 1
+    },
+    {
+      "identifier": "brimming_blade_red",
+      "total": 3
+    },
+    {
+      "identifier": "command_and_conquer_red",
+      "total": 3
+    },
+    {
+      "identifier": "edict_of_steel_red",
+      "total": 3
+    },
+    {
+      "identifier": "fate_foreseen_red",
+      "total": 3
+    },
+    {
+      "identifier": "fiddlers_green_red",
+      "total": 3
+    },
+    {
+      "identifier": "imperial_seal_of_command_red",
+      "total": 1
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "sigil_of_solace_red",
+      "total": 3
+    },
+    {
+      "identifier": "sink_below_red",
+      "total": 3
+    },
+    {
+      "identifier": "sirens_of_safe_harbor_red",
+      "total": 3
+    },
+    {
+      "identifier": "swordmasters_path_red",
+      "total": 3
+    },
+    {
+      "identifier": "swordmasters_shine_red",
+      "total": 3
+    },
+    {
+      "identifier": "toe_the_line_red",
+      "total": 3
+    },
+    {
+      "identifier": "blunten_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "edict_of_steel_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "beckon_steel_blue",
+      "total": 3
+    },
+    {
+      "identifier": "cut_n_carve_blue",
+      "total": 1
+    },
+    {
+      "identifier": "display_of_craftsmanship_blue",
+      "total": 3
+    },
+    {
+      "identifier": "edict_of_steel_blue",
+      "total": 3
+    },
+    {
+      "identifier": "indefensibly_honed_blue",
+      "total": 1
+    },
+    {
+      "identifier": "ole_blue",
+      "total": 3
+    },
+    {
+      "identifier": "overcrowded_blue",
+      "total": 1
+    },
+    {
+      "identifier": "provoke_blue",
+      "total": 3
+    },
+    {
+      "identifier": "ripple_away_blue",
+      "total": 3
+    },
+    {
+      "identifier": "sirens_of_safe_harbor_blue",
+      "total": 3
+    },
+    {
+      "identifier": "truce_blue",
+      "total": 3
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "name": "Jarl",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "jarl_vetreidi",
+      "total": 1
+    },
+    {
+      "identifier": "balance_of_justice",
+      "total": 1
+    },
+    {
+      "identifier": "barkskin_of_the_millennium_tree",
+      "total": 1
+    },
+    {
+      "identifier": "boots_of_omnis_ward",
+      "total": 1
+    },
+    {
+      "identifier": "crown_of_everbloom",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "gauntlets_of_the_boreal_domain",
+      "total": 1
+    },
+    {
+      "identifier": "heart_of_ice",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_gloves",
+      "total": 1
+    },
+    {
+      "identifier": "rampart_of_the_rams_head",
+      "total": 1
+    },
+    {
+      "identifier": "sledge_of_anvilheim",
+      "total": 1
+    },
+    {
+      "identifier": "stalagmite_bastion_of_isenloft",
+      "total": 1
+    },
+    {
+      "identifier": "titans_fist",
+      "total": 1
+    },
+    {
+      "identifier": "boulder_drop_red",
+      "total": 3
+    },
+    {
+      "identifier": "colors_of_aria_red",
+      "total": 1
+    },
+    {
+      "identifier": "command_and_conquer_red",
+      "total": 3
+    },
+    {
+      "identifier": "felling_of_the_crown_red",
+      "total": 3
+    },
+    {
+      "identifier": "fiddlers_green_red",
+      "total": 3
+    },
+    {
+      "identifier": "mangle_red",
+      "total": 3
+    },
+    {
+      "identifier": "oaken_old_red",
+      "total": 3
+    },
+    {
+      "identifier": "rootbound_carapace_red",
+      "total": 3
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "sigil_of_solace_red",
+      "total": 3
+    },
+    {
+      "identifier": "sink_below_red",
+      "total": 3
+    },
+    {
+      "identifier": "staunch_response_red",
+      "total": 2
+    },
+    {
+      "identifier": "plow_under_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "autumns_touch_blue",
+      "total": 3
+    },
+    {
+      "identifier": "blizzard_blue",
+      "total": 1
+    },
+    {
+      "identifier": "channel_iceloch_glaze_blue",
+      "total": 3
+    },
+    {
+      "identifier": "channel_lake_frigid_blue",
+      "total": 3
+    },
+    {
+      "identifier": "crumble_to_eternity_blue",
+      "total": 3
+    },
+    {
+      "identifier": "everbloom__life_blue",
+      "total": 3
+    },
+    {
+      "identifier": "frozen_to_death_blue",
+      "total": 3
+    },
+    {
+      "identifier": "fruits_of_the_forest_blue",
+      "total": 3
+    },
+    {
+      "identifier": "imposing_visage_blue",
+      "total": 3
+    },
+    {
+      "identifier": "pulse_of_isenloft_blue",
+      "total": 1
+    },
+    {
+      "identifier": "ripple_away_blue",
+      "total": 3
+    },
+    {
+      "identifier": "tear_asunder_blue",
+      "total": 3
+    }
+  ]
+}

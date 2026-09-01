@@ -1,0 +1,146 @@
+{
+  "name": "Betsy",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "betsy_skin_in_the_game",
+      "total": 1
+    },
+    {
+      "identifier": "boots_of_omnis_ward",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "gauntlets_of_iron_will",
+      "total": 1
+    },
+    {
+      "identifier": "good_time_chapeau",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_boots",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_gloves",
+      "total": 1
+    },
+    {
+      "identifier": "pile_driver",
+      "total": 1
+    },
+    {
+      "identifier": "quickdodge_flexors",
+      "total": 1
+    },
+    {
+      "identifier": "command_and_conquer_red",
+      "total": 3
+    },
+    {
+      "identifier": "double_down_red",
+      "total": 3
+    },
+    {
+      "identifier": "edge_of_their_seats_red",
+      "total": 3
+    },
+    {
+      "identifier": "fate_foreseen_red",
+      "total": 3
+    },
+    {
+      "identifier": "fiddlers_green_red",
+      "total": 3
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "sigil_of_solace_red",
+      "total": 3
+    },
+    {
+      "identifier": "sink_below_red",
+      "total": 3
+    },
+    {
+      "identifier": "slap_happy_red",
+      "total": 2
+    },
+    {
+      "identifier": "staunch_response_red",
+      "total": 3
+    },
+    {
+      "identifier": "tension_in_the_air_red",
+      "total": 3
+    },
+    {
+      "identifier": "act_of_glory_blue",
+      "total": 3
+    },
+    {
+      "identifier": "edge_of_their_seats_blue",
+      "total": 3
+    },
+    {
+      "identifier": "fearless_confrontation_blue",
+      "total": 3
+    },
+    {
+      "identifier": "hold_the_line_blue",
+      "total": 2
+    },
+    {
+      "identifier": "nasty_surprise_blue",
+      "total": 1
+    },
+    {
+      "identifier": "overcrowded_blue",
+      "total": 2
+    },
+    {
+      "identifier": "ripple_away_blue",
+      "total": 3
+    },
+    {
+      "identifier": "roiling_fissure_blue",
+      "total": 3
+    },
+    {
+      "identifier": "sense_weakness_blue",
+      "total": 3
+    },
+    {
+      "identifier": "talk_a_big_game_blue",
+      "total": 3
+    },
+    {
+      "identifier": "tear_asunder_blue",
+      "total": 3
+    },
+    {
+      "identifier": "tension_in_the_air_blue",
+      "total": 3
+    },
+    {
+      "identifier": "the_suspense_is_killing_me_blue",
+      "total": 3
+    },
+    {
+      "identifier": "to_be_continued_blue",
+      "total": 2
+    },
+    {
+      "identifier": "warmongers_diplomacy_blue",
+      "total": 3
+    }
+  ]
+}

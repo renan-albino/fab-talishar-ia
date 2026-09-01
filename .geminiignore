@@ -1,0 +1,67 @@
+# ==============================================================================
+# .geminiignore - Otimização de Janela de Contexto e Tokens para Google Antigravity / Gemini CLI
+# ==============================================================================
+
+# 1. Ambientes Virtuais e Dependências
+venv/
+.venv/
+env/
+ENV/
+Talishar-FE/node_modules/
+node_modules/
+
+# 2. Caches e Artefatos Compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+Talishar-FE/build/
+Talishar-FE/dist/
+Talishar-FE/.vite/
+.cache/
+
+# 3. Modelos Pesados de Deep Learning & Checkpoints Binários
+*.pt
+*.pth
+*.bin
+*.onnx
+data/model_latest.pt
+data/checkpoint_*.pt
+
+# 4. Logs e Arquivos Temporários de Runtime do Jogo
+logs/
+*.log
+Talishar/Games/
+Talishar/GameBackups/
+Talishar/tmp/
+Talishar/sessions/
+.dashboard.pid
+
+# 5. Imagens Pesadas, Mídias e Assets Gráficos
+*.webp
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+Talishar/WebpImages/
+Talishar/CardImages/
+
+# 6. Dumps de Banco de Dados e Locks
+*.sql
+*.sqlite
+*.sqlite3
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# 7. Segredos e Credenciais de Ambiente
+.env
+.env.*
+!*.example
+*.pem
+*.key
+*.crt
+id_rsa*

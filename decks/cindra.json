@@ -1,0 +1,146 @@
+{
+  "name": "Cindra",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "cindra_dracai_of_retribution",
+      "total": 1
+    },
+    {
+      "identifier": "blood_splattered_vest",
+      "total": 1
+    },
+    {
+      "identifier": "boots_of_omnis_ward",
+      "total": 1
+    },
+    {
+      "identifier": "claw_of_vynserakai",
+      "total": 1
+    },
+    {
+      "identifier": "dragonscaler_flight_path",
+      "total": 1
+    },
+    {
+      "identifier": "flamescale_furnace",
+      "total": 1
+    },
+    {
+      "identifier": "flick_knives",
+      "total": 1
+    },
+    {
+      "identifier": "kunai_of_retribution",
+      "total": 2
+    },
+    {
+      "identifier": "mask_of_momentum",
+      "total": 1
+    },
+    {
+      "identifier": "ancestral_empowerment_red",
+      "total": 3
+    },
+    {
+      "identifier": "art_of_the_dragon_blood_red",
+      "total": 3
+    },
+    {
+      "identifier": "art_of_the_dragon_scale_red",
+      "total": 2
+    },
+    {
+      "identifier": "blaze_headlong_red",
+      "total": 3
+    },
+    {
+      "identifier": "burning_blade_dance_red",
+      "total": 3
+    },
+    {
+      "identifier": "cut_through_red",
+      "total": 3
+    },
+    {
+      "identifier": "demonstrate_devotion_red",
+      "total": 3
+    },
+    {
+      "identifier": "display_loyalty_red",
+      "total": 3
+    },
+    {
+      "identifier": "draco_fire_red",
+      "total": 3
+    },
+    {
+      "identifier": "enflame_the_firebrand_red",
+      "total": 2
+    },
+    {
+      "identifier": "fire_tenet_strike_first_red",
+      "total": 3
+    },
+    {
+      "identifier": "hot_on_their_heels_red",
+      "total": 3
+    },
+    {
+      "identifier": "ignite_red",
+      "total": 3
+    },
+    {
+      "identifier": "imperial_seal_of_command_red",
+      "total": 1
+    },
+    {
+      "identifier": "lava_burst_red",
+      "total": 3
+    },
+    {
+      "identifier": "loyalty_beyond_the_grave_red",
+      "total": 2
+    },
+    {
+      "identifier": "march_of_loyalty_red",
+      "total": 3
+    },
+    {
+      "identifier": "pain_in_the_backside_red",
+      "total": 3
+    },
+    {
+      "identifier": "ravenous_rabble_red",
+      "total": 3
+    },
+    {
+      "identifier": "rising_resentment_red",
+      "total": 3
+    },
+    {
+      "identifier": "ronin_renegade_red",
+      "total": 3
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "smoke_out_red",
+      "total": 2
+    },
+    {
+      "identifier": "snatch_red",
+      "total": 3
+    },
+    {
+      "identifier": "throw_dagger_blue",
+      "total": 3
+    },
+    {
+      "identifier": "warmongers_diplomacy_blue",
+      "total": 2
+    }
+  ]
+}

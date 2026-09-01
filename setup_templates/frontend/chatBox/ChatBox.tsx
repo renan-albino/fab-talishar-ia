@@ -1,0 +1,203 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useAppSelector } from 'app/Hooks';
+import { RootState } from 'app/Store';
+import ChatInput from '../chatInput/ChatInput';
+import styles from './ChatBox.module.css';
+import classNames from 'classnames';
+import useSetting from 'hooks/useSetting';
+import { IS_STREAMER_MODE } from 'features/options/constants';
+import GameLogMessages from './GameLogMessages';
+import ChessAdvantageTracker from './ChessAdvantageTracker';
+import { useTranslation } from 'react-i18next';
+
+export default function ChatBox({
+  usePrimary = false,
+  showTabs = true,
+  flushTop = false
+}: {
+  usePrimary?: boolean;
+  showTabs?: boolean;
+  flushTop?: boolean;
+}) {
+  const { t } = useTranslation();
+  const amIPlayerOne = useAppSelector((state: RootState) => {
+    return state.game.gameInfo.playerID === 1;
+  });
+  // gameID selector removed - it was selected but never used in this component.
+  const playerID = useAppSelector(
+    (state: RootState) => state.game.gameInfo.playerID
+  );
+  const chatEnabled = useAppSelector(
+    (state: RootState) => state.game.chatEnabled
+  );
+  const [chatFilter, setChatFilter] = useState<'none' | 'chat' | 'log'>('none');
+  const chatLog = useAppSelector((state: RootState) => state.game.chatLog);
+
+  const isStreamerMode =
+    String(useSetting({ settingName: IS_STREAMER_MODE })?.value) === '1';
+
+  // Typing state is pushed via SSE named event → stored in Redux.
+  // No polling needed - zero extra HTTP connections.
+  const displayTyping = useAppSelector(
+    (state: RootState) =>
+      (state.game.opponentIsTyping ?? false) &&
+      chatEnabled &&
+      (playerID === 1 || playerID === 2)
+  );
+
+  const myName = String(
+    useAppSelector((state: RootState) => {
+      return state.game.playerOne.Name;
+    }) ?? 'you'
+  );
+  const oppName = String(
+    useAppSelector((state: RootState) => {
+      return state.game.playerTwo.Name;
+    }) ?? 'your opponent'
+  );
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatBoxRef = useRef<HTMLDivElement>(null);
+  const prevChatLengthRef = useRef<number>(0);
+  const prevChatFilterRef = useRef<string>('none');
+
+  const scrollToBottom = () => {
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
+    }
+  };
+
+  const streamerNameRegex = useMemo(
+    () =>
+      isStreamerMode && oppName
+        ? new RegExp(oppName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+        : null,
+    [isStreamerMode, oppName]
+  );
+
+  const transformMessage = useMemo(() => {
+    const myDisplayName = amIPlayerOne
+      ? myName && myName.trim()
+        ? myName.substring(0, 15)
+        : 'Player 1'
+      : myName && myName.trim()
+      ? myName.substring(0, 15)
+      : 'Player 2';
+
+    const oppDisplayName = isStreamerMode
+      ? 'Opponent'
+      : amIPlayerOne
+      ? oppName && oppName.trim()
+        ? oppName.substring(0, 15)
+        : 'Player 2'
+      : oppName && oppName.trim()
+      ? oppName.substring(0, 15)
+      : 'Player 1';
+
+    const p1DisplayName = amIPlayerOne ? myDisplayName : oppDisplayName;
+    const p2DisplayName = amIPlayerOne ? oppDisplayName : myDisplayName;
+
+    return (message: string) => {
+      let processed = message
+        .replace(/Player 1/g, `<b>${p1DisplayName}</b>`)
+        .replace(/Player 2/g, `<b>${p2DisplayName}</b>`);
+
+      if (streamerNameRegex) {
+        processed = processed.replace(streamerNameRegex, 'Opponent');
+      }
+
+      return processed;
+    };
+  }, [isStreamerMode, amIPlayerOne, myName, oppName, streamerNameRegex]);
+
+  const playerNames = useMemo<[string, string]>(
+    () => [amIPlayerOne ? myName : oppName, amIPlayerOne ? oppName : myName],
+    [amIPlayerOne, myName, oppName]
+  );
+
+  useEffect(() => {
+    const currentLength = chatLog?.length ?? 0;
+    const filterChanged = chatFilter !== prevChatFilterRef.current;
+    const hasNewMessages = currentLength > prevChatLengthRef.current;
+
+    prevChatLengthRef.current = currentLength;
+    prevChatFilterRef.current = chatFilter;
+
+    if (hasNewMessages || filterChanged || displayTyping) {
+      scrollToBottom();
+    }
+  }, [chatLog, chatFilter, displayTyping]);
+
+  return (
+    <div
+      className={classNames(styles.chatBoxContainer, {
+        [styles.flushTop]: flushTop
+      })}
+    >
+      {showTabs && (
+        <div
+          role="tablist"
+          aria-label={t('CHAT.CHAT')}
+          className={classNames(styles.tabs, {
+            [styles.primaryTabs]: usePrimary
+          })}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={chatFilter === 'none'}
+            className={classNames(chatFilter === 'none' && styles.activeTab)}
+            onClick={(e) => {
+              e.preventDefault();
+              setChatFilter('none');
+            }}
+          >
+            {t('CHAT.ALL')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={chatFilter === 'chat'}
+            className={classNames(chatFilter === 'chat' && styles.activeTab)}
+            onClick={(e) => {
+              e.preventDefault();
+              setChatFilter('chat');
+            }}
+          >
+            {t('CHAT.CHAT')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={chatFilter === 'log'}
+            className={classNames(chatFilter === 'log' && styles.activeTab)}
+            onClick={(e) => {
+              e.preventDefault();
+              setChatFilter('log');
+            }}
+          >
+            {t('CHAT.LOG')}
+          </button>
+        </div>
+      )}
+      <ChessAdvantageTracker />
+      <div className={styles.chatBoxInner}>
+        <div className={styles.chatBox} ref={chatBoxRef}>
+          <GameLogMessages
+            chatLog={chatLog}
+            chatFilter={chatFilter}
+            transformMessage={transformMessage}
+            playerNames={playerNames}
+          />
+          {displayTyping && (
+            <div className={styles.typingIndicator} ref={messagesEndRef}>
+              <em>{t('CHAT.TYPING')}</em>
+            </div>
+          )}
+          {!displayTyping && <div ref={messagesEndRef} />}
+        </div>
+      </div>
+      <ChatInput usePrimary={usePrimary} />
+    </div>
+  );
+}

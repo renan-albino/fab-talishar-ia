@@ -1,5 +1,5 @@
 {
-  "name": "Calling Hamburg 3rd",
+  "name": "Oscilio GIAF",
   "format": "cc",
   "cards": [
     {
@@ -59,7 +59,7 @@
       "total": 3
     },
     {
-      "identifier": "comet_storm_shock_red",
+      "identifier": "comet_storm__shock_red",
       "total": 1
     },
     {
@@ -135,7 +135,7 @@
       "total": 2
     },
     {
-      "identifier": "consign_to_cosmos_shock_yellow",
+      "identifier": "consign_to_cosmos__shock_yellow",
       "total": 3
     },
     {

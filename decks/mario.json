@@ -1,0 +1,162 @@
+{
+  "name": "Mario",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "arakni_marionette",
+      "total": 1
+    },
+    {
+      "identifier": "blacktek_whisperers",
+      "total": 1
+    },
+    {
+      "identifier": "flick_knives",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "hunters_klaive",
+      "total": 2
+    },
+    {
+      "identifier": "mask_of_deceit",
+      "total": 1
+    },
+    {
+      "identifier": "stalkers_steps",
+      "total": 1
+    },
+    {
+      "identifier": "widow_veil_respirator",
+      "total": 1
+    },
+    {
+      "identifier": "art_of_desire_body_red",
+      "total": 2
+    },
+    {
+      "identifier": "command_and_conquer_red",
+      "total": 1
+    },
+    {
+      "identifier": "cut_from_the_same_cloth_red",
+      "total": 3
+    },
+    {
+      "identifier": "den_of_the_spider_red",
+      "total": 1
+    },
+    {
+      "identifier": "fate_foreseen_red",
+      "total": 2
+    },
+    {
+      "identifier": "frailty_trap_red",
+      "total": 1
+    },
+    {
+      "identifier": "incision_red",
+      "total": 2
+    },
+    {
+      "identifier": "inertia_trap_red",
+      "total": 2
+    },
+    {
+      "identifier": "kiss_of_death_red",
+      "total": 3
+    },
+    {
+      "identifier": "lair_of_the_spider_red",
+      "total": 2
+    },
+    {
+      "identifier": "leave_no_witnesses_red",
+      "total": 3
+    },
+    {
+      "identifier": "mark_of_the_black_widow_red",
+      "total": 3
+    },
+    {
+      "identifier": "meet_madness_red",
+      "total": 2
+    },
+    {
+      "identifier": "orb_weaver_spinneret_red",
+      "total": 3
+    },
+    {
+      "identifier": "pain_in_the_backside_red",
+      "total": 3
+    },
+    {
+      "identifier": "pick_up_the_point_red",
+      "total": 2
+    },
+    {
+      "identifier": "savor_bloodshed_red",
+      "total": 3
+    },
+    {
+      "identifier": "scar_tissue_red",
+      "total": 3
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 2
+    },
+    {
+      "identifier": "stains_of_the_redback_red",
+      "total": 3
+    },
+    {
+      "identifier": "tarantula_toxin_red",
+      "total": 3
+    },
+    {
+      "identifier": "to_the_point_red",
+      "total": 3
+    },
+    {
+      "identifier": "up_sticks_and_run_red",
+      "total": 3
+    },
+    {
+      "identifier": "codex_of_frailty_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "codex_of_inertia_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "persuasive_prognosis_blue",
+      "total": 2
+    },
+    {
+      "identifier": "reapers_call_blue",
+      "total": 2
+    },
+    {
+      "identifier": "relentless_pursuit_blue",
+      "total": 2
+    },
+    {
+      "identifier": "shred_blue",
+      "total": 2
+    },
+    {
+      "identifier": "under_the_trap_door_blue",
+      "total": 3
+    },
+    {
+      "identifier": "unmake_the_underlings_blue",
+      "total": 1
+    }
+  ]
+}
