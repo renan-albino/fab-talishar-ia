@@ -12,6 +12,7 @@ Executa:
 
 import os
 import sys
+import shutil
 import json
 import re
 import subprocess
@@ -33,15 +34,26 @@ def ensure_directories():
         os.makedirs(d, exist_ok=True)
     log("Diretórios verificados: data/, logs/, decks/.")
 
+def get_docker_compose_cmd():
+    try:
+        r = subprocess.run(["docker", "compose", "version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if r.returncode == 0:
+            return ["docker", "compose"]
+    except Exception:
+        pass
+    if shutil.which("docker-compose"):
+        return ["docker-compose"]
+    return ["docker", "compose"]
+
 def check_docker_containers():
     log("Verificando containers Docker do Talishar...")
     try:
         res = subprocess.check_output(["docker", "ps", "--format", "{{.Names}}"], text=True)
         running = [name.strip() for name in res.strip().splitlines() if name.strip()]
         
-        web_running = any("talishar-web-server" in n or "web" in n for n in running)
-        redis_running = any("redis" in n for n in running)
-        mysql_running = any("mysql" in n for n in running)
+        web_running = any("talishar" in n.lower() and "web" in n.lower() for n in running)
+        redis_running = any("redis" in n.lower() for n in running)
+        mysql_running = any("mysql" in n.lower() for n in running)
         
         log(f"Containers em execução: {', '.join(running)}")
         if not web_running:
@@ -49,7 +61,8 @@ def check_docker_containers():
             log("[+] Tentando subir backend via Docker Compose...")
             talishar_dir = os.path.join(BASE_DIR, "Talishar")
             if os.path.exists(talishar_dir):
-                subprocess.run(["docker", "compose", "up", "-d"], cwd=talishar_dir, check=True)
+                dc_cmd = get_docker_compose_cmd()
+                subprocess.run(dc_cmd + ["up", "-d"], cwd=talishar_dir, check=True)
             else:
                 log("[ERRO] Diretório Talishar/ não encontrado.")
         else:
@@ -89,11 +102,19 @@ def extract_card_database():
     else:
         # Tentar extrair do container docker
         try:
-            container_cmd = "docker exec talishar-web-server-1 find /var/www/html/ -name '*Dictionary*.php'"
+            cname = "talishar_web-server_1"
+            try:
+                out = subprocess.check_output(["docker", "ps", "--filter", "name=web-server", "--format", "{{.Names}}"], text=True)
+                cand = [c.strip() for c in out.strip().splitlines() if c.strip()]
+                if cand:
+                    cname = cand[0]
+            except Exception:
+                pass
+            container_cmd = f"docker exec {cname} find /var/www/html/ -name '*Dictionary*.php'"
             files_out = subprocess.check_output(container_cmd, shell=True, text=True)
             for fpath in files_out.strip().splitlines():
                 if fpath.strip():
-                    cat_cmd = f"docker exec talishar-web-server-1 cat '{fpath.strip()}'"
+                    cat_cmd = f"docker exec {cname} cat '{fpath.strip()}'"
                     content = subprocess.check_output(cat_cmd, shell=True, text=True, errors="ignore")
                     php_contents.append((os.path.basename(fpath.strip()), content))
         except Exception as e:

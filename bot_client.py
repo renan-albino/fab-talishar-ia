@@ -14,6 +14,7 @@ class FabBotClient:
         self.deck_url = deck_url
         self.role = role
         self.player_name = player_name
+        self.name = player_name  # Garante self.name definido para evitar AttributeError
         self.session = requests.Session()
         self.game_id = None
         self.player_id = None
@@ -24,12 +25,64 @@ class FabBotClient:
         self.metrics = {"health": 20, "opp_health": 20, "card_advantage": 0, "status": "Iniciando", "phase": "pre-game"}
         self.trajectory = []
         self.clean_deck = os.path.basename(self.deck_url).replace(".json", "") if self.deck_url else "default_deck"
+        
+        # Identificar nome do Herói ou Deck
+        self.hero_name = ""
+        target_path = self.deck_url if (self.deck_url and os.path.exists(self.deck_url)) else f"decks/{self.clean_deck}.json"
+        if os.path.exists(target_path):
+            try:
+                with open(target_path, "r", encoding="utf-8") as f:
+                    d_data = json.load(f)
+                    self.hero_name = d_data.get("hero", d_data.get("name", ""))
+            except Exception:
+                pass
+        if not self.hero_name:
+            self.hero_name = self.clean_deck.replace("_", " ").title()
+
         os.makedirs("logs", exist_ok=True)
         try:
-            with open(f"logs/{self.room_id}_{self.role}_deck.txt", "w") as f:
-                f.write(self.clean_deck)
+            with open(f"logs/{self.room_id}_{self.role}_deck.txt", "w", encoding="utf-8") as f:
+                f.write(self.hero_name or self.clean_deck)
         except Exception:
             pass
+
+    def get_player_label(self, target_player_id: int) -> str:
+        """Retorna uma identificação legível e clara para o Jogador 1 ou 2."""
+        is_vs_human = (getattr(self, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
+        if is_vs_human:
+            if target_player_id == 1:
+                return "Humano (Você)"
+            else:
+                bot_hero = getattr(self, "hero_name", "") or self.clean_deck.replace("_", " ").title()
+                return f"Bot AI ({bot_hero})"
+
+        # Partida de Treino / Arena entre Bots
+        p1_deck_file = f"logs/{self.room_id}_host_deck.txt"
+        p2_deck_file = f"logs/{self.room_id}_join_deck.txt"
+        p1_deck = self.hero_name if self.player_id == 1 else "Host"
+        p2_deck = self.hero_name if self.player_id == 2 else "Join"
+
+        if os.path.exists(p1_deck_file):
+            try:
+                with open(p1_deck_file, "r", encoding="utf-8") as f:
+                    val = f.read().strip()
+                    if val:
+                        p1_deck = val
+            except Exception:
+                pass
+        if os.path.exists(p2_deck_file):
+            try:
+                with open(p2_deck_file, "r", encoding="utf-8") as f:
+                    val = f.read().strip()
+                    if val:
+                        p2_deck = val
+            except Exception:
+                pass
+
+        if target_player_id == 1:
+            return f"Jogador 1 ({p1_deck})"
+        else:
+            return f"Jogador 2 ({p2_deck})"
 
     def log(self, message):
         t_str = datetime.now().strftime("%H:%M:%S")
@@ -213,10 +266,27 @@ class FabBotClient:
                             else:
                                 turn_num = state.get("turnNo", state.get("currentTurn", 1))
                                 if turn_num != last_logged_turn:
-                                    my_h = state.get("playerHealth", 40)
-                                    opp_h = state.get("opponentHealth", 40)
-                                    hero_name = state.get("initialLoad", {}).get("myHeroName", state.get("myCharacter", "Hero"))
-                                    self.log(f"[TURNO {turn_num}] {hero_name} | Vida: {my_h} vs {opp_h} | Status: Em Partida")
+                                    try:
+                                        my_h = int(state.get("playerHealth", 40))
+                                    except Exception:
+                                        my_h = 40
+                                    try:
+                                        opp_h = int(state.get("opponentHealth", 40))
+                                    except Exception:
+                                        opp_h = 40
+                                    p1_hp = my_h if self.player_id == 1 else opp_h
+                                    p2_hp = opp_h if self.player_id == 1 else my_h
+                                    p1_lbl = self.get_player_label(1)
+                                    p2_lbl = self.get_player_label(2)
+                                    turn_active_id = state.get("turnPlayer", 1)
+                                    active_lbl = p1_lbl if str(turn_active_id) == "1" else p2_lbl
+
+                                    # O Host (Player 1) loga no feed compartilhado para evitar linhas duplicadas e invertidas
+                                    if self.player_id == 1:
+                                        self.log(f"[TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}")
+                                    else:
+                                        with open(self.log_file, "a", encoding="utf-8") as lf:
+                                            lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}\n")
                                     last_logged_turn = turn_num
                                 self.handle_game_tick(state)
                                 waiting_logged = False
@@ -246,7 +316,7 @@ class FabBotClient:
     def wait_for_opponent_and_start(self):
         self.log(f"[HOST] Aguardando Jogador 2 entrar na sala #{self.game_id}...")
         p2_flag = f"logs/{self.room_id}_p2_ready.txt"
-        for _ in range(40):
+        for _ in range(200):
             time.sleep(0.05)
             if os.path.exists(p2_flag):
                 self.log(f"[HOST] Jogador 2 detectado no lobby. Avançando para sideboard...")
@@ -620,35 +690,55 @@ class FabBotClient:
                     except Exception as e:
                         self.log(f"[ERRO BUFFER] {e}")
 
-                is_vs_human = (self.name == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
-                if self.role == "host" or is_vs_human:
+                p1_hp = my_h if self.player_id == 1 else opp_h
+                p2_hp = opp_h if self.player_id == 1 else my_h
+                p1_lbl = self.get_player_label(1)
+                p2_lbl = self.get_player_label(2)
+                
+                is_vs_human = (getattr(self, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
+                
+                if winner_id == 1:
+                    winner_str = p1_lbl
+                elif winner_id == 2:
+                    winner_str = p2_lbl
+                else:
+                    winner_str = "Empate"
+
+                if self.role == "host" or is_vs_human or self.player_id == 1:
                     try:
                         p1_d_file = f"logs/{self.room_id}_host_deck.txt"
                         p2_d_file = f"logs/{self.room_id}_join_deck.txt"
-                        p1_d = open(p1_d_file).read().strip() if os.path.exists(p1_d_file) else ("Humano (Você)" if is_vs_human else self.clean_deck)
-                        p2_d = open(p2_d_file).read().strip() if os.path.exists(p2_d_file) else self.clean_deck
+                        p1_d = open(p1_d_file, encoding="utf-8").read().strip() if os.path.exists(p1_d_file) else ("Humano (Você)" if is_vs_human else self.clean_deck)
+                        p2_d = open(p2_d_file, encoding="utf-8").read().strip() if os.path.exists(p2_d_file) else self.clean_deck
                         
                         from stats_manager import update_match_result
                         update_match_result(
                             room_id=self.room_id,
                             p1_deck=p1_d,
                             p2_deck=p2_d,
-                            p1_health=my_h if self.player_id == 1 else opp_h,
-                            p2_health=opp_h if self.player_id == 1 else my_h,
+                            p1_health=p1_hp,
+                            p2_health=p2_hp,
                             total_turns=turn,
                             winner_id=winner_id,
                             is_human_p1=is_vs_human
                         )
-                        winner_str = p1_d if winner_id == 1 else (p2_d if winner_id == 2 else "Empate")
-                        self.log(f"[FIM DE JOGO] Partida #{self.game_id} finalizada! Vencedor: {winner_str}. Placar: {my_h} vs {opp_h} em {turn} turnos.")
+                    except Exception as e:
+                        self.log(f"[ERRO STATS] {e}")
 
+                    # LOG DE DESTAQUE DO VENCEDOR (Claro e Visível):
+                    self.log("════════════════════════════════════════════════════════════")
+                    self.log(f"🏆 [FIM DE JOGO] VENCEDOR: {winner_str.upper()}!")
+                    self.log(f"📊 [PLACAR FINAL] {p1_lbl}: {p1_hp} HP  x  {p2_lbl}: {p2_hp} HP  (Total: {turn} turnos)")
+                    self.log("════════════════════════════════════════════════════════════")
+
+                    try:
                         summary_text = (
                             f"═══════════════════════════════════════════════\n"
                             f"🏆 RESULTADO DA PARTIDA: {self.room_id}\n"
                             f"═══════════════════════════════════════════════\n"
                             f"• Vencedor: {winner_str} (Jogador {winner_id})\n"
-                            f"• Host ({p1_d}): {my_h if self.player_id == 1 else opp_h} HP\n"
-                            f"• Join ({p2_d}): {opp_h if self.player_id == 1 else my_h} HP\n"
+                            f"• {p1_lbl}: {p1_hp} HP\n"
+                            f"• {p2_lbl}: {p2_hp} HP\n"
                             f"• Duração: {turn} turnos\n"
                             f"• Decisões Coletadas para Treino: {len(self.trajectory)} amostras\n"
                             f"═══════════════════════════════════════════════\n"
@@ -656,7 +746,7 @@ class FabBotClient:
                         with open(f"logs/{self.room_id}_summary.log", "w", encoding="utf-8") as f:
                             f.write(summary_text)
                     except Exception as e:
-                        self.log(f"[ERRO STATS] {e}")
+                        self.log(f"[ERRO SUMMARY] {e}")
 
         with open(f"logs/{self.room_id}_{self.player_name}.json", "w") as f:
             json.dump({"metrics": self.metrics}, f)
@@ -684,6 +774,9 @@ class FabBotClient:
                 
         try:
             res = self.session.get(f"{TALISHAR_API_URL}/ProcessInput.php", params=params)
+            if "Fatal error" in res.text or "Parse error" in res.text:
+                self.log(f"[ERRO PHP NO BACKEND] {res.text[:200].strip()}")
+                return False
             return res.status_code == 200
         except Exception as e:
             self.log(f"[ERRO AO ENVIAR AÇÃO] {e}")

@@ -14,6 +14,7 @@ __pycache__/
 # Pastas de Clonagem/Replicação do Talishar (Evitar Redundância)
 Talishar/
 Talishar-FE/
+talishar_workspace/
 
 # Dados Gerados, Modelos e Telemetria
 data/

@@ -5,9 +5,19 @@
 
 set -e
 
-PROJECT_DIR="/home/renan/fab-talishar-ia"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$SCRIPT_DIR"
 TALISHAR_DIR="$PROJECT_DIR/Talishar"
 FRONTEND_DIR="$PROJECT_DIR/Talishar-FE"
+
+# Detect docker-compose command
+if docker compose version >/dev/null 2>&1; then
+    DC_CMD="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    DC_CMD="docker-compose"
+else
+    DC_CMD="docker compose"
+fi
 
 mkdir -p "$PROJECT_DIR/logs"
 
@@ -15,11 +25,11 @@ echo "=== [1/3] Verificando Backend Docker (Apache / MySQL / Redis) ==="
 if [ -d "$TALISHAR_DIR" ]; then
     cd "$TALISHAR_DIR"
     ln -sfn ../decks decks || true
-    if docker compose ps 2>/dev/null | grep -q "web-server"; then
+    if $DC_CMD ps 2>/dev/null | grep -q "web-server"; then
         echo "Backend Docker ja esta em execucao (Porta 8080)."
     else
-        echo "Iniciando containers do backend..."
-        docker compose up -d
+        echo "Iniciando containers do backend via $DC_CMD..."
+        $DC_CMD up -d
         echo "Backend Docker iniciado com sucesso!"
     fi
 fi

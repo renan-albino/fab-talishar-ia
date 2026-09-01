@@ -40,7 +40,7 @@ with col_title3:
 
 # Carrega decks salvos
 saved_decks = list_saved_decks()
-deck_options = {f"{d['name']} ({d['format'].upper()} - {d['total_cards']} cartas)": d['slug'] for d in saved_decks}
+deck_options = {f"{d.get('name', d.get('slug'))} ({str(d.get('format', 'blitz')).upper()} - {d.get('total_cards', 0)} cartas)": d.get('slug') for d in saved_decks}
 
 # Abas Principais da Aplicação
 tab_play, tab_arena, tab_gpu, tab_tourney, tab_decks, tab_stats, tab_ismcts = st.tabs([
@@ -139,11 +139,11 @@ with tab_play:
     st.caption("Todos os decks criados no Dashboard são automaticamente injetados no menu de Favoritos do Talishar para qualquer usuário ou convidado.")
     if saved_decks:
         df_decks = pd.DataFrame([{
-            "Deck": d["name"],
-            "Herói": d["hero"],
-            "Formato": d["format"].upper(),
-            "Total Cartas": d["total_cards"],
-            "Slug": d["slug"]
+            "Deck": d.get("name", d.get("slug", "")),
+            "Herói": d.get("hero", d.get("data", {}).get("hero", d.get("name", "Herói"))),
+            "Formato": str(d.get("format", "blitz")).upper(),
+            "Total Cartas": d.get("total_cards", 0),
+            "Slug": d.get("slug", "")
         } for d in saved_decks])
         st.dataframe(df_decks, use_container_width=True, hide_index=True)
     else:

@@ -22,6 +22,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Detect docker-compose vs docker compose
+if docker compose version >/dev/null 2>&1; then
+    DC_CMD="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    DC_CMD="docker-compose"
+else
+    DC_CMD="docker compose"
+fi
+
 show_help() {
     cat << EOF
 Uso: ./stop.sh [OPÇÕES]
@@ -46,7 +55,7 @@ EOF
 check_status() {
     echo -e "${BLUE}=== Status dos Serviços FaB AI ===${NC}"
     
-    if docker compose -f "$PROJECT_ROOT/Talishar/docker-compose.yml" ps 2>/dev/null | grep -q "web-server"; then
+    if $DC_CMD -f "$PROJECT_ROOT/Talishar/docker-compose.yml" ps 2>/dev/null | grep -q "web-server"; then
         echo -e "🐳 Docker Talishar:       ${GREEN}RODANDO${NC}"
     else
         echo -e "🐳 Docker Talishar:       ${RED}PARADO${NC}"
@@ -139,11 +148,11 @@ fi
 if [ "$STOP_DOCKER" = true ]; then
     if [ -d "$PROJECT_ROOT/Talishar" ] && [ -f "$PROJECT_ROOT/Talishar/docker-compose.yml" ]; then
         if [ "$VERBOSE" = true ]; then
-            echo -e "${BLUE}[-] Parando containers Docker do Talishar...${NC}"
-            docker compose -f "$PROJECT_ROOT/Talishar/docker-compose.yml" down
+            echo -e "${BLUE}[-] Parando containers Docker do Talishar via $DC_CMD...${NC}"
+            $DC_CMD -f "$PROJECT_ROOT/Talishar/docker-compose.yml" down
         else
             echo -ne "${BLUE}[-] Parando backend Talishar (Docker)... ${NC}"
-            docker compose -f "$PROJECT_ROOT/Talishar/docker-compose.yml" down > /dev/null 2>&1
+            $DC_CMD -f "$PROJECT_ROOT/Talishar/docker-compose.yml" down > /dev/null 2>&1
             echo -e "${GREEN}OK${NC}"
         fi
     fi

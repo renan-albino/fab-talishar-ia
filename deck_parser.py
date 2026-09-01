@@ -3,7 +3,7 @@ import json
 import os
 import unicodedata
 
-BASE_DIR = "/home/renan/fab-talishar-ia"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "data", "fab_cards_db.json")
 
 _CARD_DB_CACHE = None
@@ -12,7 +12,7 @@ def load_fab_cards_db() -> dict:
     global _CARD_DB_CACHE
     if _CARD_DB_CACHE is not None:
         return _CARD_DB_CACHE
-    for p in [DB_PATH, "data/fab_cards_db.json", "/home/renan/fab-talishar-ia/data/fab_cards_db.json"]:
+    for p in [DB_PATH, os.path.join(BASE_DIR, "data", "fab_cards_db.json"), "data/fab_cards_db.json"]:
         if os.path.exists(p):
             try:
                 with open(p, "r", encoding="utf-8") as f:
@@ -317,7 +317,27 @@ def parse_deck_text(deck_text: str, default_name: str = "Meu Deck") -> dict:
         "cards": cards
     }
 
-def save_deck_to_workspace(deck_obj: dict, base_dir: str = "/home/renan/fab-talishar-ia") -> dict:
+def extract_hero_from_deck(d: dict, db: dict = None) -> str:
+    """Extrai o nome canônico do Herói de um deck FAB."""
+    if d.get("hero"):
+        return str(d["hero"])
+    cards = d.get("cards", [])
+    if db:
+        for c in cards:
+            cid = c.get("identifier", "")
+            c_info = db.get(cid, {})
+            if c_info.get("slot") == "Hero" or c_info.get("type") == "C":
+                return c_info.get("name", cid.replace("_", " ").title())
+    if cards:
+        first_id = cards[0].get("identifier", "")
+        for prefix in ["betsy", "cindra", "dash", "gravy", "hala", "jarl", "kassai", "mario", "oscilio", "vynnset", "dorinthea", "katsu", "rhinar", "bravo", "fai", "briar", "zen", "nuu", "enigma", "aurora", "florian", "verdance", "arakni", "chane", "prism", "lexi", "oldhim", "dromai", "islander"]:
+            if prefix in first_id.lower():
+                return first_id.replace("_", " ").title()
+    return d.get("name", "Herói")
+
+def save_deck_to_workspace(deck_obj: dict, base_dir: str = None) -> dict:
+    if base_dir is None:
+        base_dir = BASE_DIR
     deck_name = deck_obj.get("name", "Custom_Deck")
     safe_slug = re.sub(r"[^a-zA-Z0-9_]+", "_", deck_name).strip("_").lower()
     if not safe_slug:
@@ -327,7 +347,7 @@ def save_deck_to_workspace(deck_obj: dict, base_dir: str = "/home/renan/fab-tali
     saved_files = []
     
     # Save to decks/ directory
-    for root in [base_dir, ".", "/home/renan/fab-talishar-ia"]:
+    for root in [base_dir, "."]:
         for folder in [os.path.join(root, "Talishar", "decks"), os.path.join(root, "decks")]:
             try:
                 os.makedirs(folder, exist_ok=True)
@@ -354,8 +374,10 @@ def save_deck_to_workspace(deck_obj: dict, base_dir: str = "/home/renan/fab-tali
         "deck": deck_obj
     }
 
-def update_saved_deck(slug: str, new_name: str, new_format: str, cards_list: list, base_dir: str = "/home/renan/fab-talishar-ia") -> dict:
+def update_saved_deck(slug: str, new_name: str, new_format: str, cards_list: list, base_dir: str = None) -> dict:
     """Atualiza as propriedades e cartas de um deck salvo existente."""
+    if base_dir is None:
+        base_dir = BASE_DIR
     deck_obj = {
         "name": new_name,
         "format": new_format.lower(),
@@ -366,7 +388,10 @@ def update_saved_deck(slug: str, new_name: str, new_format: str, cards_list: lis
         delete_saved_deck(slug, base_dir=base_dir)
     return save_deck_to_workspace(deck_obj, base_dir=base_dir)
 
-def list_saved_decks(base_dir: str = "/home/renan/fab-talishar-ia") -> list:
+def list_saved_decks(base_dir: str = None) -> list:
+    if base_dir is None:
+        base_dir = BASE_DIR
+    db = load_fab_cards_db()
     decks_dir = os.path.join(base_dir, "decks")
     if not os.path.exists(decks_dir):
         decks_dir = "decks"
@@ -378,10 +403,12 @@ def list_saved_decks(base_dir: str = "/home/renan/fab-talishar-ia") -> list:
         try:
             with open(path, "r", encoding="utf-8") as f:
                 d = json.load(f)
+                hero = extract_hero_from_deck(d, db)
                 decks.append({
                     "filename": df,
                     "slug": df[:-5],
                     "name": d.get("name", df[:-5]),
+                    "hero": hero,
                     "format": d.get("format", "blitz"),
                     "total_cards": sum(c.get("total", 1) for c in d.get("cards", [])),
                     "data": d
@@ -390,9 +417,11 @@ def list_saved_decks(base_dir: str = "/home/renan/fab-talishar-ia") -> list:
             pass
     return decks
 
-def delete_saved_deck(slug: str, base_dir: str = "/home/renan/fab-talishar-ia") -> bool:
+def delete_saved_deck(slug: str, base_dir: str = None) -> bool:
     """Remove o arquivo JSON do deck do diretório decks/."""
-    for root in [base_dir, ".", "/home/renan/fab-talishar-ia"]:
+    if base_dir is None:
+        base_dir = BASE_DIR
+    for root in [base_dir, "."]:
         deck_path = os.path.join(root, "decks", f"{slug}.json")
         if os.path.exists(deck_path):
             try:
@@ -402,7 +431,9 @@ def delete_saved_deck(slug: str, base_dir: str = "/home/renan/fab-talishar-ia") 
                 print(f"Erro ao remover {deck_path}: {e}")
     return False
 
-def set_active_deck(deck_data: dict, base_dir: str = "/home/renan/fab-talishar-ia"):
+def set_active_deck(deck_data: dict, base_dir: str = None):
+    if base_dir is None:
+        base_dir = BASE_DIR
     deck_str = json.dumps(deck_data, indent=2)
     for root in [base_dir, "."]:
         for main_file in [os.path.join(root, "Talishar", "deck.json"), os.path.join(root, "deck.json")]:
@@ -412,7 +443,9 @@ def set_active_deck(deck_data: dict, base_dir: str = "/home/renan/fab-talishar-i
             except Exception:
                 pass
 
-def load_current_deck(base_dir: str = "/home/renan/fab-talishar-ia") -> dict:
+def load_current_deck(base_dir: str = None) -> dict:
+    if base_dir is None:
+        base_dir = BASE_DIR
     for root in [base_dir, "."]:
         for main_file in [os.path.join(root, "Talishar", "deck.json"), os.path.join(root, "deck.json")]:
             if os.path.exists(main_file):

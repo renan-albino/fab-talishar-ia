@@ -90,20 +90,25 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
 Para permitir que **qualquer pessoa ou IA replique o ambiente em 1 clique em qualquer computador**, o projeto utiliza uma pasta central de templates (`setup_templates/`) e um script de automação (`scripts/prepare_environment.py` / `scripts/prepare_environment.sh`).
 
 ### O que o script de preparação faz automaticamente:
-1. **Criação de Diretórios:** Garante a existência de `data/`, `logs/` e `decks/` com permissões de I/O (`chmod 777`).
-2. **Aplicação de Patches do Backend (`setup_templates/backend/` $\to$ `Talishar/`):**
+1. **Verificação e Auto-reparo de Dependências Python:** Configura o `venv` e verifica a integridade de extensões binárias em C (como NumPy e PyTorch), reinstalando-as automaticamente se arquivos `.so` estiverem corrompidos.
+2. **Garantia dos Repositórios Base (`Talishar` e `Talishar-FE`):** Detecta se as pastas base existem e estão completas (`docker-compose.yml` e `package.json`). Se ausentes, importa do diretório de workspace ou clona automaticamente dos repositórios oficiais do GitHub (`Talishar/Talishar` e `Talishar/Talishar-FE`).
+3. **Criação de Diretórios:** Garante a existência de `data/`, `logs/` e `decks/` com permissões de I/O (`chmod 777`).
+4. **Aplicação de Patches do Backend (`setup_templates/backend/` $\to$ `Talishar/`):**
    - Injeta `AppendGameLog.php` (API de chat em tempo real).
    - Injeta `JoinGame.php` (Handshake do bot e geração de `authKey`).
    - Injeta `CombatDummy.php` (Desativa o auto-pass legado do PHP para ceder prioridade à IA).
    - Injeta `ProcessInput.php` (Tratamento de ações com modo padrão `27`).
-3. **Aplicação de Componentes do Frontend (`setup_templates/frontend/` $\to$ `Talishar-FE/`):**
+5. **Aplicação de Componentes do Frontend (`setup_templates/frontend/` $\to$ `Talishar-FE/`):**
    - Injeta `ChessAdvantageTracker.tsx` e `ChessAdvantageTracker.module.css` no topo do chat.
    - Sincroniza `GameSlice.ts` e `Header.tsx` para suporte a login livre e atalhos de duelo.
-4. **Indexação Oficial de Cartas:**
-   - Executa `extract_card_db.py` e extrai 10.144 cartas do Talishar para `data/fab_cards_db.json`.
-5. **Autoverificação Docker:**
-   - Detecta se os containers `talishar-web-server`, `talishar-mysql-server` e `app_redis` estão ativos e sobe-os automaticamente se necessário.
-6. **Exportação com 1 Comando (`--export-templates`):**
+6. **Autoverificação e Compatibilidade Docker:**
+   - Suporte transparente e automático a **Docker Compose v1 (`docker-compose`)** e **Docker Compose v2 (`docker compose`)**.
+   - Resolução dinâmica de nomes de containers (`talishar_web-server_1` ou `talishar-web-server-1`).
+7. **Indexação Oficial de Cartas:**
+   - Executa `extract_card_db.py` conectando dinamicamente ao container web ativo e extrai 10.144 cartas do Talishar para `data/fab_cards_db.json`.
+8. **Compilação e Validação do Frontend:**
+   - Instala pacotes via `npm` (somente após confirmar a integridade de `package.json`) e valida a compilação com `npx vite build`.
+9. **Exportação com 1 Comando (`--export-templates`):**
    - Caso você ou uma nova IA faça modificações no frontend ou backend, basta rodar `./venv/bin/python scripts/prepare_environment.py --export-templates` para salvar as alterações em `setup_templates/`.
 
 ---
@@ -157,6 +162,17 @@ Para desligar com segurança todos os containers Docker, processos do Dashboard 
 * `./stop.sh --clean-logs` : Finaliza os serviços e limpa arquivos de logs temporários.
 * `./stop.sh --status` : Consulta o status atual dos processos.
 
+### 6. Automação Pré-Commit & Sincronização (`./scripts/sync_and_clean.sh`)
+Para nunca se preocupar em esquecer de sincronizar templates com `setup_templates/` ou limpar logs de partidas antes de enviar commits para o repositório:
+```bash
+# Executa limpeza de logs, exportação de templates e teste de sintaxe:
+./scripts/sync_and_clean.sh
+
+# (Recomendado) Instalar como Git Pre-Commit Hook automático (1 vez só):
+./scripts/sync_and_clean.sh --install-hook
+```
+> **O que o hook pré-commit faz:** A cada `git commit`, encerra processos de teste, higieniza `logs/`, exporta automaticamente alterações em `Talishar/` e `Talishar-FE/` para `setup_templates/`, adiciona-os ao commit (`git add setup_templates/`) e valida a sintaxe do código Python.
+
 ---
 
 ## 📁 Estrutura do Repositório
@@ -177,6 +193,7 @@ Para desligar com segurança todos os containers Docker, processos do Dashboard 
 │   ├── experience_collector.py # Replay Buffer com suporte a distribuições suaves de visitas
 │   └── hero_strategies.py    # Estratégias por Herói com Cache LRU de alta performance
 ├── scripts/
+│   ├── sync_and_clean.sh     # Automação de limpeza, exportação de templates e pré-commit
 │   ├── analyze_ismcts.py     # Analisador local ISMCTS (--dry-run sem servidor)
 │   ├── prepare_environment.sh # Script shell de setup automático
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
@@ -200,7 +217,7 @@ Para desligar com segurança todos os containers Docker, processos do Dashboard 
 
 Todos os baralhos do ecossistema residem exclusivamente em:
 ```text
-/home/renan/fab-talishar-ia/decks/
+<raiz-do-projeto>/decks/
 ```
 - **Fonte Única da Verdade:** Nenhum baralho é duplicado para pastas internas do Talishar. O backend PHP (`CreateGame.php`, `JoinGame.php`), o Dashboard Streamlit e o `bot_client.py` lêem diretamente deste diretório.
 - **Controle pelo Dashboard:** Novos baralhos subidos ou editados pela aba *Gerenciador de Decks* ficam disponíveis instantaneamente para partidas no Frontend e treinos da IA.
@@ -225,6 +242,11 @@ Todos os baralhos do ecossistema residem exclusivamente em:
 
 | Item | Descrição |
 |------|-----------|
+| **Resiliência e Autocura de Ambiente** | `prepare_environment.sh` e `prepare_environment.py` com detecção automática de Docker Compose v1/v2, resolução dinâmica de containers (`talishar_web-server_1` / `talishar-web-server-1`), autocura de extensões C (NumPy/PyTorch) e templates sincronizados em `setup_templates/` |
+| **Correção de Ações & Backend Engine** | Remoção de lock indefinido em `ProcessInput.php` que gerava fatal error no PHP e travava bots em loop de pass; tratamento e validação de respostas HTTP |
+| **Telemetria de Partidas e Identificação Clara** | Turn-by-turn logs com identificação legível de decks, heróis e HP exato por jogador (`Jogador 1 (Betsy) [X HP] vs Jogador 2 (Cindra) [Y HP] | Vez de: ...`), banner de destaque para o vencedor (`🏆 [FIM DE JOGO] VENCEDOR: ...`) e gravação de resumo |
+| **Extração Canônica de Heróis & Decks** | `deck_parser.py` com extração automática do Herói oficial via `fab_cards_db.json`, proteção contra `KeyError: 'hero'` no Dashboard e eliminação de caminhos hardcoded |
+| **Suporte Universal & Caminhos Dinâmicos** | `bot_client.py`, `dashboard.py`, `deck_parser.py` e `frontend_manager.py` utilizam caminhos relativos ao projeto (`BASE_DIR`), viabilizando execução em qualquer máquina sem dependência de caminhos absolutos |
 | **Dashboard ISMCTS em Tempo Real** | Aba *"🌐 Telemetria ISMCTS"* no Streamlit (`dashboard.py`) com gráficos de confiança por fase, evolução de $V_{\text{root}}$ e histórico de votos |
 | **Deck-Aware World Sampling** | Amostragem de mundos determinizados no ISMCTS com filtro de classe via `fab_cards_db.json` para preenchimento realista da mão oculta |
 | **Cache LRU de Prior Shaping** | Memoização de avaliações estáticas de cartas em `hero_strategies.py` com `functools.lru_cache`, acelerando a expansão da árvore MCTS |

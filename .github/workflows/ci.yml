@@ -1,0 +1,67 @@
+name: CI - AI Engine & Frontend Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # 1. Validação da Engine de IA e Scripts Python
+  python-ai-tests:
+    name: Python AI & Syntax Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate Python Syntax
+        run: |
+          python -m py_compile *.py ai/*.py scripts/*.py
+
+      - name: Run ISMCTS Engine Dry-Run (Local Simulation)
+        run: |
+          python scripts/analyze_ismcts.py --dry-run
+
+      - name: Check Template Synchronization
+        run: |
+          python scripts/prepare_environment.py --export-templates
+          git diff --exit-code setup_templates/ || (echo "ERRO: setup_templates/ está desatualizado! Execute ./scripts/sync_and_clean.sh localmente." && exit 1)
+
+  # 2. Validação de Compilação do Frontend Vite
+  frontend-build:
+    name: Talishar Frontend (Vite) Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'Talishar-FE/package-lock.json'
+
+      - name: Install NPM Packages & Build
+        run: |
+          cd Talishar-FE
+          npm ci || npm install
+          npx vite build

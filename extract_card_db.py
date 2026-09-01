@@ -38,9 +38,41 @@ foreach ($cardIDs as $id) {
 echo json_encode($db);
 """
 
-print("Extracting card database from Talishar Docker...")
+def get_web_container():
+    # 1. Search running containers with web-server in name
+    try:
+        res = subprocess.check_output(["docker", "ps", "--filter", "name=web-server", "--format", "{{.Names}}"], text=True)
+        containers = [c.strip() for c in res.strip().splitlines() if c.strip()]
+        if containers:
+            return containers[0]
+    except Exception:
+        pass
+
+    # 2. Test common container names
+    for cand in ["talishar_web-server_1", "talishar-web-server-1", "talishar-web-server", "web-server"]:
+        try:
+            r = subprocess.run(["docker", "inspect", cand], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if r.returncode == 0:
+                return cand
+        except Exception:
+            pass
+
+    # 3. Search any running container related to talishar
+    try:
+        res = subprocess.check_output(["docker", "ps", "--format", "{{.Names}}"], text=True)
+        for n in res.strip().splitlines():
+            name = n.strip()
+            if ("talishar" in name.lower() or "web" in name.lower()) and not any(x in name.lower() for x in ["mysql", "redis", "admin"]):
+                return name
+    except Exception:
+        pass
+
+    return "talishar_web-server_1"
+
+container_name = get_web_container()
+print(f"Extracting card database from Talishar Docker (container: {container_name})...")
 res = subprocess.run(
-    ["docker", "exec", "-i", "talishar-web-server-1", "php"],
+    ["docker", "exec", "-i", container_name, "php"],
     input=php_code.encode("utf-8"),
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE
@@ -53,4 +85,7 @@ if res.returncode == 0:
         json.dump(data, f, indent=2)
     print(f"✅ Sucesso! {len(data)} cartas catalogadas em data/fab_cards_db.json")
 else:
-    print("❌ Erro:", res.stderr.decode("utf-8"))
+    err = res.stderr.decode("utf-8")
+    print("❌ Erro:", err)
+    # Don't fail silently if container not running or failed
+    sys.exit(1)

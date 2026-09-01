@@ -8,6 +8,8 @@ from typing import Dict, Any, Optional
 
 BACKEND_URL = "http://localhost:8080/game"
 FRONTEND_URL = "http://localhost:3000"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PYTHON_BIN = os.path.join(BASE_DIR, "venv", "bin", "python")
 
 def is_backend_running() -> bool:
     try:
@@ -25,7 +27,9 @@ def is_frontend_running() -> bool:
 
 def start_backend() -> bool:
     try:
-        subprocess.run(["bash", "-c", "cd /home/renan/fab-talishar-ia/Talishar && ln -sfn ../decks decks && docker compose up -d"], check=True)
+        talishar_dir = os.path.join(BASE_DIR, "Talishar")
+        cmd = "docker compose" if subprocess.run(["which", "docker-compose"], capture_output=True).returncode != 0 else "docker-compose"
+        subprocess.run(["bash", "-c", f"cd {talishar_dir} && ln -sfn ../decks decks && {cmd} up -d"], check=True)
         time.sleep(3)
         return is_backend_running()
     except Exception as e:
@@ -36,11 +40,12 @@ def start_frontend() -> bool:
     if is_frontend_running():
         return True
     try:
-        os.makedirs("/home/renan/fab-talishar-ia/logs", exist_ok=True)
-        log_f = open("/home/renan/fab-talishar-ia/logs/frontend.log", "a")
+        logs_dir = os.path.join(BASE_DIR, "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        log_f = open(os.path.join(logs_dir, "frontend.log"), "a")
         subprocess.Popen(
             ["npx", "vite", "--port", "3000", "--host"],
-            cwd="/home/renan/fab-talishar-ia/Talishar-FE",
+            cwd=os.path.join(BASE_DIR, "Talishar-FE"),
             stdout=log_f,
             stderr=log_f,
             start_new_session=True
@@ -58,7 +63,7 @@ _watcher_thread = None
 _active_bot_procs = {}
 
 def _ai_watcher_loop():
-    games_dir = "/home/renan/fab-talishar-ia/Talishar/Games"
+    games_dir = os.path.join(BASE_DIR, "Talishar", "Games")
     while True:
         try:
             if os.path.exists(games_dir):
@@ -76,19 +81,20 @@ def _ai_watcher_loop():
                         except Exception:
                             continue
 
-                        os.makedirs("/home/renan/fab-talishar-ia/logs", exist_ok=True)
-                        bot_log_path = f"/home/renan/fab-talishar-ia/logs/Human_vs_Bot_{g_id}.log"
+                        logs_dir = os.path.join(BASE_DIR, "logs")
+                        os.makedirs(logs_dir, exist_ok=True)
+                        bot_log_path = os.path.join(logs_dir, f"Human_vs_Bot_{g_id}.log")
                         out_f = open(bot_log_path, "a")
                         proc = subprocess.Popen(
                             [
-                                "/home/renan/fab-talishar-ia/venv/bin/python",
-                                "/home/renan/fab-talishar-ia/bot_client.py",
+                                PYTHON_BIN,
+                                os.path.join(BASE_DIR, "bot_client.py"),
                                 "--room", str(g_id),
                                 "--deck", f"decks/{bot_deck}.json",
                                 "--role", "join",
                                 "--name", "AIMaster_Bot"
                             ],
-                            cwd="/home/renan/fab-talishar-ia",
+                            cwd=BASE_DIR,
                             stdout=out_f,
                             stderr=out_f,
                             start_new_session=True
@@ -157,19 +163,20 @@ def create_human_vs_bot_match(
         return {"success": False, "error": "Nome do jogo invalido retornado pelo Talishar."}
 
     # 2. Conecta o Bot como Player 2 na mesma sala em background
-    os.makedirs("logs", exist_ok=True)
-    bot_log_path = f"logs/Human_vs_Bot_{game_name}.log"
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    bot_log_path = os.path.join(logs_dir, f"Human_vs_Bot_{game_name}.log")
     out_f = open(bot_log_path, "w")
 
     bot_proc = subprocess.Popen(
         [
-            "/home/renan/fab-talishar-ia/venv/bin/python", "bot_client.py",
+            PYTHON_BIN, os.path.join(BASE_DIR, "bot_client.py"),
             "--room", game_name,
             "--deck", f"decks/{bot_deck_slug}.json",
             "--role", "join",
             "--name", "AIMaster_Bot"
         ],
-        cwd="/home/renan/fab-talishar-ia",
+        cwd=BASE_DIR,
         stdout=out_f,
         stderr=out_f
     )

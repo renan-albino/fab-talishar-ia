@@ -21,6 +21,15 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Detect docker-compose vs docker compose
+if docker compose version >/dev/null 2>&1; then
+    DC_CMD="docker compose"
+elif command -v docker-compose >/dev/null 2>&1; then
+    DC_CMD="docker-compose"
+else
+    DC_CMD="docker compose"
+fi
+
 show_help() {
     cat << EOF
 Uso: ./start.sh [OPÇÕES]
@@ -45,7 +54,7 @@ EOF
 check_status() {
     echo -e "${BLUE}=== Status dos Serviços FaB AI ===${NC}"
     
-    if docker compose -f "$PROJECT_ROOT/Talishar/docker-compose.yml" ps 2>/dev/null | grep -q "web-server"; then
+    if $DC_CMD -f "$PROJECT_ROOT/Talishar/docker-compose.yml" ps 2>/dev/null | grep -q "web-server"; then
         echo -e "🐳 Docker Talishar:       ${GREEN}RODANDO${NC} (http://localhost:8080)"
     else
         echo -e "🐳 Docker Talishar:       ${RED}PARADO${NC}"
@@ -123,11 +132,11 @@ if [ "$START_DOCKER" = true ]; then
     chmod -R 777 "$PROJECT_ROOT/Talishar/HostFiles" "$PROJECT_ROOT/Talishar/Games" "$PROJECT_ROOT/Talishar/AccountFiles" "$PROJECT_ROOT/Talishar/APIKeys" 2>/dev/null || true
 
     if [ "$VERBOSE" = true ]; then
-        echo -e "${BLUE}[+] Subindo containers Docker do Talishar...${NC}"
-        docker compose -f "$PROJECT_ROOT/Talishar/docker-compose.yml" up -d
+        echo -e "${BLUE}[+] Subindo containers Docker do Talishar via $DC_CMD...${NC}"
+        $DC_CMD -f "$PROJECT_ROOT/Talishar/docker-compose.yml" up -d
     else
         echo -ne "${BLUE}[+] Subindo backend Talishar (Docker)... ${NC}"
-        docker compose -f "$PROJECT_ROOT/Talishar/docker-compose.yml" up -d > /dev/null 2>&1
+        $DC_CMD -f "$PROJECT_ROOT/Talishar/docker-compose.yml" up -d > /dev/null 2>&1
         echo -e "${GREEN}OK${NC}"
     fi
 

@@ -63,6 +63,46 @@ def log_success(msg):
 def log_warn(msg):
     print(f"[!] {msg}")
 
+def get_docker_compose_cmd():
+    try:
+        r = subprocess.run(["docker", "compose", "version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if r.returncode == 0:
+            return ["docker", "compose"]
+    except Exception:
+        pass
+    if shutil.which("docker-compose"):
+        return ["docker-compose"]
+    return ["docker", "compose"]
+
+def ensure_talishar_repositories():
+    log("Verificando integridade dos repositórios Talishar e Talishar-FE...")
+    
+    # 1. Backend Talishar
+    if not os.path.exists(os.path.join(TALISHAR_DIR, "docker-compose.yml")):
+        log_warn("docker-compose.yml não encontrado em Talishar/.")
+        workspace_backend = os.path.join(BASE_DIR, "talishar_workspace", "Talishar")
+        if os.path.exists(os.path.join(workspace_backend, "docker-compose.yml")):
+            log("Sincronizando Talishar a partir de talishar_workspace/...")
+            shutil.copytree(workspace_backend, TALISHAR_DIR, dirs_exist_ok=True)
+            log_success("Backend Talishar importado com sucesso.")
+        else:
+            log("Clonando repositório oficial do Talishar...")
+            subprocess.run(["git", "clone", "--depth", "1", "https://github.com/Talishar/Talishar.git", TALISHAR_DIR], check=True)
+            log_success("Repositório oficial Talishar clonado com sucesso.")
+
+    # 2. Frontend Talishar-FE
+    if not os.path.exists(os.path.join(TALISHAR_FE_DIR, "package.json")):
+        log_warn("package.json não encontrado em Talishar-FE/.")
+        workspace_frontend = os.path.join(BASE_DIR, "talishar_workspace", "Talishar-FE")
+        if os.path.exists(os.path.join(workspace_frontend, "package.json")):
+            log("Sincronizando Talishar-FE a partir de talishar_workspace/...")
+            shutil.copytree(workspace_frontend, TALISHAR_FE_DIR, dirs_exist_ok=True)
+            log_success("Frontend Talishar-FE importado com sucesso.")
+        else:
+            log("Clonando repositório oficial do Talishar-FE...")
+            subprocess.run(["git", "clone", "--depth", "1", "https://github.com/Talishar/Talishar-FE.git", TALISHAR_FE_DIR], check=True)
+            log_success("Repositório oficial Talishar-FE clonado com sucesso.")
+
 def ensure_directories():
     log("Verificando estrutura de diretórios do projeto...")
     for d in [DATA_DIR, LOGS_DIR, DECKS_DIR]:
@@ -124,7 +164,53 @@ def export_active_to_templates():
             shutil.copy2(src_f, dst_f)
             log(f"  -> Template Frontend exportado: setup_templates/frontend/{dst_rel}")
 
+    check_unmapped_changes()
     log_success("Exportação de templates concluída com sucesso.")
+
+def check_unmapped_changes():
+    """Detecta arquivos novos ou componentes críticos em Talishar/ e Talishar-FE/ que ainda não estão mapeados."""
+    unmapped = []
+    
+    # 1. Backend (foco em APIs customizadas e lógica AI)
+    if os.path.exists(os.path.join(TALISHAR_DIR, ".git")):
+        try:
+            res = subprocess.run(["git", "-C", TALISHAR_DIR, "status", "--porcelain"], capture_output=True, text=True)
+            mapped_srcs = {src for _, src in BACKEND_MAPPINGS}
+            for line in res.stdout.splitlines():
+                status = line[:2]
+                fpath = line[3:].strip()
+                if fpath.startswith(("Games/", "HostFiles/", "logs/", "decks/", "deck.json", "game/", "fix_and_start", "composer.lock")):
+                    continue
+                if (status == "??" or fpath.startswith(("APIs/", "AI/"))) and fpath not in mapped_srcs:
+                    unmapped.append(("Backend", fpath))
+        except Exception:
+            pass
+
+    # 2. Frontend (foco em rotas, features e componentes customizados)
+    if os.path.exists(os.path.join(TALISHAR_FE_DIR, ".git")):
+        try:
+            res = subprocess.run(["git", "-C", TALISHAR_FE_DIR, "status", "--porcelain"], capture_output=True, text=True)
+            mapped_srcs = {src for _, src in FRONTEND_MAPPINGS}
+            for line in res.stdout.splitlines():
+                status = line[:2]
+                fpath = line[3:].strip()
+                if fpath.startswith(("build/", "dist/", "node_modules/", "package-lock.json")):
+                    continue
+                if (status == "??" or fpath.startswith("src/")) and fpath not in mapped_srcs:
+                    unmapped.append(("Frontend", fpath))
+        except Exception:
+            pass
+
+    if unmapped:
+        log_warn(f"Detectados {len(unmapped)} arquivos customizados não mapeados em setup_templates/:")
+        for kind, fpath in unmapped[:10]:
+            print(f"    - [{kind}] {fpath}")
+        if len(unmapped) > 10:
+            print(f"    ... e mais {len(unmapped) - 10} arquivo(s).")
+        print("    Para incluir novos arquivos permanentes, adicione-os a BACKEND_MAPPINGS ou FRONTEND_MAPPINGS em scripts/prepare_environment.py.")
+    else:
+        log_success("Todos os arquivos customizados em Talishar e Talishar-FE estão devidamente mapeados.")
+    return unmapped
 
 def fix_permissions():
     log("Ajustando permissões de arquivos e pastas no Talishar...")
@@ -157,12 +243,16 @@ def check_docker():
     try:
         res = subprocess.check_output(["docker", "ps", "--format", "{{.Names}}"], text=True)
         running = [name.strip() for name in res.strip().splitlines() if name.strip()]
-        if any("talishar" in n or "web" in n for n in running):
+        if any("talishar" in n.lower() and "web" in n.lower() for n in running):
             log_success(f"Containers ativos: {', '.join(running)}")
         else:
-            log_warn("Containers Docker do Talishar não detectados. Subindo via docker compose...")
-            if os.path.exists(TALISHAR_DIR):
-                subprocess.run(["docker", "compose", "up", "-d"], cwd=TALISHAR_DIR, check=False)
+            log_warn("Containers Docker do Talishar não detectados. Subindo backend...")
+            if os.path.exists(TALISHAR_DIR) and os.path.exists(os.path.join(TALISHAR_DIR, "docker-compose.yml")):
+                dc_cmd = get_docker_compose_cmd()
+                subprocess.run(dc_cmd + ["up", "-d"], cwd=TALISHAR_DIR, check=False)
+                log_success("Comando de inicialização Docker disparado.")
+            else:
+                log_warn("Talishar/docker-compose.yml não disponível.")
     except Exception as e:
         log_warn(f"Docker não disponível ou aviso de verificação: {e}")
 
@@ -180,11 +270,12 @@ def main():
         return
 
     ensure_directories()
+    ensure_talishar_repositories()
     apply_custom_templates()
     fix_permissions()
+    check_docker()
     sync_card_database()
     verify_decks()
-    check_docker()
     print("==================================================")
     log_success("Ambiente preparado com sucesso!")
     print("Para rodar o projeto:")
