@@ -233,12 +233,11 @@ def create_model(
     """
     Cria ou carrega um modelo FaBPolicyValueNetwork.
 
-    A arquitetura é lida automaticamente do SETTINGS (hardware-aware).
-    Se o checkpoint existir mas a arquitetura mudou, tenta carregamento
-    relaxado (strict=False) para reaproveitar pesos compatíveis.
+    A arquitetura é auto-detectada a partir do checkpoint se existente,
+    garantindo que checkpoints treinados em GPU carreguem 100% de seus pesos
+    mesmo quando executados em máquinas CPU-only.
     """
     dev = torch.device(device) if device else get_device()
-    model = FaBPolicyValueNetwork().to(dev)
 
     # Tenta o checkpoint fornecido; se não, tenta o padrão do SETTINGS
     if not checkpoint_path:
@@ -248,16 +247,37 @@ def create_model(
         except Exception:
             checkpoint_path = os.path.join("data", "checkpoints", "teacher_latest.pt")
 
+    loaded_state_dict = None
+    inferred_h = None
+    inferred_blocks = None
+
     if checkpoint_path and os.path.exists(checkpoint_path):
         try:
-            state_dict = torch.load(checkpoint_path, map_location=dev)
-            model.load_state_dict(state_dict, strict=strict_load)
-            print(f"[Modelo] ✓ Checkpoint carregado: {checkpoint_path}")
+            loaded_state_dict = torch.load(checkpoint_path, map_location=dev)
+            if isinstance(loaded_state_dict, dict):
+                # Detecta hidden_dim pelo shape do peso da camada inicial: (hidden_dim, state_dim)
+                if "input_layer.0.weight" in loaded_state_dict:
+                    inferred_h = loaded_state_dict["input_layer.0.weight"].shape[0]
+                # Detecta num_res_blocks contando blocos residuais
+                blocks = {k.split(".")[1] for k in loaded_state_dict if k.startswith("res_blocks.") and ".fc1.weight" in k}
+                if blocks:
+                    inferred_blocks = len(blocks)
+        except Exception:
+            pass
+
+    if inferred_h and inferred_blocks:
+        model = FaBPolicyValueNetwork(hidden_dim=inferred_h, num_res_blocks=inferred_blocks).to(dev)
+    else:
+        model = FaBPolicyValueNetwork().to(dev)
+
+    if loaded_state_dict:
+        try:
+            model.load_state_dict(loaded_state_dict, strict=strict_load)
+            print(f"[Modelo] ✓ Checkpoint carregado (100%): {checkpoint_path}")
         except RuntimeError as e:
             # Arquitetura mudou — tenta carregamento parcial
             try:
-                state_dict = torch.load(checkpoint_path, map_location=dev)
-                compatible = {k: v for k, v in state_dict.items()
+                compatible = {k: v for k, v in loaded_state_dict.items()
                               if k in model.state_dict() and
                               model.state_dict()[k].shape == v.shape}
                 model.load_state_dict(compatible, strict=False)
@@ -268,7 +288,8 @@ def create_model(
         except Exception as e:
             print(f"[Modelo] ✗ Erro ao carregar checkpoint: {e}")
     else:
-        print(f"[Modelo] Iniciando com pesos aleatórios — nenhum checkpoint em: {checkpoint_path}")
+        if checkpoint_path and not os.path.exists(checkpoint_path):
+            print(f"[Modelo] Iniciando com pesos aleatórios — nenhum checkpoint em: {checkpoint_path}")
 
     print(f"[Modelo] {model.model_info()}")
     return model, dev

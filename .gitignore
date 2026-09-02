@@ -22,6 +22,7 @@ data/
 *.pth
 *.bin
 *.npz
+*.tar.gz
 
 # Logs e Arquivos Temporários
 logs/
