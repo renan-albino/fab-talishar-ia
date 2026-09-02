@@ -927,26 +927,36 @@ with tab_decks:
         st.markdown("Cole abaixo o texto exportado diretamente do **FaBrary** (ou FabDB):")
         col_imp1, col_imp2 = st.columns([3, 2])
         
-        # Manter texto em session_state caso ocorra erro de validação
-        if "import_text_val" not in st.session_state:
-            st.session_state["import_text_val"] = ""
-        if "import_name_val" not in st.session_state:
-            st.session_state["import_name_val"] = ""
+        # Controle de versão do formulário para garantir limpeza confiável dos campos após importação
+        if "import_form_id" not in st.session_state:
+            st.session_state["import_form_id"] = 0
         if "import_errors" not in st.session_state:
             st.session_state["import_errors"] = []
+
+        form_id = st.session_state["import_form_id"]
 
         with col_imp1:
             deck_text_input = st.text_area(
                 "Texto do Deck (FaBrary / FabDB):", height=230,
-                value=st.session_state["import_text_val"],
+                key=f"deck_import_text_{form_id}",
                 placeholder="""Name: Calling: Hamburg 1st 🇩🇪\nHero: Dash I/O\nFormat: Classic Constructed\n\nArena cards\n1x Achilles Accelerator\n1x Symbiosis Shot\n\nDeck cards\n3x Backup Protocol: RED (red)\n3x Zero to Sixty (red)"""
             )
-            col_b1, col_b2 = st.columns([2, 1])
+            col_b1, col_b2, col_b3 = st.columns([3, 2, 1])
             with col_b1:
-                custom_name = st.text_input("Nome Customizado do Deck (opcional):", value=st.session_state["import_name_val"], placeholder="Ex: Dash CC Pro")
+                custom_name = st.text_input(
+                    "Nome Customizado do Deck (opcional):",
+                    key=f"deck_import_name_{form_id}",
+                    placeholder="Ex: Dash CC Pro"
+                )
             with col_b2:
                 st.write(""); st.write("")
                 btn_save = st.button("💾 Importar e Validar Deck", type="primary", use_container_width=True)
+            with col_b3:
+                st.write(""); st.write("")
+                if st.button("🧹 Limpar", use_container_width=True, help="Limpa o texto e erros do formulário"):
+                    st.session_state["import_form_id"] = form_id + 1
+                    st.session_state["import_errors"] = []
+                    st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
             if btn_save:
                 if deck_text_input and deck_text_input.strip():
@@ -956,14 +966,12 @@ with tab_decks:
                         
                     is_valid, errors, meta_info = validate_deck_against_db(parsed)
                     if not is_valid:
-                        st.session_state["import_text_val"] = deck_text_input
-                        st.session_state["import_name_val"] = custom_name
                         st.session_state["import_errors"] = errors
                         st.toast("⚠️ Inconsistências encontradas no Deck!", icon="⚠️")
                     else:
                         res = save_deck_to_workspace(parsed)
-                        st.session_state["import_text_val"] = ""
-                        st.session_state["import_name_val"] = ""
+                        # Incrementa form_id para resetar os campos de texto no Streamlit
+                        st.session_state["import_form_id"] = form_id + 1
                         st.session_state["import_errors"] = []
                         st.session_state["last_imported_deck"] = parsed
                         st.toast(f"✅ Deck '{parsed['name']}' ({parsed['format'].upper()}) importado com sucesso!", icon="🎉")
