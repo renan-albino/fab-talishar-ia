@@ -1,0 +1,158 @@
+{
+  "name": "Teklovossen",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "teklovossen_esteemed_magnate",
+      "total": 1
+    },
+    {
+      "identifier": "adaptive_alpha_mold",
+      "total": 3
+    },
+    {
+      "identifier": "adaptive_dissolver",
+      "total": 3
+    },
+    {
+      "identifier": "synapse_sparkcap",
+      "total": 1
+    },
+    {
+      "identifier": "teklo_leveler",
+      "total": 1
+    },
+    {
+      "identifier": "viziertronic_model_i",
+      "total": 1
+    },
+    {
+      "identifier": "command_and_conquer_red",
+      "total": 3
+    },
+    {
+      "identifier": "fabricate_red",
+      "total": 1
+    },
+    {
+      "identifier": "fate_foreseen_red",
+      "total": 3
+    },
+    {
+      "identifier": "fiddlers_green_red",
+      "total": 3
+    },
+    {
+      "identifier": "ghost_protocol_architect_red",
+      "total": 3
+    },
+    {
+      "identifier": "oasis_respite_red",
+      "total": 3
+    },
+    {
+      "identifier": "scrap_trader_red",
+      "total": 2
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "sigil_of_solace_red",
+      "total": 3
+    },
+    {
+      "identifier": "singularity_red",
+      "total": 1
+    },
+    {
+      "identifier": "sink_below_red",
+      "total": 3
+    },
+    {
+      "identifier": "terminator_tank_red",
+      "total": 3
+    },
+    {
+      "identifier": "war_machine_red",
+      "total": 3
+    },
+    {
+      "identifier": "arcbane_grasp_blue",
+      "total": 1
+    },
+    {
+      "identifier": "cognition_nodes_blue",
+      "total": 1
+    },
+    {
+      "identifier": "evo_beta_base_arms_blue",
+      "total": 2
+    },
+    {
+      "identifier": "evo_beta_base_chest_blue",
+      "total": 1
+    },
+    {
+      "identifier": "evo_beta_base_head_blue",
+      "total": 1
+    },
+    {
+      "identifier": "evo_beta_base_legs_blue",
+      "total": 1
+    },
+    {
+      "identifier": "evo_heartdrive_blue",
+      "total": 1
+    },
+    {
+      "identifier": "evo_magneto_blue",
+      "total": 1
+    },
+    {
+      "identifier": "evo_speedslip_blue",
+      "total": 1
+    },
+    {
+      "identifier": "evo_steel_soul_controller_blue",
+      "total": 3
+    },
+    {
+      "identifier": "evo_steel_soul_memory_blue",
+      "total": 3
+    },
+    {
+      "identifier": "evo_steel_soul_processor_blue",
+      "total": 3
+    },
+    {
+      "identifier": "evo_steel_soul_tower_blue",
+      "total": 3
+    },
+    {
+      "identifier": "ghost_protocol_mainframe_blue",
+      "total": 3
+    },
+    {
+      "identifier": "liquid_cooled_mayhem_blue",
+      "total": 2
+    },
+    {
+      "identifier": "ripple_away_blue",
+      "total": 3
+    },
+    {
+      "identifier": "scrap_compactor_blue",
+      "total": 1
+    },
+    {
+      "identifier": "sirens_of_safe_harbor_blue",
+      "total": 3
+    },
+    {
+      "identifier": "steel_street_enforcement_blue",
+      "total": 3
+    }
+  ]
+}

@@ -17,6 +17,7 @@ Motor de Busca (v2):
 
 import os
 import re
+import json
 import numpy as np
 import torch
 from typing import Dict, List, Optional, Tuple, Any
@@ -25,6 +26,27 @@ from .hero_strategies import get_hero_strategy, HeroStrategy
 from .model import FaBPolicyValueNetwork, create_model, get_device
 from .mcts import MCTSEngine, ISMCTSEngine
 from .ismcts_logger import ISMCTSLogger
+
+_FAB_CARDS_DB = None
+
+def _get_cards_db() -> dict:
+    global _FAB_CARDS_DB
+    if _FAB_CARDS_DB is None:
+        db_paths = [
+            "data/fab_cards_db.json",
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "fab_cards_db.json")
+        ]
+        for p in db_paths:
+            if os.path.exists(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        _FAB_CARDS_DB = json.load(f)
+                    break
+                except Exception:
+                    pass
+        if _FAB_CARDS_DB is None:
+            _FAB_CARDS_DB = {}
+    return _FAB_CARDS_DB
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -548,35 +570,33 @@ class PolicyEngine:
         Seleciona a melhor carta para colocar no Arsenal no fim do turno.
         
         Regra Oficial de FaB (CR 3.1.5): Cartas no Arsenal NÃO podem ser dadas pitch.
-        Portanto, colocar cartas azuis de pitch puro no Arsenal é uma falha grave ("tranca" o slot).
-        Prioridade: Ataques Vermelhos Poderosos > Reações Defensivas/Ofensivas > Instants > Cartas de Custo 0.
+        Portanto, colocar cartas de recurso (R), gemas ou pitch puro no Arsenal tranca o slot.
+        Se nenhuma carta for taticamente vantajosa ou todas forem recursos, retorna None (passar).
         """
         hand = state.get("playerHand", [])
         if not hand:
             return None
 
-        hand_info = []
+        cards_db = _get_cards_db()
+        valid_candidates = []
+
         for c in hand:
             info = self.extract_card_info(c)
+            c_name = info["name"].lower()
             c_id = info["actionDataOverride"] or info["name"]
-            
-            score = float(info["power"])
-            
-            # Bônus massivo para cartas vermelhas (Pitch 1) — ideais para serem jogadas do Arsenal
-            if info["pitch"] == 1:
-                score += 5.0
-            # Penalidade severa para cartas azuis (Pitch 3) — devem ficar na mão para gerar pitch
-            elif info["pitch"] == 3:
-                score -= 6.0
+            db_entry = cards_db.get(c_name, {})
 
-            # Bônus para cartas com Go Again ou custos baixos
-            if info["has_go_again"]:
-                score += 2.0
-            if info["cost"] == 0:
-                score += 1.5
+            # Avaliação polimórfica via HeroStrategy (com poda estrita de tipo R e Gem)
+            score = self.strategy.evaluate_arsenal_card(info, db_entry)
 
-            hand_info.append((score, info["name"], c_id))
+            # Só considera cartas com score positivo (vantajosas de verdade para o próximo turno)
+            if score > 0:
+                valid_candidates.append((score, info["name"], c_id))
 
-        hand_info.sort(key=lambda x: x[0], reverse=True)
-        best = hand_info[0]
+        if not valid_candidates:
+            # Poda estrita: se todas são recursos ou prejudicariam o jogo -> NÃO ARSENALA NADA
+            return None
+
+        valid_candidates.sort(key=lambda x: x[0], reverse=True)
+        best = valid_candidates[0]
         return best[1], best[2]

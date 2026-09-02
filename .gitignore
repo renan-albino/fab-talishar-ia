@@ -28,6 +28,7 @@ data/
 logs/
 *.log
 .dashboard.pid
+deck.json
 
 # IDEs e Sistema Operacional
 .vscode/

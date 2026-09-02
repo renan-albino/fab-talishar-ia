@@ -119,7 +119,7 @@ $PY_BIN scripts/prepare_environment.py --export-templates
 
 # 4. Validar sintaxe Python de todos os scripts
 echo -e "${BLUE}[4/5] Validando sintaxe do código Python...${NC}"
-$PY_BIN -m py_compile *.py ai/*.py scripts/*.py
+$PY_BIN -m py_compile *.py ai/*.py scripts/*.py tests/*.py
 echo -e "${GREEN}[OK] Sintaxe de todos os módulos Python validada sem erros!${NC}"
 
 # 5. Adicionar setup_templates/ ao stage do Git se dentro de repositório
