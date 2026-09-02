@@ -688,11 +688,11 @@ with tab_gpu:
                 key="train_lr"
             )
             mcts_sims = st.slider(
-                "Simulações MCTS por Jogada:",
+                "Simulações ISMCTS / MCTS por Jogada:",
                 min_value=5,
                 max_value=200,
                 key="train_mcts_sims",
-                help="Profundidade da busca ISMCTS. Mais simulações aumentam a qualidade tática das partidas."
+                help="Profundidade da busca na árvore. O motor utiliza ISMCTS (Information Set MCTS) simulando múltiplos mundos determinizados quando o oponente tem cartas ocultas na mão, e MCTS padrão quando a informação é completa."
             )
             buffer_cap = st.select_slider(
                 "Capacidade do Replay Buffer:",

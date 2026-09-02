@@ -196,13 +196,18 @@ class GPUTrainingOrchestrator:
             batch_rooms: List[tuple] = []
             active_procs: List[tuple] = []
 
+            mcts_sims_val = self.config.get("mcts_sims", 25)
+            dev_val = self.config.get("device", "cuda:0")
+
             for _ in range(num_workers):
                 d1, d2 = self._next_deck_pair(decks_pool)
                 room_id = f"Train_{uuid.uuid4().hex[:8]}"
                 p1 = subprocess.Popen(
                     [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
                      "--room", room_id, "--deck", f"decks/{d1}.json",
-                     "--role", "host",  "--name", "Bot1"],
+                     "--role", "host",  "--name", "Bot1",
+                     "--mcts-sims", str(mcts_sims_val),
+                     "--device", str(dev_val)],
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
@@ -211,7 +216,9 @@ class GPUTrainingOrchestrator:
                 p2 = subprocess.Popen(
                     [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
                      "--room", room_id, "--deck", f"decks/{d2}.json",
-                     "--role", "join",  "--name", "Bot2"],
+                     "--role", "join",  "--name", "Bot2",
+                     "--mcts-sims", str(mcts_sims_val),
+                     "--device", str(dev_val)],
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,

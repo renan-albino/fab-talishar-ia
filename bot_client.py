@@ -9,7 +9,7 @@ from ai.policy_engine import PolicyEngine
 TALISHAR_API_URL = "http://localhost:8080/game"
 
 class FabBotClient:
-    def __init__(self, room_id: str, deck_url: str, role: str, player_name: str):
+    def __init__(self, room_id: str, deck_url: str, role: str, player_name: str, mcts_sims: int = None, device: str = None):
         self.room_id = room_id
         self.deck_url = deck_url
         self.role = role
@@ -18,10 +18,17 @@ class FabBotClient:
         self.session = requests.Session()
         self.game_id = None
         self.player_id = None
+        self.mcts_sims = mcts_sims
+        self.device = device
+        self.use_gpu = (self.device != "cpu") if self.device else True
         self.log_file = f"logs/{self.room_id}_{self.player_name}_debug.log"
         self.match_log_file = f"logs/{self.room_id}_match_feed.log"
         self.deck_format = "blitz"
-        self.policy_engine = PolicyEngine(model_path="data/model_latest.pt" if os.path.exists("data/model_latest.pt") else None)
+        self.policy_engine = PolicyEngine(
+            model_path="data/model_latest.pt" if os.path.exists("data/model_latest.pt") else None,
+            num_mcts_sims=self.mcts_sims,
+            use_gpu=self.use_gpu
+        )
         self.metrics = {"health": 20, "opp_health": 20, "card_advantage": 0, "status": "Iniciando", "phase": "pre-game"}
         self.trajectory = []
         self.clean_deck = os.path.basename(self.deck_url).replace(".json", "") if self.deck_url else "default_deck"
@@ -594,7 +601,12 @@ class FabBotClient:
         with open(f"logs/{self.room_id}_{self.player_name}.json", "w") as f:
             json.dump({"metrics": self.metrics}, f)
 
-        self.policy_engine = PolicyEngine(hero_name=hero, room_id=self.room_id)
+        self.policy_engine = PolicyEngine(
+            hero_name=hero,
+            room_id=self.room_id,
+            num_mcts_sims=self.mcts_sims,
+            use_gpu=self.use_gpu
+        )
         self.policy_engine.update_room_id(room_id=self.room_id, hero_name=hero)
         self.log(f"[SIDEBOARD CONFIRMADO] Jogador {self.player_id}: Hero={hero} | Equip: [H:{head}, C:{chest}, A:{arms}, L:{legs}, W:{weapons}] | Deck={len(flat_deck)} cartas | Inv={len(inv)} itens.")
         return True
@@ -1276,10 +1288,12 @@ if __name__ == '__main__':
     parser.add_argument('--deck', required=True)
     parser.add_argument('--role', choices=['host', 'join'], required=True)
     parser.add_argument('--name', required=True)
+    parser.add_argument('--mcts-sims', type=int, default=None)
+    parser.add_argument('--device', type=str, default=None)
     args = parser.parse_args()
 
     with open(f'logs/{args.room}_{args.name}_debug.log', 'w') as f:
         f.write('--- INICIO HTTP ---\n')
     
-    client = FabBotClient(args.room, args.deck, args.role, args.name)
+    client = FabBotClient(args.room, args.deck, args.role, args.name, mcts_sims=args.mcts_sims, device=args.device)
     client.run_loop()
