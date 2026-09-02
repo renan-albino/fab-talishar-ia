@@ -1,35 +1,13 @@
 {
-  "total_games": 1217,
-  "samples_collected": 100000,
-  "epochs_completed": 355,
-  "policy_loss": 0.0236,
-  "value_loss": 0.4821,
-  "total_loss": 0.5057,
-  "active_matchup": "jarl vs kassai (+4 partidas)",
-  "last_summary": "═══════════════════════════════════════════════\n🏆 RESULTADO DA PARTIDA: Train_0107fa7b\n═══════════════════════════════════════════════\n• Vencedor: Jogador 1 (Hala) (Jogador 1)\n• Jogador 1 (Hala): 23 HP\n• Jogador 2 (Jarl): -3 HP\n• Duração: 44 turnos\n• Decisões Coletadas para Treino: 468 amostras\n═══════════════════════════════════════════════\n",
+  "total_games": 1219,
+  "samples_collected": 1936,
+  "epochs_completed": 357,
+  "policy_loss": 3.5437,
+  "value_loss": 0.8733,
+  "total_loss": 4.417,
+  "active_matchup": "dash_io vs gravy_bones (+1 partidas)",
+  "last_summary": "Nenhuma partida concluída nesta sessão.",
   "history": [
-    {
-      "epoch": 156,
-      "policy_loss": 0.0242,
-      "value_loss": 0.5747,
-      "total_loss": 0.5988,
-      "entropy": 0.1076,
-      "value_mean": 0.1624,
-      "games": 627,
-      "samples": 100000,
-      "lr": 0.0003
-    },
-    {
-      "epoch": 157,
-      "policy_loss": 0.0102,
-      "value_loss": 0.6082,
-      "total_loss": 0.6184,
-      "entropy": 0.1017,
-      "value_mean": 0.1368,
-      "games": 632,
-      "samples": 100000,
-      "lr": 0.0003
-    },
     {
       "epoch": 158,
       "policy_loss": 0.0468,
@@ -2207,14 +2185,36 @@
       "games": 1217,
       "samples": 100000,
       "lr": 0.000266
+    },
+    {
+      "epoch": 356,
+      "policy_loss": 3.8008,
+      "value_loss": 0.9398,
+      "total_loss": 4.7406,
+      "entropy": 4.8807,
+      "value_mean": -0.116,
+      "games": 1217,
+      "samples": 100000,
+      "lr": 0.0003
+    },
+    {
+      "epoch": 357,
+      "policy_loss": 3.5437,
+      "value_loss": 0.8733,
+      "total_loss": 4.417,
+      "entropy": 4.8837,
+      "value_mean": -0.3351,
+      "games": 1219,
+      "samples": 1936,
+      "lr": 0.0003
     }
   ],
-  "policy_entropy": 0.0788,
-  "value_mean": -0.0187,
+  "policy_entropy": 4.8837,
+  "value_mean": -0.3351,
   "current_phase": "teacher",
-  "device": "cuda:0",
-  "batch_size": 32768,
-  "num_workers": 5,
-  "mcts_sims": 1600,
+  "device": "cpu",
+  "batch_size": 64,
+  "num_workers": 1,
+  "mcts_sims": 10,
   "max_resources": false
 }

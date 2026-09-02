@@ -22,7 +22,23 @@ import numpy as np
 import torch
 from typing import Dict, List, Optional, Tuple, Any
 
-from .hero_strategies import get_hero_strategy, HeroStrategy
+from .hero_strategies import (
+    get_hero_strategy,
+    HeroStrategy,
+    GuardianStrategy,
+    JarlStrategy,
+    BruteStrategy,
+    WarriorStrategy,
+    RangerStrategy,
+    NinjaStrategy,
+    MechanologistStrategy,
+    RunebladeStrategy,
+    WizardStrategy,
+    IllusionistStrategy,
+    AssassinStrategy,
+    MerchantStrategy,
+    is_resource_or_gem_card,
+)
 from .model import FaBPolicyValueNetwork, create_model, get_device
 from .mcts import MCTSEngine, ISMCTSEngine
 from .ismcts_logger import ISMCTSLogger
@@ -247,7 +263,10 @@ class PolicyEngine:
             "has_dangerous_on_hit": has_dangerous_on_hit,
             "action": card.get("action", 0),
             "actionDataOverride": card.get("actionDataOverride", ""),
-            "borderColor": card.get("borderColor", 0)
+            "borderColor": card.get("borderColor", 0),
+            "subtype": card.get("subtype", ""),
+            "text": card.get("text", ""),
+            "type": card.get("type", ""),
         }
 
     def calculate_available_resources(self, state: dict) -> Tuple[int, int]:
@@ -318,10 +337,10 @@ class PolicyEngine:
                     or str(eq.get("slot", "")).lower() in ("weapon", "off-hand", "hands")
                 )
                 if is_weapon:
-                    # Ataques de arma geralmente finalizam turnos ou gastam recursos flutuantes
-                    weapon_score = 2.5 + (1.5 if floating_res >= 1 else 0.0)
-                    if not has_any_go_again and len(hand_attacks) == 0:
-                        weapon_score += 2.0
+                    # Avaliação tática polimórfica de ataque de arma pela classe do herói
+                    weapon_score = self.strategy.evaluate_weapon_attack(
+                        eq_name, floating_res, total_res, len(hand_attacks) > 0
+                    )
                     candidates.append({
                         "type": "weapon", "idx": 0, "card_id": str(eq_id), "mode": action,
                         "name": eq_name, "score": weapon_score, "cost": 0
@@ -335,11 +354,18 @@ class PolicyEngine:
                 c_name = str(c.get("cardNumber", "Card")).lower()
                 if action > 0 and c_name not in unpayable_set:
                     c_id = c.get("actionDataOverride", c_name)
-                    # Jogar do Arsenal libera o slot para o final do turno (+2.0 de valor tático)
-                    arsenal_score = 4.5
+                    c_info = self.extract_card_info(c)
+                    base_score = self.strategy.evaluate_attack_card(
+                        c_name, c_info["power"], c_info["cost"], c_info["has_go_again"], c_info["pitch"]
+                    )
+                    # Jogar do Arsenal executa a ofensiva e libera o slot para o fim do turno (+4.0 de valor tático)
+                    arsenal_score = base_score + 4.0
+                    # Ranger: Flechas no Arsenal são o ataque central prioritário do turno (+8.0)
+                    if any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]) or isinstance(self.strategy, RangerStrategy):
+                        arsenal_score += 8.0
                     candidates.append({
                         "type": zone_name.lower(), "idx": 0, "card_id": str(c_id), "mode": action,
-                        "name": c_name, "score": arsenal_score, "cost": 0
+                        "name": c_name, "score": arsenal_score, "cost": c_info["cost"]
                     })
 
         if not candidates:
@@ -347,9 +373,13 @@ class PolicyEngine:
 
         # ── 1.5 Refinamento via Busca em Árvore ─────────────────────
         if self.model is not None and len(candidates) > 1 and self.num_mcts_sims > 0:
-            opp_hand_count = int(
-                state.get("opponentHandCount", state.get("theirHandCount", 0))
-            )
+            opp_hand = state.get("opponentHand", [])
+            if isinstance(opp_hand, list) and len(opp_hand) > 0:
+                opp_hand_count = len(opp_hand)
+            else:
+                opp_hand_count = int(
+                    state.get("opponentHandCount", state.get("theirHandCount", 0))
+                )
 
             # Usa ISMCTS quando o oponente tem cartas na mão (informação imperfeita real)
             if opp_hand_count > 0:
@@ -362,6 +392,17 @@ class PolicyEngine:
                 chosen = candidates[best_idx]
                 chosen["_ismcts_log"] = ismcts_log
                 chosen["_policy_dist"] = policy_dist
+
+                # ── Persistência de Telemetria ISMCTS Direta ──────────
+                try:
+                    self.ismcts_logger.log(
+                        ismcts_log=ismcts_log,
+                        turn=int(state.get("turnNo", state.get("turn", 0))),
+                        phase=str(state.get("turnPhase", state.get("phase", "M"))),
+                    )
+                except Exception:
+                    pass
+
                 return chosen
             else:
                 # MCTS clássico: estado de informação completa (mão do oponente vazia / início de turno)
@@ -417,13 +458,24 @@ class PolicyEngine:
 
         # Refinamento ISMCTS / MCTS quando há múltiplas escolhas de pitch
         if self.model is not None and len(pitch_candidates) > 1 and self.num_mcts_sims > 0:
-            opp_hand_count = int(state.get("opponentHandCount", state.get("theirHandCount", 0)))
+            opp_hand = state.get("opponentHand", [])
+            opp_hand_count = len(opp_hand) if isinstance(opp_hand, list) and len(opp_hand) > 0 else int(
+                state.get("opponentHandCount", state.get("theirHandCount", 0))
+            )
             if opp_hand_count > 0:
                 best_idx, _, ismcts_log = self.ismcts.search_ismcts(
                     state=state,
                     legal_actions=pitch_candidates,
                     num_simulations=self.num_mcts_sims,
                 )
+                try:
+                    self.ismcts_logger.log(
+                        ismcts_log=ismcts_log,
+                        turn=int(state.get("turnNo", state.get("turn", 0))),
+                        phase="PITCH",
+                    )
+                except Exception:
+                    pass
                 chosen = pitch_candidates[best_idx]
                 return chosen["idx"], chosen["name"], chosen["mode"]
             else:
@@ -460,15 +512,12 @@ class PolicyEngine:
         has_blue_pitch = False
         for c in hand:
             c_info = self.extract_card_info(c)
-            c_name_low = c_info["name"].lower()
             if c_info["pitch"] == 3:
                 has_blue_pitch = True
-            if (c_info["pitch"] == 1 and c_info["power"] >= 6) or any(
-                w in c_name_low for w in ["crush", "wager", "bet_big", "spinal", "crippling", "macho", "pulverize", "buckling", "star_struck"]
-            ):
+            if self.strategy.has_heavy_attack(c_info):
                 has_heavy_attack = True
 
-        is_heavy_hero = any(h in str(self.hero_name).lower() for h in ["betsy", "bravo", "victor", "valda", "guardian", "rhinar", "kayo", "levia", "brute"])
+        is_heavy_hero = getattr(self.strategy, "is_heavy_hero", False)
         has_pivot_line = has_heavy_attack and has_blue_pitch
 
         block_candidates = []
@@ -507,18 +556,60 @@ class PolicyEngine:
                         "pitch": info["pitch"], "power": info["power"]
                     })
 
+        # ── 3.1b Cartas no Arsenal que podem defender (Ambush e Down and Dirty) ──
+        cards_db = _get_cards_db()
+        arsenal = state.get("playerArsenal", [])
+        for a_idx, c in enumerate(arsenal):
+            info = self.extract_card_info(c)
+            c_name_low = info["name"].lower()
+            c_action = info.get("action", 0)
+            db_entry = cards_db.get(c_name_low, {})
+            card_text = (db_entry.get("text", "") if db_entry else "").lower()
+            subtype = (db_entry.get("subtype", "") if db_entry else "").lower()
+            is_down_and_dirty = "down_and_dirty" in c_name_low or "down and dirty" in c_name_low
+            has_ambush = (
+                "ambush" in subtype
+                or "ambush" in card_text
+                or "defend with this from your arsenal" in card_text
+                or "ambush" in c_name_low
+                or is_down_and_dirty
+            )
+            if has_ambush and info["block"] > 0:
+                # Down and Dirty ganha +1 de defesa defendendo do arsenal (defende 4 em vez de 3!)
+                effective_block = info["block"] + (1 if is_down_and_dirty else 0)
+                # Defender do arsenal é altamente vantajoso: preserva a mão ofensiva e limpa o arsenal!
+                score = float(effective_block) * 2.5 + 5.0
+                c_id = info["actionDataOverride"] or str(a_idx)
+                block_candidates.append({
+                    "type": "block", "score": score, "idx": a_idx, "card_id": c_id,
+                    "name": info["name"], "mode": c_action if c_action > 0 else 27,
+                    "block": effective_block, "pitch": info["pitch"], "power": info["power"],
+                    "from_arsenal": True
+                })
+
         if not block_candidates:
             return []
 
         # ── 3.2 Refinamento ISMCTS para Bloqueio ────────────────────
         if self.model is not None and len(block_candidates) > 1 and self.num_mcts_sims > 0:
-            opp_hand_count = int(state.get("opponentHandCount", state.get("theirHandCount", 0)))
+            opp_hand = state.get("opponentHand", [])
+            opp_hand_count = len(opp_hand) if isinstance(opp_hand, list) and len(opp_hand) > 0 else int(
+                state.get("opponentHandCount", state.get("theirHandCount", 0))
+            )
             if opp_hand_count > 0:
-                best_idx, _, _ = self.ismcts.search_ismcts(
+                best_idx, _, ismcts_log = self.ismcts.search_ismcts(
                     state=state,
                     legal_actions=block_candidates,
                     num_simulations=self.num_mcts_sims,
                 )
+                try:
+                    self.ismcts_logger.log(
+                        ismcts_log=ismcts_log,
+                        turn=int(state.get("turnNo", state.get("turn", 0))),
+                        phase="BLOCK",
+                    )
+                except Exception:
+                    pass
                 # Prioriza a melhor carta selecionada pelo ISMCTS
                 best_item = block_candidates[best_idx]
                 best_item["score"] += 10.0
@@ -586,7 +677,11 @@ class PolicyEngine:
             c_id = info["actionDataOverride"] or info["name"]
             db_entry = cards_db.get(c_name, {})
 
-            # Avaliação polimórfica via HeroStrategy (com poda estrita de tipo R e Gem)
+            # 1. Filtro Global Universal: Recursos e Gemas são ESTRITAMENTE PROIBIDOS no Arsenal para qualquer herói!
+            if is_resource_or_gem_card(c_name, info, db_entry):
+                continue
+
+            # 2. Avaliação polimórfica via HeroStrategy (com desvalorização estrita de cartas de bloco não-DR)
             score = self.strategy.evaluate_arsenal_card(info, db_entry)
 
             # Só considera cartas com score positivo (vantajosas de verdade para o próximo turno)
@@ -594,7 +689,46 @@ class PolicyEngine:
                 valid_candidates.append((score, info["name"], c_id))
 
         if not valid_candidates:
-            # Poda estrita: se todas são recursos ou prejudicariam o jogo -> NÃO ARSENALA NADA
+            # ── 2. Modo Cavar (Digging Mode) para Mão Travada de Recursos (len(hand) >= 3) ───
+            # Se nenhuma carta atingiu score > 0 e a mão possui 3 ou mais cartas:
+            # Se não colocarmos nada no Arsenal, o jogador compra 0 ou 1 carta no End of Turn
+            # e continua travado com recursos. Então, deve-se arsenalar 1 carta para cavar!
+            if len(hand) >= 3:
+                dig_candidates = []
+                for c in hand:
+                    info = self.extract_card_info(c)
+                    c_name = info["name"].lower()
+                    c_id = info["actionDataOverride"] or info["name"]
+                    db_entry = cards_db.get(c_name, {})
+
+                    # Gemas puras lendárias são a última opção possível (pois não têm ação jogável)
+                    is_pure_gem = "gem" in (db_entry.get("subtype", "")).lower() or any(
+                        k in c_name for k in ["heart_of_fyendal", "eye_of_ophidia", "grandeur_of_valahai", "arknight_shard"]
+                    )
+
+                    # Priorização para Cavar:
+                    # 1. Prefere cartas de ação que possam ser jogadas no próximo turno para limpar o Arsenal
+                    # 2. Cartas com poder de ataque maior ganham preferência
+                    # 3. Cartas de menor custo ganham preferência
+                    # 4. Gemas puras sofrem forte penalidade (-100.0)
+                    dig_score = float(info.get("power", 0))
+                    card_type = (db_entry.get("type", "") or info.get("type", "")).upper()
+                    if "A" in card_type or info.get("action", 0) > 0:
+                        dig_score += 10.0
+                    if info.get("cost", 0) == 0:
+                        dig_score += 2.0
+                    if is_pure_gem:
+                        dig_score -= 100.0
+
+                    dig_candidates.append((dig_score, info["name"], c_id))
+
+                if dig_candidates:
+                    dig_candidates.sort(key=lambda x: x[0], reverse=True)
+                    best_dig = dig_candidates[0]
+                    return best_dig[1], best_dig[2]
+
+            # Se tem 1 ou 2 recursos na mão, NÃO ARSENALA:
+            # Mantém para pitch no próximo turno e compra cartas até o intelecto normalmente
             return None
 
         valid_candidates.sort(key=lambda x: x[0], reverse=True)

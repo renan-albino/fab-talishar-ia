@@ -434,6 +434,7 @@ class FabBotClient:
         arms = ""
         legs = ""
         weapons = []
+        raw_weapon_candidates = []
         main_cards = []
         inv = []
 
@@ -468,16 +469,65 @@ class FabBotClient:
                     legs = cid
                 else:
                     inv.append(cid)
-            elif slot in ("Weapon", "Off-Hand"):
-                if len(weapons) < 2:
-                    weapons.append(cid)
-                else:
-                    inv.append(cid)
+            elif slot in ("Weapon", "Off-Hand") or meta.get("type") == "W":
+                raw_weapon_candidates.append(cid)
             else:
                 main_cards.extend([cid] * tot)
 
         if not hero:
             hero = "ira_crimson_haze"
+
+        # ── Resolução Legal de Armas e Mãos (Flesh and Blood CR 2.8.2 e CR 3.0) ──
+        # Um herói possui exatamente 2 slots de mãos.
+        # - Arma de 2 Mãos (2H): ocupa 2 mãos. NUNCA pode ter escudo, off-hand ou 2ª arma!
+        # - Arma de 1 Mão (1H): ocupa 1 mão. Permite 2ª arma 1H ou 1 Off-Hand/Escudo.
+        # - Off-Hand (Escudo, Orbe, Aljava): ocupa 1 mão. Só pode ser equipada com arma 1H ou desarmado.
+        w_2h = []
+        w_1h = []
+        offhands = []
+
+        for cid in raw_weapon_candidates:
+            meta = self.get_card_meta(cid)
+            slot = meta.get("slot", "")
+            subtype = str(meta.get("subtype", "")).lower()
+            is_1h = bool(meta.get("is1h", False))
+            is_off = (slot == "Off-Hand" or "off-hand" in subtype or "shield" in subtype)
+            if is_off:
+                offhands.append(cid)
+            elif is_1h:
+                w_1h.append(cid)
+            else:
+                w_2h.append(cid)
+
+        chosen_weapons = []
+        # Cenário 1: Temos arma 1H e Off-Hand/Escudo (ex: Titan's Fist + Stalagmite/Rampart para Jarl/Guardião)
+        if w_1h and offhands:
+            # Para Jarl / Guardiões de Gelo, Stalagmite é o escudo prioritário (Frostbite)
+            best_off = offhands[0]
+            for off in offhands:
+                if "stalagmite" in off:
+                    best_off = off
+                    break
+            chosen_weapons = [w_1h[0], best_off]
+        # Cenário 2: Múltiplas armas 1H (ex: 2 Kodachis para Ninja, 2 Sabres para Warrior, 2 Adagas para Assassin)
+        elif len(w_1h) >= 2:
+            chosen_weapons = [w_1h[0], w_1h[1]]
+        # Cenário 3: Arma de 2 Mãos (ex: Sledge of Anvilheim, Anothos, Dawnblade, Raydn, Dread Scythe)
+        # Atenção estrita: ocupa AMBAS as mãos. Nenhum outro item de mão pode ser equipado!
+        elif w_2h:
+            chosen_weapons = [w_2h[0]]
+        # Cenário 4: Apenas uma arma 1H (sem par)
+        elif w_1h:
+            chosen_weapons = [w_1h[0]]
+        # Cenário 5: Apenas Off-Hand sem arma (caso raro/incomum)
+        elif offhands:
+            chosen_weapons = [offhands[0]]
+
+        weapons = chosen_weapons
+        # Todos os itens de arma/off-hand não equipados vão obrigatoriamente para o inventário (sideboard)
+        for cid in raw_weapon_candidates:
+            if cid not in weapons:
+                inv.append(cid)
 
         equipped_arcane_count = 0
         if is_arcane:
@@ -678,13 +728,70 @@ class FabBotClient:
         self.metrics["phase"] = f"Turno {turn} ({tp_name})" if tp_name else f"Turno {turn}"
         self.metrics["status"] = "Jogando"
         
-        # Checar se a partida terminou
-        if tp_name == "OVER" or state.get("gameStatus") == 2 or my_h <= 0 or opp_h <= 0:
+        # ── Detecção de Stalemate / Empate Técnico (Fadiga sem Mudança de Estado) ──
+        my_deck_cnt = int(state.get("playerDeckCount", len(state.get("playerDeck", []))))
+        opp_deck_cnt = int(state.get("opponentDeckCount", len(state.get("opponentDeck", []))))
+        my_hand_cnt = len(state.get("playerHand", []))
+        opp_hand_cnt = len(state.get("opponentHand", []))
+        my_ars_cnt = len(state.get("playerArsenal", []))
+        opp_ars_cnt = len(state.get("opponentArsenal", []))
+
+        # Inicializa variáveis de controle de estagnação no bot se não existirem
+        if not hasattr(self, "_last_state_health"):
+            self._last_state_health = (my_h, opp_h)
+            self._last_state_turn = turn
+            self._stagnant_turns_count = 0
+
+        # Atualiza a contagem a cada avanço de turno
+        if turn != self._last_state_turn:
+            prev_my_h, prev_opp_h = self._last_state_health
+            if my_h == prev_my_h and opp_h == prev_opp_h:
+                self._stagnant_turns_count += 1
+            else:
+                self._stagnant_turns_count = 0
+            self._last_state_health = (my_h, opp_h)
+            self._last_state_turn = turn
+
+        is_stalemate = False
+        stalemate_reason = ""
+
+        # 1. Ambos os decks esgotados (0 cartas) sem dano por 3 turnos seguidos
+        if my_deck_cnt == 0 and opp_deck_cnt == 0:
+            if self._stagnant_turns_count >= 3:
+                is_stalemate = True
+                stalemate_reason = f"Decks esgotados (0 cartas) e sem alteração de vida por {self._stagnant_turns_count} turnos consecutivos"
+            # Se decks em 0 e mãos e arsenais vazios (impossível jogar ações ou gerar recursos):
+            elif my_hand_cnt == 0 and opp_hand_cnt == 0 and my_ars_cnt == 0 and opp_ars_cnt == 0:
+                is_stalemate = True
+                stalemate_reason = "Decks, mãos e arsenais completamente esgotados (deadlock de ações)"
+
+        # 2. Hard Cap de Turnos Anti-Loop (CR/TR Tournament Round Timeout)
+        # Partidas de FaB duram 8-15 turnos (Blitz) e 15-25 turnos (CC). Acima de 45/55 é loop garantido.
+        max_turn_limit = 45 if self.deck_format.lower() in ("blitz", "compblitz") else 55
+        if turn >= max_turn_limit:
+            is_stalemate = True
+            stalemate_reason = f"Limite máximo de {max_turn_limit} turnos atingido (Hard Cap Anti-Loop)"
+
+        # 3. Estagnação prolongada (12 turnos consecutivos sem dano com decks residuais <= 5)
+        if self._stagnant_turns_count >= 12 and (my_deck_cnt <= 5 or opp_deck_cnt <= 5):
+            is_stalemate = True
+            stalemate_reason = "Estagnação prolongada (12 turnos sem dano com decks residuais esgotando)"
+
+        # Checar se a partida terminou (vitória, derrota ou empate técnico)
+        if tp_name == "OVER" or state.get("gameStatus") == 2 or my_h <= 0 or opp_h <= 0 or is_stalemate:
             self.metrics["status"] = "Finalizada"
             if not getattr(self, "game_recorded", False):
                 self.game_recorded = True
                 winner_id = 0
-                if my_h > 0 and opp_h <= 0:
+                if is_stalemate:
+                    self.log(f"⚠️ [FIM DE JOGO - EMPATE TÉCNICO] {stalemate_reason}!")
+                    self.send_chat_log(
+                        f"<b>[FIM DE JOGO - EMPATE TÉCNICO]</b> {stalemate_reason}. "
+                        f"Partida finalizada como <b>EMPATE</b> para evitar desperdício de processamento.",
+                        highlight=True, bg_color="#451a03", text_color="#fbbf24"
+                    )
+                    winner_id = 0
+                elif my_h > 0 and opp_h <= 0:
                     winner_id = self.player_id
                 elif opp_h > 0 and my_h <= 0:
                     winner_id = 3 - self.player_id
@@ -720,8 +827,14 @@ class FabBotClient:
                     try:
                         p1_d_file = f"logs/{self.room_id}_host_deck.txt"
                         p2_d_file = f"logs/{self.room_id}_join_deck.txt"
-                        p1_d = open(p1_d_file, encoding="utf-8").read().strip() if os.path.exists(p1_d_file) else ("Humano (Você)" if is_vs_human else self.clean_deck)
-                        p2_d = open(p2_d_file, encoding="utf-8").read().strip() if os.path.exists(p2_d_file) else self.clean_deck
+                        p1_d = "Humano (Você)" if is_vs_human else self.clean_deck
+                        if not is_vs_human and os.path.exists(p1_d_file):
+                            with open(p1_d_file, encoding="utf-8") as f1:
+                                p1_d = f1.read().strip()
+                        p2_d = self.clean_deck
+                        if os.path.exists(p2_d_file):
+                            with open(p2_d_file, encoding="utf-8") as f2:
+                                p2_d = f2.read().strip()
                         
                         from stats_manager import update_match_result
                         update_match_result(
@@ -1012,13 +1125,7 @@ class FabBotClient:
             time.sleep(0.002)
             return True
 
-        if turn_phase == "MAYCHOOSEMULTIZONE":
-            self.log(f"[AÇÃO JOGADOR {self.player_id}] Escolha Opcional ({turn_phase}) -> Pass (Mode 99)")
-            self.send_action(mode=99, button_input="PASS")
-            time.sleep(0.002)
-            return True
-
-        if turn_phase in ("CHOOSEMULTIZONE", "MULTICHOOSE", "MULTICHOOSEHAND"):
+        if turn_phase in ("MAYCHOOSEMULTIZONE", "CHOOSEMULTIZONE", "MULTICHOOSE", "MULTICHOOSEHAND"):
             p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
             cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
             hand = state.get("playerHand", [])
@@ -1027,13 +1134,37 @@ class FabBotClient:
             max_cnt = form_opts.get("maxCount", len(cards_arr) if cards_arr else len(hand))
             
             if max_cnt == 0 or (not cards_arr and not hand):
-                self.log(f"[AÇÃO JOGADOR {self.player_id}] Multi-Seleção (Sem opções / Max 0) -> Confirmar vazio (Mode 19)")
-                self.send_action(mode=19, chk_count=0, chk_input=[])
+                if turn_phase == "MAYCHOOSEMULTIZONE":
+                    self.log(f"[AÇÃO JOGADOR {self.player_id}] Escolha Opcional ({turn_phase}) Sem opções -> Pass (Mode 99)")
+                    self.send_action(mode=99, button_input="PASS")
+                else:
+                    self.log(f"[AÇÃO JOGADOR {self.player_id}] Multi-Seleção (Sem opções / Max 0) -> Confirmar vazio (Mode 19)")
+                    self.send_action(mode=19, chk_count=0, chk_input=[])
                 time.sleep(0.002)
                 return True
 
-            chk_cnt = 1 if len(cards_arr) > 0 else (1 if len(hand) > 0 else 0)
-            chk_inp = ["0"] if chk_cnt > 0 else []
+            # Heurística Tática: Selecionar a melhor carta (prioridade máxima para Flechas de Ranger no Arsenal)
+            best_idx = 0
+            target_list = cards_arr if cards_arr else hand
+            if len(target_list) > 1:
+                best_score = -9999.0
+                for c_idx, c_item in enumerate(target_list):
+                    c_name = str(c_item.get("cardNumber", c_item.get("name", c_item)) if isinstance(c_item, dict) else c_item).lower()
+                    c_info = self.policy_engine.extract_card_info({"cardNumber": c_name})
+                    score = 0.0
+                    # Ranger: Flechas carregadas no Arsenal ganham prioridade absoluta
+                    if any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]):
+                        score += 25.0
+                        if c_info["pitch"] == 1:
+                            score += 5.0
+                    elif c_info["pitch"] == 1 and c_info["power"] >= 4:
+                        score += 8.0
+                    if score > best_score:
+                        best_score = score
+                        best_idx = c_idx
+
+            chk_cnt = 1
+            chk_inp = [str(best_idx)]
 
             btn_inp = "0"
             if prompt_buttons:
@@ -1041,7 +1172,7 @@ class FabBotClient:
                     if b.get("mode") == 19 or "submit" in str(b.get("caption", "")).lower() or "ok" in str(b.get("caption", "")).lower():
                         btn_inp = str(b.get("buttonInput", "0"))
                         break
-            self.log(f"[AÇÃO JOGADOR {self.player_id}] Multi-Seleção -> {turn_phase} (Mode: 19, Count: {chk_cnt})")
+            self.log(f"[AÇÃO JOGADOR {self.player_id}] Multi-Seleção -> {turn_phase} (Mode: 19, Count: {chk_cnt}, Pick: {chk_inp})")
             self.send_action(mode=19, button_input=btn_inp, chk_count=chk_cnt, chk_input=chk_inp)
             time.sleep(0.002)
             return True

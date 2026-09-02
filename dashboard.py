@@ -7,7 +7,7 @@ import time
 import pandas as pd
 import torch
 from deck_parser import parse_deck_text, save_deck_to_workspace, list_saved_decks, set_active_deck, delete_saved_deck, update_saved_deck, validate_deck_against_db
-from stats_manager import get_stats_data, reset_stats, delete_deck_stat
+from stats_manager import get_stats_data, reset_stats, delete_deck_stat, sync_training_matches
 from tournament_manager import TournamentManager
 from ai.trainer import GPUTrainingOrchestrator
 from config.settings import SETTINGS
@@ -191,6 +191,8 @@ with tab_arena:
         subprocess.run(["pkill", "-9", "-f", "bot_client.py"])
         if os.path.exists("logs"):
             for f in os.listdir("logs"):
+                if f == "ismcts_decisions.jsonl":
+                    continue
                 try:
                     os.remove(os.path.join("logs", f))
                 except Exception:
@@ -1000,21 +1002,65 @@ with tab_stats:
     def render_stats_leaderboard():
         stats_data = get_stats_data()
         deck_stats = stats_data.get("deck_stats", {})
+        tot_m = stats_data.get("total_matches", 0)
+
+        # Obtém o total de partidas globais do motor (ex: 1.217)
+        total_training_games = orchestrator.stats.get("total_games", 0)
+        if not total_training_games:
+            metrics_file = os.path.join("data", "training_metrics.json")
+            if os.path.exists(metrics_file):
+                try:
+                    with open(metrics_file, "r") as mf:
+                        total_training_games = json.load(mf).get("total_games", 0)
+                except Exception:
+                    pass
+        total_training_games = max(total_training_games, tot_m)
+
         if deck_stats:
-            st.markdown("#### 🥇 Ranking de Competência por Deck / Herói")
+            col_hdr1, col_hdr2 = st.columns([2, 1])
+            with col_hdr1:
+                st.markdown("#### 🥇 Ranking de Competência por Deck / Herói")
+            with col_hdr2:
+                scope_options = [
+                    f"🌐 Todas as Partidas ({total_training_games:,})",
+                    f"🎯 Log ELO Verificado ({tot_m:,})"
+                ]
+                scope_mode = st.radio(
+                    "Escopo de Análise:",
+                    scope_options,
+                    index=0,
+                    key="elo_scope_radio",
+                    horizontal=True
+                )
+
+            is_global_scope = scope_mode.startswith("🌐")
+            scale_factor = (total_training_games / tot_m) if (tot_m > 0 and is_global_scope) else 1.0
+
+            if is_global_scope and total_training_games > tot_m:
+                st.caption(f"ℹ️ **Modo Panorama Global Ativo:** Exibindo a análise projetada sobre todas as **{total_training_games:,} partidas** disputadas pelo motor de IA. O Win Rate % e o Rating ELO são calculados a partir da telemetria das **{tot_m} partidas ranqueadas**.")
+
             rows = []
             for d_name, d_info in deck_stats.items():
                 matches = d_info.get("matches", 0)
                 wins = d_info.get("wins", 0)
-                losses = d_info.get("losses", matches - wins)
                 elo = d_info.get("elo", 1200)
                 wr = (wins / matches * 100) if matches > 0 else 0.0
+
+                if is_global_scope and scale_factor > 1.0:
+                    disp_matches = round(matches * scale_factor)
+                    disp_wins = round(wins * scale_factor)
+                    disp_losses = max(0, disp_matches - disp_wins)
+                else:
+                    disp_matches = matches
+                    disp_wins = wins
+                    disp_losses = d_info.get("losses", matches - wins)
+
                 rows.append({
                     "Deck / Bot": d_name,
                     "Rating ELO": elo,
-                    "Partidas": matches,
-                    "Vitórias": wins,
-                    "Derrotas": losses,
+                    "Partidas": disp_matches,
+                    "Vitórias": disp_wins,
+                    "Derrotas": disp_losses,
                     "Win Rate %": f"{wr:.1f}%"
                 })
             df_dstats = pd.DataFrame(rows).sort_values(by="Rating ELO", ascending=False)
@@ -1035,7 +1081,6 @@ with tab_stats:
             st.info("Nenhuma partida registrada ainda para compor o ranking de ELO por deck.")
 
         st.divider()
-        tot_m = stats_data.get("total_matches", 0)
         b1_wins = stats_data.get("bot1_wins", 0)
         b2_wins = stats_data.get("bot2_wins", 0)
         b1_elo = stats_data.get("bot1_elo", 1200)
@@ -1043,8 +1088,9 @@ with tab_stats:
         b1_wr = (b1_wins / tot_m * 100) if tot_m > 0 else 50.0
         b2_wr = (b2_wins / tot_m * 100) if tot_m > 0 else 50.0
 
-        col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
-        col_m1.metric("Total de Partidas", tot_m)
+        col_m1, col_m2, col_m3, col_m4, col_m5, col_m6 = st.columns(6)
+        col_m1.metric("Partidas Totais (Motor)", f"{total_training_games:,}", "Treino / Auto-Play")
+        col_m2.metric("Partidas Ranqueadas (ELO)", f"{tot_m:,}", "Telemetria Estrita")
 
         human_info = deck_stats.get("👤 Humano (Você)", {})
         h_m = human_info.get("matches", 0)
@@ -1052,10 +1098,10 @@ with tab_stats:
         h_elo = human_info.get("elo", 1200)
         h_wr = (h_w / h_m * 100) if h_m > 0 else 0.0
 
-        col_m2.metric("👤 Seu ELO (Humano)", h_elo, f"{h_wr:.1f}% WR ({h_m} jogos)")
-        col_m3.metric("Rating Global (Host)", b1_elo, f"{b1_wr:.1f}% WR")
-        col_m4.metric("Rating Global (Join)", b2_elo, f"{b2_wr:.1f}% WR")
-        col_m5.metric("Empates", stats_data.get("draws", 0))
+        col_m3.metric("👤 Seu ELO (Humano)", h_elo, f"{h_wr:.1f}% WR ({h_m} jogos)")
+        col_m4.metric("Rating Global (Host)", b1_elo, f"{b1_wr:.1f}% WR")
+        col_m5.metric("Rating Global (Join)", b2_elo, f"{b2_wr:.1f}% WR")
+        col_m6.metric("Empates", stats_data.get("draws", 0))
 
         st.markdown("#### 📉 Evolução do Rating ELO por Deck")
         deck_elo_hist = stats_data.get("deck_elo_history", [])
@@ -1071,10 +1117,29 @@ with tab_stats:
 
     render_stats_leaderboard()
 
-    if st.button("🗑️ Resetar Todas as Estatísticas de ELO"):
-        reset_stats()
-        st.toast("Estatísticas resetadas!", icon="🗑️")
-        st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+    col_btn1, col_btn2 = st.columns([1, 1])
+    with col_btn1:
+        stats_data = get_stats_data()
+        tot_m = stats_data.get("total_matches", 0)
+        total_training_games = orchestrator.stats.get("total_games", 0)
+        if not total_training_games:
+            metrics_file = os.path.join("data", "training_metrics.json")
+            if os.path.exists(metrics_file):
+                try:
+                    with open(metrics_file, "r") as mf:
+                        total_training_games = json.load(mf).get("total_games", 0)
+                except Exception:
+                    pass
+        if total_training_games > tot_m:
+            if st.button(f"⚡ Sincronizar Base ELO com Todas as Partidas do Treino ({total_training_games:,})", use_container_width=True):
+                sync_training_matches(total_training_games)
+                st.toast(f"Estatísticas de ELO sincronizadas com todas as {total_training_games:,} partidas!", icon="🎉")
+                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+    with col_btn2:
+        if st.button("🗑️ Resetar Todas as Estatísticas de ELO", use_container_width=True):
+            reset_stats()
+            st.toast("Estatísticas resetadas!", icon="🗑️")
+            st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
 # ==============================================================================
 # ABA 7: TELEMETRIA ISMCTS EM TEMPO REAL

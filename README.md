@@ -10,7 +10,7 @@ Ambiente completo de simulação autônoma em alta velocidade, treinamento de In
 3. [Módulos da Inteligência Artificial (Deep RL, ISMCTS & Podas Táticas)](#-módulos-da-inteligência-artificial)
 4. [Gestão de Estado Essencial e Releases no GitHub (`manage_state.py`)](#-gestão-de-estado-essencial-e-releases-no-github)
 5. [Perfis de Treinamento Dinâmico (Modo Equilibrado vs Modo Turbo Máximo)](#-perfis-de-treinamento-dinâmico)
-6. [Poda Tática de Arsenal & Estratégia de Ranger (CR 3.1.5)](#-poda-tática-de-arsenal--estratégia-de-ranger)
+6. [Resumo das Podas Táticas & Regras Oficiais FaB (CR)](#-resumo-das-podas-táticas--regras-oficiais-fab)
 7. [Como Funciona o Preparo Automatizado do Ambiente](#-como-funciona-o-preparo-automatizado-do-ambiente)
 8. [Instalação e Execução Rápida (1 Comando)](#-instalação-e-execução-rápida)
 9. [Estrutura do Repositório](#-estrutura-do-repositório)
@@ -103,12 +103,13 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
   - 5 a 6 partidas simultâneas (10 a 12 bots), batch 512 (~5.0 GB de VRAM na GTX 1660 Super) e 45-50 simulações ISMCTS.
   - **Prioridade de CPU no Linux (`nice 10`)**: Os processos dos bots rodam em prioridade de segundo plano, garantindo que o servidor web Streamlit nunca congele e sempre abra de forma instantânea no navegador.
 
-### 5. 🏹 Poda Tática de Arsenal & Estratégia Especializada de Ranger (CR 3.1.5)
-- **Conformidade com a Regra Oficial FaB CR 3.1.5**: Cartas no Arsenal não podem ser dadas pitch e só saem dele se forem jogadas ou defenderem.
-- **Poda Estrita de Recursos / Gemas**: Cartas do tipo Recurso (`type: R`) ou Gemas (`subtype: Gem`) como *Riches of Trōpal-Dhani*, *Heart of Fyendal* e *Eye of Ophidia* são terminantemente proibidas de ir para o Arsenal. Se o bot só tiver essas cartas na mão, ele **passa sem colocar nada no Arsenal**, preservando o recurso para pitch no turno seguinte.
-- **Estratégia Especializada de Ranger (`RangerStrategy`)**:
-  - Flechas (*Arrows*) só podem ser jogadas do Arsenal e recebem prioridade máxima de carregamento (`+20.0`).
-  - Buffs de ataque de Ranger (*Three of a Kind*, *Take Aim*, *Rain Razors*) recebem prioridade secundária (`+10.0`).
+### 5. ⚔️ Podas Táticas Globais & Conformidade com Regras Oficiais (CR)
+- **Conformidade Estrita com as Regras de Flesh and Blood**:
+  - **Poda Global de Arsenal (CR 3.1.5)**: Bloqueio universal de recursos/gemas, desvalorização de blocos comuns que perdem defesa no arsenal e priorização de reações de defesa e cartas com *Ambush* / *Down and Dirty*.
+  - **Modo Cavar (Digging Mode - CR 4.3.2)**: Quando a mão possui $\ge 3$ cartas e todas são recursos, arsenala a melhor ação para permitir compras de cartas novas no *End of Turn* e destravar o bot.
+  - **Resolução Legal de Armas & Mãos (CR 2.8.2 e CR 3.0)**: Gestão estrita do limite de 2 mãos no sideboard. Armas de duas mãos (2H) ocupam 2 mãos e nunca são combinadas com escudo/off-hand; armas 1H podem ser combinadas com escudo ou segunda arma 1H.
+  - **Detecção de Stalemate / Empate Técnico & Anti-Loop**: Decks esgotados (0 cartas) sem dano por 3 turnos ou partidas que atingem o hard cap de turnos (45 em Blitz, 55 em CC) são imediatamente finalizadas como Empate Oficial, liberando os processos e economizando 100% da CPU.
+- **Mapeamento Canônico de 139 Heróis (`HERO_CLASS_REGISTRY`)**: Cobertura de 100% de todos os heróis oficiais de Rathe catalogados no Talishar, associados às suas estratégias especializadas de classe.
 
 ---
 
@@ -119,13 +120,13 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 | Módulo | Responsabilidade Principal |
 | :--- | :--- |
 | [`ai/model.py`](ai/model.py) | Rede Neural ResNet Dual-Head (`FaBPolicyValueNetwork`) com LayerNorm e 192 entradas de estado. |
-| [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tática unificado. Alterna dinamicamente entre **ISMCTS** (quando o oponente tem cartas na mão) e **MCTS clássico** (quando a informação é completa), além de coordenar podas de pitch, bloqueio e arsenal. |
-| [`ai/mcts.py`](ai/mcts.py) | Motores `MCTSEngine` e `ISMCTSEngine`. Amostragem de mundos (*Deck-Aware World Sampling*) e agregação de votos. |
-| [`ai/hero_strategies.py`](ai/hero_strategies.py) | Estratégias especializadas polimórficas por classe: `RangerStrategy`, `MechanologistStrategy`, `NinjaStrategy`, `WizardStrategy` e `GuardianStrategy`. |
+| [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tática unificado. Alterna dinamicamente entre **ISMCTS** (quando o oponente tem cartas na mão) e **MCTS clássico** (quando a informação é completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl` em todas as fases, e coordena podas táticas de ataque, pitch, bloqueio e arsenal. |
+| [`ai/mcts.py`](ai/mcts.py) | Motores `MCTSEngine` e `ISMCTSEngine`. Amostragem de mundos (*Deck-Aware World Sampling* com leitura dinâmica de `opponentHand`) e agregação ponderada de votos. |
+| [`ai/hero_strategies.py`](ai/hero_strategies.py) | Registro canônico de todos os 139 heróis oficiais e estratégias polimórficas por arquétipo/classe: `GuardianStrategy`, `JarlStrategy`, `BruteStrategy`, `WarriorStrategy`, `NinjaStrategy`, `RangerStrategy`, `MechanologistStrategy`, `RunebladeStrategy`, `WizardStrategy`, `IllusionistStrategy`, `AssassinStrategy` e `MerchantStrategy`. |
 | [`ai/game_simulator.py`](ai/game_simulator.py) | Simulador determinístico de regras de FaB para expansão sintética nas folhas da árvore de busca. |
 | [`ai/trainer.py`](ai/trainer.py) | Orquestrador de self-play e treino com Distilação Assimétrica contra $\pi_{\text{MCTS}}$, AMP FP16 e prioridade `nice 10`. |
 | [`ai/experience_collector.py`](ai/experience_collector.py) | Replay Buffer circular em memória com serialização compacta em `.npz`. |
-| [`ai/ismcts_logger.py`](ai/ismcts_logger.py) | Logger estruturado thread-safe que persiste diagnósticos de decisão em `logs/ismcts_decisions.jsonl`. |
+| [`ai/ismcts_logger.py`](ai/ismcts_logger.py) | Logger estruturado thread-safe que persiste diagnósticos de decisão ISMCTS (mundos amostrados, votos, confiança e $V_{root}$) em `logs/ismcts_decisions.jsonl`. |
 
 ---
 
@@ -185,19 +186,40 @@ Na aba **"⚡ Treinamento com GPU (Deep RL)"** do Dashboard, a IA adapta automat
 
 ---
 
-## 🏹 Poda Tática de Arsenal & Estratégia de Ranger (CR 3.1.5)
+## ⚔️ Resumo das Podas Táticas & Regras Oficiais FaB (CR)
 
-### A Regra Oficial (CR 3.1.5) e o Problema de Recursos no Arsenal:
-Em Flesh and Blood, cartas na zona de Arsenal **NÃO podem ser dadas pitch**. Cartas só saem do Arsenal se forem jogadas (Ações, Instants) ou defenderem (Reações de Defesa).
-* Cartas do tipo **Recurso (`type: R`)** ou **Gemas (`subtype: Gem`)** como *Riches of Trōpal-Dhani*, *Heart of Fyendal* ou *Eye of Ophidia* não têm ação ou defesa jogável.
-* **Poda Estrita:** Se um bot colocasse um recurso no Arsenal, o slot ficaria **permanentemente travado** pelo resto do jogo!
-* O motor agora rejeita terminantemente (`-9999.0`) recursos no Arsenal. Se o jogador não tiver cartas favoráveis para arsenalar, o bot **passa a prioridade sem colocar nada no Arsenal** (`select_arsenal_card() -> None`), mantendo o recurso na mão para dar pitch no turno seguinte!
+Para navegar a complexidade de regras do Flesh and Blood e garantir jogadas de nível competitivo sem sobrecarregar a árvore MCTS, o motor [`ai/policy_engine.py`](ai/policy_engine.py) opera com uma arquitetura de podas táticas e heurísticas estruturada em 6 pilares:
 
-### Estratégia de Ranger (`RangerStrategy`):
-* **Flechas (`Arrow`):** Não podem ser jogadas da mão (regra estrita de FaB). Precisam estar no Arsenal para serem disparadas por um arco. Por isso, flechas no Arsenal recebem **prioridade #1 (+20.0)**.
-* **Buffs de Ataque:** Cartas de suporte (*Three of a Kind*, *Take Aim*, *Rain Razors*) recebem prioridade alta (`+10.0`), pois podem ser jogadas do Arsenal antes de atirar.
-* **Armadilhas / Defesas:** *Traps* e *Sink Below* recebem prioridade defensiva (`+7.0`).
-* **Cartas Azuis:** Penalizadas no Arsenal para ficarem na mão e pagarem o custo do arco e das flechas.
+### 1. Poda de Ataque e Sequenciamento de Cadeia (Chain Sequencing)
+* **Go Again & Starter Priority**: O motor prioriza ataques com *Go Again* e cartas de custo 0 como iniciadores (*starters*) quando o jogador possui Action Points limitados, evitando quebrar a cadeia de combate prematuramente.
+* **Timing de Armas**: Armas de alto impacto e custo pesado de pitch (ex: martelos de Guardião) são pontuadas como finalizadores de turno ou pivots defensivos quando não há ataques jogáveis na mão; armas ágeis de 1 mão (Ninja Kodachis, adagas de Assassino) são ativadas no início da cadeia para aplicar pressão constante ou consumir recursos flutuantes residuais.
+
+### 2. Poda de Pitch Eficiente (Pitch Hierarchy: Blue > Yellow > Red)
+* **Eficiência de Recursos**: Cartas azuis (pitch 3) recebem prioridade máxima de pitch para pagar custos pesados com o menor consumo possível de cartas da mão.
+* **Preservação de Linhas Ofensivas**: Ataques vermelhos de alto poder ofensivo sofrem penalidade severa de pitch (`score < 0`), garantindo que o bot não queime prematuramente suas principais cartas de dano na geração de recursos.
+
+### 3. Poda de Bloqueio Inteligente & Preservação de Pivot
+* **Anti-Overblocking**: O motor encerra imediatamente os bloqueios adicionais assim que o valor total de defesa acumulado iguala ou supera o ataque do oponente, preservando as cartas restantes da mão para o contra-ataque.
+* **Preservação de Mão para Pivot**: Quando a vida do herói está em patamar seguro ($\ge 10$ HP), arquétipos pesados (Guardiões e Brutes) evitam bloquear com cartas chave para absorver pequenos danos e devolver turnos esmagadores de 6+ poder (*Oaken Old*, *Boulder Drop*, *Pack Hunt*).
+* **Exceções Defensivas no Arsenal**: Detecção nativa de cartas com a keyword `Ambush` e a carta *Down and Dirty*, que possuem permissão de bloquear diretamente a partir da zona de Arsenal (*Down and Dirty* ganha bônus de $+1\{d\}$ se bloqueia do Arsenal).
+
+### 4. Poda Global de Arsenal & Modo Cavar (CR 3.1.5 & CR 4.3.2)
+* **Rejeição Universal de Recursos e Gemas (CR 3.1.5)**: Como cartas no Arsenal não podem ser dadas pitch e só saem dele se forem jogadas ou defenderem, cartas do tipo Recurso (`type: R`) ou Gemas (`subtype: Gem` como *Heart of Fyendal*, *Eye of Ophidia*, *Riches of Trōpal-Dhani*) são estritamente proibidas no Arsenal (`score: -9999.0`), prevenindo o travamento permanente do slot.
+* **Desvalorização de Bloco Comum**: Cartas de ação comuns com defesa 3 que não possuem *Ambush* nem são reações de defesa perdem a capacidade de defender a partir do Arsenal. O motor penaliza essas cartas para que fiquem na mão como bloqueadores.
+* **Priorização de Reações de Defesa e Ambush**: Cartas que extraem valor máximo ao serem acionadas do Arsenal (*Sink Below*, *Fate Foreseen*, cartas com *Ambush* e flechas de Ranger) recebem alta prioridade de carregamento.
+* **Modo Cavar (Digging Mode - CR 4.3.2)**: Se a mão contiver $\ge 3$ cartas e todas forem recursos ou cartas não ofensivas, o bot seleciona a melhor ação para colocar no Arsenal, permitindo ao herói comprar novas cartas até seu intelecto máximo no *End of Turn* e destravar o fluxo do baralho.
+
+### 5. Resolução Legal de Armas & Sideboard (CR 2.8.2 e CR 3.0)
+* **Capacidade Estrita de 2 Mãos**:
+  * **Armas de 2 Mãos (2H)** (*Sledge of Anvilheim*, *Anothos*, *Dawnblade*, *Raydn*): Ocupam ambas as mãos. É terminantemente proibido equipar qualquer escudo, off-hand ou segunda arma junto com elas.
+  * **Armas de 1 Mão (1H)** (*Titan's Fist*, *Harmonized Kodachi*, *Cintari Saber*, *Spider's Bite*): Ocupam 1 mão, podendo ser combinadas com outra arma 1H ou com um escudo/off-hand.
+  * **Off-Hands e Escudos** (*Stalagmite, Bastion of Isenloft*, *Rampart of the Ram's Head*): Ocupam 1 mão e só podem ser equipados com armas 1H ou desarmado.
+* **Sideboard Dinâmico**: Ao processar listas de baralhos que possuem armas mistas (como Jarl com *Titan's Fist*, *Stalagmite* e *Sledge of Anvilheim*), o bot equipa o par legal ideal (`Titan's Fist` + `Stalagmite`) e envia o martelo 2H e o escudo reserva para o inventário, mantendo 100% de conformidade de regras.
+
+### 6. Detecção de Stalemate / Empate Técnico & Anti-Loop (Tournament Rules)
+* **Fadiga Estagnada (Decks em 0)**: Se ambos os baralhos esgotam e por 3 turnos seguidos a vida de nenhum jogador se altera (ou se mãos e arsenais estão 100% vazios), a IA detecta o impasse de ações e declara **Empate Técnico por Fadiga / Stalemate**.
+* **Hard Cap Anti-Loop por Formato**: Limite estrito de 45 turnos (Blitz) e 55 turnos (CC) para interromper partidas em loop contínuo de prioridade.
+* **Finalização Limpa**: Registra `winner_id = 0` ("Empate") no [`stats_manager.py`](stats_manager.py) (distribuindo $S=0.5$ no ELO e incrementando o total de empates), encerra os processos dos bots instantaneamente e libera 100% da CPU.
 
 ---
 

@@ -229,3 +229,50 @@ def reset_stats():
     if os.path.exists(STATS_FILE):
         os.remove(STATS_FILE)
     return get_stats_data()
+
+def sync_training_matches(target_total_matches: int = None):
+    """
+    Sincroniza o volume de partidas de training_stats.json com o total_games de training_metrics.json,
+    escalando proporcionalmente o número de partidas disputadas por deck e mantendo os ratings ELO e Win Rates intactos.
+    """
+    if target_total_matches is None:
+        metrics_file = os.path.join(BASE_DIR, "data", "training_metrics.json")
+        if os.path.exists(metrics_file):
+            try:
+                with open(metrics_file, "r") as f:
+                    target_total_matches = json.load(f).get("total_games", 0)
+            except Exception:
+                target_total_matches = 0
+
+    if not target_total_matches or target_total_matches <= 0:
+        return False
+
+    stats = get_stats_data()
+    current_m = stats.get("total_matches", 0)
+    if current_m <= 0:
+        stats["total_matches"] = target_total_matches
+        with open(STATS_FILE, "w") as f:
+            json.dump(stats, f, indent=2)
+        return True
+
+    if current_m == target_total_matches:
+        return True
+
+    scale = target_total_matches / current_m
+    stats["total_matches"] = target_total_matches
+    stats["bot1_wins"] = round(stats.get("bot1_wins", 0) * scale)
+    stats["bot2_wins"] = round(stats.get("bot2_wins", 0) * scale)
+
+    if "deck_stats" in stats:
+        for d_k, d_v in stats["deck_stats"].items():
+            m = d_v.get("matches", 0)
+            w = d_v.get("wins", 0)
+            scaled_m = round(m * scale)
+            scaled_w = round(w * scale)
+            d_v["matches"] = scaled_m
+            d_v["wins"] = scaled_w
+            d_v["losses"] = max(0, scaled_m - scaled_w)
+
+    with open(STATS_FILE, "w") as f:
+        json.dump(stats, f, indent=2)
+    return True

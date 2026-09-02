@@ -329,6 +329,30 @@ def uninstall_git_hook():
     else:
         print(f"[!] Nenhum hook post-commit estava instalado.")
 
+def init_checkpoint():
+    """Gera um checkpoint inicial com pesos da rede neural caso ainda não exista."""
+    teacher_path = os.path.join(DATA_DIR, "checkpoints", "teacher_latest.pt")
+    if os.path.exists(teacher_path):
+        print(f"[*] Checkpoint já existente em: {teacher_path} ({format_size(os.path.getsize(teacher_path))})")
+        return
+
+    os.makedirs(os.path.dirname(teacher_path), exist_ok=True)
+    try:
+        from ai.model import create_model
+        import torch
+        model, dev = create_model()
+        torch.save(model.state_dict(), teacher_path)
+        print(f"[OK] Checkpoint inicial criado com sucesso: {teacher_path} ({format_size(os.path.getsize(teacher_path))})")
+    except ImportError:
+        venv_py = os.path.join(BASE_DIR, "venv", "bin", "python")
+        if os.path.exists(venv_py) and sys.executable != venv_py:
+            import subprocess
+            subprocess.run([venv_py, __file__, "--init-checkpoint"])
+            return
+        print("[!] Erro: PyTorch não está instalado no ambiente Python atual.")
+    except Exception as e:
+        print(f"[!] Erro ao criar checkpoint: {e}")
+
 def download_release(tag: str = "latest"):
     print("==================================================")
     print(f"   BAIXANDO GITHUB RELEASE ({tag})                ")
@@ -344,30 +368,66 @@ def download_release(tag: str = "latest"):
     actual_tag = "checkpoint-latest" if tag in ("latest", "checkpoint-latest") else tag
 
     if gh_cmd:
-        cmd = [gh_cmd, "release", "download", actual_tag, "--pattern", "fab_ai_checkpoint_bundle.tar.gz", "--dir", BASE_DIR, "--clobber"]
-        res = subprocess.run(cmd)
-        if res.returncode == 0 and os.path.exists(dest_tar):
+        print("[*] Tentando download via GitHub CLI (gh)...")
+        # Remove arquivo local existente antes do download para garantir compatibilidade
+        # com versões do gh CLI que não suportam a flag --clobber no download
+        if os.path.exists(dest_tar):
+            try:
+                os.remove(dest_tar)
+            except Exception:
+                pass
+
+        cmd = [gh_cmd, "release", "download", actual_tag, "--pattern", "fab_ai_checkpoint_bundle.tar.gz", "--dir", BASE_DIR]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode == 0 and os.path.exists(dest_tar) and os.path.getsize(dest_tar) > 1000:
             downloaded = True
+        elif res.returncode != 0:
+            print(f"[!] gh release download retornou: {res.stderr.strip() or res.stdout.strip()}")
 
     if not downloaded:
-        print("[*] Tentando download via curl...")
+        print("[*] Tentando download direto via curl...")
         url = f"https://github.com/renan-albino/fab-talishar-ia/releases/download/{actual_tag}/fab_ai_checkpoint_bundle.tar.gz"
-        r = subprocess.run(["curl", "-sL", url, "-o", dest_tar])
+        curl_cmd = ["curl", "-sL", "-f", url, "-o", dest_tar]
+
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        if token:
+            curl_cmd = ["curl", "-sL", "-f", "-H", f"Authorization: Bearer {token}", url, "-o", dest_tar]
+
+        r = subprocess.run(curl_cmd)
         if r.returncode == 0 and os.path.exists(dest_tar) and os.path.getsize(dest_tar) > 1000:
             downloaded = True
+        else:
+            if os.path.exists(dest_tar) and os.path.getsize(dest_tar) <= 1000:
+                try:
+                    os.remove(dest_tar)
+                except Exception:
+                    pass
 
     if downloaded:
         print(f"[OK] Pacote baixado com sucesso: {dest_tar} ({format_size(os.path.getsize(dest_tar))})")
         import_state(dest_tar)
     else:
-        print(f"[ERRO] Não foi possível baixar a release {tag}.")
-        print("Verifique se a release existe em https://github.com/renan-albino/fab-talishar-ia/releases")
+        print(f"\n[ERRO] Não foi possível baixar a release '{tag}'.")
+        print("Possíveis causas e soluções:")
+        print(f"  1. A release '{actual_tag}' ainda não foi publicada no GitHub com o arquivo anexado.")
+        print(f"     Verifique em: https://github.com/renan-albino/fab-talishar-ia/releases")
+        print("  2. O repositório é PRIVADO: o GitHub bloqueia downloads públicos via curl (retorna 404).")
+        print("     -> Para resolver com GitHub CLI (Recomendado):")
+        print("        sudo apt install gh")
+        print("        gh auth login")
+        print(f"        python3 scripts/manage_state.py --download-release {tag}")
+        print("  3. Transferência Manual sem GitHub:")
+        print("     -> Na máquina de origem com o modelo:")
+        print("        python3 scripts/manage_state.py --export")
+        print("     -> Copie 'fab_ai_checkpoint_bundle.tar.gz' para esta máquina e execute:")
+        print("        python3 scripts/manage_state.py --import fab_ai_checkpoint_bundle.tar.gz")
 
 def main():
     parser = argparse.ArgumentParser(description="Gerenciador de Estado e Checkpoints do FaB Talishar AI")
     parser.add_argument("--info", action="store_true", help="Exibe informações do estado e checkpoints atuais")
     parser.add_argument("--export", nargs="?", const=DEFAULT_EXPORT_PATH, help="Gera um pacote .tar.gz com o estado essencial")
     parser.add_argument("--import-state", "--import", dest="import_path", help="Restaura um pacote .tar.gz gerado previamente")
+    parser.add_argument("--init-checkpoint", action="store_true", help="Gera um checkpoint inicial caso ainda não exista")
     parser.add_argument("--publish-release", nargs="?", const="checkpoint-latest", help="Publica uma release no GitHub com o pacote de checkpoints (default: checkpoint-latest)")
     parser.add_argument("--download-release", nargs="?", const="latest", help="Baixa uma release do GitHub e restaura automaticamente (default: latest)")
     parser.add_argument("--auto-release", action="store_true", help="Chamado pelo hook post-commit: publica se o checkpoint foi alterado")
@@ -375,7 +435,9 @@ def main():
     parser.add_argument("--uninstall-hook", action="store_true", help="Remove o hook post-commit")
     args = parser.parse_args()
 
-    if args.install_hook:
+    if args.init_checkpoint:
+        init_checkpoint()
+    elif args.install_hook:
         install_git_hook()
     elif args.uninstall_hook:
         uninstall_git_hook()

@@ -711,7 +711,11 @@ class ISMCTSEngine:
              com a classe do herói oponente (ex: Guardian/Generic para Bravo).
           3. Cartas genéricas Red/Yellow/Blue como fallback.
         """
-        opp_hand_count = int(state.get("opponentHandCount", state.get("theirHandCount", 4)))
+        opp_hand = state.get("opponentHand", [])
+        if isinstance(opp_hand, list) and len(opp_hand) > 0:
+            opp_hand_count = len(opp_hand)
+        else:
+            opp_hand_count = int(state.get("opponentHandCount", state.get("theirHandCount", 4)))
         if opp_hand_count == 0:
             return [state]
 
