@@ -200,6 +200,8 @@ class GPUTrainingOrchestrator:
             dev_val = self.config.get("device", "cuda:0")
 
             for _ in range(num_workers):
+                if not self.is_running:
+                    break
                 d1, d2 = self._next_deck_pair(decks_pool)
                 room_id = f"Train_{uuid.uuid4().hex[:8]}"
                 p1 = subprocess.Popen(
@@ -211,8 +213,9 @@ class GPUTrainingOrchestrator:
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
+                    preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
                 )
-                time.sleep(0.15)
+                time.sleep(0.2)
                 p2 = subprocess.Popen(
                     [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
                      "--room", room_id, "--deck", f"decks/{d2}.json",
@@ -222,9 +225,12 @@ class GPUTrainingOrchestrator:
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
+                    preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
                 )
                 active_procs.append((p1, p2))
                 batch_rooms.append((room_id, d1, d2))
+                # Espaçamento suave para não sobrecarregar o Apache/PHP
+                time.sleep(0.3)
 
             if batch_rooms:
                 r0 = batch_rooms[0]

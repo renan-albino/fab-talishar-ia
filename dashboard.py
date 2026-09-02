@@ -455,88 +455,88 @@ def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> d
 
     if not is_gpu:
         if is_turbo:
-            turbo_workers = max(1, cpu_cores - 1)
+            turbo_workers = max(2, min(5, (cpu_cores - 2) // 2))
             return {
                 "device_label": f"CPU ({cpu_cores} threads)",
-                "mode_name": "🔥 Modo Turbo CPU (~95% Carga)",
+                "mode_name": "🔥 Modo Turbo CPU (~90% Carga)",
                 "workers": turbo_workers,
                 "batch_size": 256,
                 "mcts_sims": 25,
                 "save_interval": 25,
                 "use_fp16": False,
                 "buffer_capacity": 100000,
-                "description": f"🔥 Modo Turbo CPU (~95% carga) • {turbo_workers} workers em paralelo • MCTS 25 • Rendimento máximo sem uso interativo do PC."
+                "description": f"🔥 Modo Turbo CPU (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • MCTS 25 • Rendimento máximo sem travar o sistema."
             }
         else:
-            safe_workers = max(1, min(3, (cpu_cores - 2) // 3))
+            safe_workers = max(1, min(2, (cpu_cores - 2) // 4))
             return {
                 "device_label": f"CPU ({cpu_cores} threads)",
-                "mode_name": "⚖️ Modo Equilibrado CPU (~60% Carga)",
+                "mode_name": "⚖️ Modo Equilibrado CPU (~50% Carga)",
                 "workers": safe_workers,
                 "batch_size": 128,
                 "mcts_sims": 15,
                 "save_interval": 15,
                 "use_fp16": False,
                 "buffer_capacity": 50000,
-                "description": f"⚖️ Modo CPU Seguro (~60% carga) • {safe_workers} workers • 15 MCTS sims • Sistema 100% livre para uso normal do PC."
+                "description": f"⚖️ Modo CPU Seguro (~50% carga) • {safe_workers} workers ({safe_workers*2} bots) • MCTS 15 • Sistema 100% livre para uso normal do PC."
             }
 
     # Perfil para GPU calibrado por faixa de VRAM:
     if vram_gb <= 6.5:
         # Ex: GTX 1660 Super (6.4 GB VRAM)
         if is_turbo:
-            turbo_workers = max(2, min(10, cpu_cores - 2))
+            turbo_workers = max(2, min(5, (cpu_cores - 2) // 2))
             return {
                 "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
+                "mode_name": "🔥 Modo Turbo GPU (~90% Carga)",
                 "workers": turbo_workers,
                 "batch_size": 512,
-                "mcts_sims": 50,
+                "mcts_sims": 45,
                 "save_interval": 30,
                 "use_fp16": True,
                 "buffer_capacity": 250000,
-                "description": f"🔥 Turbo Máximo (~95% GPU) • {turbo_workers} workers simultâneos • Batch 512 (~5.0 GB VRAM) • MCTS 50 • Máximo throughput para treino noturno ou remoto."
+                "description": f"🔥 Turbo Máximo (~90% GPU/CPU) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 512 (~5.0 GB VRAM) • MCTS 45 • Máxima velocidade para treino noturno ou remoto sem travar o webserver."
             }
         else:
-            safe_workers = max(1, min(4, (cpu_cores - 2) // 2))
+            safe_workers = max(1, min(3, (cpu_cores - 2) // 3))
             return {
                 "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "⚖️ Modo Equilibrado GPU (~75% Carga)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~65% Carga)",
                 "workers": safe_workers,
                 "batch_size": 256,
-                "mcts_sims": 30,
+                "mcts_sims": 25,
                 "save_interval": 20,
                 "use_fp16": True,
                 "buffer_capacity": 100000,
-                "description": f"⚖️ {gpu_name} (~75% VRAM) • {safe_workers} workers • Batch 256 • ~4 GB VRAM livres para uso geral do PC."
+                "description": f"⚖️ {gpu_name} (~65% carga) • {safe_workers} workers ({safe_workers*2} bots) • Batch 256 • ~4 GB VRAM e 6+ threads livres para uso geral do PC."
             }
     elif vram_gb <= 12.5:
         # Ex: RTX 3060, RTX 4060 Ti, RTX 4070
         if is_turbo:
-            turbo_workers = max(4, min(14, cpu_cores - 2))
+            turbo_workers = max(3, min(7, (cpu_cores - 2) // 2))
             return {
                 "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
+                "mode_name": "🔥 Modo Turbo GPU (~90% Carga)",
                 "workers": turbo_workers,
                 "batch_size": 1024,
-                "mcts_sims": 75,
+                "mcts_sims": 60,
                 "save_interval": 35,
                 "use_fp16": True,
                 "buffer_capacity": 500000,
-                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 1024 • MCTS 75 • Treinamento de alta densidade sem travas."
+                "description": f"🔥 Turbo Máximo (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 1024 • MCTS 60 • Treinamento de alta densidade sem travas."
             }
         else:
-            safe_workers = max(2, min(6, (cpu_cores - 2) // 2))
+            safe_workers = max(2, min(4, (cpu_cores - 2) // 3))
             return {
                 "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~70% Carga)",
                 "workers": safe_workers,
                 "batch_size": 512,
-                "mcts_sims": 45,
+                "mcts_sims": 35,
                 "save_interval": 25,
                 "use_fp16": True,
                 "buffer_capacity": 250000,
-                "description": f"⚖️ {gpu_name} (~80% carga) • {safe_workers} workers • Batch 512 • Excelente velocidade com folga de sistema."
+                "description": f"⚖️ {gpu_name} (~70% carga) • {safe_workers} workers ({safe_workers*2} bots) • Batch 512 • Excelente velocidade com folga de sistema."
             }
     elif vram_gb <= 20.0:
         # Ex: RX 9070 XT 16GB, RTX 4080 16GB
