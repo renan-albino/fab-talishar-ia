@@ -54,7 +54,15 @@ fi
 HOOK_EOF
     chmod +x "$HOOK_FILE"
     echo -e "${GREEN}[OK] Git pre-commit hook instalado com sucesso em .git/hooks/pre-commit!${NC}"
-    echo -e "     Agora, a cada 'git commit', a limpeza, exportação de templates e validação serão executadas automaticamente."
+
+    # Instala o hook post-commit para sincronização de checkpoints
+    PY_BIN="$ROOT_DIR/venv/bin/python"
+    [ ! -f "$PY_BIN" ] && PY_BIN="python3"
+    $PY_BIN "$ROOT_DIR/scripts/manage_state.py" --install-hook
+
+    echo -e "     Agora, a cada 'git commit':"
+    echo -e "       1. Pre-commit: limpa logs, exporta templates e valida sintaxe."
+    echo -e "       2. Post-commit: se houver novo checkpoint treinado, publica na GitHub Release automaticamente."
     exit 0
 }
 
@@ -66,6 +74,10 @@ function uninstall_hook() {
     else
         echo -e "${YELLOW}[!] Nenhum hook pre-commit estava instalado.${NC}"
     fi
+
+    PY_BIN="$ROOT_DIR/venv/bin/python"
+    [ ! -f "$PY_BIN" ] && PY_BIN="python3"
+    $PY_BIN "$ROOT_DIR/scripts/manage_state.py" --uninstall-hook
     exit 0
 }
 

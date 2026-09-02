@@ -188,26 +188,24 @@ python scripts/manage_state.py --download-release {tag}
 ```
 """
 
-def publish_release(tag: str = "v1.0"):
+MTIME_MARKER_FILE = os.path.join(DATA_DIR, ".last_release_mtime")
+HOOK_PATH = os.path.join(BASE_DIR, ".git", "hooks", "post-commit")
+
+def publish_release(tag: str = "checkpoint-latest", force: bool = False):
     print("==================================================")
     print(f"   PUBLICANDO GITHUB RELEASE ({tag})              ")
     print("==================================================")
 
-    # 1. Garante que o pacote .tar.gz existe
-    if not os.path.exists(DEFAULT_EXPORT_PATH):
-        export_state(DEFAULT_EXPORT_PATH)
-    else:
-        print(f"  ✓ Pacote existente detectado: {DEFAULT_EXPORT_PATH} ({format_size(os.path.getsize(DEFAULT_EXPORT_PATH))})")
+    # 1. Garante que o pacote .tar.gz existe e está atualizado
+    export_state(DEFAULT_EXPORT_PATH)
 
     notes = get_release_notes(tag)
-    title = f"FaB AI Engine Checkpoint {tag}"
+    title = f"FaB AI Engine Checkpoint ({tag})"
 
     # 2. Testa autenticação do gh CLI
     import subprocess
-    gh_cmd = shutil.which("gh") if "shutil" in globals() else None
-    if not gh_cmd:
-        import shutil
-        gh_cmd = shutil.which("gh")
+    import shutil
+    gh_cmd = shutil.which("gh")
 
     is_authenticated = False
     if gh_cmd:
@@ -215,20 +213,34 @@ def publish_release(tag: str = "v1.0"):
         is_authenticated = (r.returncode == 0)
 
     if gh_cmd and is_authenticated:
-        print(f"[*] gh CLI autenticado detectado. Enviando release...")
-        cmd = [
-            gh_cmd, "release", "create", tag,
-            DEFAULT_EXPORT_PATH,
-            "--title", title,
-            "--notes", notes,
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode == 0:
-            print("[OK] Release publicada com sucesso no GitHub!")
-            print(res.stdout)
-            return
+        print(f"[*] gh CLI autenticado. Verificando release '{tag}'...")
+        
+        # Verifica se a release já existe
+        check = subprocess.run([gh_cmd, "release", "view", tag], capture_output=True, text=True)
+        if check.returncode == 0:
+            print(f"[*] Release '{tag}' existente detectada. Atualizando arquivo e notas...")
+            up_res = subprocess.run([gh_cmd, "release", "upload", tag, DEFAULT_EXPORT_PATH, "--clobber"], capture_output=True, text=True)
+            edit_res = subprocess.run([gh_cmd, "release", "edit", tag, "--title", title, "--notes", notes], capture_output=True, text=True)
+            if up_res.returncode == 0:
+                print(f"[OK] Release '{tag}' atualizada com sucesso no GitHub!")
+                record_release_mtime()
+                return
         else:
-            print(f"[!] Erro ao criar release via gh: {res.stderr.strip()}")
+            print(f"[*] Criando nova release '{tag}'...")
+            cmd = [
+                gh_cmd, "release", "create", tag,
+                DEFAULT_EXPORT_PATH,
+                "--title", title,
+                "--notes", notes,
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                print(f"[OK] Release '{tag}' publicada com sucesso no GitHub!")
+                print(res.stdout.strip())
+                record_release_mtime()
+                return
+            else:
+                print(f"[!] Erro ao criar release: {res.stderr.strip()}")
 
     # 3. Fallback com orientações passo a passo
     print("\n[!] O GitHub CLI precisa de autenticação rápida ou você pode criar via Web:")
@@ -245,6 +257,78 @@ def publish_release(tag: str = "v1.0"):
     print("  5. Clique em 'Publish release'!")
     print("==================================================")
 
+def record_release_mtime():
+    teacher_path = os.path.join(DATA_DIR, "checkpoints", "teacher_latest.pt")
+    if os.path.exists(teacher_path):
+        mtime = os.path.getmtime(teacher_path)
+        try:
+            with open(MTIME_MARKER_FILE, "w") as f:
+                f.write(str(mtime))
+        except Exception:
+            pass
+
+def auto_release_on_commit():
+    teacher_path = os.path.join(DATA_DIR, "checkpoints", "teacher_latest.pt")
+    if not os.path.exists(teacher_path):
+        return
+
+    curr_mtime = os.path.getmtime(teacher_path)
+    last_mtime = 0.0
+    if os.path.exists(MTIME_MARKER_FILE):
+        try:
+            with open(MTIME_MARKER_FILE, "r") as f:
+                last_mtime = float(f.read().strip())
+        except Exception:
+            last_mtime = 0.0
+
+    # Se o checkpoint não mudou desde a última publicação, não faz nada
+    if curr_mtime <= last_mtime:
+        print("[*] [Post-Commit Hook] Checkpoint de IA inalterado desde o último upload. Pulando release.")
+        return
+
+    print("\n==================================================")
+    print("   [Post-Commit Hook] NOVO CHECKPOINT DETECTADO!  ")
+    print("==================================================")
+    print("Atualizando release 'checkpoint-latest' no GitHub...")
+    publish_release("checkpoint-latest")
+
+def install_git_hook():
+    print("==================================================")
+    print("   INSTALANDO GIT POST-COMMIT HOOK               ")
+    print("==================================================")
+    hook_dir = os.path.dirname(HOOK_PATH)
+    if not os.path.exists(hook_dir):
+        print(f"[ERRO] Diretório .git/hooks não encontrado.")
+        sys.exit(1)
+
+    hook_content = """#!/usr/bin/env bash
+# Git post-commit hook gerado por scripts/manage_state.py
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+PY_BIN="$ROOT_DIR/venv/bin/python"
+if [ ! -f "$PY_BIN" ]; then
+    PY_BIN="python3"
+fi
+
+if [ -f "$ROOT_DIR/scripts/manage_state.py" ]; then
+    "$PY_BIN" "$ROOT_DIR/scripts/manage_state.py" --auto-release
+fi
+"""
+    with open(HOOK_PATH, "w") as f:
+        f.write(hook_content)
+
+    os.chmod(HOOK_PATH, 0o755)
+    print(f"[OK] Hook post-commit instalado com sucesso em: {HOOK_PATH}")
+    print("     A cada 'git commit', se houver um novo checkpoint treinado,")
+    print("     ele será empacotado e enviado automaticamente para o GitHub Releases!")
+    print("==================================================")
+
+def uninstall_git_hook():
+    if os.path.exists(HOOK_PATH):
+        os.remove(HOOK_PATH)
+        print(f"[OK] Hook post-commit removido: {HOOK_PATH}")
+    else:
+        print(f"[!] Nenhum hook post-commit estava instalado.")
+
 def download_release(tag: str = "latest"):
     print("==================================================")
     print(f"   BAIXANDO GITHUB RELEASE ({tag})                ")
@@ -257,19 +341,17 @@ def download_release(tag: str = "latest"):
     downloaded = False
     dest_tar = DEFAULT_EXPORT_PATH
 
+    actual_tag = "checkpoint-latest" if tag in ("latest", "checkpoint-latest") else tag
+
     if gh_cmd:
-        cmd = [gh_cmd, "release", "download", tag, "--pattern", "fab_ai_checkpoint_bundle.tar.gz", "--dir", BASE_DIR, "--clobber"]
+        cmd = [gh_cmd, "release", "download", actual_tag, "--pattern", "fab_ai_checkpoint_bundle.tar.gz", "--dir", BASE_DIR, "--clobber"]
         res = subprocess.run(cmd)
         if res.returncode == 0 and os.path.exists(dest_tar):
             downloaded = True
 
     if not downloaded:
         print("[*] Tentando download via curl...")
-        url = (
-            f"https://github.com/renan-albino/fab-talishar-ia/releases/latest/download/fab_ai_checkpoint_bundle.tar.gz"
-            if tag == "latest"
-            else f"https://github.com/renan-albino/fab-talishar-ia/releases/download/{tag}/fab_ai_checkpoint_bundle.tar.gz"
-        )
+        url = f"https://github.com/renan-albino/fab-talishar-ia/releases/download/{actual_tag}/fab_ai_checkpoint_bundle.tar.gz"
         r = subprocess.run(["curl", "-sL", url, "-o", dest_tar])
         if r.returncode == 0 and os.path.exists(dest_tar) and os.path.getsize(dest_tar) > 1000:
             downloaded = True
@@ -286,11 +368,20 @@ def main():
     parser.add_argument("--info", action="store_true", help="Exibe informações do estado e checkpoints atuais")
     parser.add_argument("--export", nargs="?", const=DEFAULT_EXPORT_PATH, help="Gera um pacote .tar.gz com o estado essencial")
     parser.add_argument("--import-state", "--import", dest="import_path", help="Restaura um pacote .tar.gz gerado previamente")
-    parser.add_argument("--publish-release", nargs="?", const="v1.0", help="Publica uma release no GitHub com o pacote de checkpoints (default: v1.0)")
+    parser.add_argument("--publish-release", nargs="?", const="checkpoint-latest", help="Publica uma release no GitHub com o pacote de checkpoints (default: checkpoint-latest)")
     parser.add_argument("--download-release", nargs="?", const="latest", help="Baixa uma release do GitHub e restaura automaticamente (default: latest)")
+    parser.add_argument("--auto-release", action="store_true", help="Chamado pelo hook post-commit: publica se o checkpoint foi alterado")
+    parser.add_argument("--install-hook", action="store_true", help="Instala o hook post-commit para upload automático em git commit")
+    parser.add_argument("--uninstall-hook", action="store_true", help="Remove o hook post-commit")
     args = parser.parse_args()
 
-    if args.publish_release:
+    if args.install_hook:
+        install_git_hook()
+    elif args.uninstall_hook:
+        uninstall_git_hook()
+    elif args.auto_release:
+        auto_release_on_commit()
+    elif args.publish_release:
         publish_release(args.publish_release)
     elif args.download_release:
         download_release(args.download_release)
