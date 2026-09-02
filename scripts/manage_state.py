@@ -141,14 +141,160 @@ def import_state(src_path: str):
     print("==================================================")
     show_info()
 
+def get_release_notes(tag: str) -> str:
+    epochs, games, samples, loss = 0, 0, 0, 0.0
+    b1_elo, b2_elo = 1200, 1200
+    
+    metrics_file = os.path.join(DATA_DIR, "training_metrics.json")
+    if os.path.exists(metrics_file):
+        try:
+            with open(metrics_file, "r") as f:
+                m = json.load(f)
+                epochs = m.get("epochs_completed", 0)
+                games = m.get("total_games", 0)
+                samples = m.get("samples_collected", 0)
+                loss = m.get("total_loss", 0.0)
+        except Exception:
+            pass
+
+    stats_file = os.path.join(DATA_DIR, "training_stats.json")
+    if os.path.exists(stats_file):
+        try:
+            with open(stats_file, "r") as f:
+                s = json.load(f)
+                b1_elo = s.get("bot1_elo", 1200)
+                b2_elo = s.get("bot2_elo", 1200)
+        except Exception:
+            pass
+
+    return f"""## ⚔️ FaB Talishar AI — Checkpoint `{tag}`
+
+Snapshot do estado essencial de treinamento: pesos da rede neural (PyTorch Policy-Value ResNet), replay buffer e métricas de auto-treinamento.
+
+### 📊 Métricas do Checkpoint:
+* **Épocas Concluídas:** {epochs:,}
+* **Partidas de Treino:** {games:,}
+* **Amostras no Replay Buffer:** {samples:,}
+* **Loss Total Atual:** {loss:.4f}
+* **Rating Elo Atual:** Bot 1 ({b1_elo}) | Bot 2 ({b2_elo})
+
+### 📦 Como Usar em Qualquer Máquina:
+```bash
+# 1. Baixar o checkpoint bundle
+python scripts/manage_state.py --download-release {tag}
+
+# 2. Iniciar o sistema (compatível com GPU ou CPU)
+./start.sh
+```
+"""
+
+def publish_release(tag: str = "v1.0"):
+    print("==================================================")
+    print(f"   PUBLICANDO GITHUB RELEASE ({tag})              ")
+    print("==================================================")
+
+    # 1. Garante que o pacote .tar.gz existe
+    if not os.path.exists(DEFAULT_EXPORT_PATH):
+        export_state(DEFAULT_EXPORT_PATH)
+    else:
+        print(f"  ✓ Pacote existente detectado: {DEFAULT_EXPORT_PATH} ({format_size(os.path.getsize(DEFAULT_EXPORT_PATH))})")
+
+    notes = get_release_notes(tag)
+    title = f"FaB AI Engine Checkpoint {tag}"
+
+    # 2. Testa autenticação do gh CLI
+    import subprocess
+    gh_cmd = shutil.which("gh") if "shutil" in globals() else None
+    if not gh_cmd:
+        import shutil
+        gh_cmd = shutil.which("gh")
+
+    is_authenticated = False
+    if gh_cmd:
+        r = subprocess.run([gh_cmd, "auth", "status"], capture_output=True, text=True)
+        is_authenticated = (r.returncode == 0)
+
+    if gh_cmd and is_authenticated:
+        print(f"[*] gh CLI autenticado detectado. Enviando release...")
+        cmd = [
+            gh_cmd, "release", "create", tag,
+            DEFAULT_EXPORT_PATH,
+            "--title", title,
+            "--notes", notes,
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode == 0:
+            print("[OK] Release publicada com sucesso no GitHub!")
+            print(res.stdout)
+            return
+        else:
+            print(f"[!] Erro ao criar release via gh: {res.stderr.strip()}")
+
+    # 3. Fallback com orientações passo a passo
+    print("\n[!] O GitHub CLI precisa de autenticação rápida ou você pode criar via Web:")
+    print("--------------------------------------------------")
+    print("OPÇÃO A (Automática via Terminal):")
+    print("  1. Execute: gh auth login")
+    print("  2. Em seguida execute:")
+    print(f"     gh release create {tag} fab_ai_checkpoint_bundle.tar.gz --title \"{title}\" --notes \"{notes.splitlines()[0]}\"")
+    print("\nOPÇÃO B (Interface Web em 1 Clique):")
+    print("  1. Acesse: https://github.com/renan-albino/fab-talishar-ia/releases/new")
+    print(f"  2. Tag version: {tag}")
+    print(f"  3. Release title: {title}")
+    print(f"  4. Arraste e solte o arquivo: {DEFAULT_EXPORT_PATH}")
+    print("  5. Clique em 'Publish release'!")
+    print("==================================================")
+
+def download_release(tag: str = "latest"):
+    print("==================================================")
+    print(f"   BAIXANDO GITHUB RELEASE ({tag})                ")
+    print("==================================================")
+
+    import subprocess
+    import shutil
+    gh_cmd = shutil.which("gh")
+
+    downloaded = False
+    dest_tar = DEFAULT_EXPORT_PATH
+
+    if gh_cmd:
+        cmd = [gh_cmd, "release", "download", tag, "--pattern", "fab_ai_checkpoint_bundle.tar.gz", "--dir", BASE_DIR, "--clobber"]
+        res = subprocess.run(cmd)
+        if res.returncode == 0 and os.path.exists(dest_tar):
+            downloaded = True
+
+    if not downloaded:
+        print("[*] Tentando download via curl...")
+        url = (
+            f"https://github.com/renan-albino/fab-talishar-ia/releases/latest/download/fab_ai_checkpoint_bundle.tar.gz"
+            if tag == "latest"
+            else f"https://github.com/renan-albino/fab-talishar-ia/releases/download/{tag}/fab_ai_checkpoint_bundle.tar.gz"
+        )
+        r = subprocess.run(["curl", "-sL", url, "-o", dest_tar])
+        if r.returncode == 0 and os.path.exists(dest_tar) and os.path.getsize(dest_tar) > 1000:
+            downloaded = True
+
+    if downloaded:
+        print(f"[OK] Pacote baixado com sucesso: {dest_tar} ({format_size(os.path.getsize(dest_tar))})")
+        import_state(dest_tar)
+    else:
+        print(f"[ERRO] Não foi possível baixar a release {tag}.")
+        print("Verifique se a release existe em https://github.com/renan-albino/fab-talishar-ia/releases")
+
 def main():
     parser = argparse.ArgumentParser(description="Gerenciador de Estado e Checkpoints do FaB Talishar AI")
     parser.add_argument("--info", action="store_true", help="Exibe informações do estado e checkpoints atuais")
     parser.add_argument("--export", nargs="?", const=DEFAULT_EXPORT_PATH, help="Gera um pacote .tar.gz com o estado essencial")
     parser.add_argument("--import-state", "--import", dest="import_path", help="Restaura um pacote .tar.gz gerado previamente")
+    parser.add_argument("--publish-release", nargs="?", const="v1.0", help="Publica uma release no GitHub com o pacote de checkpoints (default: v1.0)")
+    parser.add_argument("--download-release", nargs="?", const="latest", help="Baixa uma release do GitHub e restaura automaticamente (default: latest)")
     args = parser.parse_args()
 
-    if args.export:
+    if args.publish_release:
+        publish_release(args.publish_release)
+    elif args.download_release:
+        download_release(args.download_release)
+    elif args.export:
         export_state(args.export)
     elif args.import_path:
         import_state(args.import_path)
