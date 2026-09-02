@@ -6,10 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
-# Força o runner do GitHub Actions a executar actions JavaScript no Node 24 moderno, eliminando warnings de depreciação do Node 20
+# Força o runner do GitHub Actions a executar actions JavaScript no Node 24 moderno
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
 jobs:
   # 1. Validação da Engine de IA e Scripts Python
