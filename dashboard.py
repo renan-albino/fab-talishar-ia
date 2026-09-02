@@ -434,11 +434,11 @@ with tab_arena:
 # ==============================================================================
 # ABA 2: TREINAMENTO COM GPU (DEEP RL + ROTAÇÃO DE DECKS)
 # ==============================================================================
-def get_suggested_training_profile(device_str: str) -> dict:
+def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> dict:
     """
-    Calcula parâmetros de treinamento balanceados (~75-80% de carga máxima segura),
-    garantindo que o usuário possa continuar utilizando o computador normalmente
-    (navegador, vídeos, multitarefa) sem travamentos durante o treinamento no Dashboard.
+    Calcula parâmetros de treinamento sugeridos:
+      - mode='balanced': ~75-80% de carga segura (permite uso normal do PC, navegador, vídeos, sem engasgos).
+      - mode='turbo': ~95% de carga máxima (ideal para treino noturno, ausente ou remoto, extraindo todo o potencial do hardware).
     """
     is_gpu = "cuda" in device_str.lower() and torch.cuda.is_available()
     try:
@@ -451,72 +451,149 @@ def get_suggested_training_profile(device_str: str) -> dict:
         cpu_cores = os.cpu_count() or 4
         gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "GPU"
 
-    if not is_gpu:
-        safe_workers = max(1, min(3, (cpu_cores - 2) // 3))
-        return {
-            "device_label": f"CPU ({cpu_cores} threads)",
-            "workers": safe_workers,
-            "batch_size": 128,
-            "mcts_sims": 15,
-            "save_interval": 15,
-            "use_fp16": False,
-            "buffer_capacity": 50000,
-            "description": f"Modo CPU Seguro (~60% carga) • {safe_workers} workers • 15 MCTS sims • Sistema 100% livre para uso normal do PC."
-        }
+    is_turbo = (mode == "turbo")
 
-    # Perfil para GPU calibrado por faixa de VRAM (~75-80% de uso equilibrado):
+    if not is_gpu:
+        if is_turbo:
+            turbo_workers = max(1, cpu_cores - 1)
+            return {
+                "device_label": f"CPU ({cpu_cores} threads)",
+                "mode_name": "🔥 Modo Turbo CPU (~95% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 256,
+                "mcts_sims": 25,
+                "save_interval": 25,
+                "use_fp16": False,
+                "buffer_capacity": 100000,
+                "description": f"🔥 Modo Turbo CPU (~95% carga) • {turbo_workers} workers em paralelo • MCTS 25 • Rendimento máximo sem uso interativo do PC."
+            }
+        else:
+            safe_workers = max(1, min(3, (cpu_cores - 2) // 3))
+            return {
+                "device_label": f"CPU ({cpu_cores} threads)",
+                "mode_name": "⚖️ Modo Equilibrado CPU (~60% Carga)",
+                "workers": safe_workers,
+                "batch_size": 128,
+                "mcts_sims": 15,
+                "save_interval": 15,
+                "use_fp16": False,
+                "buffer_capacity": 50000,
+                "description": f"⚖️ Modo CPU Seguro (~60% carga) • {safe_workers} workers • 15 MCTS sims • Sistema 100% livre para uso normal do PC."
+            }
+
+    # Perfil para GPU calibrado por faixa de VRAM:
     if vram_gb <= 6.5:
-        # Ex: GTX 1660 Super, RTX 2060 6GB
-        safe_workers = max(1, min(4, (cpu_cores - 2) // 2))
-        return {
-            "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-            "workers": safe_workers,
-            "batch_size": 256,
-            "mcts_sims": 30,
-            "save_interval": 20,
-            "use_fp16": True,
-            "buffer_capacity": 100000,
-            "description": f"{gpu_name} (~75% VRAM) • {safe_workers} workers • Batch 256 • ~4 GB VRAM livres para uso geral do PC."
-        }
+        # Ex: GTX 1660 Super (6.4 GB VRAM)
+        if is_turbo:
+            turbo_workers = max(2, min(10, cpu_cores - 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 512,
+                "mcts_sims": 50,
+                "save_interval": 30,
+                "use_fp16": True,
+                "buffer_capacity": 250000,
+                "description": f"🔥 Turbo Máximo (~95% GPU) • {turbo_workers} workers simultâneos • Batch 512 (~5.0 GB VRAM) • MCTS 50 • Máximo throughput para treino noturno ou remoto."
+            }
+        else:
+            safe_workers = max(1, min(4, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~75% Carga)",
+                "workers": safe_workers,
+                "batch_size": 256,
+                "mcts_sims": 30,
+                "save_interval": 20,
+                "use_fp16": True,
+                "buffer_capacity": 100000,
+                "description": f"⚖️ {gpu_name} (~75% VRAM) • {safe_workers} workers • Batch 256 • ~4 GB VRAM livres para uso geral do PC."
+            }
     elif vram_gb <= 12.5:
         # Ex: RTX 3060, RTX 4060 Ti, RTX 4070
-        safe_workers = max(2, min(6, (cpu_cores - 2) // 2))
-        return {
-            "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-            "workers": safe_workers,
-            "batch_size": 512,
-            "mcts_sims": 45,
-            "save_interval": 25,
-            "use_fp16": True,
-            "buffer_capacity": 250000,
-            "description": f"{gpu_name} (~80% carga) • {safe_workers} workers • Batch 512 • Excelente velocidade com folga de sistema."
-        }
+        if is_turbo:
+            turbo_workers = max(4, min(14, cpu_cores - 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 1024,
+                "mcts_sims": 75,
+                "save_interval": 35,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 1024 • MCTS 75 • Treinamento de alta densidade sem travas."
+            }
+        else:
+            safe_workers = max(2, min(6, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
+                "workers": safe_workers,
+                "batch_size": 512,
+                "mcts_sims": 45,
+                "save_interval": 25,
+                "use_fp16": True,
+                "buffer_capacity": 250000,
+                "description": f"⚖️ {gpu_name} (~80% carga) • {safe_workers} workers • Batch 512 • Excelente velocidade com folga de sistema."
+            }
     elif vram_gb <= 20.0:
         # Ex: RX 9070 XT 16GB, RTX 4080 16GB
-        safe_workers = max(2, min(8, (cpu_cores - 2) // 2))
-        return {
-            "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-            "workers": safe_workers,
-            "batch_size": 1024,
-            "mcts_sims": 60,
-            "save_interval": 30,
-            "use_fp16": True,
-            "buffer_capacity": 500000,
-            "description": f"{gpu_name} (~80% carga) • {safe_workers} workers • Batch 1024 • Alto rendimento com folga para multitarefa."
-        }
+        if is_turbo:
+            turbo_workers = max(6, min(18, cpu_cores - 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 2048,
+                "mcts_sims": 100,
+                "save_interval": 40,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 2048 • MCTS 100 • Rendimento industrial para 16 GB de VRAM."
+            }
+        else:
+            safe_workers = max(2, min(8, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
+                "workers": safe_workers,
+                "batch_size": 1024,
+                "mcts_sims": 60,
+                "save_interval": 30,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"⚖️ {gpu_name} (~80% carga) • {safe_workers} workers • Batch 1024 • Alto rendimento com folga para multitarefa."
+            }
     else:
         # Ex: RTX 5090 32GB, RTX 4090 24GB
-        safe_workers = max(4, min(12, (cpu_cores - 2) // 2))
-        return {
-            "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-            "workers": safe_workers,
-            "batch_size": 2048,
-            "mcts_sims": 100,
-            "save_interval": 40,
-            "use_fp16": True,
-            "buffer_capacity": 500000,
-            "description": f"{gpu_name} (~80% carga) • {safe_workers} workers • Batch 2048 • Capacidade extrema sem travar o desktop."
-        }
+        if is_turbo:
+            turbo_workers = max(8, min(24, cpu_cores - 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 4096,
+                "mcts_sims": 150,
+                "save_interval": 50,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 4096 • MCTS 150 • Supercomputação para Alpha-Level AI."
+            }
+        else:
+            safe_workers = max(4, min(12, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
+                "workers": safe_workers,
+                "batch_size": 2048,
+                "mcts_sims": 100,
+                "save_interval": 40,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"⚖️ {gpu_name} (~80% carga) • {safe_workers} workers • Batch 2048 • Capacidade extrema sem travar o desktop."
+            }
 
 with tab_gpu:
     st.subheader("⚡ Painel de Treinamento Autônomo com GPU")
@@ -531,9 +608,14 @@ with tab_gpu:
 
     device_options = ["cuda:0 (GPU)", "cpu"] if gpu_available else ["cpu"]
 
-    def update_hardware_suggestions():
+    if "training_preset_mode" not in st.session_state:
+        st.session_state["training_preset_mode"] = "balanced"
+
+    def update_hardware_suggestions(mode: str = None):
+        if mode is None:
+            mode = st.session_state.get("training_preset_mode", "balanced")
         chosen = st.session_state.get("train_dev_select", device_options[0])
-        prof = get_suggested_training_profile(chosen)
+        prof = get_suggested_training_profile(chosen, mode=mode)
         st.session_state["train_workers"] = prof["workers"]
         st.session_state["train_batch_size"] = prof["batch_size"]
         st.session_state["train_mcts_sims"] = prof["mcts_sims"]
@@ -542,19 +624,46 @@ with tab_gpu:
         st.session_state["train_buffer_cap"] = prof["buffer_capacity"]
 
     if "train_workers" not in st.session_state:
-        update_hardware_suggestions()
+        update_hardware_suggestions("balanced")
 
     with st.expander("⚙️ Configurações Avançadas de Hardware e Treinador", expanded=not orchestrator.is_running):
-        train_dev = st.selectbox(
-            "Dispositivo de Treino:",
-            device_options,
-            index=0 if gpu_available else 0,
-            key="train_dev_select",
-            on_change=update_hardware_suggestions
-        )
+        col_dev_sel, col_mode_status = st.columns([2, 2])
+        with col_dev_sel:
+            train_dev = st.selectbox(
+                "Dispositivo de Treino:",
+                device_options,
+                index=0 if gpu_available else 0,
+                key="train_dev_select",
+                on_change=lambda: update_hardware_suggestions()
+            )
+        with col_mode_status:
+            current_mode = st.session_state.get("training_preset_mode", "balanced")
+            st.write("")
+            if current_mode == "turbo":
+                st.markdown("**Modo de Carga Ativo:** 🚀 `🔥 TURBO MÁXIMO (~95%)`")
+            else:
+                st.markdown("**Modo de Carga Ativo:** 🛡️ `⚖️ EQUILIBRADO (~80%)`")
 
-        active_prof = get_suggested_training_profile(train_dev)
-        st.info(f"💡 **Perfil Sugerido ({active_prof['device_label']}):** {active_prof['description']}")
+        # Botões de Seleção de Perfil (Equilibrado vs Turbo Máximo)
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            if st.button("⚖️ Ativar Perfil Equilibrado (~80% Carga - Uso Normal do PC)", use_container_width=True):
+                st.session_state["training_preset_mode"] = "balanced"
+                update_hardware_suggestions("balanced")
+                st.toast("Modo Equilibrado ativado (~80% de carga segura).", icon="⚖️")
+                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+        with col_p2:
+            if st.button("🔥 Ativar Perfil Turbo Máximo (~95% Carga - Noturno / Remoto)", use_container_width=True, type="primary"):
+                st.session_state["training_preset_mode"] = "turbo"
+                update_hardware_suggestions("turbo")
+                st.toast("🔥 Modo Turbo Máximo ativado (~95% de poder bruto)! Otimizado para treino noturno ou remoto.", icon="🔥")
+                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+
+        active_prof = get_suggested_training_profile(train_dev, mode=st.session_state.get("training_preset_mode", "balanced"))
+        if st.session_state.get("training_preset_mode", "balanced") == "turbo":
+            st.warning(f"🔥 **{active_prof['mode_name']} ({active_prof['device_label']}):** {active_prof['description']}")
+        else:
+            st.info(f"💡 **{active_prof['mode_name']} ({active_prof['device_label']}):** {active_prof['description']}")
 
         col_g1, col_g2, col_g3 = st.columns(3)
         with col_g1:
@@ -563,13 +672,13 @@ with tab_gpu:
                 min_value=1,
                 max_value=24,
                 key="train_workers",
-                help="Quantidade de duelos simultâneos. Calibrado com folga de CPU para o PC não travar."
+                help="Quantidade de duelos simultâneos. No Modo Turbo, escala até 95% dos núcleos lógicos da máquina."
             )
             batch_sz = st.select_slider(
                 "Batch Size do Treinador:",
                 options=[32, 64, 128, 256, 512, 1024, 2048, 4096],
                 key="train_batch_size",
-                help="Tamanho do lote para atualização de gradientes na GPU/CPU. Calibrado para até ~75-80% da VRAM livre."
+                help="Tamanho do lote para atualização de gradientes na GPU/CPU. No Turbo, ocupa até 95% da VRAM livre."
             )
         with col_g2:
             lr_val = st.select_slider(
@@ -581,9 +690,9 @@ with tab_gpu:
             mcts_sims = st.slider(
                 "Simulações MCTS por Jogada:",
                 min_value=5,
-                max_value=150,
+                max_value=200,
                 key="train_mcts_sims",
-                help="Profundidade da busca ISMCTS. Valores equilibrados garantem decisões rápidas (<150ms)."
+                help="Profundidade da busca ISMCTS. Mais simulações aumentam a qualidade tática das partidas."
             )
             buffer_cap = st.select_slider(
                 "Capacidade do Replay Buffer:",
@@ -594,7 +703,7 @@ with tab_gpu:
             use_fp16 = st.toggle(
                 "Aceleração Mixed Precision (FP16)",
                 key="train_fp16",
-                help="Acelera em GPU reduzindo uso de VRAM. Desativado automaticamente no modo CPU."
+                help="Acelera cálculos na GPU e economiza VRAM. Desativado automaticamente no modo CPU."
             )
             auto_save = st.toggle("Auto-Save de Checkpoints (.pt)", value=True, key="train_auto_save")
             save_interval = st.number_input(
@@ -604,11 +713,6 @@ with tab_gpu:
                 key="train_save_interval",
                 help="Frequência de gravação de novos checkpoints em disco."
             )
-
-        if st.button("🔄 Restaurar Valores Recomendados para este Hardware (~80% Carga Segura)", use_container_width=True):
-            update_hardware_suggestions()
-            st.toast("Parâmetros redefinidos com sucesso para a recomendação segura da máquina!", icon="⚙️")
-            st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
     col_t_btn1, col_t_btn2 = st.columns([1, 1])
     with col_t_btn1:
