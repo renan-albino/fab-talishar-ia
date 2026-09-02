@@ -1,0 +1,2881 @@
+{
+  "total_matches": 122,
+  "bot1_wins": 49,
+  "bot2_wins": 73,
+  "draws": 0,
+  "bot1_elo": 1172,
+  "bot2_elo": 1228,
+  "elo_history": [
+    {
+      "match": 1,
+      "bot1_elo": 1184,
+      "bot2_elo": 1216,
+      "timestamp": 1788346494.6149633
+    },
+    {
+      "match": 2,
+      "bot1_elo": 1169,
+      "bot2_elo": 1231,
+      "timestamp": 1788346514.763468
+    },
+    {
+      "match": 3,
+      "bot1_elo": 1156,
+      "bot2_elo": 1244,
+      "timestamp": 1788346580.4783454
+    },
+    {
+      "match": 4,
+      "bot1_elo": 1144,
+      "bot2_elo": 1256,
+      "timestamp": 1788346580.4787815
+    },
+    {
+      "match": 5,
+      "bot1_elo": 1165,
+      "bot2_elo": 1235,
+      "timestamp": 1788346580.4800386
+    },
+    {
+      "match": 6,
+      "bot1_elo": 1152,
+      "bot2_elo": 1248,
+      "timestamp": 1788346580.4808123
+    },
+    {
+      "match": 7,
+      "bot1_elo": 1140,
+      "bot2_elo": 1260,
+      "timestamp": 1788346607.7374127
+    },
+    {
+      "match": 8,
+      "bot1_elo": 1161,
+      "bot2_elo": 1239,
+      "timestamp": 1788346618.2964432
+    },
+    {
+      "match": 9,
+      "bot1_elo": 1181,
+      "bot2_elo": 1219,
+      "timestamp": 1788346618.5286763
+    },
+    {
+      "match": 10,
+      "bot1_elo": 1167,
+      "bot2_elo": 1233,
+      "timestamp": 1788346618.5774717
+    },
+    {
+      "match": 11,
+      "bot1_elo": 1186,
+      "bot2_elo": 1214,
+      "timestamp": 1788346624.4255903
+    },
+    {
+      "match": 12,
+      "bot1_elo": 1203,
+      "bot2_elo": 1197,
+      "timestamp": 1788346625.140207
+    },
+    {
+      "match": 13,
+      "bot1_elo": 1187,
+      "bot2_elo": 1213,
+      "timestamp": 1788346625.255913
+    },
+    {
+      "match": 14,
+      "bot1_elo": 1204,
+      "bot2_elo": 1196,
+      "timestamp": 1788346625.2584293
+    },
+    {
+      "match": 15,
+      "bot1_elo": 1220,
+      "bot2_elo": 1180,
+      "timestamp": 1788346625.2616816
+    },
+    {
+      "match": 16,
+      "bot1_elo": 1202,
+      "bot2_elo": 1198,
+      "timestamp": 1788346625.2645383
+    },
+    {
+      "match": 17,
+      "bot1_elo": 1186,
+      "bot2_elo": 1214,
+      "timestamp": 1788346654.1941955
+    },
+    {
+      "match": 18,
+      "bot1_elo": 1171,
+      "bot2_elo": 1229,
+      "timestamp": 1788346656.5201216
+    },
+    {
+      "match": 19,
+      "bot1_elo": 1158,
+      "bot2_elo": 1242,
+      "timestamp": 1788346656.8946571
+    },
+    {
+      "match": 20,
+      "bot1_elo": 1146,
+      "bot2_elo": 1254,
+      "timestamp": 1788346678.1089885
+    },
+    {
+      "match": 21,
+      "bot1_elo": 1135,
+      "bot2_elo": 1265,
+      "timestamp": 1788346752.9180756
+    },
+    {
+      "match": 22,
+      "bot1_elo": 1125,
+      "bot2_elo": 1275,
+      "timestamp": 1788346752.919191
+    },
+    {
+      "match": 23,
+      "bot1_elo": 1116,
+      "bot2_elo": 1284,
+      "timestamp": 1788346752.921662
+    },
+    {
+      "match": 24,
+      "bot1_elo": 1107,
+      "bot2_elo": 1293,
+      "timestamp": 1788346752.9231117
+    },
+    {
+      "match": 25,
+      "bot1_elo": 1099,
+      "bot2_elo": 1301,
+      "timestamp": 1788346771.530388
+    },
+    {
+      "match": 26,
+      "bot1_elo": 1091,
+      "bot2_elo": 1309,
+      "timestamp": 1788346791.5611365
+    },
+    {
+      "match": 27,
+      "bot1_elo": 1116,
+      "bot2_elo": 1284,
+      "timestamp": 1788346792.3536153
+    },
+    {
+      "match": 28,
+      "bot1_elo": 1139,
+      "bot2_elo": 1261,
+      "timestamp": 1788346798.3930871
+    },
+    {
+      "match": 29,
+      "bot1_elo": 1128,
+      "bot2_elo": 1272,
+      "timestamp": 1788346877.822388
+    },
+    {
+      "match": 30,
+      "bot1_elo": 1150,
+      "bot2_elo": 1250,
+      "timestamp": 1788346877.8238838
+    },
+    {
+      "match": 31,
+      "bot1_elo": 1138,
+      "bot2_elo": 1262,
+      "timestamp": 1788346877.827004
+    },
+    {
+      "match": 32,
+      "bot1_elo": 1159,
+      "bot2_elo": 1241,
+      "timestamp": 1788346877.8283224
+    },
+    {
+      "match": 33,
+      "bot1_elo": 1147,
+      "bot2_elo": 1253,
+      "timestamp": 1788346899.401192
+    },
+    {
+      "match": 34,
+      "bot1_elo": 1136,
+      "bot2_elo": 1264,
+      "timestamp": 1788346905.7110186
+    },
+    {
+      "match": 35,
+      "bot1_elo": 1158,
+      "bot2_elo": 1242,
+      "timestamp": 1788346910.240344
+    },
+    {
+      "match": 36,
+      "bot1_elo": 1178,
+      "bot2_elo": 1222,
+      "timestamp": 1788347002.8125792
+    },
+    {
+      "match": 37,
+      "bot1_elo": 1164,
+      "bot2_elo": 1236,
+      "timestamp": 1788347002.8188052
+    },
+    {
+      "match": 38,
+      "bot1_elo": 1151,
+      "bot2_elo": 1249,
+      "timestamp": 1788347002.8273597
+    },
+    {
+      "match": 39,
+      "bot1_elo": 1139,
+      "bot2_elo": 1261,
+      "timestamp": 1788347033.8119109
+    },
+    {
+      "match": 40,
+      "bot1_elo": 1160,
+      "bot2_elo": 1240,
+      "timestamp": 1788347040.8870544
+    },
+    {
+      "match": 41,
+      "bot1_elo": 1148,
+      "bot2_elo": 1252,
+      "timestamp": 1788347060.9712768
+    },
+    {
+      "match": 42,
+      "bot1_elo": 1137,
+      "bot2_elo": 1263,
+      "timestamp": 1788347128.7949767
+    },
+    {
+      "match": 43,
+      "bot1_elo": 1127,
+      "bot2_elo": 1273,
+      "timestamp": 1788347128.7967603
+    },
+    {
+      "match": 44,
+      "bot1_elo": 1149,
+      "bot2_elo": 1251,
+      "timestamp": 1788347128.7995715
+    },
+    {
+      "match": 45,
+      "bot1_elo": 1138,
+      "bot2_elo": 1262,
+      "timestamp": 1788347157.3485394
+    },
+    {
+      "match": 46,
+      "bot1_elo": 1159,
+      "bot2_elo": 1241,
+      "timestamp": 1788347163.2148561
+    },
+    {
+      "match": 47,
+      "bot1_elo": 1147,
+      "bot2_elo": 1253,
+      "timestamp": 1788347164.2886949
+    },
+    {
+      "match": 48,
+      "bot1_elo": 1168,
+      "bot2_elo": 1232,
+      "timestamp": 1788347175.060993
+    },
+    {
+      "match": 49,
+      "bot1_elo": 1155,
+      "bot2_elo": 1245,
+      "timestamp": 1788347254.4148889
+    },
+    {
+      "match": 50,
+      "bot1_elo": 1175,
+      "bot2_elo": 1225,
+      "timestamp": 1788347254.4167693
+    },
+    {
+      "match": 51,
+      "bot1_elo": 1193,
+      "bot2_elo": 1207,
+      "timestamp": 1788347254.4190853
+    },
+    {
+      "match": 52,
+      "bot1_elo": 1178,
+      "bot2_elo": 1222,
+      "timestamp": 1788347254.4210737
+    },
+    {
+      "match": 53,
+      "bot1_elo": 1164,
+      "bot2_elo": 1236,
+      "timestamp": 1788347281.1775641
+    },
+    {
+      "match": 54,
+      "bot1_elo": 1151,
+      "bot2_elo": 1249,
+      "timestamp": 1788347282.6647017
+    },
+    {
+      "match": 55,
+      "bot1_elo": 1139,
+      "bot2_elo": 1261,
+      "timestamp": 1788347315.194686
+    },
+    {
+      "match": 56,
+      "bot1_elo": 1128,
+      "bot2_elo": 1272,
+      "timestamp": 1788347379.1653593
+    },
+    {
+      "match": 57,
+      "bot1_elo": 1118,
+      "bot2_elo": 1282,
+      "timestamp": 1788347379.1679275
+    },
+    {
+      "match": 58,
+      "bot1_elo": 1109,
+      "bot2_elo": 1291,
+      "timestamp": 1788347379.17012
+    },
+    {
+      "match": 59,
+      "bot1_elo": 1133,
+      "bot2_elo": 1267,
+      "timestamp": 1788347423.8956416
+    },
+    {
+      "match": 60,
+      "bot1_elo": 1123,
+      "bot2_elo": 1277,
+      "timestamp": 1788347424.2506814
+    },
+    {
+      "match": 61,
+      "bot1_elo": 1146,
+      "bot2_elo": 1254,
+      "timestamp": 1788347427.40187
+    },
+    {
+      "match": 62,
+      "bot1_elo": 1167,
+      "bot2_elo": 1233,
+      "timestamp": 1788347507.2533832
+    },
+    {
+      "match": 63,
+      "bot1_elo": 1154,
+      "bot2_elo": 1246,
+      "timestamp": 1788347507.255606
+    },
+    {
+      "match": 64,
+      "bot1_elo": 1174,
+      "bot2_elo": 1226,
+      "timestamp": 1788347507.2595625
+    },
+    {
+      "match": 65,
+      "bot1_elo": 1160,
+      "bot2_elo": 1240,
+      "timestamp": 1788347530.039676
+    },
+    {
+      "match": 66,
+      "bot1_elo": 1148,
+      "bot2_elo": 1252,
+      "timestamp": 1788347536.4335008
+    },
+    {
+      "match": 67,
+      "bot1_elo": 1137,
+      "bot2_elo": 1263,
+      "timestamp": 1788347564.9973562
+    },
+    {
+      "match": 68,
+      "bot1_elo": 1127,
+      "bot2_elo": 1273,
+      "timestamp": 1788347632.3587813
+    },
+    {
+      "match": 69,
+      "bot1_elo": 1117,
+      "bot2_elo": 1283,
+      "timestamp": 1788347632.3611186
+    },
+    {
+      "match": 70,
+      "bot1_elo": 1108,
+      "bot2_elo": 1292,
+      "timestamp": 1788347632.3790233
+    },
+    {
+      "match": 71,
+      "bot1_elo": 1100,
+      "bot2_elo": 1300,
+      "timestamp": 1788347662.1000273
+    },
+    {
+      "match": 72,
+      "bot1_elo": 1092,
+      "bot2_elo": 1308,
+      "timestamp": 1788347670.0249696
+    },
+    {
+      "match": 73,
+      "bot1_elo": 1117,
+      "bot2_elo": 1283,
+      "timestamp": 1788347676.5446818
+    },
+    {
+      "match": 74,
+      "bot1_elo": 1108,
+      "bot2_elo": 1292,
+      "timestamp": 1788347757.6158998
+    },
+    {
+      "match": 75,
+      "bot1_elo": 1132,
+      "bot2_elo": 1268,
+      "timestamp": 1788347757.69261
+    },
+    {
+      "match": 76,
+      "bot1_elo": 1122,
+      "bot2_elo": 1278,
+      "timestamp": 1788347757.7256534
+    },
+    {
+      "match": 77,
+      "bot1_elo": 1113,
+      "bot2_elo": 1287,
+      "timestamp": 1788347789.028495
+    },
+    {
+      "match": 78,
+      "bot1_elo": 1136,
+      "bot2_elo": 1264,
+      "timestamp": 1788347790.5754936
+    },
+    {
+      "match": 79,
+      "bot1_elo": 1158,
+      "bot2_elo": 1242,
+      "timestamp": 1788347811.9014251
+    },
+    {
+      "match": 80,
+      "bot1_elo": 1178,
+      "bot2_elo": 1222,
+      "timestamp": 1788347886.71027
+    },
+    {
+      "match": 81,
+      "bot1_elo": 1196,
+      "bot2_elo": 1204,
+      "timestamp": 1788347886.7132542
+    },
+    {
+      "match": 82,
+      "bot1_elo": 1180,
+      "bot2_elo": 1220,
+      "timestamp": 1788347886.7159266
+    },
+    {
+      "match": 83,
+      "bot1_elo": 1166,
+      "bot2_elo": 1234,
+      "timestamp": 1788347919.3081808
+    },
+    {
+      "match": 84,
+      "bot1_elo": 1185,
+      "bot2_elo": 1215,
+      "timestamp": 1788347922.5394485
+    },
+    {
+      "match": 85,
+      "bot1_elo": 1170,
+      "bot2_elo": 1230,
+      "timestamp": 1788347924.439567
+    },
+    {
+      "match": 86,
+      "bot1_elo": 1157,
+      "bot2_elo": 1243,
+      "timestamp": 1788348011.8944407
+    },
+    {
+      "match": 87,
+      "bot1_elo": 1177,
+      "bot2_elo": 1223,
+      "timestamp": 1788348011.9030316
+    },
+    {
+      "match": 88,
+      "bot1_elo": 1163,
+      "bot2_elo": 1237,
+      "timestamp": 1788348011.9147534
+    },
+    {
+      "match": 89,
+      "bot1_elo": 1150,
+      "bot2_elo": 1250,
+      "timestamp": 1788348042.1341796
+    },
+    {
+      "match": 90,
+      "bot1_elo": 1170,
+      "bot2_elo": 1230,
+      "timestamp": 1788348046.4338944
+    },
+    {
+      "match": 91,
+      "bot1_elo": 1157,
+      "bot2_elo": 1243,
+      "timestamp": 1788348050.454116
+    },
+    {
+      "match": 92,
+      "bot1_elo": 1177,
+      "bot2_elo": 1223,
+      "timestamp": 1788348051.5606647
+    },
+    {
+      "match": 93,
+      "bot1_elo": 1195,
+      "bot2_elo": 1205,
+      "timestamp": 1788348051.729951
+    },
+    {
+      "match": 94,
+      "bot1_elo": 1211,
+      "bot2_elo": 1189,
+      "timestamp": 1788348052.618471
+    },
+    {
+      "match": 95,
+      "bot1_elo": 1194,
+      "bot2_elo": 1206,
+      "timestamp": 1788348052.6273446
+    },
+    {
+      "match": 96,
+      "bot1_elo": 1211,
+      "bot2_elo": 1189,
+      "timestamp": 1788348052.6350024
+    },
+    {
+      "match": 97,
+      "bot1_elo": 1226,
+      "bot2_elo": 1174,
+      "timestamp": 1788348052.6412845
+    },
+    {
+      "match": 98,
+      "bot1_elo": 1208,
+      "bot2_elo": 1192,
+      "timestamp": 1788348052.646392
+    },
+    {
+      "match": 99,
+      "bot1_elo": 1191,
+      "bot2_elo": 1209,
+      "timestamp": 1788348073.6496892
+    },
+    {
+      "match": 100,
+      "bot1_elo": 1208,
+      "bot2_elo": 1192,
+      "timestamp": 1788348082.8997142
+    },
+    {
+      "match": 101,
+      "bot1_elo": 1223,
+      "bot2_elo": 1177,
+      "timestamp": 1788348084.5473428
+    },
+    {
+      "match": 102,
+      "bot1_elo": 1205,
+      "bot2_elo": 1195,
+      "timestamp": 1788348177.6620405
+    },
+    {
+      "match": 103,
+      "bot1_elo": 1221,
+      "bot2_elo": 1179,
+      "timestamp": 1788348177.6679804
+    },
+    {
+      "match": 104,
+      "bot1_elo": 1235,
+      "bot2_elo": 1165,
+      "timestamp": 1788348177.6736846
+    },
+    {
+      "match": 105,
+      "bot1_elo": 1248,
+      "bot2_elo": 1152,
+      "timestamp": 1788348224.5949438
+    },
+    {
+      "match": 106,
+      "bot1_elo": 1228,
+      "bot2_elo": 1172,
+      "timestamp": 1788348224.6300585
+    },
+    {
+      "match": 107,
+      "bot1_elo": 1241,
+      "bot2_elo": 1159,
+      "timestamp": 1788348225.5753362
+    },
+    {
+      "match": 108,
+      "bot1_elo": 1253,
+      "bot2_elo": 1147,
+      "timestamp": 1788348302.3648095
+    },
+    {
+      "match": 109,
+      "bot1_elo": 1232,
+      "bot2_elo": 1168,
+      "timestamp": 1788348302.3769999
+    },
+    {
+      "match": 110,
+      "bot1_elo": 1245,
+      "bot2_elo": 1155,
+      "timestamp": 1788348302.3838995
+    },
+    {
+      "match": 111,
+      "bot1_elo": 1225,
+      "bot2_elo": 1175,
+      "timestamp": 1788348344.8792212
+    },
+    {
+      "match": 112,
+      "bot1_elo": 1239,
+      "bot2_elo": 1161,
+      "timestamp": 1788348345.0279858
+    },
+    {
+      "match": 113,
+      "bot1_elo": 1251,
+      "bot2_elo": 1149,
+      "timestamp": 1788348427.0129828
+    },
+    {
+      "match": 114,
+      "bot1_elo": 1230,
+      "bot2_elo": 1170,
+      "timestamp": 1788348427.028023
+    },
+    {
+      "match": 115,
+      "bot1_elo": 1211,
+      "bot2_elo": 1189,
+      "timestamp": 1788348454.6328082
+    },
+    {
+      "match": 116,
+      "bot1_elo": 1194,
+      "bot2_elo": 1206,
+      "timestamp": 1788348457.261883
+    },
+    {
+      "match": 117,
+      "bot1_elo": 1211,
+      "bot2_elo": 1189,
+      "timestamp": 1788348470.7314248
+    },
+    {
+      "match": 118,
+      "bot1_elo": 1194,
+      "bot2_elo": 1206,
+      "timestamp": 1788348493.3385365
+    },
+    {
+      "match": 119,
+      "bot1_elo": 1179,
+      "bot2_elo": 1221,
+      "timestamp": 1788348552.737397
+    },
+    {
+      "match": 120,
+      "bot1_elo": 1165,
+      "bot2_elo": 1235,
+      "timestamp": 1788348552.7435825
+    },
+    {
+      "match": 121,
+      "bot1_elo": 1152,
+      "bot2_elo": 1248,
+      "timestamp": 1788348552.7486267
+    },
+    {
+      "match": 122,
+      "bot1_elo": 1172,
+      "bot2_elo": 1228,
+      "timestamp": 1788348552.7522244
+    }
+  ],
+  "deck_stats": {
+    "Vynsett": {
+      "matches": 18,
+      "wins": 2,
+      "losses": 16,
+      "elo": 1041
+    },
+    "Betsy": {
+      "matches": 32,
+      "wins": 20,
+      "losses": 12,
+      "elo": 1255
+    },
+    "Cindra": {
+      "matches": 31,
+      "wins": 15,
+      "losses": 16,
+      "elo": 1203
+    },
+    "Dash IO": {
+      "matches": 20,
+      "wins": 12,
+      "losses": 8,
+      "elo": 1256
+    },
+    "Gravy Bones": {
+      "matches": 5,
+      "wins": 5,
+      "losses": 0,
+      "elo": 1279
+    },
+    "Marlinn": {
+      "matches": 24,
+      "wins": 0,
+      "losses": 24,
+      "elo": 968
+    },
+    "Oscilio GIAF": {
+      "matches": 12,
+      "wins": 12,
+      "losses": 0,
+      "elo": 1304
+    },
+    "Hala": {
+      "matches": 16,
+      "wins": 16,
+      "losses": 0,
+      "elo": 1326
+    },
+    "Jarl": {
+      "matches": 30,
+      "wins": 0,
+      "losses": 30,
+      "elo": 983
+    },
+    "Mario": {
+      "matches": 26,
+      "wins": 12,
+      "losses": 14,
+      "elo": 1189
+    },
+    "Kassai": {
+      "matches": 28,
+      "wins": 28,
+      "losses": 0,
+      "elo": 1430
+    },
+    "Teklovossen": {
+      "matches": 2,
+      "wins": 0,
+      "losses": 2,
+      "elo": 1166
+    }
+  },
+  "recent_matches": [
+    {
+      "room": "Train_0107fa7b",
+      "date": "02/09/2026 08:29:12",
+      "winner": "Bot 1 (Hala)",
+      "p1_deck": "Hala",
+      "p2_deck": "Jarl",
+      "p1_health": 23,
+      "p2_health": -3,
+      "turns": 15
+    },
+    {
+      "room": "Train_be161f3c",
+      "date": "02/09/2026 08:29:12",
+      "winner": "\ud83e\udd16 Bot 2 (Gravy Bones)",
+      "p1_deck": "Dash IO",
+      "p2_deck": "Gravy Bones",
+      "p1_health": -1,
+      "p2_health": 31,
+      "turns": 15
+    },
+    {
+      "room": "Train_c8fb4d56",
+      "date": "02/09/2026 08:29:12",
+      "winner": "\ud83e\udd16 Bot 2 (Dash IO)",
+      "p1_deck": "Cindra",
+      "p2_deck": "Dash IO",
+      "p1_health": -2,
+      "p2_health": 20,
+      "turns": 15
+    },
+    {
+      "room": "Train_3bacfcd6",
+      "date": "02/09/2026 08:29:12",
+      "winner": "\ud83e\udd16 Bot 2 (Cindra)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Cindra",
+      "p1_health": 0,
+      "p2_health": 6,
+      "turns": 15
+    },
+    {
+      "room": "Train_3bacfcd6",
+      "date": "02/09/2026 08:28:13",
+      "winner": "\ud83e\udd16 Bot 2 (Cindra)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Cindra",
+      "p1_health": 0,
+      "p2_health": 6,
+      "turns": 89
+    },
+    {
+      "room": "Train_0107fa7b",
+      "date": "02/09/2026 08:27:50",
+      "winner": "Bot 1 (Hala)",
+      "p1_deck": "Hala",
+      "p2_deck": "Jarl",
+      "p1_health": 23,
+      "p2_health": -3,
+      "turns": 44
+    },
+    {
+      "room": "Train_be161f3c",
+      "date": "02/09/2026 08:27:37",
+      "winner": "\ud83e\udd16 Bot 2 (Gravy Bones)",
+      "p1_deck": "Dash IO",
+      "p2_deck": "Gravy Bones",
+      "p1_health": -1,
+      "p2_health": 31,
+      "turns": 20
+    },
+    {
+      "room": "Train_c8fb4d56",
+      "date": "02/09/2026 08:27:34",
+      "winner": "\ud83e\udd16 Bot 2 (Dash IO)",
+      "p1_deck": "Cindra",
+      "p2_deck": "Dash IO",
+      "p1_health": -2,
+      "p2_health": 20,
+      "turns": 15
+    },
+    {
+      "room": "Train_b6d57908",
+      "date": "02/09/2026 08:27:07",
+      "winner": "\ud83e\udd16 Bot 2 (Betsy)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Betsy",
+      "p1_health": 0,
+      "p2_health": 8,
+      "turns": 15
+    },
+    {
+      "room": "Train_4f18128a",
+      "date": "02/09/2026 08:27:07",
+      "winner": "Bot 1 (Mario)",
+      "p1_deck": "Mario",
+      "p2_deck": "Marlinn",
+      "p1_health": 40,
+      "p2_health": -1,
+      "turns": 15
+    },
+    {
+      "room": "Train_4f18128a",
+      "date": "02/09/2026 08:25:45",
+      "winner": "Bot 1 (Mario)",
+      "p1_deck": "Mario",
+      "p2_deck": "Marlinn",
+      "p1_health": 40,
+      "p2_health": -1,
+      "turns": 40
+    },
+    {
+      "room": "Train_b6d57908",
+      "date": "02/09/2026 08:25:44",
+      "winner": "\ud83e\udd16 Bot 2 (Betsy)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Betsy",
+      "p1_health": 0,
+      "p2_health": 8,
+      "turns": 24
+    },
+    {
+      "room": "Train_111c4131",
+      "date": "02/09/2026 08:25:02",
+      "winner": "Bot 1 (Kassai)",
+      "p1_deck": "Kassai",
+      "p2_deck": "Mario",
+      "p1_health": 11,
+      "p2_health": -2,
+      "turns": 15
+    },
+    {
+      "room": "Train_53c15007",
+      "date": "02/09/2026 08:25:02",
+      "winner": "\ud83e\udd16 Bot 2 (Kassai)",
+      "p1_deck": "Jarl",
+      "p2_deck": "Kassai",
+      "p1_health": 0,
+      "p2_health": 26,
+      "turns": 15
+    },
+    {
+      "room": "Train_b93f4728",
+      "date": "02/09/2026 08:25:02",
+      "winner": "Bot 1 (Hala)",
+      "p1_deck": "Hala",
+      "p2_deck": "Jarl",
+      "p1_health": 32,
+      "p2_health": 0,
+      "turns": 15
+    },
+    {
+      "room": "Train_111c4131",
+      "date": "02/09/2026 08:23:45",
+      "winner": "Bot 1 (Kassai)",
+      "p1_deck": "Kassai",
+      "p2_deck": "Mario",
+      "p1_health": 11,
+      "p2_health": -2,
+      "turns": 36
+    },
+    {
+      "room": "Train_53c15007",
+      "date": "02/09/2026 08:23:44",
+      "winner": "\ud83e\udd16 Bot 2 (Kassai)",
+      "p1_deck": "Jarl",
+      "p2_deck": "Kassai",
+      "p1_health": 0,
+      "p2_health": 26,
+      "turns": 61
+    },
+    {
+      "room": "Train_b93f4728",
+      "date": "02/09/2026 08:23:44",
+      "winner": "Bot 1 (Hala)",
+      "p1_deck": "Hala",
+      "p2_deck": "Jarl",
+      "p1_health": 32,
+      "p2_health": 0,
+      "turns": 43
+    },
+    {
+      "room": "Train_7482676f",
+      "date": "02/09/2026 08:22:57",
+      "winner": "Bot 1 (Cindra)",
+      "p1_deck": "Cindra",
+      "p2_deck": "Dash IO",
+      "p1_health": 11,
+      "p2_health": 0,
+      "turns": 15
+    },
+    {
+      "room": "Train_f54d030d",
+      "date": "02/09/2026 08:22:57",
+      "winner": "Bot 1 (Betsy)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Cindra",
+      "p1_health": 38,
+      "p2_health": -3,
+      "turns": 15
+    },
+    {
+      "room": "Train_c039970e",
+      "date": "02/09/2026 08:22:57",
+      "winner": "\ud83e\udd16 Bot 2 (Betsy)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Betsy",
+      "p1_health": -1,
+      "p2_health": 31,
+      "turns": 15
+    },
+    {
+      "room": "Train_f54d030d",
+      "date": "02/09/2026 08:21:24",
+      "winner": "Bot 1 (Betsy)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Cindra",
+      "p1_health": 38,
+      "p2_health": -3,
+      "turns": 20
+    },
+    {
+      "room": "Train_7482676f",
+      "date": "02/09/2026 08:21:22",
+      "winner": "Bot 1 (Cindra)",
+      "p1_deck": "Cindra",
+      "p2_deck": "Dash IO",
+      "p1_health": 11,
+      "p2_health": 0,
+      "turns": 18
+    },
+    {
+      "room": "Train_c039970e",
+      "date": "02/09/2026 08:21:13",
+      "winner": "\ud83e\udd16 Bot 2 (Betsy)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Betsy",
+      "p1_health": -1,
+      "p2_health": 31,
+      "turns": 11
+    },
+    {
+      "room": "Train_bffebb5b",
+      "date": "02/09/2026 08:20:52",
+      "winner": "\ud83e\udd16 Bot 2 (Oscilio GIAF)",
+      "p1_deck": "Marlinn",
+      "p2_deck": "Oscilio GIAF",
+      "p1_health": -1,
+      "p2_health": 45,
+      "turns": 15
+    },
+    {
+      "room": "Train_c81cc7bf",
+      "date": "02/09/2026 08:20:52",
+      "winner": "Bot 1 (Mario)",
+      "p1_deck": "Mario",
+      "p2_deck": "Marlinn",
+      "p1_health": 41,
+      "p2_health": -2,
+      "turns": 15
+    },
+    {
+      "room": "Train_265a532c",
+      "date": "02/09/2026 08:20:52",
+      "winner": "Bot 1 (Kassai)",
+      "p1_deck": "Kassai",
+      "p2_deck": "Mario",
+      "p1_health": 26,
+      "p2_health": -1,
+      "turns": 15
+    },
+    {
+      "room": "Train_27c89979",
+      "date": "02/09/2026 08:20:52",
+      "winner": "\ud83e\udd16 Bot 2 (Kassai)",
+      "p1_deck": "Jarl",
+      "p2_deck": "Kassai",
+      "p1_health": -1,
+      "p2_health": 5,
+      "turns": 15
+    },
+    {
+      "room": "Train_f33c1808",
+      "date": "02/09/2026 08:20:52",
+      "winner": "Bot 1 (Hala)",
+      "p1_deck": "Hala",
+      "p2_deck": "Jarl",
+      "p1_health": 34,
+      "p2_health": -3,
+      "turns": 15
+    },
+    {
+      "room": "Train_f33c1808",
+      "date": "02/09/2026 08:20:51",
+      "winner": "Bot 1 (Hala)",
+      "p1_deck": "Hala",
+      "p2_deck": "Jarl",
+      "p1_health": 34,
+      "p2_health": -3,
+      "turns": 37
+    }
+  ],
+  "deck_elo_history": [
+    {
+      "match": 1,
+      "Vynsett": 1184,
+      "Betsy": 1216
+    },
+    {
+      "match": 2,
+      "Vynsett": 1184,
+      "Betsy": 1199,
+      "Cindra": 1217
+    },
+    {
+      "match": 3,
+      "Vynsett": 1169,
+      "Betsy": 1214,
+      "Cindra": 1217
+    },
+    {
+      "match": 4,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1233
+    },
+    {
+      "match": 5,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1186
+    },
+    {
+      "match": 6,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215
+    },
+    {
+      "match": 7,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1184,
+      "Oscilio GIAF": 1216
+    },
+    {
+      "match": 8,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1184,
+      "Oscilio GIAF": 1216,
+      "Hala": 1216,
+      "Jarl": 1184
+    },
+    {
+      "match": 9,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1169,
+      "Oscilio GIAF": 1216,
+      "Hala": 1216,
+      "Jarl": 1184,
+      "Mario": 1215
+    },
+    {
+      "match": 10,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1169,
+      "Oscilio GIAF": 1216,
+      "Hala": 1216,
+      "Jarl": 1169,
+      "Mario": 1215,
+      "Kassai": 1215
+    },
+    {
+      "match": 11,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1169,
+      "Oscilio GIAF": 1216,
+      "Hala": 1216,
+      "Jarl": 1169,
+      "Mario": 1199,
+      "Kassai": 1231
+    },
+    {
+      "match": 12,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1169,
+      "Oscilio GIAF": 1216,
+      "Hala": 1230,
+      "Jarl": 1155,
+      "Mario": 1199,
+      "Kassai": 1231
+    },
+    {
+      "match": 13,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1169,
+      "Oscilio GIAF": 1216,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1199,
+      "Kassai": 1244
+    },
+    {
+      "match": 14,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1169,
+      "Oscilio GIAF": 1216,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1185,
+      "Kassai": 1258
+    },
+    {
+      "match": 15,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1154,
+      "Oscilio GIAF": 1216,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258
+    },
+    {
+      "match": 16,
+      "Vynsett": 1169,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258
+    },
+    {
+      "match": 17,
+      "Vynsett": 1186,
+      "Betsy": 1198,
+      "Cindra": 1247,
+      "Dash IO": 1171,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1183
+    },
+    {
+      "match": 18,
+      "Vynsett": 1186,
+      "Betsy": 1198,
+      "Cindra": 1228,
+      "Dash IO": 1190,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1183
+    },
+    {
+      "match": 19,
+      "Vynsett": 1171,
+      "Betsy": 1213,
+      "Cindra": 1228,
+      "Dash IO": 1190,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1183
+    },
+    {
+      "match": 20,
+      "Vynsett": 1171,
+      "Betsy": 1198,
+      "Cindra": 1243,
+      "Dash IO": 1190,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1183
+    },
+    {
+      "match": 21,
+      "Vynsett": 1188,
+      "Betsy": 1198,
+      "Cindra": 1243,
+      "Dash IO": 1190,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 22,
+      "Vynsett": 1172,
+      "Betsy": 1214,
+      "Cindra": 1243,
+      "Dash IO": 1190,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 23,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1258,
+      "Dash IO": 1190,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 24,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1209,
+      "Gravy Bones": 1215,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 25,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1193,
+      "Gravy Bones": 1231,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1142,
+      "Mario": 1200,
+      "Kassai": 1258,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 26,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1193,
+      "Gravy Bones": 1231,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1230,
+      "Jarl": 1131,
+      "Mario": 1200,
+      "Kassai": 1269,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 27,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1193,
+      "Gravy Bones": 1231,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1242,
+      "Jarl": 1119,
+      "Mario": 1200,
+      "Kassai": 1269,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 28,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1193,
+      "Gravy Bones": 1231,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1242,
+      "Jarl": 1119,
+      "Mario": 1187,
+      "Kassai": 1282,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 29,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1242,
+      "Jarl": 1119,
+      "Mario": 1187,
+      "Kassai": 1282,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 30,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1253,
+      "Jarl": 1108,
+      "Mario": 1187,
+      "Kassai": 1282,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 31,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1187,
+      "Kassai": 1291,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 32,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1141,
+      "Oscilio GIAF": 1229,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1176,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 33,
+      "Vynsett": 1172,
+      "Betsy": 1199,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1129,
+      "Oscilio GIAF": 1241,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1176,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 34,
+      "Vynsett": 1157,
+      "Betsy": 1214,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1129,
+      "Oscilio GIAF": 1241,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1176,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 35,
+      "Vynsett": 1157,
+      "Betsy": 1214,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1115,
+      "Oscilio GIAF": 1241,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1190,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 36,
+      "Vynsett": 1157,
+      "Betsy": 1214,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1102,
+      "Oscilio GIAF": 1241,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 37,
+      "Vynsett": 1157,
+      "Betsy": 1214,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1092,
+      "Oscilio GIAF": 1251,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 38,
+      "Vynsett": 1144,
+      "Betsy": 1227,
+      "Cindra": 1239,
+      "Dash IO": 1179,
+      "Gravy Bones": 1245,
+      "Marlinn": 1092,
+      "Oscilio GIAF": 1251,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 39,
+      "Vynsett": 1144,
+      "Betsy": 1227,
+      "Cindra": 1220,
+      "Dash IO": 1198,
+      "Gravy Bones": 1245,
+      "Marlinn": 1092,
+      "Oscilio GIAF": 1251,
+      "Hala": 1253,
+      "Jarl": 1099,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 40,
+      "Vynsett": 1144,
+      "Betsy": 1227,
+      "Cindra": 1220,
+      "Dash IO": 1198,
+      "Gravy Bones": 1245,
+      "Marlinn": 1092,
+      "Oscilio GIAF": 1251,
+      "Hala": 1262,
+      "Jarl": 1090,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 41,
+      "Vynsett": 1144,
+      "Betsy": 1211,
+      "Cindra": 1236,
+      "Dash IO": 1198,
+      "Gravy Bones": 1245,
+      "Marlinn": 1092,
+      "Oscilio GIAF": 1251,
+      "Hala": 1262,
+      "Jarl": 1090,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 42,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1251,
+      "Dash IO": 1198,
+      "Gravy Bones": 1245,
+      "Marlinn": 1092,
+      "Oscilio GIAF": 1251,
+      "Hala": 1262,
+      "Jarl": 1090,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 43,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1092,
+      "Oscilio GIAF": 1251,
+      "Hala": 1262,
+      "Jarl": 1090,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 44,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1092,
+      "Oscilio GIAF": 1251,
+      "Hala": 1271,
+      "Jarl": 1081,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 45,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1083,
+      "Oscilio GIAF": 1260,
+      "Hala": 1271,
+      "Jarl": 1081,
+      "Mario": 1203,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 46,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1072,
+      "Oscilio GIAF": 1260,
+      "Hala": 1271,
+      "Jarl": 1081,
+      "Mario": 1214,
+      "Kassai": 1302,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 47,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1072,
+      "Oscilio GIAF": 1260,
+      "Hala": 1271,
+      "Jarl": 1074,
+      "Mario": 1214,
+      "Kassai": 1309,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 48,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1072,
+      "Oscilio GIAF": 1260,
+      "Hala": 1271,
+      "Jarl": 1074,
+      "Mario": 1202,
+      "Kassai": 1321,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 49,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1072,
+      "Oscilio GIAF": 1260,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1202,
+      "Kassai": 1327,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 50,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1072,
+      "Oscilio GIAF": 1260,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1192,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 51,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1061,
+      "Oscilio GIAF": 1260,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 52,
+      "Vynsett": 1144,
+      "Betsy": 1196,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 53,
+      "Vynsett": 1130,
+      "Betsy": 1210,
+      "Cindra": 1233,
+      "Dash IO": 1216,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 54,
+      "Vynsett": 1130,
+      "Betsy": 1210,
+      "Cindra": 1216,
+      "Dash IO": 1233,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 55,
+      "Vynsett": 1130,
+      "Betsy": 1194,
+      "Cindra": 1232,
+      "Dash IO": 1233,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 56,
+      "Vynsett": 1117,
+      "Betsy": 1207,
+      "Cindra": 1232,
+      "Dash IO": 1233,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 57,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1247,
+      "Dash IO": 1233,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 58,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1271,
+      "Jarl": 1068,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 59,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1279,
+      "Jarl": 1060,
+      "Mario": 1203,
+      "Kassai": 1337,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 60,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1279,
+      "Jarl": 1055,
+      "Mario": 1203,
+      "Kassai": 1342,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 61,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1279,
+      "Jarl": 1055,
+      "Mario": 1193,
+      "Kassai": 1352,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 62,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1286,
+      "Jarl": 1048,
+      "Mario": 1193,
+      "Kassai": 1352,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 63,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1193,
+      "Kassai": 1357,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 64,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1053,
+      "Oscilio GIAF": 1268,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1184,
+      "Kassai": 1366,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 65,
+      "Vynsett": 1117,
+      "Betsy": 1192,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1046,
+      "Oscilio GIAF": 1275,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1184,
+      "Kassai": 1366,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 66,
+      "Vynsett": 1104,
+      "Betsy": 1205,
+      "Cindra": 1230,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1046,
+      "Oscilio GIAF": 1275,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1184,
+      "Kassai": 1366,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 67,
+      "Vynsett": 1104,
+      "Betsy": 1190,
+      "Cindra": 1245,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1046,
+      "Oscilio GIAF": 1275,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1184,
+      "Kassai": 1366,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 68,
+      "Vynsett": 1104,
+      "Betsy": 1190,
+      "Cindra": 1245,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1184,
+      "Kassai": 1366,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 69,
+      "Vynsett": 1092,
+      "Betsy": 1202,
+      "Cindra": 1245,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1184,
+      "Kassai": 1366,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 70,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1259,
+      "Dash IO": 1250,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1184,
+      "Kassai": 1366,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 71,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1243,
+      "Dash IO": 1266,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1286,
+      "Jarl": 1043,
+      "Mario": 1184,
+      "Kassai": 1366,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 72,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1243,
+      "Dash IO": 1266,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1286,
+      "Jarl": 1039,
+      "Mario": 1184,
+      "Kassai": 1370,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 73,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1243,
+      "Dash IO": 1266,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1292,
+      "Jarl": 1033,
+      "Mario": 1184,
+      "Kassai": 1370,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 74,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1292,
+      "Jarl": 1033,
+      "Mario": 1184,
+      "Kassai": 1370,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 75,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1298,
+      "Jarl": 1027,
+      "Mario": 1184,
+      "Kassai": 1370,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 76,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1039,
+      "Oscilio GIAF": 1282,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1184,
+      "Kassai": 1374,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 77,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1033,
+      "Oscilio GIAF": 1288,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1184,
+      "Kassai": 1374,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 78,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1024,
+      "Oscilio GIAF": 1288,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1193,
+      "Kassai": 1374,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 79,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1024,
+      "Oscilio GIAF": 1288,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1185,
+      "Kassai": 1382,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 80,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1024,
+      "Oscilio GIAF": 1288,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1177,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 81,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1015,
+      "Oscilio GIAF": 1288,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 82,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1228,
+      "Dash IO": 1281,
+      "Gravy Bones": 1245,
+      "Marlinn": 1009,
+      "Oscilio GIAF": 1294,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 83,
+      "Vynsett": 1092,
+      "Betsy": 1188,
+      "Cindra": 1214,
+      "Dash IO": 1295,
+      "Gravy Bones": 1245,
+      "Marlinn": 1009,
+      "Oscilio GIAF": 1294,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 84,
+      "Vynsett": 1092,
+      "Betsy": 1205,
+      "Cindra": 1197,
+      "Dash IO": 1295,
+      "Gravy Bones": 1245,
+      "Marlinn": 1009,
+      "Oscilio GIAF": 1294,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 85,
+      "Vynsett": 1081,
+      "Betsy": 1216,
+      "Cindra": 1197,
+      "Dash IO": 1295,
+      "Gravy Bones": 1245,
+      "Marlinn": 1009,
+      "Oscilio GIAF": 1294,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 86,
+      "Vynsett": 1071,
+      "Betsy": 1226,
+      "Cindra": 1197,
+      "Dash IO": 1295,
+      "Gravy Bones": 1245,
+      "Marlinn": 1009,
+      "Oscilio GIAF": 1294,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 87,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1182,
+      "Dash IO": 1295,
+      "Gravy Bones": 1245,
+      "Marlinn": 1009,
+      "Oscilio GIAF": 1294,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 88,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 1009,
+      "Oscilio GIAF": 1294,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 89,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 1004,
+      "Oscilio GIAF": 1299,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1186,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 90,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 996,
+      "Oscilio GIAF": 1299,
+      "Hala": 1298,
+      "Jarl": 1023,
+      "Mario": 1194,
+      "Kassai": 1390,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 91,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 996,
+      "Oscilio GIAF": 1299,
+      "Hala": 1298,
+      "Jarl": 1020,
+      "Mario": 1194,
+      "Kassai": 1393,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 92,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 996,
+      "Oscilio GIAF": 1299,
+      "Hala": 1298,
+      "Jarl": 1020,
+      "Mario": 1186,
+      "Kassai": 1401,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 93,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 996,
+      "Oscilio GIAF": 1299,
+      "Hala": 1303,
+      "Jarl": 1015,
+      "Mario": 1186,
+      "Kassai": 1401,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 94,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 996,
+      "Oscilio GIAF": 1299,
+      "Hala": 1308,
+      "Jarl": 1010,
+      "Mario": 1186,
+      "Kassai": 1401,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 95,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 996,
+      "Oscilio GIAF": 1299,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1186,
+      "Kassai": 1404,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 96,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 996,
+      "Oscilio GIAF": 1299,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1179,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 97,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 988,
+      "Oscilio GIAF": 1299,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 98,
+      "Vynsett": 1071,
+      "Betsy": 1241,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 99,
+      "Vynsett": 1062,
+      "Betsy": 1250,
+      "Cindra": 1171,
+      "Dash IO": 1306,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 100,
+      "Vynsett": 1062,
+      "Betsy": 1250,
+      "Cindra": 1193,
+      "Dash IO": 1284,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 101,
+      "Vynsett": 1062,
+      "Betsy": 1263,
+      "Cindra": 1180,
+      "Dash IO": 1284,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 102,
+      "Vynsett": 1054,
+      "Betsy": 1271,
+      "Cindra": 1180,
+      "Dash IO": 1284,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 103,
+      "Vynsett": 1054,
+      "Betsy": 1283,
+      "Cindra": 1168,
+      "Dash IO": 1284,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 104,
+      "Vynsett": 1054,
+      "Betsy": 1283,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1308,
+      "Jarl": 1007,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 105,
+      "Vynsett": 1054,
+      "Betsy": 1283,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1313,
+      "Jarl": 1002,
+      "Mario": 1187,
+      "Kassai": 1411,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 106,
+      "Vynsett": 1054,
+      "Betsy": 1283,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1313,
+      "Jarl": 999,
+      "Mario": 1187,
+      "Kassai": 1414,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 107,
+      "Vynsett": 1054,
+      "Betsy": 1283,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1313,
+      "Jarl": 999,
+      "Mario": 1180,
+      "Kassai": 1421,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 108,
+      "Vynsett": 1054,
+      "Betsy": 1283,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 994,
+      "Mario": 1180,
+      "Kassai": 1421,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 109,
+      "Vynsett": 1054,
+      "Betsy": 1283,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 991,
+      "Mario": 1180,
+      "Kassai": 1424,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 110,
+      "Vynsett": 1054,
+      "Betsy": 1283,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 991,
+      "Mario": 1174,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 111,
+      "Vynsett": 1047,
+      "Betsy": 1290,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 983,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 991,
+      "Mario": 1174,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 112,
+      "Vynsett": 1047,
+      "Betsy": 1290,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 975,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 991,
+      "Mario": 1182,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 113,
+      "Vynsett": 1047,
+      "Betsy": 1290,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 991,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 114,
+      "Vynsett": 1041,
+      "Betsy": 1296,
+      "Cindra": 1189,
+      "Dash IO": 1263,
+      "Gravy Bones": 1245,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 991,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 115,
+      "Vynsett": 1041,
+      "Betsy": 1296,
+      "Cindra": 1176,
+      "Dash IO": 1276,
+      "Gravy Bones": 1245,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 991,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 116,
+      "Vynsett": 1041,
+      "Betsy": 1296,
+      "Cindra": 1176,
+      "Dash IO": 1259,
+      "Gravy Bones": 1262,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1318,
+      "Jarl": 991,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 117,
+      "Vynsett": 1041,
+      "Betsy": 1296,
+      "Cindra": 1176,
+      "Dash IO": 1259,
+      "Gravy Bones": 1262,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1322,
+      "Jarl": 987,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 118,
+      "Vynsett": 1041,
+      "Betsy": 1275,
+      "Cindra": 1197,
+      "Dash IO": 1259,
+      "Gravy Bones": 1262,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1322,
+      "Jarl": 987,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 119,
+      "Vynsett": 1041,
+      "Betsy": 1255,
+      "Cindra": 1217,
+      "Dash IO": 1259,
+      "Gravy Bones": 1262,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1322,
+      "Jarl": 987,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 120,
+      "Vynsett": 1041,
+      "Betsy": 1255,
+      "Cindra": 1203,
+      "Dash IO": 1273,
+      "Gravy Bones": 1262,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1322,
+      "Jarl": 987,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 121,
+      "Vynsett": 1041,
+      "Betsy": 1255,
+      "Cindra": 1203,
+      "Dash IO": 1256,
+      "Gravy Bones": 1279,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1322,
+      "Jarl": 987,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    },
+    {
+      "match": 122,
+      "Vynsett": 1041,
+      "Betsy": 1255,
+      "Cindra": 1203,
+      "Dash IO": 1256,
+      "Gravy Bones": 1279,
+      "Marlinn": 968,
+      "Oscilio GIAF": 1304,
+      "Hala": 1326,
+      "Jarl": 983,
+      "Mario": 1189,
+      "Kassai": 1430,
+      "Teklovossen": 1166
+    }
+  ]
+}
