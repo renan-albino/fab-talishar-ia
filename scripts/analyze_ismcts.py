@@ -30,7 +30,7 @@ import json
 import argparse
 import random
 from collections import defaultdict, Counter
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Garantir que o root do projeto está no path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -145,7 +145,7 @@ def _run_dry_run(n_states: int = 5) -> list:
         )
 
         entry = {
-            "timestamp"      : datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "timestamp"      : datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "room_id"        : "dry_run",
             "hero"           : hero,
             "turn"           : i + 1,

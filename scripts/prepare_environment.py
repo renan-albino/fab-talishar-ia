@@ -74,10 +74,8 @@ def get_docker_compose_cmd():
         return ["docker-compose"]
     return ["docker", "compose"]
 
-def ensure_talishar_repositories():
-    log("Verificando integridade dos repositórios Talishar e Talishar-FE...")
-    
-    # 1. Backend Talishar
+def ensure_talishar_backend():
+    log("Verificando integridade do backend Talishar...")
     if not os.path.exists(os.path.join(TALISHAR_DIR, "docker-compose.yml")):
         log_warn("docker-compose.yml não encontrado em Talishar/.")
         workspace_backend = os.path.join(BASE_DIR, "talishar_workspace", "Talishar")
@@ -90,7 +88,8 @@ def ensure_talishar_repositories():
             subprocess.run(["git", "clone", "--depth", "1", "https://github.com/Talishar/Talishar.git", TALISHAR_DIR], check=True)
             log_success("Repositório oficial Talishar clonado com sucesso.")
 
-    # 2. Frontend Talishar-FE
+def ensure_talishar_frontend():
+    log("Verificando integridade do frontend Talishar-FE...")
     if not os.path.exists(os.path.join(TALISHAR_FE_DIR, "package.json")):
         log_warn("package.json não encontrado em Talishar-FE/.")
         workspace_frontend = os.path.join(BASE_DIR, "talishar_workspace", "Talishar-FE")
@@ -103,6 +102,11 @@ def ensure_talishar_repositories():
             subprocess.run(["git", "clone", "--depth", "1", "https://github.com/Talishar/Talishar-FE.git", TALISHAR_FE_DIR], check=True)
             log_success("Repositório oficial Talishar-FE clonado com sucesso.")
 
+def ensure_talishar_repositories():
+    log("Verificando integridade dos repositórios Talishar e Talishar-FE...")
+    ensure_talishar_backend()
+    ensure_talishar_frontend()
+
 def ensure_directories():
     log("Verificando estrutura de diretórios do projeto...")
     for d in [DATA_DIR, LOGS_DIR, DECKS_DIR]:
@@ -113,10 +117,7 @@ def ensure_directories():
             pass
     log_success("Diretórios essenciais prontos (data/, logs/, decks/).")
 
-def apply_custom_templates():
-    log("Aplicando arquivos customizados e patches de setup_templates/...")
-    
-    # 1. Backend
+def apply_backend_templates():
     backend_templates = os.path.join(TEMPLATES_DIR, "backend")
     if os.path.exists(backend_templates) and os.path.exists(TALISHAR_DIR):
         for src_rel, dst_rel in BACKEND_MAPPINGS:
@@ -128,7 +129,7 @@ def apply_custom_templates():
                 log(f"  -> Patch Backend aplicado: Talishar/{dst_rel}")
         log_success("Todos os patches do backend Talishar foram aplicados.")
 
-    # 2. Frontend
+def apply_frontend_templates():
     frontend_templates = os.path.join(TEMPLATES_DIR, "frontend")
     if os.path.exists(frontend_templates) and os.path.exists(TALISHAR_FE_DIR):
         for src_rel, dst_rel in FRONTEND_MAPPINGS:
@@ -139,6 +140,11 @@ def apply_custom_templates():
                 shutil.copy2(src_f, dst_f)
                 log(f"  -> Componente Frontend aplicado: Talishar-FE/{dst_rel}")
         log_success("Todos os componentes e patches do frontend foram sincronizados.")
+
+def apply_custom_templates():
+    log("Aplicando arquivos customizados e patches de setup_templates/...")
+    apply_backend_templates()
+    apply_frontend_templates()
 
 def export_active_to_templates():
     log("Exportando arquivos ativos de Talishar/ e Talishar-FE/ para setup_templates/...")
@@ -259,6 +265,7 @@ def check_docker():
 def main():
     parser = argparse.ArgumentParser(description="Automação de Preparação de Ambiente do FaB Talishar AI")
     parser.add_argument("--export-templates", action="store_true", help="Salva os arquivos modificados em setup_templates/")
+    parser.add_argument("--frontend-only", action="store_true", help="Prepara apenas o repositório Talishar-FE e sincroniza templates")
     args = parser.parse_args()
 
     print("==================================================")
@@ -267,6 +274,12 @@ def main():
 
     if args.export_templates:
         export_active_to_templates()
+        return
+
+    if args.frontend_only:
+        ensure_talishar_frontend()
+        apply_frontend_templates()
+        log_success("Frontend Talishar-FE preparado e sincronizado com sucesso!")
         return
 
     ensure_directories()

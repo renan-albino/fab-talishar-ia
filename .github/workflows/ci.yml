@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+# Garante compatibilidade caso actions do runner ainda utilizem runtime Node 20
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+
 jobs:
   # 1. Validação da Engine de IA e Scripts Python
   python-ai-tests:
@@ -15,8 +19,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Python 3.10
         uses: actions/setup-python@v5
@@ -50,13 +52,20 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      - name: Setup Node.js 20
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Prepare Talishar Frontend & Apply Custom Templates
+        run: |
+          python scripts/prepare_environment.py --frontend-only
+
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: 'Talishar-FE/package-lock.json'
 
