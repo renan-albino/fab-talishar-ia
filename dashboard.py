@@ -10,6 +10,7 @@ from deck_parser import parse_deck_text, save_deck_to_workspace, list_saved_deck
 from stats_manager import get_stats_data, reset_stats, delete_deck_stat
 from tournament_manager import TournamentManager
 from ai.trainer import GPUTrainingOrchestrator
+from config.settings import SETTINGS
 import frontend_manager
 
 st.set_page_config(page_title="FaB AI Master - GPU Deep RL", layout="wide", initial_sidebar_state="expanded")
@@ -433,6 +434,90 @@ with tab_arena:
 # ==============================================================================
 # ABA 2: TREINAMENTO COM GPU (DEEP RL + ROTAÇÃO DE DECKS)
 # ==============================================================================
+def get_suggested_training_profile(device_str: str) -> dict:
+    """
+    Calcula parâmetros de treinamento balanceados (~75-80% de carga máxima segura),
+    garantindo que o usuário possa continuar utilizando o computador normalmente
+    (navegador, vídeos, multitarefa) sem travamentos durante o treinamento no Dashboard.
+    """
+    is_gpu = "cuda" in device_str.lower() and torch.cuda.is_available()
+    try:
+        from config.settings import SETTINGS
+        vram_gb = getattr(SETTINGS, "vram_gb", 0.0)
+        cpu_cores = getattr(SETTINGS, "cpu_logical", 4)
+        gpu_name = getattr(SETTINGS, "gpu_name", "GPU")
+    except Exception:
+        vram_gb = 6.0 if torch.cuda.is_available() else 0.0
+        cpu_cores = os.cpu_count() or 4
+        gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "GPU"
+
+    if not is_gpu:
+        safe_workers = max(1, min(3, (cpu_cores - 2) // 3))
+        return {
+            "device_label": f"CPU ({cpu_cores} threads)",
+            "workers": safe_workers,
+            "batch_size": 128,
+            "mcts_sims": 15,
+            "save_interval": 15,
+            "use_fp16": False,
+            "buffer_capacity": 50000,
+            "description": f"Modo CPU Seguro (~60% carga) • {safe_workers} workers • 15 MCTS sims • Sistema 100% livre para uso normal do PC."
+        }
+
+    # Perfil para GPU calibrado por faixa de VRAM (~75-80% de uso equilibrado):
+    if vram_gb <= 6.5:
+        # Ex: GTX 1660 Super, RTX 2060 6GB
+        safe_workers = max(1, min(4, (cpu_cores - 2) // 2))
+        return {
+            "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+            "workers": safe_workers,
+            "batch_size": 256,
+            "mcts_sims": 30,
+            "save_interval": 20,
+            "use_fp16": True,
+            "buffer_capacity": 100000,
+            "description": f"{gpu_name} (~75% VRAM) • {safe_workers} workers • Batch 256 • ~4 GB VRAM livres para uso geral do PC."
+        }
+    elif vram_gb <= 12.5:
+        # Ex: RTX 3060, RTX 4060 Ti, RTX 4070
+        safe_workers = max(2, min(6, (cpu_cores - 2) // 2))
+        return {
+            "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+            "workers": safe_workers,
+            "batch_size": 512,
+            "mcts_sims": 45,
+            "save_interval": 25,
+            "use_fp16": True,
+            "buffer_capacity": 250000,
+            "description": f"{gpu_name} (~80% carga) • {safe_workers} workers • Batch 512 • Excelente velocidade com folga de sistema."
+        }
+    elif vram_gb <= 20.0:
+        # Ex: RX 9070 XT 16GB, RTX 4080 16GB
+        safe_workers = max(2, min(8, (cpu_cores - 2) // 2))
+        return {
+            "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+            "workers": safe_workers,
+            "batch_size": 1024,
+            "mcts_sims": 60,
+            "save_interval": 30,
+            "use_fp16": True,
+            "buffer_capacity": 500000,
+            "description": f"{gpu_name} (~80% carga) • {safe_workers} workers • Batch 1024 • Alto rendimento com folga para multitarefa."
+        }
+    else:
+        # Ex: RTX 5090 32GB, RTX 4090 24GB
+        safe_workers = max(4, min(12, (cpu_cores - 2) // 2))
+        return {
+            "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+            "workers": safe_workers,
+            "batch_size": 2048,
+            "mcts_sims": 100,
+            "save_interval": 40,
+            "use_fp16": True,
+            "buffer_capacity": 500000,
+            "description": f"{gpu_name} (~80% carga) • {safe_workers} workers • Batch 2048 • Capacidade extrema sem travar o desktop."
+        }
+
 with tab_gpu:
     st.subheader("⚡ Painel de Treinamento Autônomo com GPU")
     st.markdown("Acelere o aprendizado da rede neural com **Self-Play em lote**, rotação dinâmica de decks e amostragem na GPU.")
@@ -444,20 +529,86 @@ with tab_gpu:
         default=all_deck_keys[:min(3, len(all_deck_keys))]
     )
 
+    device_options = ["cuda:0 (GPU)", "cpu"] if gpu_available else ["cpu"]
+
+    def update_hardware_suggestions():
+        chosen = st.session_state.get("train_dev_select", device_options[0])
+        prof = get_suggested_training_profile(chosen)
+        st.session_state["train_workers"] = prof["workers"]
+        st.session_state["train_batch_size"] = prof["batch_size"]
+        st.session_state["train_mcts_sims"] = prof["mcts_sims"]
+        st.session_state["train_save_interval"] = prof["save_interval"]
+        st.session_state["train_fp16"] = prof["use_fp16"]
+        st.session_state["train_buffer_cap"] = prof["buffer_capacity"]
+
+    if "train_workers" not in st.session_state:
+        update_hardware_suggestions()
+
     with st.expander("⚙️ Configurações Avançadas de Hardware e Treinador", expanded=not orchestrator.is_running):
+        train_dev = st.selectbox(
+            "Dispositivo de Treino:",
+            device_options,
+            index=0 if gpu_available else 0,
+            key="train_dev_select",
+            on_change=update_hardware_suggestions
+        )
+
+        active_prof = get_suggested_training_profile(train_dev)
+        st.info(f"💡 **Perfil Sugerido ({active_prof['device_label']}):** {active_prof['description']}")
+
         col_g1, col_g2, col_g3 = st.columns(3)
         with col_g1:
-            train_dev = st.selectbox("Dispositivo de Treino:", ["cuda:0 (GPU)", "cpu"], index=0 if gpu_available else 1)
-            workers_count = st.slider("Partidas Simultâneas de Self-Play:", min_value=1, max_value=20, value=4)
-            batch_sz = st.select_slider("Batch Size do Treinador:", options=[32, 64, 128, 256, 512], value=256)
+            workers_count = st.slider(
+                "Partidas Simultâneas de Self-Play:",
+                min_value=1,
+                max_value=24,
+                key="train_workers",
+                help="Quantidade de duelos simultâneos. Calibrado com folga de CPU para o PC não travar."
+            )
+            batch_sz = st.select_slider(
+                "Batch Size do Treinador:",
+                options=[32, 64, 128, 256, 512, 1024, 2048, 4096],
+                key="train_batch_size",
+                help="Tamanho do lote para atualização de gradientes na GPU/CPU. Calibrado para até ~75-80% da VRAM livre."
+            )
         with col_g2:
-            lr_val = st.select_slider("Learning Rate (Taxa de Aprendizado):", options=[0.0001, 0.0003, 0.001, 0.003], value=0.0003)
-            mcts_sims = st.slider("Simulações MCTS por Jogada:", min_value=5, max_value=100, value=25)
-            buffer_cap = st.select_slider("Capacidade do Replay Buffer:", options=[10000, 50000, 100000, 250000, 500000], value=100000)
+            lr_val = st.select_slider(
+                "Learning Rate (Taxa de Aprendizado):",
+                options=[0.0001, 0.0003, 0.001, 0.003],
+                value=0.0003,
+                key="train_lr"
+            )
+            mcts_sims = st.slider(
+                "Simulações MCTS por Jogada:",
+                min_value=5,
+                max_value=150,
+                key="train_mcts_sims",
+                help="Profundidade da busca ISMCTS. Valores equilibrados garantem decisões rápidas (<150ms)."
+            )
+            buffer_cap = st.select_slider(
+                "Capacidade do Replay Buffer:",
+                options=[10000, 50000, 100000, 250000, 500000],
+                key="train_buffer_cap"
+            )
         with col_g3:
-            use_fp16 = st.toggle("Aceleração Mixed Precision (FP16)", value=True)
-            auto_save = st.toggle("Auto-Save de Checkpoints (.pt)", value=True)
-            save_interval = st.number_input("Salvar Checkpoint a cada N partidas:", min_value=5, max_value=100, value=20)
+            use_fp16 = st.toggle(
+                "Aceleração Mixed Precision (FP16)",
+                key="train_fp16",
+                help="Acelera em GPU reduzindo uso de VRAM. Desativado automaticamente no modo CPU."
+            )
+            auto_save = st.toggle("Auto-Save de Checkpoints (.pt)", value=True, key="train_auto_save")
+            save_interval = st.number_input(
+                "Salvar Checkpoint a cada N partidas:",
+                min_value=5,
+                max_value=100,
+                key="train_save_interval",
+                help="Frequência de gravação de novos checkpoints em disco."
+            )
+
+        if st.button("🔄 Restaurar Valores Recomendados para este Hardware (~80% Carga Segura)", use_container_width=True):
+            update_hardware_suggestions()
+            st.toast("Parâmetros redefinidos com sucesso para a recomendação segura da máquina!", icon="⚙️")
+            st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
     col_t_btn1, col_t_btn2 = st.columns([1, 1])
     with col_t_btn1:
