@@ -6,6 +6,10 @@ import json
 import uuid
 from typing import Dict, Any, Optional
 
+from ai.logger import get_logger
+
+logger = get_logger("frontend_manager")
+
 BACKEND_URL = "http://localhost:8080/game"
 FRONTEND_URL = "http://localhost:3000"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -15,14 +19,16 @@ def is_backend_running() -> bool:
     try:
         r = requests.get(f"{BACKEND_URL}/APIs/GetGameList.php", timeout=2)
         return r.status_code == 200
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Falha ao verificar backend: {e}")
         return False
 
 def is_frontend_running() -> bool:
     try:
         r = requests.get(FRONTEND_URL, timeout=2)
         return r.status_code == 200
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Falha ao verificar frontend: {e}")
         return False
 
 def start_backend() -> bool:
@@ -78,7 +84,8 @@ def _ai_watcher_loop():
                             with open(flag_file, "r") as ff:
                                 bot_deck = ff.read().strip() or "betsy"
                             os.remove(flag_file)
-                        except Exception:
+                        except Exception as e:
+                            logger.warning(f"Erro lendo p2_bot_needed.txt: {e}")
                             continue
 
                         logs_dir = os.path.join(BASE_DIR, "logs")
@@ -102,6 +109,15 @@ def _ai_watcher_loop():
                         _active_bot_procs[str(g_id)] = proc
         except Exception:
             pass
+
+        # Cleanup _active_bot_procs
+        to_remove = []
+        for g_id, p in _active_bot_procs.items():
+            if p.poll() is not None:
+                to_remove.append(g_id)
+        for g_id in to_remove:
+            del _active_bot_procs[g_id]
+
         time.sleep(0.3)
 
 def ensure_ai_watcher_running():

@@ -176,7 +176,9 @@ class GPUTrainingOrchestrator:
         scaler = torch.cuda.amp.GradScaler(enabled=use_fp16)
 
         buffer_cap = int(cfg.get("buffer_capacity", SETTINGS.buffer_capacity))
+        os.environ["FAB_BUFFER_CAPACITY"] = str(buffer_cap)
         buffer = get_global_buffer(buffer_cap)
+        self.stats["buffer_capacity"] = buffer_cap
 
         training_decks: List[str] = cfg.get("training_decks", [])
         num_workers = int(cfg.get("num_workers", SETTINGS.num_workers))
@@ -209,7 +211,8 @@ class GPUTrainingOrchestrator:
                      "--room", room_id, "--deck", f"decks/{d1}.json",
                      "--role", "host",  "--name", "Bot1",
                      "--mcts-sims", str(mcts_sims_val),
-                     "--device", str(dev_val)],
+                     "--device", str(dev_val),
+                     "--buffer-capacity", str(buffer_cap)],
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
@@ -221,7 +224,8 @@ class GPUTrainingOrchestrator:
                      "--room", room_id, "--deck", f"decks/{d2}.json",
                      "--role", "join",  "--name", "Bot2",
                      "--mcts-sims", str(mcts_sims_val),
-                     "--device", str(dev_val)],
+                     "--device", str(dev_val),
+                     "--buffer-capacity", str(buffer_cap)],
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,

@@ -230,7 +230,7 @@ Para permitir que **qualquer pessoa ou IA replique o ambiente em 1 clique em qua
 ### O que o script de preparação faz automaticamente:
 1. **Verificação e Auto-reparo de Dependências Python:** Configura o `venv` e verifica a integridade de extensões binárias em C (como NumPy e PyTorch), reinstalando-as automaticamente se arquivos `.so` estiverem corrompidos.
 2. **Garantia dos Repositórios Base (`Talishar` e `Talishar-FE`):** Detecta se as pastas base existem e estão completas (`docker-compose.yml` e `package.json`). Se ausentes, importa do diretório de workspace ou clona automaticamente dos repositórios oficiais do GitHub (`Talishar/Talishar` e `Talishar/Talishar-FE`).
-3. **Criação de Diretórios:** Garante a existência de `data/`, `logs/` e `decks/` com permissões de I/O (`chmod 777`).
+3. **Criação de Diretórios:** Garante a existência de `data/`, `logs/` e `decks/` com permissões de I/O (`chmod 775`).
 4. **Aplicação de Patches do Backend (`setup_templates/backend/` $\to$ `Talishar/`):**
    - Injeta `AppendGameLog.php` (API de chat em tempo real).
    - Injeta `JoinGame.php` (Handshake do bot e geração de `authKey`).

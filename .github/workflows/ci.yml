@@ -39,9 +39,9 @@ jobs:
         run: |
           python scripts/analyze_ismcts.py --dry-run
 
-      - name: Run Tactical Pruning & Ranger Unit Tests
+      - name: Run Pytest Unit Test Suite
         run: |
-          python tests/test_arsenal_pruning.py
+          pytest tests/ -v
 
       - name: Check Template Synchronization
         run: |

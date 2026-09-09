@@ -5,21 +5,26 @@ import os
 import requests
 from datetime import datetime
 from ai.policy_engine import PolicyEngine
+from ai.talishar_api import TalisharApiClient, DEFAULT_BACKEND_URL
+from ai.chat_badges import evaluate_board_state, format_html_line, format_attack_chat_message
 
-TALISHAR_API_URL = "http://localhost:8080/game"
+TALISHAR_API_URL = DEFAULT_BACKEND_URL
 
 class FabBotClient:
-    def __init__(self, room_id: str, deck_url: str, role: str, player_name: str, mcts_sims: int = None, device: str = None):
+    def __init__(self, room_id: str, deck_url: str, role: str, player_name: str, mcts_sims: int = None, device: str = None, buffer_capacity: int = None):
         self.room_id = room_id
         self.deck_url = deck_url
         self.role = role
         self.player_name = player_name
         self.name = player_name  # Garante self.name definido para evitar AttributeError
         self.session = requests.Session()
+        self.api = TalisharApiClient(backend_url=TALISHAR_API_URL, session=self.session)
         self.game_id = None
         self.player_id = None
+        self.auth_key = None
         self.mcts_sims = mcts_sims
         self.device = device
+        self.buffer_capacity = buffer_capacity
         self.use_gpu = (self.device != "cpu") if self.device else True
         self.log_file = f"logs/{self.room_id}_{self.player_name}_debug.log"
         self.match_log_file = f"logs/{self.room_id}_match_feed.log"
@@ -311,14 +316,11 @@ class FabBotClient:
             time.sleep(0.005)
 
     def choose_first_player(self):
-        try:
-            res = self.session.post(
-                f"{TALISHAR_API_URL}/APIs/ChooseFirstPlayer.php",
-                json={"gameName": self.game_id, "playerID": self.player_id, "authKey": self.auth_key, "action": "Go First"}
-            )
+        ok = self.api.choose_first_player(self.game_id, self.player_id, self.auth_key, action="Go First")
+        if ok:
             self.log(f"[FIRST PLAYER] Escolha 'Go First' enviada para Jogador {self.player_id}.")
-        except Exception as e:
-            self.log(f"[ERRO FIRST PLAYER] {e}")
+        else:
+            self.log(f"[ERRO FIRST PLAYER] Falha ao enviar escolha 'Go First'")
 
     def wait_for_opponent_and_start(self):
         self.log(f"[HOST] Aguardando Jogador 2 entrar na sala #{self.game_id}...")
@@ -433,8 +435,10 @@ class FabBotClient:
         chest = ""
         arms = ""
         legs = ""
+        quiver = ""
         weapons = []
         raw_weapon_candidates = []
+        raw_quivers = []
         main_cards = []
         inv = []
 
@@ -445,6 +449,7 @@ class FabBotClient:
                 continue
             meta = self.get_card_meta(cid)
             slot = meta.get("slot", "Deck")
+            subtype = str(meta.get("subtype", "")).lower()
 
             if slot == "Hero":
                 if not hero:
@@ -469,10 +474,17 @@ class FabBotClient:
                     legs = cid
                 else:
                     inv.append(cid)
+            elif "quiver" in subtype or "quiver" in cid.lower():
+                raw_quivers.append(cid)
             elif slot in ("Weapon", "Off-Hand") or meta.get("type") == "W":
                 raw_weapon_candidates.append(cid)
             else:
                 main_cards.extend([cid] * tot)
+
+        # ── Resolução de Quivers (Aljavas de Ranger) ──
+        if raw_quivers:
+            quiver = raw_quivers[0]
+            inv.extend(raw_quivers[1:])
 
         if not hero:
             hero = "ira_crimson_haze"
@@ -500,8 +512,11 @@ class FabBotClient:
                 w_2h.append(cid)
 
         chosen_weapons = []
+        # Cenário 0: Se contra fadiga e temos arma 2H pesada (ex: Sledge of Anvilheim vs Bravo), priorizar a arma 2H
+        if w_2h and is_fatigue and not is_arcane:
+            chosen_weapons = [w_2h[0]]
         # Cenário 1: Temos arma 1H e Off-Hand/Escudo (ex: Titan's Fist + Stalagmite/Rampart para Jarl/Guardião)
-        if w_1h and offhands:
+        elif w_1h and offhands:
             # Para Jarl / Guardiões de Gelo, Stalagmite é o escudo prioritário (Frostbite)
             best_off = offhands[0]
             for off in offhands:
@@ -613,10 +628,11 @@ class FabBotClient:
             "arms": arms,
             "legs": legs,
             "hands": weapons,
-            "offhand": weapons[1] if len(weapons) > 1 else "",
             "deck": flat_deck,
             "inventory": inv
         }
+        if quiver:
+            sub_obj["quiver"] = quiver
 
         post_payload = {
             "gameName": self.game_id,
@@ -653,6 +669,7 @@ class FabBotClient:
 
         self.policy_engine = PolicyEngine(
             hero_name=hero,
+            model_path="data/model_latest.pt" if os.path.exists("data/model_latest.pt") else None,
             room_id=self.room_id,
             num_mcts_sims=self.mcts_sims,
             use_gpu=self.use_gpu
@@ -665,31 +682,39 @@ class FabBotClient:
         target_id = getattr(self, "game_id", None) or getattr(self, "room_id", "")
         if not target_id:
             return
-        if highlight:
-            html_line = f"<div style='background:{bg_color};border-left:4px solid {text_color};padding:3px 6px;margin:2px 0;border-radius:4px;color:{text_color};font-size:12px;'>{text}</div>"
-        else:
-            html_line = f"<span style='color:{text_color};font-weight:600;'>{text}</span>"
-        try:
-            self.session.post(
-                f"{TALISHAR_API_URL}/APIs/AppendGameLog.php",
-                json={"gameName": target_id, "message": html_line},
-                timeout=1
-            )
-        except Exception:
-            pass
+        html_line = format_html_line(text, highlight=highlight, bg_color=bg_color, text_color=text_color)
+        self.api.append_game_log(target_id, html_line)
 
     def evaluate_board_state(self, state: dict) -> float:
         """Calcula o índice de avaliação da posição (estilo Chess Eval +/-)."""
-        my_h = int(state.get("playerHealth", 40))
-        opp_h = int(state.get("opponentHealth", 40))
-        my_hand_cnt = len(state.get("playerHand", []))
-        opp_hand_cnt = int(state.get("opponentHandCount", 4))
-        
-        # Diferencial de Vida e Vantagem de Cartas
-        eval_score = ((my_h - opp_h) * 0.4) + ((my_hand_cnt - opp_hand_cnt) * 0.8)
-        return round(eval_score, 1)
+        return evaluate_board_state(state)
+
+    def get_combat_chain_desc(self, state: dict) -> str:
+        """Extrai descrição detalhada da carta/arma atacante e status da Combat Chain."""
+        active_chain = state.get("activeChainLink")
+        if not isinstance(active_chain, dict):
+            return ""
+        reactions = active_chain.get("reactions", [])
+        if not reactions:
+            return ""
+        first_card = reactions[0] if isinstance(reactions, list) and reactions else {}
+        card_name = first_card.get("cardNumber", "")
+        if not card_name:
+            return ""
+        pow_val = active_chain.get("totalPower", 0)
+        def_val = active_chain.get("totalDefense", 0)
+        extras = []
+        if active_chain.get("goAgain"):
+            extras.append("Go Again")
+        if active_chain.get("dominate"):
+            extras.append("Dominate")
+        extra_str = f" | {', '.join(extras)}" if extras else ""
+        return f"{card_name} [Poder: {pow_val} | Bloqueio: {def_val}{extra_str}]"
 
     def handle_game_tick(self, state: dict):
+        if "opponentHand" in state and "opponentHandCount" not in state:
+            state["opponentHandCount"] = len(state.get("opponentHand", []))
+
         raw_my_h = state.get("playerHealth")
         raw_opp_h = state.get("opponentHealth")
         
@@ -803,7 +828,7 @@ class FabBotClient:
                 if hasattr(self, "trajectory") and self.trajectory:
                     try:
                         from ai.experience_collector import get_global_buffer
-                        buf = get_global_buffer()
+                        buf = get_global_buffer(self.buffer_capacity)
                         buf.add_trajectory(self.trajectory, winner_player_id=winner_id)
                         buf.save()
                     except Exception as e:
@@ -880,32 +905,17 @@ class FabBotClient:
             self.decide_and_act(state)
 
     def send_action(self, mode=99, card_id="", button_input="", chk_count=0, chk_input=None, input_text=""):
-        if not mode or mode <= 0:
-            mode = 99
-        params = {
-            "gameName": self.game_id,
-            "playerID": self.player_id,
-            "authKey": self.auth_key,
-            "mode": mode,
-            "cardID": card_id,
-            "buttonInput": button_input,
-            "numMode": 0,
-            "chkCount": chk_count,
-            "inputText": input_text
-        }
-        if chk_input:
-            for idx, item in enumerate(chk_input):
-                params[f"chk{idx}"] = item
-                
-        try:
-            res = self.session.get(f"{TALISHAR_API_URL}/ProcessInput.php", params=params)
-            if "Fatal error" in res.text or "Parse error" in res.text:
-                self.log(f"[ERRO PHP NO BACKEND] {res.text[:200].strip()}")
-                return False
-            return res.status_code == 200
-        except Exception as e:
-            self.log(f"[ERRO AO ENVIAR AÇÃO] {e}")
-            return False
+        return self.api.process_input(
+            game_name=self.game_id,
+            player_id=self.player_id,
+            auth_key=self.auth_key,
+            mode=mode,
+            card_id=card_id,
+            button_input=button_input,
+            chk_count=chk_count,
+            chk_input=chk_input,
+            input_text=input_text
+        )
 
     def decide_and_act(self, state: dict):
         tp_raw = state.get("turnPhase", "M")
@@ -1235,6 +1245,11 @@ class FabBotClient:
 
         # 5. Se for Fase de Defesa / Bloqueio (B)
         if turn_phase == "B":
+            chain_desc = self.get_combat_chain_desc(state)
+            if chain_desc and getattr(self, "last_logged_combat_attack", None) != (turn_num, chain_desc):
+                self.last_logged_combat_attack = (turn_num, chain_desc)
+                self.log(f"[COMBAT CHAIN] ⚔️ Ataque em Andamento: {chain_desc}")
+
             if not hasattr(self, "declared_blocks_link"):
                 self.declared_blocks_link = set()
 
@@ -1269,6 +1284,11 @@ class FabBotClient:
 
         # 6. Se for Fase de Reação de Ataque (A) ou Defesa (D) ou Instantâneo
         if turn_phase in ("A", "D", "INSTANT"):
+            chain_desc = self.get_combat_chain_desc(state)
+            if chain_desc and getattr(self, "last_logged_combat_attack", None) != (turn_num, chain_desc):
+                self.last_logged_combat_attack = (turn_num, chain_desc)
+                self.log(f"[COMBAT CHAIN] ⚔️ Ataque em Andamento: {chain_desc}")
+
             hand = state.get("playerHand", [])
             
             if not hasattr(self, "reaction_attempts"):
@@ -1357,24 +1377,14 @@ class FabBotClient:
                             pass
 
                     # ── Classificação de Lance no Padrão de Xadrez ──────────
-                    if score_val >= 9.0:
-                        tier_badge  = "🟢 Brilhante (!!)"
-                        badge_color = "#22c55e"
-                    elif score_val >= 5.0:
-                        tier_badge  = "🎯 Melhor Jogada (!)"
-                        badge_color = "#38bdf8"
-                    elif best_attack.get("has_go_again"):
-                        tier_badge  = "⚡ Excelente"
-                        badge_color = "#a855f7"
-                    else:
-                        tier_badge  = "🔵 Bom"
-                        badge_color = "#60a5fa"
-
-                    eval_str = f"+{board_eval}" if board_eval > 0 else str(board_eval)
-                    engine_tag = "ISMCTS" if ismcts_log else "MCTS"
-                    chat_msg = (
-                        f"<b>[Turno {turn_num}] {tier_badge}</b> → <b>{best_attack['name']}</b> "
-                        f"(Score: {score_val:.1f} | Eval: {eval_str} | {engine_tag}: {self.policy_engine.num_mcts_sims} sims)"
+                    chat_msg, badge_color = format_attack_chat_message(
+                        turn_num=turn_num,
+                        card_name=best_attack["name"],
+                        score_val=score_val,
+                        board_eval=board_eval,
+                        mcts_sims=self.policy_engine.num_mcts_sims,
+                        has_go_again=bool(best_attack.get("has_go_again")),
+                        is_ismcts=bool(ismcts_log)
                     )
                     self.send_chat_log(chat_msg, highlight=True, bg_color="#0f172a", text_color=badge_color)
 
@@ -1391,6 +1401,12 @@ class FabBotClient:
                         self.trajectory.append((state_vec, pol_dist, self.player_id))
                     except Exception:
                         pass
+
+                    atk_type = str(best_attack.get("type", "ação")).capitalize()
+                    atk_name = best_attack["name"]
+                    atk_power = best_attack.get("power", 0)
+                    atk_cost = best_attack.get("cost", 0)
+                    self.log(f"[AÇÃO JOGADOR {self.player_id}] Atacou com -> {atk_name} (Tipo: {atk_type}, Poder: {atk_power}, Custo: {atk_cost})")
 
                     self.send_action(mode=best_attack["mode"], card_id=best_attack["card_id"], button_input=best_attack["name"])
                     time.sleep(0.002)
@@ -1421,10 +1437,15 @@ if __name__ == '__main__':
     parser.add_argument('--name', required=True)
     parser.add_argument('--mcts-sims', type=int, default=None)
     parser.add_argument('--device', type=str, default=None)
+    parser.add_argument('--buffer-capacity', type=int, default=None)
     args = parser.parse_args()
 
     with open(f'logs/{args.room}_{args.name}_debug.log', 'w') as f:
         f.write('--- INICIO HTTP ---\n')
     
-    client = FabBotClient(args.room, args.deck, args.role, args.name, mcts_sims=args.mcts_sims, device=args.device)
+    client = FabBotClient(
+        args.room, args.deck, args.role, args.name,
+        mcts_sims=args.mcts_sims, device=args.device,
+        buffer_capacity=args.buffer_capacity
+    )
     client.run_loop()

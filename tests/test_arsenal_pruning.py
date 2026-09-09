@@ -104,5 +104,8 @@ def run_tests():
 
     print('>>> TODOS OS TESTES DE PODA DE ARSENAL, AMBUSH E CAVAR PASSARAM COM SUCESSO! <<<')
 
+def test_arsenal_pruning():
+    run_tests()
+
 if __name__ == '__main__':
     run_tests()

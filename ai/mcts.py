@@ -31,6 +31,9 @@ from typing import Dict, Any, List, Optional, Tuple
 
 from ai.model import FaBPolicyValueNetwork
 from ai.game_simulator import GameSimulator
+from ai.logger import get_logger
+
+logger = get_logger("mcts")
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -41,7 +44,8 @@ def _get_c_puct() -> float:
     try:
         from config.settings import SETTINGS
         return SETTINGS.ismcts_c_puct
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Erro em _get_c_puct: {e}. Usando fallback 1.4.")
         return 1.4
 
 def _get_ismcts_worlds() -> int:
@@ -49,7 +53,8 @@ def _get_ismcts_worlds() -> int:
     try:
         from config.settings import SETTINGS
         return SETTINGS.ismcts_worlds
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Erro em _get_ismcts_worlds: {e}. Usando fallback 4.")
         return 4
 
 DIRICHLET_ALPHA     = 0.3    # Concentração Dirichlet (AlphaZero: 0.3)
@@ -256,7 +261,8 @@ class MCTSEngine:
         try:
             priors, value = self.model.predict_state(state_vec, self.device)
             return priors, value
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Erro na avaliação da rede: {e}. Usando fallback.")
             return np.ones(32, dtype=np.float32) / 32.0, 0.0
 
     def _batch_evaluate_leaves(

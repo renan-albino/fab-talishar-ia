@@ -2,6 +2,11 @@ import os
 import json
 import time
 from datetime import datetime
+from ai.atomic_io import atomic_json_save
+from ai.logger import get_logger
+
+logger = get_logger("stats_manager")
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATS_FILE = os.path.join(BASE_DIR, "data", "training_stats.json")
 
@@ -86,8 +91,7 @@ def get_stats_data():
             "deck_stats": {},
             "recent_matches": []
         }
-        with open(STATS_FILE, "w") as f:
-            json.dump(default_data, f, indent=2)
+        atomic_json_save(default_data, STATS_FILE)
         return default_data
     try:
         with open(STATS_FILE, "r") as f:
@@ -98,12 +102,12 @@ def get_stats_data():
                 if modified:
                     data["deck_stats"] = consolidated
                     try:
-                        with open(STATS_FILE, "w") as fw:
-                            json.dump(data, fw, indent=2)
-                    except Exception:
-                        pass
+                        atomic_json_save(data, STATS_FILE)
+                    except Exception as e:
+                        logger.warning(f"Erro ao salvar stats consolidado: {e}")
             return data
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Erro lendo STATS_FILE: {e}")
         return {
             "total_matches": 0, "bot1_wins": 0, "bot2_wins": 0, "draws": 0,
             "bot1_elo": 1200, "bot2_elo": 1200, "elo_history": [], "deck_stats": {}, "recent_matches": []
@@ -201,8 +205,7 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
     stats["recent_matches"].insert(0, match_entry)
     stats["recent_matches"] = stats["recent_matches"][:30]
     
-    with open(STATS_FILE, "w") as f:
-        json.dump(stats, f, indent=2)
+    atomic_json_save(stats, STATS_FILE)
     return stats
 
 def delete_deck_stat(deck_name: str):
@@ -220,8 +223,7 @@ def delete_deck_stat(deck_name: str):
                 snap.pop(deck_name, None)
                 snap.pop(c_name, None)
         if deleted:
-            with open(STATS_FILE, "w") as f:
-                json.dump(stats, f, indent=2)
+            atomic_json_save(stats, STATS_FILE)
             return True
     return False
 

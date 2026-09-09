@@ -9,7 +9,7 @@ Ações automatizadas:
   1. Cria e valida diretórios essenciais (`data/`, `logs/`, `decks/`).
   2. Sincroniza e aplica patches customizados de `setup_templates/` para `Talishar/` (PHP/APIs)
      e `Talishar-FE/` (React/Vite).
-  3. Ajusta permissões de escrita em disco (`chmod 777` em `Talishar/Games/` e `logs/`).
+  3. Ajusta permissões de escrita em disco (`chmod 775` em `Talishar/Games/` e `logs/`).
   4. Extrai e indexa o banco oficial de 10.144 cartas em `data/fab_cards_db.json`.
   5. Valida o diretório central exclusivo de baralhos (`decks/`).
   6. Inspeciona os containers Docker do Talishar (Apache, MySQL, Redis) e sobe-os se necessário.
@@ -112,7 +112,7 @@ def ensure_directories():
     for d in [DATA_DIR, LOGS_DIR, DECKS_DIR]:
         os.makedirs(d, exist_ok=True)
         try:
-            os.chmod(d, 0o777)
+            os.chmod(d, 0o775)
         except Exception:
             pass
     log_success("Diretórios essenciais prontos (data/, logs/, decks/).")
@@ -223,8 +223,8 @@ def fix_permissions():
     games_dir = os.path.join(TALISHAR_DIR, "Games")
     if os.path.exists(games_dir):
         try:
-            subprocess.run(["chmod", "-R", "777", games_dir], stderr=subprocess.DEVNULL, check=False)
-            subprocess.run(["chmod", "-R", "777", LOGS_DIR], stderr=subprocess.DEVNULL, check=False)
+            subprocess.run(["chmod", "-R", "775", games_dir], stderr=subprocess.DEVNULL, check=False)
+            subprocess.run(["chmod", "-R", "775", LOGS_DIR], stderr=subprocess.DEVNULL, check=False)
             log_success("Permissões de I/O concedidas para Talishar/Games e logs/.")
         except Exception as e:
             log_warn(f"Aviso ao ajustar permissões: {e}")

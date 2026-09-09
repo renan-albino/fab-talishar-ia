@@ -78,94 +78,18 @@ def validate_deck_against_db(deck_obj: dict) -> tuple[bool, list[str], dict]:
 def load_card_dictionary():
     return load_fab_cards_db()
 
-# Hero name overrides
-HERO_MAP = {
-    "arakni_marionette": "arakni_marionette",
-    "arakni_solitary_confinement": "arakni_solitary_confinement",
-    "arakni_5lp3d_7hru_7h3_cr4x": "arakni_5lp3d_7hru_7h3_cr4x",
-    "arakni_huntsman": "arakni_huntsman",
-    "arakni": "arakni_huntsman",
-    "jarl_vetreidi": "jarl_vetreidi",
-    "jarl": "jarl_vetreidi",
-    "florian_rotwood_harbinger": "florian_rotwood_harbinger",
-    "florian": "florian_rotwood_harbinger",
-    "aurora_shooting_star": "aurora_shooting_star",
-    "aurora": "aurora_shooting_star",
-    "verdance_thorn_of_the_rose": "verdance_thorn_of_the_rose",
-    "verdance": "verdance_thorn_of_the_rose",
-    "oscilio_constellation_seeker": "oscilio_constellation_seeker",
-    "oscilio": "oscilio_constellation_seeker",
-    "nuu_alluring_desire": "nuu_alluring_desire",
-    "nuu": "nuu_alluring_desire",
-    "zen_tamer_of_purpose": "zen_tamer_of_purpose",
-    "zen": "zen_tamer_of_purpose",
-    "enigma_ledger_of_ancestry": "enigma_ledger_of_ancestry",
-    "enigma_new_moon": "enigma_new_moon",
-    "enigma": "enigma_ledger_of_ancestry",
-    "victor_goldmane_high_and_mighty": "victor_goldmane_high_and_mighty",
-    "victor_goldmane": "victor_goldmane_high_and_mighty",
-    "victor": "victor_goldmane_high_and_mighty",
-    "betsy_skin_in_the_game": "betsy_skin_in_the_game",
-    "betsy": "betsy_skin_in_the_game",
-    "kassai_of_the_golden_sand": "kassai_of_the_golden_sand",
-    "kassai_cintari_sellsword": "kassai_cintari_sellsword",
-    "kassai": "kassai_of_the_golden_sand",
-    "kayo_armed_and_dangerous": "kayo_armed_and_dangerous",
-    "kayo_berserker_runt": "kayo_berserker_runt",
-    "kayo": "kayo_armed_and_dangerous",
-    "olympia_prized_fighter": "olympia_prized_fighter",
-    "olympia": "olympia_prized_fighter",
-    "dash_io": "dash_io",
-    "dash_database": "dash_database",
-    "dash_inventor_extraordinaire": "dash_inventor_extraordinaire",
-    "dash": "dash_inventor_extraordinaire",
-    "gravy_bones_shipwrecked_looter": "gravy_bones_shipwrecked_looter",
-    "gravy_bones": "gravy_bones_shipwrecked_looter",
-    "hala_bladesaint_of_the_vow": "hala_bladesaint_of_the_vow",
-    "hala": "hala_bladesaint_of_the_vow",
-    "vynnset_iron_maiden": "vynnset_iron_maiden",
-    "vynnset": "vynnset_iron_maiden",
-    "vynsett": "vynnset_iron_maiden",
-    "cindra": "cindra",
-    "bravo_showstopper": "bravo_showstopper",
-    "bravo": "bravo_showstopper",
-    "dorinthea_ironsong": "dorinthea_ironsong",
-    "dorinthea": "dorinthea_ironsong",
-    "rhinar_reckless_rampage": "rhinar_reckless_rampage",
-    "rhinar": "rhinar_reckless_rampage",
-    "katsu_the_wanderer": "katsu_the_wanderer",
-    "katsu": "katsu_the_wanderer",
-    "kano_dracai_of_aether": "kano_dracai_of_aether",
-    "kano": "kano_dracai_of_aether",
-    "azalea_ace_in_the_hole": "azalea_ace_in_the_hole",
-    "azalea": "azalea_ace_in_the_hole",
-    "viserai_rune_blood": "viserai_rune_blood",
-    "viserai": "viserai_rune_blood",
-    "chane_bound_by_shadow": "chane_bound_by_shadow",
-    "chane": "chane_bound_by_shadow",
-    "prism_sculptor_of_arc_light": "prism_sculptor_of_arc_light",
-    "prism": "prism_sculptor_of_arc_light",
-    "levia_shadowborn_abomination": "levia_shadowborn_abomination",
-    "levia": "levia_shadowborn_abomination",
-    "ser_boltyn_breaker_of_dawn": "ser_boltyn_breaker_of_dawn",
-    "boltyn": "ser_boltyn_breaker_of_dawn",
-    "oldhim_grandfather_of_eternity": "oldhim_grandfather_of_eternity",
-    "oldhim": "oldhim_grandfather_of_eternity",
-    "briar_warden_of_thorns": "briar_warden_of_thorns",
-    "briar": "briar_warden_of_thorns",
-    "lexi_livewire": "lexi_livewire",
-    "lexi": "lexi_livewire",
-    "dromai_ash_artist": "dromai_ash_artist",
-    "dromai": "dromai_ash_artist",
-    "fai_rising_rebellion": "fai_rising_rebellion",
-    "fai": "fai_rising_rebellion",
-    "iyslander_stormbind": "iyslander_stormbind",
-    "iyslander": "iyslander_stormbind",
-    "uzuri_switchblade": "uzuri_switchblade",
-    "uzuri": "uzuri_switchblade",
-    "riptide_lurker_of_the_deep": "riptide_lurker_of_the_deep",
-    "riptide": "riptide_lurker_of_the_deep",
-}
+_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+def _load_hero_map() -> dict:
+    """Carrega o mapeamento de heróis do arquivo JSON."""
+    path = os.path.join(_DATA_DIR, "hero_map.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+HERO_MAP = _load_hero_map()
 
 def slugify_card_name(name: str, is_hero: bool = False) -> str:
     name = name.strip()

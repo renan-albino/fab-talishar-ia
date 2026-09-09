@@ -70,6 +70,27 @@ class ReplayBuffer:
                 except Exception:
                     pass
 
+    def resize(self, new_capacity: int):
+        """Redimensiona a capacidade máxima do buffer preservando os dados já coletados."""
+        if new_capacity <= 0 or new_capacity == self.max_capacity:
+            return
+        new_states = np.zeros((new_capacity, 192), dtype=np.float32)
+        new_policies = np.zeros((new_capacity, 32), dtype=np.float32)
+        new_values = np.zeros((new_capacity, 1), dtype=np.float32)
+
+        copy_n = min(self.current_size, new_capacity)
+        if copy_n > 0:
+            new_states[:copy_n] = self.states[:copy_n]
+            new_policies[:copy_n] = self.policies[:copy_n]
+            new_values[:copy_n] = self.values[:copy_n]
+
+        self.states = new_states
+        self.policies = new_policies
+        self.values = new_values
+        self.max_capacity = new_capacity
+        self.current_size = copy_n
+        self.pointer = copy_n % new_capacity
+
     def load(self, filepath: str = "data/replay_buffer.npz") -> bool:
         if not os.path.exists(filepath):
             return False
@@ -78,7 +99,10 @@ class ReplayBuffer:
             loaded_states = data["states"]
             loaded_policies = data["policies"]
             loaded_values = data["values"]
-            n = min(len(loaded_states), self.max_capacity)
+            n_loaded = len(loaded_states)
+            if n_loaded > self.max_capacity:
+                self.resize(n_loaded)
+            n = min(n_loaded, self.max_capacity)
             self.states[:n] = loaded_states[:n]
             self.policies[:n] = loaded_policies[:n]
             self.values[:n] = loaded_values[:n]
@@ -91,9 +115,15 @@ class ReplayBuffer:
 
 _GLOBAL_BUFFER = None
 
-def get_global_buffer(capacity: int = 100000) -> ReplayBuffer:
+def get_global_buffer(capacity: int = None) -> ReplayBuffer:
     global _GLOBAL_BUFFER
+    env_cap = os.environ.get("FAB_BUFFER_CAPACITY")
+    default_cap = int(env_cap) if env_cap and env_cap.isdigit() else 100000
+    target_cap = capacity if capacity is not None else default_cap
+
     if _GLOBAL_BUFFER is None:
-        _GLOBAL_BUFFER = ReplayBuffer(max_capacity=capacity)
+        _GLOBAL_BUFFER = ReplayBuffer(max_capacity=target_cap)
         _GLOBAL_BUFFER.load()
+    elif target_cap > _GLOBAL_BUFFER.max_capacity:
+        _GLOBAL_BUFFER.resize(target_cap)
     return _GLOBAL_BUFFER

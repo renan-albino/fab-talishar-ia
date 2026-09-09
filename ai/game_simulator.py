@@ -14,10 +14,26 @@ simulando com precisão:
   - Vetorização do estado resultante (192 dimensões) para avaliação imediata pelo Value Head
 """
 
-import copy
 import numpy as np
 from typing import Dict, Any, Tuple, List, Optional
 from ai.model import FaBPolicyValueNetwork, STATE_DIM
+
+def _shallow_clone_state(state: dict) -> dict:
+    """
+    Faz um shallow copy do estado e copia apenas as estruturas mutáveis (listas).
+    Evita o overhead de copy.deepcopy() durante as simulações do MCTS.
+    """
+    sim_state = state.copy()
+    
+    for field in ["playerResources", "playerHand", "playerPitch", 
+                  "playerDiscard", "playerArsenal", "playerBanish"]:
+        if field in sim_state and isinstance(sim_state[field], list):
+            sim_state[field] = sim_state[field][:]
+            
+    if "activeChainLink" in sim_state and isinstance(sim_state["activeChainLink"], dict):
+        sim_state["activeChainLink"] = sim_state["activeChainLink"].copy()
+        
+    return sim_state
 
 DANGEROUS_ON_HITS = {
     "crippling", "crush", "command_and_conquer", "red_in_the_ledger",
@@ -87,7 +103,7 @@ class GameSimulator:
         Simula a execução de um ataque na fase principal (Phase M).
         Aplica desconto de pitch, AP, poder de combate vs bloqueio do oponente e vida.
         """
-        sim_state = copy.deepcopy(state)
+        sim_state = _shallow_clone_state(state)
         
         # 1. Recursos e Pitch
         resources = sim_state.get("playerResources", [0, 0])
@@ -191,7 +207,7 @@ class GameSimulator:
         Simula a decisão de bloqueio na fase defensiva (Phase B).
         Calcula redução de dano sofrido e preservação da mão.
         """
-        sim_state = copy.deepcopy(state)
+        sim_state = _shallow_clone_state(state)
         
         my_hp = int(sim_state.get("playerHealth", sim_state.get("yourHealth", 20)))
         active_chain = sim_state.get("activeChainLink", {})
@@ -229,13 +245,19 @@ class GameSimulator:
         """
         Simula a geração de recursos na fase de Pitch (Phase P / PDECK).
         """
-        sim_state = copy.deepcopy(state)
+        sim_state = _shallow_clone_state(state)
         
         resources = sim_state.get("playerResources", [0, 0])
         floating = int(resources[0]) if isinstance(resources, list) and resources else 0
         
         card_name = pitch_action.get("name", "")
-        pitch_val = int(pitch_action.get("pitch", 1))
+        if "pitch" in pitch_action:
+            pitch_val = int(pitch_action["pitch"])
+        else:
+            meta = cls.extract_card_meta(pitch_action)
+            pitch_val = meta["pitch"]
+            if not card_name:
+                card_name = meta["name"]
 
         hand = sim_state.get("playerHand", [])
         pitch_zone = sim_state.get("playerPitch", [])

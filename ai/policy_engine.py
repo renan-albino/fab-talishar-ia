@@ -64,6 +64,8 @@ def _get_cards_db() -> dict:
             _FAB_CARDS_DB = {}
     return _FAB_CARDS_DB
 
+_load_cards_db = _get_cards_db
+
 
 # ══════════════════════════════════════════════════════════════════
 # CONSTANTES DE DOMÍNIO — FLESH AND BLOOD
@@ -127,6 +129,23 @@ WEAPON_KEYWORDS = [
     "saber", "cintari", "streak", "mandible", "hatchet", "duskblade",
     "raydn", "talishar", "rosetta", "reaper", "jubeel", "spider", "shield", "buckler"
 ]
+
+# Custo de ativação de recursos para armas conhecidas no Flesh and Blood
+KNOWN_WEAPON_COSTS = {
+    "anothos": 3, "sledge_of_anvilheim": 3, "titans_fist": 3, "pile_driver": 3, "rok": 3,
+    "hell_hammer": 3, "hammer_of_havenhold": 3, "redwood_hammer": 3, "ball_breaker": 3,
+    "romping_club": 2, "flail_of_agony": 2, "dread_scythe": 2, "reaping_blade": 2,
+    "zenith_blade": 2, "harmonious_pipe": 2, "claw_of_vynserakai": 2, "hunters_klaive": 2,
+    "hunters_klaive_r": 2, "volzar_meteor_storm": 2, "symbiosis_shot": 2, "teklo_leveler": 2,
+    "plasma_barrel_shot": 2, "hanabi_blaster": 2, "waning_moon": 2, "krakens_aethervein": 2,
+    "cintari_saber": 1, "cintari_saber_r": 1, "hot_streak": 1, "dawnblade": 1, "dawnblade_resplendent": 1,
+    "kunai_of_retribution": 1, "kunai_of_retribution_r": 1, "harmonized_kodachi": 1,
+    "harmonized_kodachi_r": 1, "mandible_claw": 1, "mandible_claw_r": 1, "spiders_bite": 1,
+    "nerve_scalpel": 1, "nerve_scalpel_r": 1, "scale_peeler": 1, "scale_peeler_r": 1,
+    "orbitoclast": 1, "orbitoclast_r": 1, "teklo_plasma_pistol": 1, "death_dealer": 1,
+    "hammerhead_harpoon_cannon": 1, "rosetta_thorn": 1, "nebula_blade": 1, "galaxxi_black": 1,
+    "raydn_duskbane": 0, "redback_shroud": 0, "dreadbore": 0, "sandscour_greatbow": 0
+}
 
 
 class PolicyEngine:
@@ -206,6 +225,20 @@ class PolicyEngine:
             hero=self.hero_name,
         )
 
+    def get_weapon_cost(self, weapon_name: str, equip_dict: dict = None) -> int:
+        """Retorna o custo em recursos para ativar a arma."""
+        clean = str(weapon_name).lower()
+        if clean in KNOWN_WEAPON_COSTS:
+            return KNOWN_WEAPON_COSTS[clean]
+        for kw, cost in [
+            ("hammer", 3), ("anvilheim", 3), ("titans_fist", 3), ("pile_driver", 3), ("anothos", 3), ("rok", 3), ("club", 2),
+            ("flail", 2), ("scythe", 2), ("staff", 2), ("meteor", 2), ("leveler", 2), ("symbiosis", 2), ("zenith", 2),
+            ("saber", 1), ("sword", 1), ("dagger", 1), ("blade", 1), ("claw", 1), ("kodachi", 1), ("pistol", 1), ("bow", 1)
+        ]:
+            if kw in clean:
+                return cost
+        return 2
+
     # ── Extração e Normalização de Atributos de Cartas ─────────────
 
     def extract_card_info(self, card: dict) -> dict:
@@ -220,8 +253,24 @@ class PolicyEngine:
 
         power = int(card.get("power", 0))
         block = int(card.get("defense", card.get("block", 0)))
+        cost = 0
+        has_go_again = False
 
-        # Inferência de poder por heurística quando ausente no snapshot
+        # Consulta banco de dados oficial (fab_cards_db.json)
+        db_entry = _load_cards_db().get(card_number)
+        if db_entry:
+            if "cost" in db_entry:
+                cost = max(0, int(db_entry["cost"]))
+            if "pitch" in db_entry and db_entry["pitch"] > 0:
+                pitch = int(db_entry["pitch"])
+            if power == 0 and "power" in db_entry:
+                power = int(db_entry["power"])
+            if block == 0 and "defense" in db_entry:
+                block = int(db_entry["defense"])
+            if "has_go_again" in db_entry:
+                has_go_again = bool(db_entry["has_go_again"])
+
+        # Inferência de poder por heurística quando ausente no snapshot e banco
         if power == 0:
             if any(k in card_number for k in ["zipper", "throttle", "zero_to_sixty", "fast_and_furious", "out_pace", "expedite", "snatch"]):
                 power = 4 if pitch == 1 else (3 if pitch == 2 else 2)
@@ -235,19 +284,17 @@ class PolicyEngine:
             if any(k in card_number for k in ["_red", "_yellow", "_blue"]) and not any(k in card_number for k in ["heart", "accelerator", "providence", "tunic"]):
                 block = 3 if pitch == 3 else (2 if pitch == 2 else 2)
 
-        # Custo de recurso
-        cost = 0
-        if any(k in card_number for k in ["throttle", "pounder", "trebuchet", "staunch", "spinal"]):
-            cost = 2
-        elif any(k in card_number for k in ["zipper", "fast_and_furious", "out_pace", "expedite", "harpoon", "spark_of_genius", "command_and_conquer"]):
-            cost = 1
-        elif any(k in card_number for k in ["zero_to_sixty", "bios_update", "convection", "boom_grenade", "snatch", "leg_tap", "rising_knee"]):
-            cost = 0
+        # Custo de recurso heurístico se não estiver catalogado no banco
+        if cost == 0 and not db_entry:
+            if any(k in card_number for k in ["throttle", "pounder", "trebuchet", "staunch", "spinal", "mangle", "felling"]):
+                cost = 2 if "throttle" in card_number else (4 if "mangle" in card_number else 3)
+            elif any(k in card_number for k in ["zipper", "fast_and_furious", "out_pace", "expedite", "harpoon", "spark_of_genius", "command_and_conquer"]):
+                cost = 1
 
-        # Go Again
-        has_go_again = False
-        if any(k in card_number for k in ["zero_to_sixty", "throttle", "zipper", "expedite", "out_pace", "fast_and_furious", "leg_tap", "snatch", "rising_knee", "fai"]):
-            has_go_again = True
+        # Go Again heurístico se não estiver catalogado no banco
+        if not has_go_again and not db_entry:
+            if any(k in card_number for k in ["zero_to_sixty", "throttle", "zipper", "expedite", "out_pace", "fast_and_furious", "leg_tap", "snatch", "rising_knee", "fai"]):
+                has_go_again = True
 
         # On-Hit Perigoso
         has_dangerous_on_hit = any(oh in card_number for oh in DANGEROUS_ON_HITS)
@@ -270,8 +317,11 @@ class PolicyEngine:
         }
 
     def calculate_available_resources(self, state: dict) -> Tuple[int, int]:
-        resources = state.get("playerResources", [0, 0])
-        current_floating = int(resources[0]) if isinstance(resources, list) and resources else 0
+        # Talishar armazena recursos flutuantes em playerPitchCount
+        current_floating = int(state.get("playerPitchCount", 0))
+        if current_floating == 0:
+            resources = state.get("playerResources", [0, 0])
+            current_floating = int(resources[0]) if isinstance(resources, list) and resources else 0
         hand = state.get("playerHand", [])
         total_potential_pitch = sum(self.extract_card_info(c)["pitch"] for c in hand)
         return current_floating, current_floating + total_potential_pitch
@@ -294,19 +344,29 @@ class PolicyEngine:
         for idx, c in enumerate(hand):
             info = self.extract_card_info(c)
             c_name = info["name"]
+            # Regra FaB CR 2.1.2: Cartas de Flecha (Arrow) NUNCA podem ser jogadas diretamente da mão!
+            # Elas só podem ser jogadas a partir do Arsenal usando um Arco.
+            c_db = _load_cards_db().get(c_name, {})
+            c_subtype = str(c_db.get("subtype", "")).lower()
+            if "arrow" in c_subtype or "arrow" in c_name:
+                continue
+
             if info["action"] > 0 and c_name not in unpayable_set:
-                remaining_pitch = total_res - info["pitch"]
-                if remaining_pitch >= info["cost"]:
+                card_cost = max(0, int(info.get("cost", 0)))
+                # A própria carta atacante é gasta e não pode dar pitch para pagar a si mesma!
+                # O pitch disponível para esta carta é (total_res - info["pitch"])
+                pitch_from_other_cards = total_res - info["pitch"]
+                if pitch_from_other_cards >= card_cost:
                     c_id = info["actionDataOverride"] or str(idx)
                     c_action = 27 if info["action"] == 27 else info["action"]
                     base_score = self.strategy.evaluate_attack_card(
-                        c_name, info["power"], info["cost"], info["has_go_again"], info["pitch"]
+                        c_name, info["power"], card_cost, info["has_go_again"], info["pitch"]
                     )
                     if info["has_go_again"]:
                         has_any_go_again = True
                     hand_attacks.append({
                         "type": "hand", "idx": idx, "card_id": c_id, "mode": c_action,
-                        "name": c_name, "score": base_score, "cost": info["cost"],
+                        "name": c_name, "score": base_score, "cost": card_cost,
                         "power": info["power"], "has_go_again": info["has_go_again"],
                         "pitch": info["pitch"]
                     })
@@ -337,14 +397,25 @@ class PolicyEngine:
                     or str(eq.get("slot", "")).lower() in ("weapon", "off-hand", "hands")
                 )
                 if is_weapon:
-                    # Avaliação tática polimórfica de ataque de arma pela classe do herói
-                    weapon_score = self.strategy.evaluate_weapon_attack(
-                        eq_name, floating_res, total_res, len(hand_attacks) > 0
-                    )
-                    candidates.append({
-                        "type": "weapon", "idx": 0, "card_id": str(eq_id), "mode": action,
-                        "name": eq_name, "score": weapon_score, "cost": 0
-                    })
+                    weapon_cost = self.get_weapon_cost(eq_name, eq)
+                    # Poda estrita: toda a mão + flutuante deve suprir o custo da arma
+                    if total_res >= weapon_cost:
+                        eq_info = self.extract_card_info(eq)
+                        weapon_power = eq_info.get("power", 0) or int(eq.get("power", 0))
+                        if weapon_power == 0:
+                            weapon_power = int(_load_cards_db().get(eq_name, {}).get("power", 0))
+                        weapon_score = self.strategy.evaluate_weapon_attack(
+                            eq_name, floating_res, total_res, len(hand_attacks) > 0
+                        )
+                        if not has_any_go_again and len(hand_attacks) == 0:
+                            weapon_score += 2.0
+                        if "bow" in str(_load_cards_db().get(eq_name, {}).get("subtype", "")).lower() or any(b in eq_name for b in ["hammerhead", "shiver", "death_dealer", "dread_bore", "redback"]):
+                            weapon_score += 3.0
+                        candidates.append({
+                            "type": "weapon", "idx": 0, "card_id": str(eq_id), "mode": action,
+                            "name": eq_name, "score": weapon_score, "cost": weapon_cost,
+                            "power": weapon_power
+                        })
 
         # ── 1.4 Arsenal e Banish ────────────────────────────────────
         for zone_name, key in [("Arsenal", "playerArsenal"), ("Banish", "playerBanish")]:
@@ -355,18 +426,22 @@ class PolicyEngine:
                 if action > 0 and c_name not in unpayable_set:
                     c_id = c.get("actionDataOverride", c_name)
                     c_info = self.extract_card_info(c)
-                    base_score = self.strategy.evaluate_attack_card(
-                        c_name, c_info["power"], c_info["cost"], c_info["has_go_again"], c_info["pitch"]
-                    )
-                    # Jogar do Arsenal executa a ofensiva e libera o slot para o fim do turno (+4.0 de valor tático)
-                    arsenal_score = base_score + 4.0
-                    # Ranger: Flechas no Arsenal são o ataque central prioritário do turno (+8.0)
-                    if any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]) or isinstance(self.strategy, RangerStrategy):
-                        arsenal_score += 8.0
-                    candidates.append({
-                        "type": zone_name.lower(), "idx": 0, "card_id": str(c_id), "mode": action,
-                        "name": c_name, "score": arsenal_score, "cost": c_info["cost"]
-                    })
+                    card_cost = max(0, int(c_info.get("cost", 0)))
+                    # Cartas de Arsenal/Banish usam total_res da mão inteira
+                    if total_res >= card_cost:
+                        base_score = self.strategy.evaluate_attack_card(
+                            c_name, c_info["power"], card_cost, c_info["has_go_again"], c_info["pitch"]
+                        )
+                        # Jogar do Arsenal executa a ofensiva e libera o slot para o fim do turno (+4.0 de valor tático)
+                        arsenal_score = base_score + 4.0
+                        # Ranger: Flechas no Arsenal são o ataque central prioritário do turno (+8.0)
+                        if any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]) or isinstance(self.strategy, RangerStrategy):
+                            arsenal_score += 8.0
+                        candidates.append({
+                            "type": zone_name.lower(), "idx": 0, "card_id": str(c_id), "mode": action,
+                            "name": c_name, "score": arsenal_score, "cost": card_cost,
+                            "power": c_info["power"], "has_go_again": c_info["has_go_again"]
+                        })
 
         if not candidates:
             return None
@@ -711,7 +786,7 @@ class PolicyEngine:
                     # 2. Cartas com poder de ataque maior ganham preferência
                     # 3. Cartas de menor custo ganham preferência
                     # 4. Gemas puras sofrem forte penalidade (-100.0)
-                    dig_score = float(info.get("power", 0))
+                    dig_score = float(info.get("power", 0)) * 3.0
                     card_type = (db_entry.get("type", "") or info.get("type", "")).upper()
                     if "A" in card_type or info.get("action", 0) > 0:
                         dig_score += 10.0

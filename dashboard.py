@@ -769,7 +769,8 @@ with tab_gpu:
         st.markdown("### 📊 Telemetria de Treinamento em Tempo Real")
         st_m1, st_m2, st_m3, st_m4 = st.columns(4)
         st_m1.metric("Partidas Disputadas", orchestrator.stats.get("total_games", 0))
-        st_m2.metric("Amostras no Replay Buffer", orchestrator.stats.get("samples_collected", 0))
+        max_cap = orchestrator.config.get("buffer_capacity", orchestrator.stats.get("buffer_capacity", 100000))
+        st_m2.metric("Amostras no Replay Buffer", f"{orchestrator.stats.get('samples_collected', 0):,} / {max_cap:,}")
         st_m3.metric("Policy Loss (Ação)", orchestrator.stats.get("policy_loss", 0.0))
         st_m4.metric("Value Loss (Vitória MSE)", orchestrator.stats.get("value_loss", 0.0))
 

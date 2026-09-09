@@ -425,6 +425,13 @@ class FaBSettings:
     student_checkpoint: str
     parquet_export_dir: str
 
+    # URLs e Portas de Serviço
+    talishar_backend_url: str
+    talishar_frontend_url: str
+    dashboard_port: int
+    mock_fabrary_port: int
+    elo_k_factor: int
+    match_timeout_seconds: int
 
 # ══════════════════════════════════════════════════════════════════
 # 4. FACTORY — Constrói a instância calculando tudo
@@ -478,7 +485,7 @@ def _build_settings() -> FaBSettings:
     min_to_train = max(batch_size, 512)
 
     # ── 4.8 Parâmetros derivados de batch e workers ───────────────
-    game_timeout   = 120
+    game_timeout   = int(os.environ.get("FAB_MATCH_TIMEOUT", 120))
     save_interval  = max(5, num_workers * 3)
 
     lr_step  = 50
@@ -524,6 +531,14 @@ def _build_settings() -> FaBSettings:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     ckpt_dir    = os.path.join(base_dir, "data", "checkpoints")
     parquet_dir = os.path.join(base_dir, "data", "parquet_export")
+
+    # ── 4.11 URLs e Portas de Serviço ─────────────────────────────
+    talishar_backend_url = os.environ.get("FAB_BACKEND_URL", "http://localhost:8080/game")
+    talishar_frontend_url = os.environ.get("FAB_FRONTEND_URL", "http://localhost:3000")
+    dashboard_port = int(os.environ.get("FAB_DASHBOARD_PORT", 8501))
+    mock_fabrary_port = int(os.environ.get("FAB_MOCK_PORT", 9000))
+    elo_k_factor = int(os.environ.get("FAB_ELO_K", 32))
+    match_timeout_s = int(os.environ.get("FAB_MATCH_TIMEOUT", 120))
 
     return FaBSettings(
         # Hardware
@@ -585,6 +600,14 @@ def _build_settings() -> FaBSettings:
         teacher_checkpoint=os.path.join(ckpt_dir, "teacher_latest.pt"),
         student_checkpoint=os.path.join(ckpt_dir, "nnue_latest.pt"),
         parquet_export_dir=parquet_dir,
+
+        # URLs e Portas
+        talishar_backend_url=talishar_backend_url,
+        talishar_frontend_url=talishar_frontend_url,
+        dashboard_port=dashboard_port,
+        mock_fabrary_port=mock_fabrary_port,
+        elo_k_factor=elo_k_factor,
+        match_timeout_seconds=match_timeout_s,
     )
 
 
@@ -651,6 +674,9 @@ def print_settings_report():
     print(f"  Teacher ckpt   : {s.teacher_checkpoint}")
     print(f"  NNUE ckpt      : {s.student_checkpoint}")
     print(f"  Parquet export : {s.parquet_export_dir}")
+    print(f"  Backend URL    : {s.talishar_backend_url}")
+    print(f"  Frontend URL   : {s.talishar_frontend_url}")
+    print(f"  Dashboard Port : {s.dashboard_port}")
     print(f"  Temp. Distil.  : {s.distillation_temperature}")
     print(f"  c_puct         : {s.ismcts_c_puct}")
     print(f"{'═' * W}\n")
