@@ -21,6 +21,7 @@ data/*
 !data/training_metrics.json
 !data/training_stats.json
 !data/fab_cards_db.json
+!data/hero_map.json
 *.pt
 *.pth
 *.bin

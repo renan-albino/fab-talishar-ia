@@ -501,7 +501,7 @@ class PolicyEngine:
             return None
 
         # ── 1.5 Refinamento via Busca em Árvore ─────────────────────
-        if self.model is not None and len(candidates) > 1 and self.num_mcts_sims > 0:
+        if len(candidates) > 1 and self.num_mcts_sims > 0:
             opp_hand = state.get("opponentHand", [])
             if isinstance(opp_hand, list) and len(opp_hand) > 0:
                 opp_hand_count = len(opp_hand)
@@ -596,7 +596,7 @@ class PolicyEngine:
             return None
 
         # Refinamento ISMCTS / MCTS quando há múltiplas escolhas de pitch
-        if self.model is not None and len(pitch_candidates) > 1 and self.num_mcts_sims > 0:
+        if len(pitch_candidates) > 1 and self.num_mcts_sims > 0:
             opp_hand = state.get("opponentHand", [])
             opp_hand_count = len(opp_hand) if isinstance(opp_hand, list) and len(opp_hand) > 0 else int(
                 state.get("opponentHandCount", state.get("theirHandCount", 0))
@@ -737,7 +737,7 @@ class PolicyEngine:
             return []
 
         # ── 3.2 Refinamento ISMCTS para Bloqueio ────────────────────
-        if self.model is not None and len(block_candidates) > 1 and self.num_mcts_sims > 0:
+        if len(block_candidates) > 1 and self.num_mcts_sims > 0:
             opp_hand = state.get("opponentHand", [])
             opp_hand_count = len(opp_hand) if isinstance(opp_hand, list) and len(opp_hand) > 0 else int(
                 state.get("opponentHandCount", state.get("theirHandCount", 0))
