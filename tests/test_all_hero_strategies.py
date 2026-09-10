@@ -8,12 +8,14 @@ from ai.hero_strategies import (
     get_hero_strategy,
     HERO_CLASS_REGISTRY,
     HeroStrategy,
+    TurnPlan,
     GuardianStrategy,
     JarlStrategy,
     BruteStrategy,
     WarriorStrategy,
     NinjaStrategy,
     RangerStrategy,
+    MarlynnStrategy,
     MechanologistStrategy,
     RunebladeStrategy,
     WizardStrategy,
@@ -192,11 +194,163 @@ def test_policy_engine_integration():
     print("\n[OK] Integração completa com PolicyEngine validada!\n")
 
 
+def test_turn_plan_systems():
+    print("=== TESTE 5: SISTEMA DE TURNPLAN (GENÉRICO E ESPECIALIZADO) ===")
+
+    # 1. Base TurnPlan Dataclass Defaults
+    tp_default = TurnPlan()
+    assert tp_default.plan_type == "DEFAULT"
+    assert tp_default.reserved_card_names == set()
+    assert tp_default.can_absorb_damage is False
+    assert tp_default.max_block_cards == 4
+
+    # 2. Generic HeroStrategy - Survival Mode (HP <= 6)
+    generic_strat = HeroStrategy("generic")
+    state_survival = {
+        "playerHealth": 5,
+        "playerHand": [{"cardNumber": "card1"}, {"cardNumber": "card2"}],
+        "activeChainLink": {"totalPower": 3, "cardNumber": "strike"}
+    }
+    tp_surv = generic_strat.analyze_turn_plan(state_survival)
+    assert tp_surv.plan_type == "SURVIVAL_BLOCK"
+    assert tp_surv.can_absorb_damage is False
+    assert tp_surv.max_block_cards == 2
+    print("  ✓ TurnPlan Base: Sobrevivência (HP <= 6) ativa SURVIVAL_BLOCK")
+
+    # 3. Generic HeroStrategy - Generic Pivot (HP >= 12, Ataque sólido + Pitch)
+    state_pivot = {
+        "playerHealth": 18,
+        "playerHand": [
+            {"cardNumber": "heavy_strike_red", "power": 6, "cost": 1, "pitch": 1},
+            {"cardNumber": "energy_pitch_blue", "power": 2, "cost": 0, "pitch": 3},
+            {"cardNumber": "defense_card", "power": 1, "cost": 0, "pitch": 2}
+        ],
+        "activeChainLink": {"totalPower": 3, "cardNumber": "poke"}
+    }
+    tp_pivot = generic_strat.analyze_turn_plan(state_pivot)
+    assert tp_pivot.plan_type == "GENERIC_PIVOT"
+    assert tp_pivot.can_absorb_damage is True
+    assert "heavy_strike_red" in tp_pivot.reserved_card_names
+    assert tp_pivot.max_block_cards == 1  # 3 cartas - 2 reservadas
+    print("  ✓ TurnPlan Base: Generic Pivot com reserva de ataque e absorção")
+
+    # 4. JarlStrategy - Fused Oaken Old Pivot (4 cartas)
+    jarl_strat = JarlStrategy("jarl_vetreidi")
+    state_jarl_combo = {
+        "playerHealth": 16,
+        "playerHand": [
+            {"cardNumber": "oaken_old_red", "power": 7, "cost": 3, "pitch": 1},
+            {"cardNumber": "autumns_touch_blue", "power": 3, "cost": 0, "pitch": 3},  # Earth + Blue pitch
+            {"cardNumber": "blizzard_blue", "power": 2, "cost": 0, "pitch": 3},        # Ice
+            {"cardNumber": "sink_below_red", "power": 0, "cost": 0, "pitch": 1}
+        ],
+        "activeChainLink": {"totalPower": 4, "cardNumber": "generic_hit"}
+    }
+    tp_jarl = jarl_strat.analyze_turn_plan(state_jarl_combo)
+    assert tp_jarl.plan_type == "PIVOT_OAKEN_OLD_FUSED"
+    assert tp_jarl.can_absorb_damage is True
+    assert "oaken_old_red" in tp_jarl.reserved_card_names
+    assert "autumns_touch_blue" in tp_jarl.reserved_card_names
+    assert "blizzard_blue" in tp_jarl.reserved_card_names
+    assert tp_jarl.max_block_cards == 1  # 4 cartas - 3 reservadas (sink_below sobra para bloquear)
+    print("  ✓ TurnPlan Jarl: Fusão Oaken Old com retenção de Terra, Gelo e Pitch")
+
+    # 5. MarlynnStrategy - Overpitch Recovery
+    marlynn_strat = MarlynnStrategy("marlynn_treasure_hunter")
+    state_marlynn_recovery = {
+        "playerHealth": 14,
+        "playerHand": [
+            {"cardNumber": "codex_of_frailty_red", "cost": 0, "pitch": 1},
+            {"cardNumber": "blue_pitch_blue", "cost": 0, "pitch": 3},
+            {"cardNumber": "random_block", "cost": 0, "pitch": 2}
+        ],
+        "playerDiscard": [
+            {"cardNumber": "king_kraken_harpoon_red", "power": 6, "pitch": 1}
+        ],
+        "activeChainLink": {"totalPower": 3, "cardNumber": "strike"}
+    }
+    tp_rec = marlynn_strat.analyze_turn_plan(state_marlynn_recovery)
+    assert tp_rec.plan_type == "OVERPITCH_RECOVERY"
+    assert "codex_of_frailty_red" in tp_rec.reserved_card_names
+    assert "blue_pitch_blue" in tp_rec.reserved_card_names
+    print("  ✓ TurnPlan Marlynn: OVERPITCH_RECOVERY com recuperação de flecha do cemitério")
+
+    # 6. MarlynnStrategy - Defensive Trap (Sem flechas, 2+ traps)
+    state_marlynn_traps = {
+        "playerHealth": 14,
+        "playerHand": [
+            {"cardNumber": "boulder_trap_red", "cost": 1, "pitch": 1},
+            {"cardNumber": "tarpit_trap_yellow", "cost": 1, "pitch": 2},
+            {"cardNumber": "blue_card", "cost": 0, "pitch": 3}
+        ],
+        "playerArsenal": [],
+        "activeChainLink": {"totalPower": 5, "cardNumber": "heavy_swing"}
+    }
+    tp_traps = marlynn_strat.analyze_turn_plan(state_marlynn_traps)
+    assert tp_traps.plan_type == "DEFENSIVE_TRAP"
+    assert tp_traps.can_absorb_damage is False
+    print("  ✓ TurnPlan Marlynn: DEFENSIVE_TRAP retém armadilhas para defesa")
+
+    # 7. BruteStrategy - PIVOT_BRUTE_SMASH
+    brute_strat = BruteStrategy("rhinar")
+    state_brute_smash = {
+        "playerHealth": 18,
+        "playerHand": [
+            {"cardNumber": "pack_hunt_red", "power": 6, "cost": 2, "pitch": 1},
+            {"cardNumber": "blue_resource_blue", "power": 2, "cost": 0, "pitch": 3},
+            {"cardNumber": "other_card", "power": 2, "cost": 0, "pitch": 2}
+        ],
+        "activeChainLink": {"totalPower": 3, "cardNumber": "generic_attack"}
+    }
+    tp_brute = brute_strat.analyze_turn_plan(state_brute_smash)
+    assert tp_brute.plan_type == "PIVOT_BRUTE_SMASH"
+    assert tp_brute.can_absorb_damage is True
+    assert "pack_hunt_red" in tp_brute.reserved_card_names
+    print("  ✓ TurnPlan Brute: PIVOT_BRUTE_SMASH preserva ataque 6+ e pitch")
+
+    # 8. WarriorStrategy - WARRIOR_REPRISE_STRIKE
+    warrior_strat = WarriorStrategy("dorinthea")
+    state_warrior_rx = {
+        "playerHealth": 16,
+        "playerHand": [
+            {"cardNumber": "ironsong_response_red", "power": 0, "cost": 1, "pitch": 1},
+            {"cardNumber": "blue_bark_blue", "power": 2, "cost": 0, "pitch": 3},
+            {"cardNumber": "defend_card", "power": 0, "cost": 0, "pitch": 2}
+        ],
+        "activeChainLink": {"totalPower": 3, "cardNumber": "generic_attack"}
+    }
+    tp_warrior = warrior_strat.analyze_turn_plan(state_warrior_rx)
+    assert tp_warrior.plan_type == "WARRIOR_REPRISE_STRIKE"
+    assert "ironsong_response_red" in tp_warrior.reserved_card_names
+    print("  ✓ TurnPlan Warrior: WARRIOR_REPRISE_STRIKE preserva reação de ataque e pitch")
+
+    # 9. NinjaStrategy - NINJA_COMBO_CHAIN
+    ninja_strat = NinjaStrategy("katsu")
+    state_ninja_combo = {
+        "playerHealth": 16,
+        "playerHand": [
+            {"cardNumber": "leg_tap_red", "power": 4, "cost": 0, "has_go_again": True, "pitch": 1},
+            {"cardNumber": "rising_knee_red", "power": 4, "cost": 1, "has_go_again": False, "pitch": 1},
+            {"cardNumber": "blue_block_blue", "power": 2, "cost": 0, "pitch": 3}
+        ],
+        "activeChainLink": {"totalPower": 3, "cardNumber": "generic_attack"}
+    }
+    tp_ninja = ninja_strat.analyze_turn_plan(state_ninja_combo)
+    assert tp_ninja.plan_type == "NINJA_COMBO_CHAIN"
+    assert "leg_tap_red" in tp_ninja.reserved_card_names
+    assert "rising_knee_red" in tp_ninja.reserved_card_names
+    print("  ✓ TurnPlan Ninja: NINJA_COMBO_CHAIN encadeia starter custo 0 + combo")
+
+    print("\n[OK] Todos os TurnPlans (Genérico e Especializados) validados com 100% de sucesso!\n")
+
+
 if __name__ == "__main__":
     test_all_139_official_heroes_resolution()
     test_dynamic_fallback()
     test_archetype_specific_heuristics()
     test_policy_engine_integration()
+    test_turn_plan_systems()
     print("=" * 60)
     print(">>> TODOS OS TESTES PASSARAM COM SUCESSO! ARQUITETURA 100% HOMOLOGADA <<<")
     print("=" * 60)
+

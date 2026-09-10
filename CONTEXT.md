@@ -19,7 +19,7 @@ Glossary of domain terms used in this project. AI agents and contributors must u
 - **Deck-Aware World Sampling**: The process of sampling determinized worlds using `fab_cards_db.json` to filter cards by the opponent's hero class, producing realistic hidden hands.
 - **Policy Head**: The neural network output that produces a probability distribution over possible actions.
 - **Value Head**: The neural network output that estimates the probability of winning from the current state, in the range [-1.0, 1.0].
-- **Prior Shaping**: Using heuristic card evaluations (from `hero_strategies.py`) to bias the initial action probabilities in MCTS expansion.
+- **Prior Shaping**: Using heuristic card evaluations (from `ai/hero_strategies/`) to bias the initial action probabilities in MCTS expansion.
 - **Tempo Pivot**: A defensive strategy where the bot preserves cards in hand for a strong counter-attack next turn instead of over-blocking.
 - **Overblocking**: Assigning more defense value than necessary to block an attack, wasting cards that could be used offensively.
 - **GameSimulator**: The deterministic state-transition engine (`ai/game_simulator.py`) that projects future game states without randomness.
@@ -28,7 +28,7 @@ Glossary of domain terms used in this project. AI agents and contributors must u
 - **Progressive Widening**: Restrição no MCTS que limita filhos expandidos a √N, focando a busca nos ramos mais promissores.
 - **Prior Threshold Pruning**: Poda de ações com prior abaixo de −1.5σ da média, eliminando movimentos claramente inferiores durante a expansão MCTS.
 - **Distilação Assimétrica (Asymmetric Distillation)**: Treinamento da rede neural usando a distribuição de visitas do MCTS (π_MCTS) como target via Cross-Entropy/KL-Divergence, em vez de vitória/derrota binária.
-- **CR 3.1.5**: Regra oficial de Flesh and Blood que proíbe Resource/Gem cards de serem colocadas no Arsenal. Implementada em `hero_strategies.py` com score −9999.0.
+- **CR 3.1.5**: Regra oficial de Flesh and Blood que proíbe Resource/Gem cards de serem colocadas no Arsenal. Implementada em `ai/hero_strategies/` com score −9999.0.
 
 ## Domain: Architecture
 

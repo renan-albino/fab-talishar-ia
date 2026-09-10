@@ -106,7 +106,7 @@ class FabBotClient:
                 mf.write(formatted + "\n")
         except Exception:
             pass
-        print(formatted)
+        print(formatted, flush=True)
 
     def run_loop(self):
         self.log(f"[*] Iniciando Bot HTTP para a sala {self.room_id} (Role: {self.role})")
@@ -244,8 +244,7 @@ class FabBotClient:
                 with open(f"logs/{self.room_id}_p2_ready.txt", "w") as f:
                     f.write("ready")
                 
-                time.sleep(0.05)
-                self.submit_sideboard()
+                self.wait_in_lobby_and_start()
             except Exception as e:
                 self.log(f"[ERRO DE JOIN] {e}")
                 return
@@ -322,35 +321,111 @@ class FabBotClient:
         else:
             self.log(f"[ERRO FIRST PLAYER] Falha ao enviar escolha 'Go First'")
 
+    def wait_in_lobby_and_start(self):
+        """
+        Gerencia o ciclo de vida do bot como Jogador 2 (Join) no lobby do Talishar:
+        1. Submete o sideboard do bot.
+        2. Monitora o lobby via GetLobbyRefresh.php:
+           - Se o bot venceu o dado e precisa escolher ordem de turno (amIChoosingFirstPlayer), escolhe 'Go First'.
+           - Se o sideboard não foi aceito ainda, re-submete.
+           - Aguarda o oponente confirmar e a partida iniciar (gamestate ativo ou isMainGameReady).
+        """
+        self.log(f"[LOBBY] Bot conectado ao lobby da sala #{self.game_id}. Submetendo sideboard...")
+        self.submit_sideboard()
+
+        first_player_chosen = False
+        start_time = time.time()
+        timeout_seconds = 600  # 10 minutos para o jogador humano preparar o deck no lobby
+
+        self.log(f"[LOBBY] Aguardando confirmação no lobby da sala #{self.game_id}...")
+        while time.time() - start_time < timeout_seconds:
+            try:
+                res = self.session.post(
+                    f"{TALISHAR_API_URL}/APIs/GetLobbyRefresh.php",
+                    json={"gameName": self.game_id, "playerID": self.player_id, "authKey": self.auth_key},
+                    timeout=5
+                )
+                if res.status_code == 200:
+                    data = res.json()
+
+                    # 1. Se o bot venceu o dado e precisa escolher quem começa
+                    am_i_choosing = data.get("amIChoosingFirstPlayer", False)
+                    if am_i_choosing and not first_player_chosen:
+                        self.log(f"[LOBBY] Bot venceu o dado! Enviando escolha 'Go First'...")
+                        self.choose_first_player()
+                        first_player_chosen = True
+                        time.sleep(0.2)
+                        continue
+
+                    # 2. Se o bot ainda não submeteu sideboard ou o sideboard foi resetado
+                    if not data.get("mySideboardSubmitted", True):
+                        self.submit_sideboard()
+                        time.sleep(0.2)
+
+                    # 3. Verificar se a partida começou ou ambos os jogadores confirmaram
+                    if data.get("isMainGameReady") or data.get("gameStarted"):
+                        self.log(f"[LOBBY] Ambos os jogadores confirmaram! Partida #{self.game_id} iniciando...")
+                        return True
+
+                    # 4. Verificar se gamestate.txt já foi gerado no disco
+                    for gsp in [
+                        f"Talishar/Games/{self.game_id}/gamestate.txt",
+                        f"Games/{self.game_id}/gamestate.txt"
+                    ]:
+                        if os.path.exists(gsp) and os.path.getsize(gsp) > 0:
+                            self.log(f"[LOBBY] Gamestate detectado. Partida #{self.game_id} iniciada!")
+                            return True
+            except Exception as e:
+                self.log(f"[LOBBY AVISO] {e}")
+
+            time.sleep(0.3)
+
+        self.log(f"[LOBBY TIMEOUT] Tempo limite excedido no lobby.")
+        return False
+
     def wait_for_opponent_and_start(self):
         self.log(f"[HOST] Aguardando Jogador 2 entrar na sala #{self.game_id}...")
         p2_flag = f"logs/{self.room_id}_p2_ready.txt"
-        for _ in range(200):
-            time.sleep(0.05)
-            if os.path.exists(p2_flag):
-                self.log(f"[HOST] Jogador 2 detectado no lobby. Avançando para sideboard...")
-                time.sleep(0.05)
-                self.choose_first_player()
-                time.sleep(0.05)
-                self.submit_sideboard()
-                return
+        first_player_chosen = False
+        sideboard_sent = False
+        start_time = time.time()
+
+        while time.time() - start_time < 300:
+            time.sleep(0.3)
+            p2_present = os.path.exists(p2_flag)
             try:
                 lres = self.session.post(
                     f"{TALISHAR_API_URL}/APIs/GetLobbyRefresh.php",
-                    json={"gameName": self.game_id, "playerID": 1, "authKey": self.auth_key}
+                    json={"gameName": self.game_id, "playerID": 1, "authKey": self.auth_key},
+                    timeout=5
                 )
                 if lres.status_code == 200:
                     ldata = lres.json()
-                    if ldata.get("gameStatus", 0) >= 3 or ldata.get("opponentHero"):
-                        self.log(f"[HOST] Jogador 2 detectado no lobby. Avançando para sideboard...")
-                        time.sleep(0.05)
-                        self.choose_first_player()
-                        time.sleep(0.05)
-                        self.submit_sideboard()
-                        return
+                    status = ldata.get("gameStatus", 0)
+
+                    if p2_present or ldata.get("opponentHero") or status >= 2:
+                        if ldata.get("amIChoosingFirstPlayer") and not first_player_chosen:
+                            self.log(f"[HOST] Bot venceu o dado! Enviando escolha 'Go First'...")
+                            self.choose_first_player()
+                            first_player_chosen = True
+                            time.sleep(0.2)
+
+                        if not sideboard_sent:
+                            self.submit_sideboard()
+                            sideboard_sent = True
+
+                        if ldata.get("isMainGameReady") or ldata.get("gameStarted"):
+                            self.log(f"[HOST] Partida #{self.game_id} pronta para começar!")
+                            return True
+
+                        for gsp in [f"Talishar/Games/{self.game_id}/gamestate.txt", f"Games/{self.game_id}/gamestate.txt"]:
+                            if os.path.exists(gsp) and os.path.getsize(gsp) > 0:
+                                self.log(f"[HOST] Partida #{self.game_id} iniciada (gamestate detectado).")
+                                return True
             except Exception:
                 pass
         self.log(f"[TIMEOUT] Jogador 2 não entrou na sala a tempo.")
+        return False
 
     def get_card_meta(self, card_id: str) -> dict:
         if not hasattr(self, "_card_db") or self._card_db is None:
@@ -1253,6 +1328,14 @@ class FabBotClient:
             if not hasattr(self, "declared_blocks_link"):
                 self.declared_blocks_link = set()
 
+            # ── Telemetria de Plano de Turno e Pivot ───────────────
+            current_plan = self.policy_engine.strategy.analyze_turn_plan(state)
+            if getattr(self, "last_logged_def_plan", None) != (turn_num, current_plan.plan_type):
+                self.last_logged_def_plan = (turn_num, current_plan.plan_type)
+                plan_badge = f"<b>[Turno {turn_num}] 🎯 Plano de Defesa</b> -> <b>{current_plan.plan_type}</b> ({current_plan.reason})"
+                self.send_chat_log(plan_badge, highlight=True, bg_color="#0f172a", text_color="#38bdf8")
+                self.log(f"[PLANO DE DEFESA] 🎯 Estratégia: {current_plan.plan_type} - {current_plan.reason}")
+
             chosen_blocks = self.policy_engine.select_defense_blocks(state)
             unblocked = [b for b in chosen_blocks if str(b[1]) not in self.declared_blocks_link]
             if unblocked:
@@ -1358,6 +1441,14 @@ class FabBotClient:
 
         if is_my_turn and turn_phase in ("M", "STARTTURN", "RESOLUTIONSTEP"):
             if player_ap > 0:
+                # ── Telemetria de Plano de Turno e Ataque ──────────────
+                current_plan = self.policy_engine.strategy.analyze_turn_plan(state)
+                if getattr(self, "last_logged_atk_plan", None) != (turn_num, current_plan.plan_type):
+                    self.last_logged_atk_plan = (turn_num, current_plan.plan_type)
+                    plan_badge = f"<b>[Turno {turn_num}] 🎯 Plano de Ataque</b> -> <b>{current_plan.plan_type}</b> ({current_plan.reason})"
+                    self.send_chat_log(plan_badge, highlight=True, bg_color="#0f172a", text_color="#38bdf8")
+                    self.log(f"[PLANO DE ATAQUE] 🎯 Estratégia: {current_plan.plan_type} - {current_plan.reason}")
+
                 best_attack = self.policy_engine.select_best_attack(state, unpayable_set)
                 if best_attack:
                     self.last_attempted_play = best_attack["name"]

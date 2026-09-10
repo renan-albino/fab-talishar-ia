@@ -21,6 +21,16 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Auto-configura socket do Podman para Vanilla OS / Podman rootless
+if [ -S "/run/user/$UID/podman/podman.sock" ]; then
+    export DOCKER_HOST="unix:///run/user/$UID/podman/podman.sock"
+elif command -v distrobox-host-exec >/dev/null 2>&1; then
+    distrobox-host-exec systemctl --user start podman.socket 2>/dev/null || true
+    if [ -S "/run/user/$UID/podman/podman.sock" ]; then
+        export DOCKER_HOST="unix:///run/user/$UID/podman/podman.sock"
+    fi
+fi
+
 # Detect docker-compose vs docker compose
 if docker compose version >/dev/null 2>&1; then
     DC_CMD="docker compose"
@@ -129,7 +139,7 @@ if [ "$START_DOCKER" = true ]; then
         echo "1" > "$PROJECT_ROOT/Talishar/HostFiles/GameIDCounter.txt"
     fi
     mkdir -p "$PROJECT_ROOT/Talishar/Games" "$PROJECT_ROOT/Talishar/AccountFiles"
-    chmod -R 775 "$PROJECT_ROOT/Talishar/HostFiles" "$PROJECT_ROOT/Talishar/Games" "$PROJECT_ROOT/Talishar/AccountFiles" "$PROJECT_ROOT/Talishar/APIKeys" 2>/dev/null || true
+    chmod -R 777 "$PROJECT_ROOT/Talishar/HostFiles" "$PROJECT_ROOT/Talishar/Games" "$PROJECT_ROOT/Talishar/AccountFiles" "$PROJECT_ROOT/Talishar/APIKeys" 2>/dev/null || true
 
     if [ "$VERBOSE" = true ]; then
         echo -e "${BLUE}[+] Subindo containers Docker do Talishar via $DC_CMD...${NC}"
@@ -181,9 +191,10 @@ if [ "$START_DASHBOARD" = true ]; then
             --browser.serverAddress "localhost" \
             --server.enableCORS false \
             --server.enableXsrfProtection false \
-            > "$PROJECT_ROOT/logs/dashboard.log" 2>&1 &
+            < /dev/null > "$PROJECT_ROOT/logs/dashboard.log" 2>&1 &
         
         DASH_PID=$!
+        disown "$DASH_PID" 2>/dev/null || true
         echo "$DASH_PID" > "$PID_FILE"
         sleep 2
 

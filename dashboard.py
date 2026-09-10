@@ -129,11 +129,7 @@ with tab_play:
     if "active_human_match" in st.session_state:
         match_info = st.session_state["active_human_match"]
         st.info(f"🎮 **Partida Ativa:** Sala #{match_info['game_name']} | Seu Deck: `{match_info['player_deck']}` | Bot Deck: `{match_info['bot_deck']}`")
-        col_enter1, col_enter2 = st.columns([2, 1])
-        with col_enter1:
-            st.link_button("👉 ENTRAR NA PARTIDA (Abrir no Navegador)", match_info['game_url'], type="primary", use_container_width=True)
-        with col_enter2:
-            st.link_button("📋 Ver Lobby da Sala", match_info['lobby_url'], use_container_width=True)
+        st.link_button("👉 ENTRAR NA PARTIDA (Abrir Lobby no Navegador)", match_info['lobby_url'], type="primary", use_container_width=True)
 
     st.markdown("---")
     st.subheader("📋 Decks do Workspace Sincronizados com o Talishar")
@@ -208,10 +204,10 @@ with tab_arena:
             room_id = f"Treino_{uuid.uuid4().hex[:4]}_{i}"
             st.session_state["rooms"].append(room_id)
             out1 = open(f"logs/{room_id}_Bot1_terminal.log", "w")
-            subprocess.Popen(["./venv/bin/python", "bot_client.py", "--room", room_id, "--deck", f"decks/{bot1_deck_slug}.json", "--role", "host", "--name", "Bot1"], stdout=out1, stderr=out1)
+            subprocess.Popen(["./venv/bin/python", "-u", "bot_client.py", "--room", room_id, "--deck", f"decks/{bot1_deck_slug}.json", "--role", "host", "--name", "Bot1"], stdout=out1, stderr=out1, start_new_session=True)
             time.sleep(0.1)
             out2 = open(f"logs/{room_id}_Bot2_terminal.log", "w")
-            subprocess.Popen(["./venv/bin/python", "bot_client.py", "--room", room_id, "--deck", f"decks/{bot2_deck_slug}.json", "--role", "join", "--name", "Bot2"], stdout=out2, stderr=out2)
+            subprocess.Popen(["./venv/bin/python", "-u", "bot_client.py", "--room", room_id, "--deck", f"decks/{bot2_deck_slug}.json", "--role", "join", "--name", "Bot2"], stdout=out2, stderr=out2, start_new_session=True)
         st.success(f"{num_matches} partida(s) de alta velocidade iniciada(s)!")
 
     st.divider()

@@ -25,11 +25,13 @@ from typing import Dict, List, Optional, Tuple, Any
 from .hero_strategies import (
     get_hero_strategy,
     HeroStrategy,
+    TurnPlan,
     GuardianStrategy,
     JarlStrategy,
     BruteStrategy,
     WarriorStrategy,
     RangerStrategy,
+    MarlynnStrategy,
     NinjaStrategy,
     MechanologistStrategy,
     RunebladeStrategy,
@@ -331,6 +333,7 @@ class PolicyEngine:
     # ══════════════════════════════════════════════════════════════
 
     def select_best_attack(self, state: dict, unpayable_set: set) -> Optional[Dict[str, Any]]:
+        turn_plan = self.strategy.analyze_turn_plan(state)
         floating_res, total_res = self.calculate_available_resources(state)
         hand = state.get("playerHand", [])
         player_ap = int(state.get("playerAP", state.get("actionPoints", 1)))
@@ -344,6 +347,8 @@ class PolicyEngine:
         for idx, c in enumerate(hand):
             info = self.extract_card_info(c)
             c_name = info["name"]
+            c_id = info["actionDataOverride"] or str(idx)
+            c_action = info["action"] if info["action"] > 0 else 27
             # Regra FaB CR 2.1.2: Cartas de Flecha (Arrow) NUNCA podem ser jogadas diretamente da mão!
             # Elas só podem ser jogadas a partir do Arsenal usando um Arco.
             c_db = _load_cards_db().get(c_name, {})
@@ -357,11 +362,35 @@ class PolicyEngine:
                 # O pitch disponível para esta carta é (total_res - info["pitch"])
                 pitch_from_other_cards = total_res - info["pitch"]
                 if pitch_from_other_cards >= card_cost:
-                    c_id = info["actionDataOverride"] or str(idx)
-                    c_action = 27 if info["action"] == 27 else info["action"]
-                    base_score = self.strategy.evaluate_attack_card(
-                        c_name, info["power"], card_cost, info["has_go_again"], info["pitch"]
-                    )
+                    # ── Poda de Pitch Ineficiente para Guardião / Jarl:
+                    # Se uma carta custa >= 3, mas para pagá-la precisaríamos pitchar 2 ou mais cartas vermelhas:
+                    if (isinstance(self.strategy, GuardianStrategy) or self.strategy.is_heavy_hero) and card_cost >= 3:
+                        has_blue_pitch = any(self.extract_card_info(x)["pitch"] == 3 for x in hand if x != c)
+                        if floating_res < card_cost and not has_blue_pitch:
+                            # Tentar pagar custo 3 apenas com cartas vermelhas destrói a mão e causa undos
+                            base_score = self.strategy.evaluate_attack_card(
+                                c_name, info["power"], card_cost, info["has_go_again"], info["pitch"]
+                            ) - 25.0
+                        else:
+                            base_score = self.strategy.evaluate_attack_card(
+                                c_name, info["power"], card_cost, info["has_go_again"], info["pitch"]
+                            )
+                    else:
+                        base_score = self.strategy.evaluate_attack_card(
+                            c_name, info["power"], card_cost, info["has_go_again"], info["pitch"]
+                        )
+
+                    # ── Ajustes Táticos Baseados no TurnPlan ─────────────────
+                    c_clean = str(c.get("cardNumber") or c_name).lower()
+                    if turn_plan.plan_type == "PIVOT_OAKEN_OLD_FUSED" and "oaken_old" in c_clean:
+                        base_score += 35.0  # Fused Oaken Old é o finalizador absoluto
+                    elif turn_plan.plan_type == "OVERPITCH_RECOVERY" and any(k in c_clean for k in ["codex_of_frailty", "sea_floor_salvage", "tip_the_barkeep"]):
+                        base_score += 30.0  # Prioridade máxima: jogar NAA de recuperação para recarregar o arsenal
+                    elif turn_plan.plan_type == "HARPOON_CHAIN" and any(k in c_clean for k in ["portside_exchange", "three_of_a_kind", "cheating_scoundrel"]):
+                        base_score += 20.0  # Buffs antes do disparo do arsenal
+                    elif c_name in turn_plan.reserved_card_names or c_clean in turn_plan.reserved_card_names:
+                        base_score += 15.0  # Peça chave do plano ofensivo reservada
+
                     if info["has_go_again"]:
                         has_any_go_again = True
                     hand_attacks.append({
@@ -398,6 +427,20 @@ class PolicyEngine:
                 )
                 if is_weapon:
                     weapon_cost = self.get_weapon_cost(eq_name, eq)
+                    # Poda estrita de Ranger/Marlynn: canhão/arco NUNCA carrega flecha se o Arsenal já estiver cheio!
+                    is_bow_or_cannon = (
+                        "bow" in str(_load_cards_db().get(eq_name, {}).get("subtype", "")).lower()
+                        or any(b in eq_name for b in ["hammerhead", "shiver", "death_dealer", "dread_bore", "redback", "cannon"])
+                    )
+                    if is_bow_or_cannon:
+                        arsenal_cards = state.get("playerArsenal", [])
+                        if isinstance(arsenal_cards, list) and len(arsenal_cards) > 0:
+                            # Arsenal já ocupado -> proibido ativar arco/canhão para evitar 'Arsenal is full'
+                            continue
+                        if turn_plan.plan_type == "DEFENSIVE_TRAP":
+                            # Sem flechas viáveis: não gastar recursos ativando o arco à toa!
+                            continue
+
                     # Poda estrita: toda a mão + flutuante deve suprir o custo da arma
                     if total_res >= weapon_cost:
                         eq_info = self.extract_card_info(eq)
@@ -409,8 +452,10 @@ class PolicyEngine:
                         )
                         if not has_any_go_again and len(hand_attacks) == 0:
                             weapon_score += 2.0
-                        if "bow" in str(_load_cards_db().get(eq_name, {}).get("subtype", "")).lower() or any(b in eq_name for b in ["hammerhead", "shiver", "death_dealer", "dread_bore", "redback"]):
-                            weapon_score += 3.0
+                        if is_bow_or_cannon:
+                            weapon_score += 8.0  # Prioridade para carregar flecha no arsenal livre
+                            if turn_plan.plan_type == "HARPOON_CHAIN":
+                                weapon_score += 15.0  # Carga de canhão essencial para a cadeia
                         candidates.append({
                             "type": "weapon", "idx": 0, "card_id": str(eq_id), "mode": action,
                             "name": eq_name, "score": weapon_score, "cost": weapon_cost,
@@ -432,11 +477,20 @@ class PolicyEngine:
                         base_score = self.strategy.evaluate_attack_card(
                             c_name, c_info["power"], card_cost, c_info["has_go_again"], c_info["pitch"]
                         )
-                        # Jogar do Arsenal executa a ofensiva e libera o slot para o fim do turno (+4.0 de valor tático)
+                        # Jogar do Arsenal executa a ofensiva e libera o slot para o canhão carregar nova flecha
                         arsenal_score = base_score + 4.0
-                        # Ranger: Flechas no Arsenal são o ataque central prioritário do turno (+8.0)
-                        if any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]) or isinstance(self.strategy, RangerStrategy):
-                            arsenal_score += 8.0
+                        # Se a carta no Arsenal for uma Non-Attack Action (ex: Portside Exchange, Codex of Frailty):
+                        # Jogar do Arsenal PRIMEIRO libera o slot e concede bônus antes do disparo!
+                        c_type = str(_load_cards_db().get(c_name, {}).get("type", "")).upper()
+                        is_naa = ("AA" not in c_type and "ATTACK" not in c_type) or any(k in c_name for k in ["portside", "codex", "salvage", "three_of_a_kind", "tip_the_barkeep"])
+                        if is_naa:
+                            arsenal_score += 15.0  # Prioridade máxima: jogue a NAA do arsenal para liberar o slot!
+                            if turn_plan.plan_type == "OVERPITCH_RECOVERY":
+                                arsenal_score += 15.0
+                        elif any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]) or isinstance(self.strategy, RangerStrategy):
+                            arsenal_score += 10.0  # Flecha carregada no arsenal pronta para disparo!
+                            if turn_plan.plan_type == "HARPOON_CHAIN":
+                                arsenal_score += 15.0
                         candidates.append({
                             "type": zone_name.lower(), "idx": 0, "card_id": str(c_id), "mode": action,
                             "name": c_name, "score": arsenal_score, "cost": card_cost,
@@ -503,13 +557,23 @@ class PolicyEngine:
         if not hand:
             return None
 
+        turn_plan = self.strategy.analyze_turn_plan(state)
         pitch_candidates = []
         for idx, c in enumerate(hand):
             info = self.extract_card_info(c)
+            c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
             c_action = info["action"] if info["action"] > 0 else 27
             score = self.strategy.evaluate_pitch_card(
                 info["name"], info["pitch"], info["cost"], info["power"], info["has_go_again"]
             )
+            # Poda estrita de pitch: JAMAIS dar pitch em finalizador reservado do plano ofensivo
+            is_reserved_finisher = (
+                (info["name"] in turn_plan.reserved_card_names or c_clean_name in turn_plan.reserved_card_names)
+                and info["pitch"] == 1
+            )
+            if is_reserved_finisher:
+                score -= 100.0
+
             # Poda estrita: dar pitch em carta vermelha com alto poder (power >= 5)
             # é penalizado pesadamente a menos que seja a única carta da mão
             if info["pitch"] == 1 and info["power"] >= 4:
@@ -581,19 +645,9 @@ class PolicyEngine:
         incoming_name = str(active_chain.get("cardNumber", "")).lower()
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        # ── 3.1 Detecção de Linha de Tempo Pivot (Guardião / Bruto / Ataques Pesados)
-        # Identifica se temos uma mão ofensiva para virar a partida (1 ataque pesado + 1 pitch azul)
-        has_heavy_attack = False
-        has_blue_pitch = False
-        for c in hand:
-            c_info = self.extract_card_info(c)
-            if c_info["pitch"] == 3:
-                has_blue_pitch = True
-            if self.strategy.has_heavy_attack(c_info):
-                has_heavy_attack = True
-
+        # ── 3.1 Detecção Holística de Plano de Turno e Pivot ────────
+        turn_plan = self.strategy.analyze_turn_plan(state)
         is_heavy_hero = getattr(self.strategy, "is_heavy_hero", False)
-        has_pivot_line = has_heavy_attack and has_blue_pitch
 
         block_candidates = []
         for idx, c in enumerate(hand):
@@ -604,7 +658,20 @@ class PolicyEngine:
                 score = self.strategy.evaluate_block_card(
                     info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"]
                 )
-                
+
+                # ── Poda Estrita de Peças Reservadas pelo TurnPlan ────────
+                c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
+                is_reserved = (
+                    info["name"] in turn_plan.reserved_card_names
+                    or c_clean_name in turn_plan.reserved_card_names
+                    or any(r.lower() == c_clean_name for r in turn_plan.reserved_card_names)
+                )
+                if is_reserved and turn_plan.can_absorb_damage:
+                    # Se o plano determinou absorver dano para pivotar, peças reservadas
+                    # NUNCA bloqueiam a menos que estejamos sob risco letal iminente
+                    if my_hp > 6 and not (has_dangerous_on_hit and opp_power >= my_hp):
+                        score -= 150.0
+
                 # ── Poda de Preservação de Mão Ofensiva:
                 # Se temos vida alta (> 20) e o ataque inimigo é fraco (<= 2 sem on-hit),
                 # penaliza queimar cartas vermelhas de ataque chave (power >= 4 e pitch == 1)
@@ -612,17 +679,21 @@ class PolicyEngine:
                     if info["power"] >= 4 and info["pitch"] == 1:
                         score -= 5.0
 
-                # ── Poda de Tempo Pivot para Guardião:
-                # Protege a carta de ataque pesado e o pitch azul da mão de serem queimados em bloqueios fúteis
-                if (is_heavy_hero or has_pivot_line) and my_hp >= 10 and not has_dangerous_on_hit:
+                # ── Poda de Tempo Pivot e Reserva Estrita de Azul (Guardião / Jarl):
+                if (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
                     if info["pitch"] == 1 and info["power"] >= 6:
-                        score -= 20.0  # Nunca bloqueia com a arma principal de Pivot
-                    elif info["pitch"] == 3 and len([x for x in hand if self.extract_card_info(x)["pitch"] == 3]) <= 1:
-                        score -= 8.0   # Preserva pelo menos 1 azul para pagar o ataque pesado
+                        score -= 25.0  # Nunca bloqueia com a bomba de ataque de Pivot
+                    elif info["pitch"] == 3:
+                        blue_count = len([x for x in hand if self.extract_card_info(x)["pitch"] == 3])
+                        # Se Jarl/Guardião só tem 1 azul na mão: PRESERVAÇÃO ABSOLUTA para o turno de ataque!
+                        if blue_count <= 1:
+                            score -= 30.0  # Bloquear com a única azul deixaria o herói desativado no contra-ataque
+                        elif blue_count == 2 and is_heavy_hero:
+                            score -= 15.0  # Preserva a 2ª azul para fusão elemental / pagar ataque de custo 3 + Titan's Fist
 
-                # Bônus para cartas azuis de bloqueio 3 ou reações de defesa pura
-                if info["block"] >= 3 and (info["pitch"] == 3 or "sink" in info["name"] or "fate" in info["name"] or "staunch" in info["name"]):
-                    score += 2.0
+                # Bônus para reações de defesa dedicadas (Sink, Fate, Staunch)
+                if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
+                    score += 3.0
 
                 if score > -100.0 and info["block"] > 0:
                     block_candidates.append({
@@ -696,17 +767,15 @@ class PolicyEngine:
         current_blocked = 0
 
         # Limite máximo de cartas para bloquear
-        if my_hp <= 8:
+        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= my_hp):
             max_blocks = len(block_candidates)  # Modo Sobrevivência (Bloqueio total)
-        elif my_hp <= 15:
+        elif turn_plan.can_absorb_damage:
+            # Respeita estritamente o limite de bloqueios do plano (ex: 0 no Fused Oaken Old pivot!)
+            max_blocks = min(turn_plan.max_block_cards, len(block_candidates))
+        elif my_hp <= 12:
             max_blocks = min(3, len(block_candidates))
         else:
             max_blocks = min(2, len(block_candidates))
-
-        # Se o Guardião tem uma jogada ofensiva de Pivot preparada e vida segura (> 10 HP),
-        # limita os blocos para no máximo 1 ou 2 cartas, absorvendo dano menor e virando o tempo!
-        if (is_heavy_hero or has_pivot_line) and my_hp >= 10 and not has_dangerous_on_hit:
-            max_blocks = min(max_blocks, 1 if my_hp > 18 else 2)
 
         for item in block_candidates:
             if len(chosen_blocks) >= max_blocks:

@@ -95,6 +95,7 @@ def _ai_watcher_loop():
                         proc = subprocess.Popen(
                             [
                                 PYTHON_BIN,
+                                "-u",
                                 os.path.join(BASE_DIR, "bot_client.py"),
                                 "--room", str(g_id),
                                 "--deck", f"decks/{bot_deck}.json",
@@ -150,11 +151,23 @@ def create_human_vs_bot_match(
     if not is_frontend_running():
         start_frontend()
 
+    deck_path = os.path.join(BASE_DIR, "decks", f"{player_deck_slug}.json") if not player_deck_slug.endswith(".json") else os.path.join(BASE_DIR, "decks", player_deck_slug)
+    if not os.path.exists(deck_path):
+        deck_path = os.path.join(BASE_DIR, player_deck_slug)
+    deck_data = None
+    if os.path.exists(deck_path):
+        try:
+            with open(deck_path, "r", encoding="utf-8") as f:
+                deck_data = json.load(f)
+        except Exception as e:
+            logger.warning(f"Erro ao carregar deck {deck_path}: {e}")
+
     # 1. Cria a sala no Talishar para o Player 1
     create_payload = {
         "format": format_code.lower(),
         "visibility": "private",
         "fabdb": player_deck_slug,
+        "deck": deck_data,
         "gameDescription": "Humano vs AI Master"
     }
 
@@ -186,7 +199,7 @@ def create_human_vs_bot_match(
 
     bot_proc = subprocess.Popen(
         [
-            PYTHON_BIN, os.path.join(BASE_DIR, "bot_client.py"),
+            PYTHON_BIN, "-u", os.path.join(BASE_DIR, "bot_client.py"),
             "--room", game_name,
             "--deck", f"decks/{bot_deck_slug}.json",
             "--role", "join",
@@ -194,12 +207,13 @@ def create_human_vs_bot_match(
         ],
         cwd=BASE_DIR,
         stdout=out_f,
-        stderr=out_f
+        stderr=out_f,
+        start_new_session=True
     )
 
     # 3. Monta os links de redirecionamento para o frontend
-    game_url = f"{FRONTEND_URL}/?gameName={game_name}&playerID=1"
-    lobby_url = f"{FRONTEND_URL}/game/lobby?gameName={game_name}&playerID=1"
+    game_url = f"{FRONTEND_URL}/?gameName={game_name}&playerID=1&authKey={auth_key}"
+    lobby_url = f"{FRONTEND_URL}/game/lobby/{game_name}?playerID=1&authKey={auth_key}"
 
     return {
         "success": True,

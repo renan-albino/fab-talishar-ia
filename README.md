@@ -74,8 +74,8 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
 - **ISMCTS em Ataque, Defesa e Pitch (`ai/mcts.py` & `ai/policy_engine.py`)**:
   - *Information Set MCTS*: Amostra mundos determinizados preenchendo a mão oculta do adversário com filtro por classe do herói oponente (*Deck-Aware World Sampling* via `fab_cards_db.json`).
   - Avalia a melhor linha defensiva prevenindo *overblocking* e preservando a mão de contra-ataque (*Tempo Pivot*).
-- **Cache LRU de Heurísticas (`ai/hero_strategies.py`)**:
-  - Memoização de alta velocidade para scores estáticos de cartas em Dorinthea, Bravo, Dash, Katsu e Guardiões.
+- **Cache LRU de Heurísticas e Sistema de TurnPlan (`ai/hero_strategies/`)**:
+  - Memoização de alta velocidade para scores estáticos de cartas e planos táticos unificados (`TurnPlan`).
 
 ### 2. ♟️ Avaliação Tática Estilo Xadrez (Stockfish / Chess.com)
 - **Barra de Vantagem Dinâmica no Frontend (`ChessAdvantageTracker.tsx`)**:
@@ -122,7 +122,7 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 | [`ai/model.py`](ai/model.py) | Rede Neural ResNet Dual-Head (`FaBPolicyValueNetwork`) com LayerNorm e 192 entradas de estado. |
 | [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tática unificado. Alterna dinamicamente entre **ISMCTS** (quando o oponente tem cartas na mão) e **MCTS clássico** (quando a informação é completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl` em todas as fases, e coordena podas táticas de ataque, pitch, bloqueio e arsenal. |
 | [`ai/mcts.py`](ai/mcts.py) | Motores `MCTSEngine` e `ISMCTSEngine`. Amostragem de mundos (*Deck-Aware World Sampling* com leitura dinâmica de `opponentHand`) e agregação ponderada de votos. |
-| [`ai/hero_strategies.py`](ai/hero_strategies.py) | Registro canônico de todos os 139 heróis oficiais e estratégias polimórficas por arquétipo/classe: `GuardianStrategy`, `JarlStrategy`, `BruteStrategy`, `WarriorStrategy`, `NinjaStrategy`, `RangerStrategy`, `MechanologistStrategy`, `RunebladeStrategy`, `WizardStrategy`, `IllusionistStrategy`, `AssassinStrategy` e `MerchantStrategy`. |
+| [`ai/hero_strategies/`](ai/hero_strategies/) | Registro canônico de todos os 139 heróis oficiais e estratégias polimórficas por arquétipo/classe: `GuardianStrategy`, `JarlStrategy`, `BruteStrategy`, `WarriorStrategy`, `NinjaStrategy`, `RangerStrategy`, `MarlynnStrategy`, `MechanologistStrategy`, `RunebladeStrategy`, `WizardStrategy`, `IllusionistStrategy`, `AssassinStrategy` e `MerchantStrategy`. Implementa arquitetura `TurnPlan`. |
 | [`ai/game_simulator.py`](ai/game_simulator.py) | Simulador determinístico de regras de FaB para expansão sintética nas folhas da árvore de busca. |
 | [`ai/trainer.py`](ai/trainer.py) | Orquestrador de self-play e treino com Distilação Assimétrica contra $\pi_{\text{MCTS}}$, AMP FP16 e prioridade `nice 10`. |
 | [`ai/experience_collector.py`](ai/experience_collector.py) | Replay Buffer circular em memória com serialização compacta em `.npz`. |
@@ -228,30 +228,48 @@ Para navegar a complexidade de regras do Flesh and Blood e garantir jogadas de n
 Para permitir que **qualquer pessoa ou IA replique o ambiente em 1 clique em qualquer computador**, o projeto utiliza uma pasta central de templates (`setup_templates/`) e um script de automação (`scripts/prepare_environment.py` / `scripts/prepare_environment.sh`).
 
 ### O que o script de preparação faz automaticamente:
-1. **Verificação e Auto-reparo de Dependências Python:** Configura o `venv` e verifica a integridade de extensões binárias em C (como NumPy e PyTorch), reinstalando-as automaticamente se arquivos `.so` estiverem corrompidos.
-2. **Garantia dos Repositórios Base (`Talishar` e `Talishar-FE`):** Detecta se as pastas base existem e estão completas (`docker-compose.yml` e `package.json`). Se ausentes, importa do diretório de workspace ou clona automaticamente dos repositórios oficiais do GitHub (`Talishar/Talishar` e `Talishar/Talishar-FE`).
-3. **Criação de Diretórios:** Garante a existência de `data/`, `logs/` e `decks/` com permissões de I/O (`chmod 775`).
-4. **Aplicação de Patches do Backend (`setup_templates/backend/` $\to$ `Talishar/`):**
+1. **Camada de Idempotência e Autodiagnóstico do Sistema (`ensure_system_idempotence`):**
+   - Detecta dinamicamente a distribuição hospedeira (ex: Vanilla OS 3, Fedora Silverblue, Apx, Debian/Ubuntu).
+   - Se estiver sob Podman rootless, verifica e ativa automaticamente o socket do usuário (`systemctl --user enable --now podman.socket`).
+   - Garante que a variável `DOCKER_HOST` ou o symlink `/var/run/docker.sock` apontem para o socket ativo do Podman/Docker.
+   - Configura o arquivo de ambiente do Streamlit (`~/.streamlit/config.toml`) para execução limpa (`headless = true`, `gatherUsageStats = false`).
+   - Garante que arquivos essenciais como `GameIDCounter.txt` e chaves de API existam e estejam inicializados antes da subida dos containers.
+2. **Verificação e Auto-reparo de Dependências Python:** Configura o `venv` e verifica a integridade de extensões binárias em C (como NumPy e PyTorch), reinstalando-as automaticamente se arquivos `.so` estiverem corrompidos.
+3. **Garantia dos Repositórios Base (`Talishar` e `Talishar-FE`):** Detecta se as pastas base existem e estão completas (`docker-compose.yml` e `package.json`). Se ausentes, importa do diretório de workspace ou clona automaticamente dos repositórios oficiais do GitHub (`Talishar/Talishar` e `Talishar/Talishar-FE`).
+4. **Criação de Diretórios e Permissões:** Garante a existência de `data/`, `logs/`, `decks/` e pastas de escrita do Talishar (`Talishar/Games/`, `Talishar/HostFiles/`, `Talishar/AccountFiles/`, `Talishar/APIKeys/`) com permissões completas de I/O (`chmod 777`), assegurando que o servidor web Apache (`www-data`) em containers rootless (Docker / Podman) possa criar salas, atualizar `GameIDCounter.txt` e salvar partidas sem erro de permissão.
+5. **Aplicação de Patches do Backend (`setup_templates/backend/` $\to$ `Talishar/`):**
    - Injeta `AppendGameLog.php` (API de chat em tempo real).
    - Injeta `JoinGame.php` (Handshake do bot e geração de `authKey`).
    - Injeta `CombatDummy.php` (Desativa o auto-pass legado do PHP para ceder prioridade à IA).
    - Injeta `ProcessInput.php` (Tratamento de ações com modo padrão `27`).
-5. **Aplicação de Componentes do Frontend (`setup_templates/frontend/` $\to$ `Talishar-FE/`):**
+   - Define fallback de `$APP_ENV` em `APIKeys.php` para suprimir warnings em produção local.
+6. **Aplicação de Componentes do Frontend (`setup_templates/frontend/` $\to$ `Talishar-FE/`):**
    - Injeta `ChessAdvantageTracker.tsx` e `ChessAdvantageTracker.module.css` no topo do chat.
    - Sincroniza `GameSlice.ts` e `Header.tsx` para suporte a login livre e atalhos de duelo.
-6. **Autoverificação e Compatibilidade Docker:**
-   - Suporte transparente e automático a **Docker Compose v1 (`docker-compose`)** e **Docker Compose v2 (`docker compose`)**.
+   - **Imunidade a Adblockers (BannerUnit):** Cria o componente `bannerUnit/AdUnit.tsx` e configura o alias `components/ads` $\to$ `bannerUnit` no `vite.config.mts`, impedindo que extensões como uBlock Origin, Firefox Enhanced Tracking Protection e Brave Shields bloqueiem o carregamento de rotas e scripts React.
+7. **Autoverificação e Compatibilidade Docker e Podman:**
+   - Suporte transparente a **Docker Compose v1 (`docker-compose`)**, **Docker Compose v2 (`docker compose`)** e emulação via **Podman API Socket** (`/run/user/$UID/podman/podman.sock` ou symlink `/var/run/docker.sock`).
    - Resolução dinâmica de nomes de containers (`talishar_web-server_1` ou `talishar-web-server-1`).
-7. **Indexação Oficial de Cartas:**
-   - Executa `extract_card_db.py` conectando dinamicamente ao container web ativo e extrai 10.144 cartas do Talishar para `data/fab_cards_db.json`.
-8. **Compilação e Validação do Frontend:**
+8. **Indexação Oficial de Cartas:**
+   - Executa `extract_card_db.py` conectando dinamicamente ao container web ativo e extrai cartas do Talishar para `data/fab_cards_db.json`.
+9. **Compilação e Validação do Frontend:**
    - Instala pacotes via `npm` (somente após confirmar a integridade de `package.json`) e valida a compilação com `npx vite build`.
-9. **Exportação com 1 Comando (`--export-templates`):**
-   - Caso você ou uma nova IA faça modificações no frontend ou backend, basta rodar `./venv/bin/python scripts/prepare_environment.py --export-templates` para salvar as alterações em `setup_templates/`.
+   - Compatibilidade com o upstream mais recente do Talishar-FE (mantém redutores `setEquipDestroy`, animações e rotas limpas, com fallback para ações com modo `27`).
+10. **Exportação com 1 Comando (`--export-templates`):**
+    - Caso você ou uma nova IA faça modificações no frontend ou backend, basta rodar `./venv/bin/python scripts/prepare_environment.py --export-templates` para salvar as alterações em `setup_templates/`.
 
 ---
 
 ## 🚀 Instalação e Execução Rápida
+
+### 0. Pré-requisitos do Sistema (Linux, Fedora, Vanilla OS & Podman)
+- **Ferramentas de Container:** `docker` + `docker compose` (ou `docker-compose`). Caso utilize **Podman** (ex: Vanilla OS, Fedora Silverblue, Apx), ative o socket do Podman para emular a API do Docker:
+  ```bash
+  systemctl --user enable --now podman.socket
+  sudo ln -sfn /run/user/$UID/podman/podman.sock /var/run/docker.sock
+  ```
+- **Node.js & npm:** Node >= 20 (ex: `nodejs24-bin`, `nodejs24-npm-bin`) para o frontend Talishar-FE.
+- **Python 3.10+ com venv:** Dependências em `requirements.txt` (`torch`, `streamlit`, `numpy`, `psutil`).
 
 ### 1. Clonar o Repositório
 ```bash
@@ -329,7 +347,7 @@ Para nunca se preocupar em esquecer de sincronizar templates com `setup_template
 │   ├── trainer.py            # Orquestrador de Treino GPU com Distilação Assimétrica
 │   ├── policy_engine.py      # Motor de Decisão Tático com ISMCTS em Ataque, Defesa e Pitch
 │   ├── experience_collector.py # Replay Buffer com suporte a distribuições suaves de visitas
-│   └── hero_strategies.py    # Estratégias por Herói com Cache LRU de alta performance
+│   └── hero_strategies/      # Pacote de estratégias modulares por herói e TurnPlans
 ├── scripts/
 │   ├── sync_and_clean.sh     # Automação de limpeza, exportação de templates e pré-commit
 │   ├── analyze_ismcts.py     # Analisador local ISMCTS (--dry-run sem servidor)
@@ -415,6 +433,8 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Deck-Aware World Sampling** | Amostragem de mundos determinizados no ISMCTS com filtro de classe via `fab_cards_db.json` para preenchimento realista da mão oculta |
 | **Simulador de Transição (`ai/game_simulator.py`)** | Motor determinístico de transição de estado para FaB (custos, pitch, poder vs bloco, dano não bloqueado, AP, Go Again e vida) integrado ao MCTS |
 | **Distilação Assimétrica (MCTS Target)** | Treinamento com Cross-Entropy / KL-Divergence contra a distribuição real de visitas do MCTS ($\pi_{\text{MCTS}}$), acelerando o aprendizado da rede neural |
+| **Camada de Idempotência & Vanilla OS / Podman** | Detecção dinâmica de distros imutáveis (Vanilla OS 3 / Apx / Fedora), auto-ativação do socket de usuário Podman, garantia de diretórios com permissão `777` para `www-data` no host e configuração `headless` do Streamlit |
+| **Imunidade a Adblockers (BannerUnit)** | Criação do módulo `bannerUnit` e alias Vite substituindo importações dinâmicas `/components/ads/`, eliminando quebras causadas por extensões de bloqueio de anúncios (uBlock Origin, Brave Shields) |
 
 ### 📋 Pendente
 

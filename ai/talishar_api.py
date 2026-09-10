@@ -75,7 +75,13 @@ class TalisharApiClient:
         }
         try:
             res = self.session.post(url, json=payload, timeout=5)
-            return res.status_code == 200
+            if res.status_code == 200:
+                try:
+                    data = res.json()
+                    return bool(data.get("success", False)) and not bool(data.get("error"))
+                except Exception:
+                    return True
+            return False
         except Exception as e:
             logger.warning(f"Erro em choose_first_player: {e}")
             return False

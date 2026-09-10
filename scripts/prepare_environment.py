@@ -52,6 +52,9 @@ FRONTEND_MAPPINGS = [
     ("lobby/LobbyChat.tsx", "src/routes/game/lobby/components/lobbyChat/LobbyChat.tsx"),
     ("components/Header.tsx", "src/components/header/Header.tsx"),
     ("routes.tsx", "src/routes.tsx"),
+    ("bannerUnit/AdUnit.tsx", "src/components/bannerUnit/AdUnit.tsx"),
+    ("bannerUnit/index.ts", "src/components/bannerUnit/index.ts"),
+    ("vite.config.mts", "vite.config.mts"),
 ]
 
 def log(msg):
@@ -72,7 +75,79 @@ def get_docker_compose_cmd():
         pass
     if shutil.which("docker-compose"):
         return ["docker-compose"]
-    return ["docker", "compose"]
+def ensure_system_idempotence():
+    log("Inspecionando sistema operacional e camada de idempotência...")
+    is_container = os.path.exists("/run/.containerenv") or os.path.exists("/.dockerenv")
+    is_vanilla = False
+    
+    # 1. Detecção de Vanilla OS / Host Linux
+    if os.path.exists("/etc/os-release"):
+        try:
+            with open("/etc/os-release") as f:
+                content = f.read()
+                if "vanilla" in content.lower():
+                    is_vanilla = True
+        except Exception:
+            pass
+    if os.path.exists("/run/host/usr/bin/podman") or os.path.exists("/run/host/abimage.abr"):
+        is_vanilla = True
+
+    # 2. Configuração do socket Podman / Docker
+    uid = os.getuid()
+    podman_sock = f"/run/user/{uid}/podman/podman.sock"
+    if os.path.exists(podman_sock) or is_vanilla or is_container:
+        if not os.path.exists(podman_sock):
+            for cmd in [
+                ["systemctl", "--user", "start", "podman.socket"],
+                ["distrobox-host-exec", "systemctl", "--user", "start", "podman.socket"]
+            ]:
+                try:
+                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except Exception:
+                    pass
+        
+        if os.path.exists(podman_sock):
+            os.environ["DOCKER_HOST"] = f"unix://{podman_sock}"
+            if not os.path.exists("/var/run/docker.sock"):
+                try:
+                    subprocess.run(["sudo", "-n", "ln", "-sfn", podman_sock, "/var/run/docker.sock"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except Exception:
+                    pass
+            log_success(f"Podman API Socket ativo e compatível com Docker ({podman_sock}).")
+
+    # 3. Configuração do Streamlit para evitar prompts interativos
+    streamlit_config_dir = os.path.expanduser("~/.streamlit")
+    streamlit_config_file = os.path.join(streamlit_config_dir, "config.toml")
+    os.makedirs(streamlit_config_dir, exist_ok=True)
+    if not os.path.exists(streamlit_config_file):
+        with open(streamlit_config_file, "w", encoding="utf-8") as sf:
+            sf.write("[browser]\ngatherUsageStats = false\n\n[server]\nheadless = true\n")
+        log_success("Configuração do Streamlit gravada em ~/.streamlit/config.toml.")
+
+    # 4. Arquivos obrigatórios do backend Talishar
+    redirector_tpl = os.path.join(TALISHAR_DIR, "HostFiles", "RedirectorTemplate.php")
+    redirector_php = os.path.join(TALISHAR_DIR, "HostFiles", "Redirector.php")
+    if os.path.exists(redirector_tpl) and not os.path.exists(redirector_php):
+        shutil.copy2(redirector_tpl, redirector_php)
+
+    apikeys_tpl = os.path.join(TALISHAR_DIR, "APIKeys", "APIKeys.php.template")
+    apikeys_php = os.path.join(TALISHAR_DIR, "APIKeys", "APIKeys.php")
+    if os.path.exists(apikeys_tpl) and not os.path.exists(apikeys_php):
+        shutil.copy2(apikeys_tpl, apikeys_php)
+
+    game_counter = os.path.join(TALISHAR_DIR, "HostFiles", "GameIDCounter.txt")
+    if not os.path.exists(game_counter):
+        os.makedirs(os.path.dirname(game_counter), exist_ok=True)
+        with open(game_counter, "w") as f:
+            f.write("1\n")
+
+    # 5. Garantir .env no frontend
+    fe_env_tpl = os.path.join(TALISHAR_FE_DIR, ".env.template")
+    fe_env = os.path.join(TALISHAR_FE_DIR, ".env")
+    if os.path.exists(fe_env_tpl) and not os.path.exists(fe_env):
+        shutil.copy2(fe_env_tpl, fe_env)
+
+    log_success("Camada de idempotência do sistema validada.")
 
 def ensure_talishar_backend():
     log("Verificando integridade do backend Talishar...")
@@ -185,9 +260,9 @@ def check_unmapped_changes():
             for line in res.stdout.splitlines():
                 status = line[:2]
                 fpath = line[3:].strip()
-                if fpath.startswith(("Games/", "HostFiles/", "logs/", "decks/", "deck.json", "game/", "fix_and_start", "composer.lock")):
+                if fpath.startswith(("Games/", "HostFiles/", "logs/", "decks", "deck.json", "game/", "fix_and_start", "composer.lock")):
                     continue
-                if (status == "??" or fpath.startswith(("APIs/", "AI/"))) and fpath not in mapped_srcs:
+                if (status == "??" or fpath.startswith(("APIs/", "AI/"))) and fpath not in mapped_srcs and not any(src.startswith(fpath) for src in mapped_srcs):
                     unmapped.append(("Backend", fpath))
         except Exception:
             pass
@@ -202,7 +277,7 @@ def check_unmapped_changes():
                 fpath = line[3:].strip()
                 if fpath.startswith(("build/", "dist/", "node_modules/", "package-lock.json")):
                     continue
-                if (status == "??" or fpath.startswith("src/")) and fpath not in mapped_srcs:
+                if (status == "??" or fpath.startswith("src/")) and fpath not in mapped_srcs and not any(src.startswith(fpath) for src in mapped_srcs):
                     unmapped.append(("Frontend", fpath))
         except Exception:
             pass
@@ -220,14 +295,19 @@ def check_unmapped_changes():
 
 def fix_permissions():
     log("Ajustando permissões de arquivos e pastas no Talishar...")
-    games_dir = os.path.join(TALISHAR_DIR, "Games")
-    if os.path.exists(games_dir):
+    for sub in ["Games", "HostFiles", "AccountFiles", "APIKeys"]:
+        p = os.path.join(TALISHAR_DIR, sub)
+        if os.path.exists(p):
+            try:
+                subprocess.run(["chmod", "-R", "777", p], stderr=subprocess.DEVNULL, check=False)
+            except Exception:
+                pass
+    if os.path.exists(LOGS_DIR):
         try:
-            subprocess.run(["chmod", "-R", "775", games_dir], stderr=subprocess.DEVNULL, check=False)
-            subprocess.run(["chmod", "-R", "775", LOGS_DIR], stderr=subprocess.DEVNULL, check=False)
-            log_success("Permissões de I/O concedidas para Talishar/Games e logs/.")
-        except Exception as e:
-            log_warn(f"Aviso ao ajustar permissões: {e}")
+            subprocess.run(["chmod", "-R", "777", LOGS_DIR], stderr=subprocess.DEVNULL, check=False)
+        except Exception:
+            pass
+    log_success("Permissões de I/O concedidas para Talishar (Games, HostFiles, AccountFiles, APIKeys) e logs/.")
 
 def sync_card_database():
     log("Indexando banco de cartas em data/fab_cards_db.json...")
@@ -283,6 +363,7 @@ def main():
         return
 
     ensure_directories()
+    ensure_system_idempotence()
     ensure_talishar_repositories()
     apply_custom_templates()
     fix_permissions()

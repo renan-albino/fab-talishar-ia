@@ -10,6 +10,16 @@ PROJECT_DIR="$SCRIPT_DIR"
 TALISHAR_DIR="$PROJECT_DIR/Talishar"
 FRONTEND_DIR="$PROJECT_DIR/Talishar-FE"
 
+# Auto-configura socket do Podman para Vanilla OS / Podman rootless
+if [ -S "/run/user/$UID/podman/podman.sock" ]; then
+    export DOCKER_HOST="unix:///run/user/$UID/podman/podman.sock"
+elif command -v distrobox-host-exec >/dev/null 2>&1; then
+    distrobox-host-exec systemctl --user start podman.socket 2>/dev/null || true
+    if [ -S "/run/user/$UID/podman/podman.sock" ]; then
+        export DOCKER_HOST="unix:///run/user/$UID/podman/podman.sock"
+    fi
+fi
+
 # Detect docker-compose command
 if docker compose version >/dev/null 2>&1; then
     DC_CMD="docker compose"
@@ -46,7 +56,9 @@ echo "=== [3/3] Iniciando Servidor Vite na Porta 3000 ==="
 if pgrep -f "vite.*3000" > /dev/null; then
     echo "Frontend Vite ja esta rodando em http://localhost:3000"
 else
-    nohup npx vite --port 3000 --host > "$PROJECT_DIR/logs/frontend.log" 2>&1 &
+    nohup npx vite --port 3000 --host < /dev/null > "$PROJECT_DIR/logs/frontend.log" 2>&1 &
+    VITE_PID=$!
+    disown "$VITE_PID" 2>/dev/null || true
     sleep 2
     echo "Frontend Vite iniciado com sucesso em http://localhost:3000!"
 fi

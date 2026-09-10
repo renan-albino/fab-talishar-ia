@@ -1,10 +1,10 @@
 {
-  "total_matches": 440,
-  "bot1_wins": 205,
+  "total_matches": 451,
+  "bot1_wins": 206,
   "bot2_wins": 235,
-  "draws": 0,
-  "bot1_elo": 1226,
-  "bot2_elo": 1174,
+  "draws": 10,
+  "bot1_elo": 1216,
+  "bot2_elo": 1184,
   "elo_history": [
     {
       "match": 1,
@@ -2645,6 +2645,72 @@
       "bot1_elo": 1226,
       "bot2_elo": 1174,
       "timestamp": 1788924868.8273885
+    },
+    {
+      "match": 441,
+      "bot1_elo": 1224,
+      "bot2_elo": 1176,
+      "timestamp": 1789047686.7855406
+    },
+    {
+      "match": 442,
+      "bot1_elo": 1238,
+      "bot2_elo": 1162,
+      "timestamp": 1789068661.5024588
+    },
+    {
+      "match": 443,
+      "bot1_elo": 1235,
+      "bot2_elo": 1165,
+      "timestamp": 1789071279.8901424
+    },
+    {
+      "match": 444,
+      "bot1_elo": 1232,
+      "bot2_elo": 1168,
+      "timestamp": 1789071279.9589355
+    },
+    {
+      "match": 445,
+      "bot1_elo": 1229,
+      "bot2_elo": 1171,
+      "timestamp": 1789071279.9856288
+    },
+    {
+      "match": 446,
+      "bot1_elo": 1226,
+      "bot2_elo": 1174,
+      "timestamp": 1789071368.7232323
+    },
+    {
+      "match": 447,
+      "bot1_elo": 1224,
+      "bot2_elo": 1176,
+      "timestamp": 1789071368.765717
+    },
+    {
+      "match": 448,
+      "bot1_elo": 1222,
+      "bot2_elo": 1178,
+      "timestamp": 1789071368.7869105
+    },
+    {
+      "match": 449,
+      "bot1_elo": 1220,
+      "bot2_elo": 1180,
+      "timestamp": 1789071657.6746678
+    },
+    {
+      "match": 450,
+      "bot1_elo": 1218,
+      "bot2_elo": 1182,
+      "timestamp": 1789071657.734412
+    },
+    {
+      "match": 451,
+      "bot1_elo": 1216,
+      "bot2_elo": 1184,
+      "timestamp": 1789071657.7724495
     }
   ],
   "deck_stats": {
@@ -2679,10 +2745,10 @@
       "elo": 1402
     },
     "Marlinn": {
-      "matches": 76,
+      "matches": 77,
       "wins": 0,
       "losses": 76,
-      "elo": 822
+      "elo": 829
     },
     "Oscilio GIAF": {
       "matches": 48,
@@ -2697,10 +2763,10 @@
       "elo": 1322
     },
     "Jarl": {
-      "matches": 98,
+      "matches": 112,
       "wins": 8,
-      "losses": 90,
-      "elo": 998
+      "losses": 91,
+      "elo": 984
     },
     "Mario": {
       "matches": 74,
@@ -2719,9 +2785,131 @@
       "wins": 0,
       "losses": 6,
       "elo": 1086
+    },
+    "👤 Humano (Você)": {
+      "matches": 1,
+      "wins": 1,
+      "losses": 0,
+      "elo": 1207
+    },
+    "Ira Blitz": {
+      "matches": 6,
+      "wins": 0,
+      "losses": 0,
+      "elo": 1200
     }
   },
   "recent_matches": [
+    {
+      "room": "test_blitz",
+      "date": "10/09/2026 17:20:57",
+      "winner": "Empate",
+      "p1_deck": "Ira Blitz",
+      "p2_deck": "Ira Blitz",
+      "p1_health": 10,
+      "p2_health": 8,
+      "turns": 46
+    },
+    {
+      "room": "test_room",
+      "date": "10/09/2026 17:20:57",
+      "winner": "Empate",
+      "p1_deck": "Jarl",
+      "p2_deck": "Jarl",
+      "p1_health": 14,
+      "p2_health": 12,
+      "turns": 28
+    },
+    {
+      "room": "test_deadlock",
+      "date": "10/09/2026 17:20:57",
+      "winner": "Empate",
+      "p1_deck": "Jarl",
+      "p2_deck": "Jarl",
+      "p1_health": 8,
+      "p2_health": 10,
+      "turns": 20
+    },
+    {
+      "room": "test_blitz",
+      "date": "10/09/2026 17:16:08",
+      "winner": "Empate",
+      "p1_deck": "Ira Blitz",
+      "p2_deck": "Ira Blitz",
+      "p1_health": 10,
+      "p2_health": 8,
+      "turns": 46
+    },
+    {
+      "room": "test_room",
+      "date": "10/09/2026 17:16:08",
+      "winner": "Empate",
+      "p1_deck": "Jarl",
+      "p2_deck": "Jarl",
+      "p1_health": 14,
+      "p2_health": 12,
+      "turns": 28
+    },
+    {
+      "room": "test_deadlock",
+      "date": "10/09/2026 17:16:08",
+      "winner": "Empate",
+      "p1_deck": "Jarl",
+      "p2_deck": "Jarl",
+      "p1_health": 8,
+      "p2_health": 10,
+      "turns": 20
+    },
+    {
+      "room": "test_blitz",
+      "date": "10/09/2026 17:14:39",
+      "winner": "Empate",
+      "p1_deck": "Ira Blitz",
+      "p2_deck": "Ira Blitz",
+      "p1_health": 10,
+      "p2_health": 8,
+      "turns": 46
+    },
+    {
+      "room": "test_room",
+      "date": "10/09/2026 17:14:39",
+      "winner": "Empate",
+      "p1_deck": "Jarl",
+      "p2_deck": "Jarl",
+      "p1_health": 14,
+      "p2_health": 12,
+      "turns": 28
+    },
+    {
+      "room": "test_deadlock",
+      "date": "10/09/2026 17:14:39",
+      "winner": "Empate",
+      "p1_deck": "Jarl",
+      "p2_deck": "Jarl",
+      "p1_health": 8,
+      "p2_health": 10,
+      "turns": 20
+    },
+    {
+      "room": "19",
+      "date": "10/09/2026 16:31:01",
+      "winner": "👤 Humano (Humano (Você))",
+      "p1_deck": "👤 Humano (Humano (Você))",
+      "p2_deck": "🤖 Bot (Jarl)",
+      "p1_health": 32,
+      "p2_health": -4,
+      "turns": 6
+    },
+    {
+      "room": "Treino_8daf_0",
+      "date": "10/09/2026 10:41:26",
+      "winner": "Empate",
+      "p1_deck": "Marlinn",
+      "p2_deck": "Jarl",
+      "p1_health": 6,
+      "p2_health": 56,
+      "turns": 55
+    },
     {
       "room": "Train_1c8514d8",
       "date": "09/09/2026 00:34:28",
@@ -2911,116 +3099,6 @@
       "p1_health": 0,
       "p2_health": 24,
       "turns": 46
-    },
-    {
-      "room": "Train_e1a3cc89",
-      "date": "09/09/2026 00:29:08",
-      "winner": "🤖 Bot 2 (Oscilio GIAF)",
-      "p1_deck": "Marlinn",
-      "p2_deck": "Oscilio GIAF",
-      "p1_health": -1,
-      "p2_health": 43,
-      "turns": 20
-    },
-    {
-      "room": "Train_cdc8d2aa",
-      "date": "09/09/2026 00:28:28",
-      "winner": "Bot 1 (Hala)",
-      "p1_deck": "Hala",
-      "p2_deck": "Jarl",
-      "p1_health": 13,
-      "p2_health": 0,
-      "turns": 15
-    },
-    {
-      "room": "Train_60f4a6de",
-      "date": "09/09/2026 00:28:28",
-      "winner": "🤖 Bot 2 (Gravy Bones)",
-      "p1_deck": "Dash IO",
-      "p2_deck": "Gravy Bones",
-      "p1_health": -2,
-      "p2_health": 35,
-      "turns": 15
-    },
-    {
-      "room": "Train_1fcd844c",
-      "date": "09/09/2026 00:28:28",
-      "winner": "Bot 1 (Cindra)",
-      "p1_deck": "Cindra",
-      "p2_deck": "Dash IO",
-      "p1_health": 25,
-      "p2_health": 0,
-      "turns": 15
-    },
-    {
-      "room": "Train_ff2a29ce",
-      "date": "09/09/2026 00:28:27",
-      "winner": "🤖 Bot 2 (Cindra)",
-      "p1_deck": "Betsy",
-      "p2_deck": "Cindra",
-      "p1_health": 0,
-      "p2_health": 6,
-      "turns": 15
-    },
-    {
-      "room": "Train_cdc8d2aa",
-      "date": "09/09/2026 00:27:25",
-      "winner": "Bot 1 (Hala)",
-      "p1_deck": "Hala",
-      "p2_deck": "Jarl",
-      "p1_health": 13,
-      "p2_health": 0,
-      "turns": 42
-    },
-    {
-      "room": "Train_ff2a29ce",
-      "date": "09/09/2026 00:27:22",
-      "winner": "🤖 Bot 2 (Cindra)",
-      "p1_deck": "Betsy",
-      "p2_deck": "Cindra",
-      "p1_health": 0,
-      "p2_health": 6,
-      "turns": 32
-    },
-    {
-      "room": "Train_60f4a6de",
-      "date": "09/09/2026 00:27:00",
-      "winner": "🤖 Bot 2 (Gravy Bones)",
-      "p1_deck": "Dash IO",
-      "p2_deck": "Gravy Bones",
-      "p1_health": -2,
-      "p2_health": 35,
-      "turns": 15
-    },
-    {
-      "room": "Train_1fcd844c",
-      "date": "09/09/2026 00:26:56",
-      "winner": "Bot 1 (Cindra)",
-      "p1_deck": "Cindra",
-      "p2_deck": "Dash IO",
-      "p1_health": 25,
-      "p2_health": 0,
-      "turns": 11
-    },
-    {
-      "room": "Train_d96a15d0",
-      "date": "09/09/2026 00:26:22",
-      "winner": "🤖 Bot 2 (Betsy)",
-      "p1_deck": "Vynsett",
-      "p2_deck": "Betsy",
-      "p1_health": 0,
-      "p2_health": 11,
-      "turns": 15
-    },
-    {
-      "room": "Train_c69c2af4",
-      "date": "09/09/2026 00:26:22",
-      "winner": "🤖 Bot 2 (Oscilio GIAF)",
-      "p1_deck": "Marlinn",
-      "p2_deck": "Oscilio GIAF",
-      "p1_health": 0,
-      "p2_health": 42,
-      "turns": 15
     }
   ],
   "deck_elo_history": [
@@ -9554,6 +9632,188 @@
       "Mario": 1262,
       "Kassai": 1418,
       "Teklovossen": 1086
+    },
+    {
+      "match": 441,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 991,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086
+    },
+    {
+      "match": 442,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207
+    },
+    {
+      "match": 443,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207
+    },
+    {
+      "match": 444,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207
+    },
+    {
+      "match": 445,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207,
+      "Ira Blitz": 1200
+    },
+    {
+      "match": 446,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207,
+      "Ira Blitz": 1200
+    },
+    {
+      "match": 447,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207,
+      "Ira Blitz": 1200
+    },
+    {
+      "match": 448,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207,
+      "Ira Blitz": 1200
+    },
+    {
+      "match": 449,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207,
+      "Ira Blitz": 1200
+    },
+    {
+      "match": 450,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207,
+      "Ira Blitz": 1200
+    },
+    {
+      "match": 451,
+      "Vynsett": 1073,
+      "Betsy": 1320,
+      "Cindra": 1404,
+      "Dash IO": 915,
+      "Gravy Bones": 1402,
+      "Marlinn": 829,
+      "Oscilio GIAF": 1378,
+      "Hala": 1322,
+      "Jarl": 984,
+      "Mario": 1262,
+      "Kassai": 1418,
+      "Teklovossen": 1086,
+      "👤 Humano (Você)": 1207,
+      "Ira Blitz": 1200
     }
   ]
 }
