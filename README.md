@@ -120,13 +120,18 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 | Módulo | Responsabilidade Principal |
 | :--- | :--- |
 | [`ai/model.py`](ai/model.py) | Rede Neural ResNet Dual-Head (`FaBPolicyValueNetwork`) com LayerNorm e 192 entradas de estado. |
-| [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tática unificado. Alterna dinamicamente entre **ISMCTS** (quando o oponente tem cartas na mão) e **MCTS clássico** (quando a informação é completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl` em todas as fases, e coordena podas táticas de ataque, pitch, bloqueio e arsenal. |
+| [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tática unificado. Alterna dinamicamente entre **ISMCTS** (quando o oponente tem cartas na mão) e **MCTS clássico** (quando a informação é completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl` em todas as fases, coordena quantificação de ameaça On-Hit, otimizador de breakpoint mínimo de defesa e podas táticas de ataque, pitch, bloqueio e arsenal. |
+| [`ai/equipment_learning.py`](ai/equipment_learning.py) | Motor de aprendizado empírico de equipamentos por experiência pós-partida. Rastreia ativações e bloqueios por herói (`EquipmentTracker`), monitora taxas de vitória e calibra multiplicadores aprendidos dinâmicos $\in [0.5, 2.0]$ em `data/equipment_usage_stats.json`. |
+| [`ai/dynamic_rule_tuner.py`](ai/dynamic_rule_tuner.py) | Auto-tuner dinâmico de pesos heurísticos (ataque, bloqueio, pivot e arsenal) ajustados em tempo real com base nas taxas de vitória empíricas de cada herói em `data/hero_rule_multipliers.json`. |
+| [`ai/blunder_reviewer.py`](ai/blunder_reviewer.py) | Analisador automático de trajetórias para Prioritized Experience Replay (PER). Identifica e pondera blunders (-3.0), imprecisões e viradas brilhantes (+3.0) para acelerar o treinamento neural. |
 | [`ai/mcts.py`](ai/mcts.py) | Motores `MCTSEngine` e `ISMCTSEngine`. Amostragem de mundos (*Deck-Aware World Sampling* com leitura dinâmica de `opponentHand`) e agregação ponderada de votos. |
-| [`ai/hero_strategies/`](ai/hero_strategies/) | Registro canônico de todos os 139 heróis oficiais e estratégias polimórficas por arquétipo/classe: `GuardianStrategy`, `JarlStrategy`, `BruteStrategy`, `WarriorStrategy`, `NinjaStrategy`, `RangerStrategy`, `MarlynnStrategy`, `MechanologistStrategy`, `RunebladeStrategy`, `WizardStrategy`, `IllusionistStrategy`, `AssassinStrategy` e `MerchantStrategy`. Implementa arquitetura `TurnPlan`. |
+| [`ai/hero_strategies/`](ai/hero_strategies/) | Registro canônico de todos os 139 heróis oficiais e estratégias polimórficas por arquétipo/classe: `GuardianStrategy`, `JarlStrategy`, `BruteStrategy`, `WarriorStrategy`, `NinjaStrategy`, `RangerStrategy`, `MarlynnStrategy`, `MechanologistStrategy`, `RunebladeStrategy`, `WizardStrategy`, `IllusionistStrategy`, `AssassinStrategy` e `MerchantStrategy`. Avaliação 100% orientada a dados sem nomes fixos de equipamentos. |
 | [`ai/game_simulator.py`](ai/game_simulator.py) | Simulador determinístico de regras de FaB para expansão sintética nas folhas da árvore de busca. |
-| [`ai/trainer.py`](ai/trainer.py) | Orquestrador de self-play e treino com Distilação Assimétrica contra $\pi_{\text{MCTS}}$, AMP FP16 e prioridade `nice 10`. |
-| [`ai/experience_collector.py`](ai/experience_collector.py) | Replay Buffer circular em memória com serialização compacta em `.npz`. |
+| [`ai/trainer.py`](ai/trainer.py) | Orquestrador de self-play e treino com Distilação Assimétrica contra $\pi_{\text{MCTS}}$, Prioritized Experience Replay (PER), AMP FP16 e prioridade `nice 10`. |
+| [`ai/experience_collector.py`](ai/experience_collector.py) | Replay Buffer circular em memória com amostragem priorizada por importância (PER), dense reward shaping e serialização compacta em `.npz`. |
 | [`ai/ismcts_logger.py`](ai/ismcts_logger.py) | Logger estruturado thread-safe que persiste diagnósticos de decisão ISMCTS (mundos amostrados, votos, confiança e $V_{root}$) em `logs/ismcts_decisions.jsonl`. |
+| [`scripts/extract_equipment_metadata.py`](scripts/extract_equipment_metadata.py) | Extrator de metadados semânticos de 624 equipamentos oficiais do Talishar gerando `data/equipment_metadata.json` (buffs de poder, descontos, contadores, geração de recursos, Go Again e tokens). |
+| [`scripts/extract_ability_costs.py`](scripts/extract_ability_costs.py) | Extrator automático de custos de ativação de habilidades e armas a partir dos arquivos PHP do Talishar gerando `data/ability_costs.json`. |
 
 ---
 
@@ -220,6 +225,24 @@ Para navegar a complexidade de regras do Flesh and Blood e garantir jogadas de n
 * **Fadiga Estagnada (Decks em 0)**: Se ambos os baralhos esgotam e por 3 turnos seguidos a vida de nenhum jogador se altera (ou se mãos e arsenais estão 100% vazios), a IA detecta o impasse de ações e declara **Empate Técnico por Fadiga / Stalemate**.
 * **Hard Cap Anti-Loop por Formato**: Limite estrito de 45 turnos (Blitz) e 55 turnos (CC) para interromper partidas em loop contínuo de prioridade.
 * **Finalização Limpa**: Registra `winner_id = 0` ("Empate") no [`stats_manager.py`](stats_manager.py) (distribuindo $S=0.5$ no ELO e incrementando o total de empates), encerra os processos dos bots instantaneamente e libera 100% da CPU.
+
+### 7. Avaliação Dinâmica de Equipamentos & Aprendizado Empírico (`ai/equipment_learning.py`)
+* **Eliminação de Hardcodes Nominais**: Nenhuma estratégia usa strings fixas como `"goliath"` ou `"tunic"`. A IA consome `data/equipment_metadata.json` (624 equipamentos mapeados) com atributos semânticos reais: `power_buff`, `cost_discount`, `grants_resource`, `min_attack_cost`, `req_counters`, `has_go_again` e `creates_token`.
+* **Aprendizado por Experiência em Partidas**: O `EquipmentTracker` e `EquipmentLearningEngine` monitoram em tempo de execução todas as ativações de habilidades e bloqueios de armadura por herói. Ao final dos jogos, calculam a taxa de vitória empírica e modulam o `learned_multiplier` $\in [0.5, 2.0]$ em `data/equipment_usage_stats.json`, reforçando dinamicamente equipamentos de alto rendimento para cada herói.
+
+### 8. Quantificação de Ameaça On-Hit & Defesa de Breakpoint Mínimo (Knapsack Breakpoint)
+* **Escala Hierárquica de Ameaça On-Hit (`ON_HIT_THREAT_VALUES`)**:
+  * **Catastrófico ($8.5$ a $10.0$)**: *Command and Conquer* (destrói arsenal sem DR), *Red in the Ledger* (trava a 1 ação), *Spinal Crush* (remove Go Again), *Crippling Crush* (descarta 2 cartas).
+  * **Alto ($5.0$ a $7.0$)**: *Snatch*, *Mask of Momentum*, *Herald of Erudition*, *Surgical Extraction*, *Leave no Witnesses*.
+  * **Médio ($3.5$ a $4.5$)**: Efeitos de aflição (*Bloodrot*, *Frailty*, *Inertia*, *Frostbite*, *Freeze*).
+  * **Vanilla ($0.0$)**: Ataques comuns sem On-Hit (*Raging Onslaught*, *Wounded Bull*, etc.).
+* **Poda Estrita de Armadura em Ataques Vanilla**: Se o ataque for comum (ameaça 0.0) e a vida estiver saudável ($HP > 12$), o bot é **terminantemente proibido** de queimar armaduras (`score: -999.0`), preservando Blade Break e Battleworn para turnos críticos de sobrevivência ou neutralização de On-Hits.
+* **Otimizador Knapsack de Breakpoint Mínimo**: Diante de ataques com On-Hit, o bot resolve o subconjunto de menor custo total: por exemplo, 1 carta de mão (def 3) + 1 armadura descartável (def 1) = 4 de defesa exata para neutralizar o On-Hit de *Snatch*, **poupando a 2ª carta da mão para desferir o Pivot de contra-ataque**.
+
+### 9. Prioritized Experience Replay (PER) & Auto-Tuning Dinâmico por Herói
+* **Amostragem Ponderada de Experiências (`ai/experience_collector.py`)**: Replay buffer com amostragem priorizada por importância (PER) e dense reward shaping.
+* **Blunder Reviewer Automático (`ai/blunder_reviewer.py`)**: Identifica e superamostra lances críticos de erro (-3.0) e viradas brilhantes (+3.0) para acelerar o treinamento da rede neural com partidas de alta densidade tática.
+* **Dynamic Rule Tuner (`ai/dynamic_rule_tuner.py`)**: Modula multiplicadores heurísticos de ataque, bloqueio, pivot e arsenal em `data/hero_rule_multipliers.json` com base na taxa de vitórias real de cada herói.
 
 ---
 
@@ -344,26 +367,39 @@ Para nunca se preocupar em esquecer de sincronizar templates com `setup_template
 │   ├── game_simulator.py     # Simulador determinístico de transição de regras de FaB
 │   ├── mcts.py               # MCTSEngine + ISMCTSEngine com Deck-Aware World Sampling
 │   ├── ismcts_logger.py      # Logger JSONL de decisões para telemetria em tempo real
-│   ├── trainer.py            # Orquestrador de Treino GPU com Distilação Assimétrica
-│   ├── policy_engine.py      # Motor de Decisão Tático com ISMCTS em Ataque, Defesa e Pitch
-│   ├── experience_collector.py # Replay Buffer com suporte a distribuições suaves de visitas
-│   └── hero_strategies/      # Pacote de estratégias modulares por herói e TurnPlans
+│   ├── trainer.py            # Orquestrador de Treino GPU com Distilação Assimétrica e PER
+│   ├── policy_engine.py      # Motor de Decisão Tático (ISMCTS, On-Hit Knapsack Breakpoint)
+│   ├── equipment_learning.py # Rastreamento empírico e calibração de multiplicadores de equipamentos
+│   ├── dynamic_rule_tuner.py # Auto-tuning dinâmico de pesos heurísticos por herói baseado em vitórias
+│   ├── blunder_reviewer.py   # Avaliador de blunders, imprecisões e viradas brilhantes para PER
+│   ├── experience_collector.py # Replay Buffer PER com amostragem priorizada e reward shaping
+│   └── hero_strategies/      # Pacote de 139 heróis oficiais e avaliação data-driven sem hardcode
 ├── scripts/
 │   ├── sync_and_clean.sh     # Automação de limpeza, exportação de templates e pré-commit
+│   ├── extract_equipment_metadata.py # Extração semântica de 624 equipamentos oficiais do Talishar
+│   ├── extract_ability_costs.py # Extração dinâmica de custos de ativação de habilidades e armas
 │   ├── analyze_ismcts.py     # Analisador local ISMCTS (--dry-run sem servidor)
 │   ├── prepare_environment.sh # Script shell de setup automático
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
 │   ├── manage_state.py       # Gestão de checkpoints compactos e releases no GitHub
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte de testes unitários automatizados
-│   └── test_arsenal_pruning.py # Testes de poda de Arsenal (CR 3.1.5) e Ranger
+├── tests/                    # Suíte completa de 62 testes unitários e de integração
+│   ├── test_equipment_learning_and_defense_optimization.py # Testes de breakpoint, aprendizado e on-hit
+│   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio de equipamentos
+│   ├── test_dynamic_learning_and_per.py # Testes de PER, blunder reviewer e dynamic rule tuner
+│   ├── test_hammerhead_tome_and_hero.py # Testes de Tome, Hammerhead e habilidades de herói
+│   ├── test_jarl_marlinn_pruning.py # Testes de TurnPlan e poda de Ranger e Guardião
+│   ├── test_arsenal_pruning.py # Testes de poda de Arsenal (CR 3.1.5)
+│   └── ...                   # Testes de modelo, simulador, sideboard e deadlock
 ├── decks/                    # Diretório central exclusivo de baralhos (JSON)
 ├── data/
+│   ├── equipment_metadata.json # Metadados semânticos de 624 equipamentos (custos, buffs, tokens)
+│   ├── ability_costs.json    # Custos dinâmicos de habilidades e armas extraídos do Talishar
 │   ├── fab_cards_db.json     # Banco oficial de 10.144 cartas do Talishar
 │   ├── training_stats.json   # Histórico de partidas e Leaderboard ELO compilado
 │   └── training_metrics.json # Métricas de evolução, loss e épocas da rede neural
 ├── logs/                     # Logs detalhados de partidas e telemetria ISMCTS
-├── bot_client.py             # Agente autônomo com emissão de badges no chat
+├── bot_client.py             # Agente autônomo conectado ao EquipmentTracker e ISMCTS
 ├── dashboard.py              # Interface visual Streamlit com Telemetria ISMCTS ao vivo
 ├── frontend_manager.py       # Daemon de conexão automática do bot em novas salas
 ├── deck_parser.py            # Parser, normalizador e validador estrito de decks
