@@ -18,6 +18,7 @@ Motor de Busca (v2):
 import os
 import re
 import json
+import itertools
 import numpy as np
 import torch
 from typing import Dict, List, Optional, Tuple, Any
@@ -68,6 +69,27 @@ def _get_cards_db() -> dict:
 
 _load_cards_db = _get_cards_db
 
+_FAB_ABILITY_COSTS = None
+
+def _load_ability_costs() -> dict:
+    global _FAB_ABILITY_COSTS
+    if _FAB_ABILITY_COSTS is None:
+        db_paths = [
+            "data/ability_costs.json",
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "ability_costs.json")
+        ]
+        for p in db_paths:
+            if os.path.exists(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        _FAB_ABILITY_COSTS = json.load(f)
+                    break
+                except Exception:
+                    pass
+        if _FAB_ABILITY_COSTS is None:
+            _FAB_ABILITY_COSTS = {}
+    return _FAB_ABILITY_COSTS
+
 
 # ══════════════════════════════════════════════════════════════════
 # CONSTANTES DE DOMÍNIO — FLESH AND BLOOD
@@ -80,6 +102,56 @@ DANGEROUS_ON_HITS = {
     "leave_no_witnesses", "surgical_extraction", "erase_face",
     "spitfire", "spinal_crush", "rightful_king", "hypothermia"
 }
+
+# Mapeamento hierárquico de valor de ameaça de On-Hit (0.0 = vanilla, 10.0 = catastrófico)
+ON_HIT_THREAT_VALUES = {
+    # Catastrófico (8.0 - 10.0): Destrói arsenal / Trava o próximo turno / Descarta cartas
+    "command_and_conquer": 10.0,
+    "red_in_the_ledger": 9.5,
+    "spinal_crush": 9.0,
+    "crippling_crush": 9.0,
+    "rightful_king": 8.5,
+    "hypothermia": 8.0,
+
+    # Alto (5.0 - 7.5): Compra de cartas pelo oponente / Banimento / Interrupção
+    "herald_of_erudition": 7.0,
+    "mask_of_momentum": 6.5,
+    "surgical_extraction": 6.5,
+    "snatch": 6.0,
+    "leave_no_witnesses": 6.0,
+    "erase_face": 5.5,
+    "spitfire": 5.0,
+
+    # Médio (3.0 - 4.5): Efeitos de aflição / Debuff / Taxa de recurso
+    "bloodrot": 4.0,
+    "frailty": 3.5,
+    "inertia": 3.5,
+    "frostbite": 3.5,
+    "freeze": 3.5,
+    "widespread_ruin": 3.5,
+}
+
+def get_on_hit_threat(card_name: str, card_text: str = "") -> float:
+    """Calcula o valor numérico de ameaça de um efeito On-Hit (0.0 a 10.0)."""
+    name_low = str(card_name or "").lower().strip()
+    text_low = str(card_text or "").lower()
+
+    for k, threat in ON_HIT_THREAT_VALUES.items():
+        if k in name_low:
+            return threat
+
+    if "when this hits" in text_low or "if this hits" in text_low or "hit effect" in text_low:
+        if "destroy" in text_low and "arsenal" in text_low:
+            return 10.0
+        if "draw" in text_low:
+            return 6.0
+        if "discard" in text_low:
+            return 7.0
+        if any(token in text_low for token in ["bloodrot", "frailty", "inertia"]):
+            return 4.0
+        return 3.0
+
+    return 0.0
 
 # Todas as 154+ armas oficiais mapeadas do Flesh and Blood
 ALL_FAB_WEAPONS = {
@@ -94,7 +166,7 @@ ALL_FAB_WEAPONS = {
     "duskblade", "edge_of_autumn", "enchanted_quiver", "farflight_longbow", "flail_of_agony",
     "fortitude_of_anvilheim", "galaxxi_black", "gavel_of_natural_order", "golden_grail",
     "graven_call", "graven_gaslight", "grimoire_of_fellingsong", "grimoire_of_the_haunt",
-    "hammer_of_havenhold", "hanabi_blaster", "harmonized_kodachi", "harmonized_kodachi_r",
+    "hammer_of_havenhold", "hammerhead_harpoon_cannon", "hanabi_blaster", "harmonized_kodachi", "harmonized_kodachi_r",
     "hatchet_of_body", "hatchet_of_mind", "hell_hammer", "hexagore_the_death_hydra",
     "high_riser", "hoarding_of_denial", "hot_streak", "hummingbird_call_of_adventure",
     "humour_plunge", "hunters_klaive", "hunters_klaive_r", "iris_of_reality",
@@ -134,6 +206,7 @@ WEAPON_KEYWORDS = [
 
 # Custo de ativação de recursos para armas conhecidas no Flesh and Blood
 KNOWN_WEAPON_COSTS = {
+    "hammerhead_harpoon_cannon": 4,
     "anothos": 3, "sledge_of_anvilheim": 3, "titans_fist": 3, "pile_driver": 3, "rok": 3,
     "hell_hammer": 3, "hammer_of_havenhold": 3, "redwood_hammer": 3, "ball_breaker": 3,
     "romping_club": 2, "flail_of_agony": 2, "dread_scythe": 2, "reaping_blade": 2,
@@ -145,7 +218,7 @@ KNOWN_WEAPON_COSTS = {
     "harmonized_kodachi_r": 1, "mandible_claw": 1, "mandible_claw_r": 1, "spiders_bite": 1,
     "nerve_scalpel": 1, "nerve_scalpel_r": 1, "scale_peeler": 1, "scale_peeler_r": 1,
     "orbitoclast": 1, "orbitoclast_r": 1, "teklo_plasma_pistol": 1, "death_dealer": 1,
-    "hammerhead_harpoon_cannon": 1, "rosetta_thorn": 1, "nebula_blade": 1, "galaxxi_black": 1,
+    "rosetta_thorn": 1, "nebula_blade": 1, "galaxxi_black": 1,
     "raydn_duskbane": 0, "redback_shroud": 0, "dreadbore": 0, "sandscour_greatbow": 0
 }
 
@@ -227,19 +300,41 @@ class PolicyEngine:
             hero=self.hero_name,
         )
 
-    def get_weapon_cost(self, weapon_name: str, equip_dict: dict = None) -> int:
-        """Retorna o custo em recursos para ativar a arma."""
+    def get_weapon_cost(self, weapon_name: str, equip_dict: dict = None, state: dict = None) -> int:
+        """Retorna o custo em recursos para ativar a arma ou habilidade de equipamento."""
         clean = str(weapon_name).lower()
-        if clean in KNOWN_WEAPON_COSTS:
-            return KNOWN_WEAPON_COSTS[clean]
-        for kw, cost in [
-            ("hammer", 3), ("anvilheim", 3), ("titans_fist", 3), ("pile_driver", 3), ("anothos", 3), ("rok", 3), ("club", 2),
-            ("flail", 2), ("scythe", 2), ("staff", 2), ("meteor", 2), ("leveler", 2), ("symbiosis", 2), ("zenith", 2),
-            ("saber", 1), ("sword", 1), ("dagger", 1), ("blade", 1), ("claw", 1), ("kodachi", 1), ("pistol", 1), ("bow", 1)
-        ]:
-            if kw in clean:
-                return cost
-        return 2
+
+        # 1. Consulta banco dinâmico de custos de habilidades extraídos do Talishar
+        ability_costs = _load_ability_costs()
+        cost = None
+        if clean in ability_costs:
+            cost = ability_costs[clean]
+        elif clean in _load_cards_db() and "ability_cost" in _load_cards_db()[clean]:
+            cost = int(_load_cards_db()[clean]["ability_cost"])
+        elif clean in KNOWN_WEAPON_COSTS:
+            cost = KNOWN_WEAPON_COSTS[clean]
+        else:
+            for kw, kw_cost in [
+                ("hammer", 3), ("anvilheim", 3), ("titans_fist", 3), ("pile_driver", 3), ("anothos", 3), ("rok", 3), ("club", 2),
+                ("flail", 2), ("scythe", 2), ("staff", 2), ("meteor", 2), ("leveler", 2), ("symbiosis", 2), ("zenith", 2),
+                ("saber", 1), ("sword", 1), ("dagger", 1), ("blade", 1), ("claw", 1), ("kodachi", 1), ("pistol", 1), ("bow", 1)
+            ]:
+                if kw in clean:
+                    cost = kw_cost
+                    break
+            if cost is None:
+                cost = 2
+
+        # 2. Modificadores Dinâmicos de Custo Baseados em Estado
+        if state:
+            # Passiva da Kassai: Se comprou carta no turno e ataca com Espada, reduz o custo em 1
+            hero_name = str(self.hero_name).lower()
+            if "kassai" in hero_name or "kassai" in str(state.get("playerHero", "")).lower():
+                num_drawn = int(state.get("cardsDrawnThisTurn", state.get("numCardsDrawn", state.get("num_drawn", state.get("numDrawn", 0)))))
+                if num_drawn >= 1 and any(s in clean for s in ["saber", "sword", "blade", "cintari"]):
+                    cost = max(0, cost - 1)
+
+        return cost
 
     # ── Extração e Normalização de Atributos de Cartas ─────────────
 
@@ -263,7 +358,7 @@ class PolicyEngine:
         if db_entry:
             if "cost" in db_entry:
                 cost = max(0, int(db_entry["cost"]))
-            if "pitch" in db_entry and db_entry["pitch"] > 0:
+            if "pitch" in db_entry:
                 pitch = int(db_entry["pitch"])
             if power == 0 and "power" in db_entry:
                 power = int(db_entry["power"])
@@ -272,13 +367,19 @@ class PolicyEngine:
             if "has_go_again" in db_entry:
                 has_go_again = bool(db_entry["has_go_again"])
 
-        # Inferência de poder por heurística quando ausente no snapshot e banco
-        if power == 0:
+        is_equip_or_weapon = (
+            "hammerhead" in card_number
+            or (db_entry and db_entry.get("type") in ("W", "E", "C"))
+            or str(card.get("slot", "")).lower() in ("weapon", "head", "chest", "arms", "legs", "off-hand", "hero")
+        )
+
+        # Inferência de poder por heurística quando ausente no snapshot e banco (somente cartas jogáveis do deck)
+        if power == 0 and not is_equip_or_weapon:
             if any(k in card_number for k in ["zipper", "throttle", "zero_to_sixty", "fast_and_furious", "out_pace", "expedite", "snatch"]):
                 power = 4 if pitch == 1 else (3 if pitch == 2 else 2)
             elif "pounder" in card_number or "trebuchet" in card_number:
                 power = 5
-            elif "harpoon" in card_number or "command_and_conquer" in card_number:
+            elif ("harpoon" in card_number and "hammerhead" not in card_number) or "command_and_conquer" in card_number:
                 power = 6 if pitch == 1 else 4
 
         # Inferência de bloqueio padrão (FaB: maioria das cartas de ação defende 2 ou 3)
@@ -332,7 +433,9 @@ class PolicyEngine:
     # 1. PODA DE ATAQUE E SEQUENCIAMENTO DE CADEIA
     # ══════════════════════════════════════════════════════════════
 
-    def select_best_attack(self, state: dict, unpayable_set: set) -> Optional[Dict[str, Any]]:
+    def select_best_attack(self, state: dict, unpayable_set: Optional[set] = None) -> Optional[Dict[str, Any]]:
+        if unpayable_set is None:
+            unpayable_set = set()
         turn_plan = self.strategy.analyze_turn_plan(state)
         floating_res, total_res = self.calculate_available_resources(state)
         hand = state.get("playerHand", [])
@@ -413,35 +516,85 @@ class PolicyEngine:
 
             candidates.append(atk)
 
-        # ── 1.3 Armas ───────────────────────────────────────────────
+        # ── 1.3 Equipamentos, Armas e Habilidades de Herói ─────────
         equip = state.get("playerEquipment", [])
         for eq in equip:
             action = eq.get("action", 0)
             eq_name = str(eq.get("cardNumber", "Equip")).lower()
             if action > 0 and eq_name not in unpayable_set:
                 eq_id = eq.get("actionDataOverride", eq_name)
+                eq_slot = str(eq.get("slot", "")).lower()
+                eq_type = str(eq.get("type", "")).upper()
+
+                # 1.3.1 Habilidade Ativa do Herói (Character Ability)
+                is_hero = (
+                    eq_slot == "hero"
+                    or eq_type == "C"
+                    or str(eq.get("actionDataOverride", "")) == "0"
+                    or any(h in eq_name for h in ["marlynn", "kassai", "bravo", "dash", "dorinthea", "rhinar", "kayo", "jarl", "azalea", "riptide"])
+                )
+                if is_hero:
+                    hero_score = self.strategy.evaluate_hero_ability(state, eq)
+                    if hero_score > 0:
+                        candidates.append({
+                            "type": "hero_ability", "idx": 0, "card_id": str(eq_id), "mode": action,
+                            "name": eq_name, "score": hero_score, "cost": 0,
+                            "power": 0, "has_go_again": True
+                        })
+                    continue
+
+                # 1.3.2 Armas de Combate e Buffs de Equipamento
                 is_weapon = (
                     eq_name in ALL_FAB_WEAPONS
                     or any(w in eq_name for w in WEAPON_KEYWORDS)
-                    or str(eq.get("slot", "")).lower() in ("weapon", "off-hand", "hands")
+                    or eq_slot in ("weapon", "off-hand", "hands")
                 )
                 if is_weapon:
-                    weapon_cost = self.get_weapon_cost(eq_name, eq)
-                    # Poda estrita de Ranger/Marlynn: canhão/arco NUNCA carrega flecha se o Arsenal já estiver cheio!
-                    is_bow_or_cannon = (
-                        "bow" in str(_load_cards_db().get(eq_name, {}).get("subtype", "")).lower()
-                        or any(b in eq_name for b in ["hammerhead", "shiver", "death_dealer", "dread_bore", "redback", "cannon"])
+                    weapon_cost = self.get_weapon_cost(eq_name, eq, state=state)
+                    is_hammerhead = "hammerhead" in eq_name
+                    is_traditional_bow = (
+                        ("bow" in str(_load_cards_db().get(eq_name, {}).get("subtype", "")).lower()
+                         or any(b in eq_name for b in ["shiver", "death_dealer", "dread_bore", "dreadbore", "redback", "sandscour"]))
+                        and not is_hammerhead
                     )
-                    if is_bow_or_cannon:
+
+                    # Poda de arcos tradicionais: só carrega flecha se o Arsenal estiver livre
+                    if is_traditional_bow:
                         arsenal_cards = state.get("playerArsenal", [])
                         if isinstance(arsenal_cards, list) and len(arsenal_cards) > 0:
-                            # Arsenal já ocupado -> proibido ativar arco/canhão para evitar 'Arsenal is full'
                             continue
                         if turn_plan.plan_type == "DEFENSIVE_TRAP":
-                            # Sem flechas viáveis: não gastar recursos ativando o arco à toa!
                             continue
 
-                    # Poda estrita: toda a mão + flutuante deve suprir o custo da arma
+                    # Tratamento de Hammerhead, Harpoon Cannon:
+                    # É uma habilidade de canhão que concede +4 e Overpower ao próximo ataque Harpoon
+                    if is_hammerhead:
+                        all_cards = list(state.get("playerHand", [])) + list(state.get("playerArsenal", []))
+                        arrows_ready = [
+                            c for c in all_cards
+                            if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["arrow", "harpoon", "bolt", "trophy", "goldfin", "king_kraken", "king_shark"])
+                        ]
+                        # Sem flecha disponível para disparar: proibido ativar à toa
+                        if not arrows_ready:
+                            continue
+
+                        min_arrow_cost = min(int(self.extract_card_info(c).get("cost", 0)) for c in arrows_ready)
+                        # Só ativa se houver recursos para o Hammerhead (4) + a flecha
+                        if total_res < (weapon_cost + min_arrow_cost):
+                            continue
+
+                        # Prioridade máxima: ativar o buff de canhão (+4 e Overpower com Go Again) antes de disparar a flecha
+                        weapon_score = 32.0
+                        if turn_plan.plan_type == "HARPOON_CHAIN":
+                            weapon_score += 20.0
+                        candidates.append({
+                            "type": "weapon_buff", "idx": 0, "card_id": str(eq_id), "mode": action,
+                            "name": eq_name, "score": weapon_score, "cost": weapon_cost,
+                            "power": 0, "has_go_again": True
+                        })
+                        continue
+
+                    # Armas convencionais de ataque
                     if total_res >= weapon_cost:
                         eq_info = self.extract_card_info(eq)
                         weapon_power = eq_info.get("power", 0) or int(eq.get("power", 0))
@@ -452,15 +605,37 @@ class PolicyEngine:
                         )
                         if not has_any_go_again and len(hand_attacks) == 0:
                             weapon_score += 2.0
-                        if is_bow_or_cannon:
-                            weapon_score += 8.0  # Prioridade para carregar flecha no arsenal livre
-                            if turn_plan.plan_type == "HARPOON_CHAIN":
-                                weapon_score += 15.0  # Carga de canhão essencial para a cadeia
+                        if is_traditional_bow:
+                            weapon_score += 8.0
                         candidates.append({
                             "type": "weapon", "idx": 0, "card_id": str(eq_id), "mode": action,
                             "name": eq_name, "score": weapon_score, "cost": weapon_cost,
                             "power": weapon_power
                         })
+                    continue
+
+                # 1.3.3 Habilidade Ativada de Equipamento (Head, Chest, Arms, Legs, Off-Hand)
+                is_equipment_slot = (
+                    eq_slot in ("head", "chest", "arms", "legs", "off-hand", "equipment")
+                    or eq_type == "E"
+                ) and not is_weapon and not is_hero
+
+                if is_equipment_slot:
+                    eq_cost = self.get_weapon_cost(eq_name, eq, state=state)
+                    if total_res >= eq_cost:
+                        eq_score = self.strategy.evaluate_equipment_ability(state, eq, hand_attacks=hand_attacks)
+                        if eq_score > 0:
+                            candidates.append({
+                                "type": "equipment_ability",
+                                "idx": 0,
+                                "card_id": str(eq_id),
+                                "mode": action,
+                                "name": eq_name,
+                                "score": eq_score,
+                                "cost": eq_cost,
+                                "power": 0,
+                                "has_go_again": True
+                            })
 
         # ── 1.4 Arsenal e Banish ────────────────────────────────────
         for zone_name, key in [("Arsenal", "playerArsenal"), ("Banish", "playerBanish")]:
@@ -562,6 +737,12 @@ class PolicyEngine:
         for idx, c in enumerate(hand):
             info = self.extract_card_info(c)
             c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
+
+            # Regra Oficial de FaB: Cartas sem pitch (pitch <= 0, ex: Gorganian Tome)
+            # NUNCA podem ser dadas pitch! Ignora imediatamente para evitar loop no servidor.
+            if int(info.get("pitch", 1)) <= 0 or "gorganian" in c_clean_name:
+                continue
+
             c_action = info["action"] if info["action"] > 0 else 27
             score = self.strategy.evaluate_pitch_card(
                 info["name"], info["pitch"], info["cost"], info["power"], info["has_go_again"]
@@ -637,13 +818,18 @@ class PolicyEngine:
     def select_defense_blocks(self, state: dict) -> List[Tuple[int, str, str, int]]:
         hand = state.get("playerHand", [])
         my_hp = int(state.get("playerHealth", 20))
+        cards_db = _get_cards_db()
         
         active_chain = state.get("activeChainLink", {})
         if not isinstance(active_chain, dict):
             active_chain = {}
         opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 4)))
         incoming_name = str(active_chain.get("cardNumber", "")).lower()
-        has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+        db_incoming = cards_db.get(incoming_name, {})
+        incoming_text = str(db_incoming.get("text", "")).lower()
+        
+        on_hit_threat = get_on_hit_threat(incoming_name, incoming_text)
+        has_dangerous_on_hit = on_hit_threat >= 3.0 or any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
         # ── 3.1 Detecção Holística de Plano de Turno e Pivot ────────
         turn_plan = self.strategy.analyze_turn_plan(state)
@@ -695,15 +881,21 @@ class PolicyEngine:
                 if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
                     score += 3.0
 
+                hand_cost = 3.5
+                if is_reserved:
+                    hand_cost = 25.0
+                elif info["power"] >= 5 or (info["pitch"] == 1 and info["power"] >= 4):
+                    hand_cost = 5.0
+
                 if score > -100.0 and info["block"] > 0:
                     block_candidates.append({
                         "type": "block", "score": score, "idx": idx, "card_id": c_id,
                         "name": info["name"], "mode": c_action, "block": info["block"],
-                        "pitch": info["pitch"], "power": info["power"]
+                        "pitch": info["pitch"], "power": info["power"],
+                        "is_equipment": False, "is_hand": True, "cost": hand_cost
                     })
 
         # ── 3.1b Cartas no Arsenal que podem defender (Ambush e Down and Dirty) ──
-        cards_db = _get_cards_db()
         arsenal = state.get("playerArsenal", [])
         for a_idx, c in enumerate(arsenal):
             info = self.extract_card_info(c)
@@ -730,13 +922,121 @@ class PolicyEngine:
                     "type": "block", "score": score, "idx": a_idx, "card_id": c_id,
                     "name": info["name"], "mode": c_action if c_action > 0 else 27,
                     "block": effective_block, "pitch": info["pitch"], "power": info["power"],
-                    "from_arsenal": True
+                    "from_arsenal": True, "is_equipment": False, "is_hand": False,
+                    "cost": 1.0
                 })
+
+        # ── 3.1c Bloqueio com Equipamentos (Defesa Otimizada e Anti-Queima) ────────
+        equip = state.get("playerEquipment", [])
+        for eq_idx, eq in enumerate(equip):
+            if not isinstance(eq, dict):
+                continue
+            eq_name = str(eq.get("cardNumber", "")).lower()
+            slot = str(eq.get("slot", "")).lower()
+            if slot == "hero":
+                continue
+            # Armas só podem bloquear se forem especificamente do tipo equipamento/escudo
+            db_entry = cards_db.get(eq_name, {})
+            eq_type = str(eq.get("type") or db_entry.get("type", "")).upper()
+            if slot == "weapon" and eq_type != "E":
+                continue
+
+            eq_action = int(eq.get("action", 0))
+            if eq.get("isBroken") or eq.get("onChain"):
+                continue
+
+            info = self.extract_card_info(eq)
+            base_block = info["block"]
+            def_counters = int(eq.get("defCounters", 0) or 0)
+            effective_block = max(0, base_block - def_counters)
+
+            if effective_block <= 0:
+                continue
+            # Se a engine do Talishar enviou explicitamente action == 0, o equipamento não pode defender agora
+            if eq_action <= 0 and "action" in eq:
+                continue
+
+            # ── REGRA DE OURO: Poda Estrita de Armadura em Ataques Vanilla ──
+            # Se o ataque NÃO possui efeito On-Hit e nossa vida está saudável (HP > 12),
+            # armaduras NUNCA devem ser queimadas para mitigar dano comum!
+            if on_hit_threat == 0.0 and my_hp > 12:
+                continue
+
+            has_bw = bool(db_entry.get("has_battleworn") or "battleworn" in str(db_entry.get("subtype", "")).lower())
+            has_bb = bool(db_entry.get("has_blade_break") or "blade break" in str(db_entry.get("subtype", "")).lower() or "ironrot" in eq_name)
+            has_temp = bool(db_entry.get("has_temper") or "temper" in str(db_entry.get("subtype", "")).lower())
+
+            has_active_ability = bool(db_entry.get("ability_cost") is not None or any(k in eq_name for k in [
+                "crown_of_providence", "goliath_gauntlet", "heartened_cross_strap", "snapdragon_scalers",
+                "fyendals_spring_tunic", "scabskin_leathers", "barkbone_strapping", "tunic"
+            ]))
+
+            eq_cost = 3.5
+            eq_score = float(effective_block) * 3.0
+
+            if has_bw:
+                eq_score += 8.0  # Battleworn é prioridade máxima: bloqueia de graça e sobrevive
+                eq_cost = 1.5
+            elif has_temp:
+                eq_score += 5.0  # Temper sobrevive se defCounters < base_block - 1
+                eq_cost = 2.5
+            elif has_bb:
+                if has_active_ability:
+                    if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= my_hp):
+                        eq_score += 2.0  # Modo Sobrevivência: salva vida a qualquer custo
+                        eq_cost = 6.0
+                    else:
+                        eq_score -= 25.0  # Preserva equipamento com habilidade ativa
+                        eq_cost = 25.0
+                else:
+                    if opp_power <= 2 and my_hp > 20 and not has_dangerous_on_hit:
+                        eq_score -= 3.0  # Economiza armadura descartável se dano for irrelevante
+                        eq_cost = 5.0
+                    else:
+                        eq_score += 3.0  # Ironrot / armadura pura bloqueia para mitigar dano e economizar mão
+                        eq_cost = 3.5
+
+            if eq_score <= -20.0 and my_hp > 6:
+                continue
+
+            c_id = eq.get("actionDataOverride") or str(eq_idx)
+            c_action = eq_action if eq_action > 0 else 3
+            block_candidates.append({
+                "type": "block", "score": eq_score, "idx": eq_idx, "card_id": str(c_id),
+                "name": info["name"], "mode": c_action,
+                "block": effective_block, "pitch": 0, "power": 0,
+                "is_equipment": True, "is_hand": False, "cost": eq_cost
+            })
 
         if not block_candidates:
             return []
 
-        # ── 3.2 Refinamento ISMCTS para Bloqueio ────────────────────
+        # ── 3.2 Otimização de Subconjunto Mínimo de Defesa (Knapsack Breakpoint) ──
+        # Quando há On-Hit perigoso e não estamos em modo sobrevivência de desespero:
+        # Encontra o subconjunto de menor custo total (poupando cartas da mão para o pivot)
+        # que neutraliza completamente o dano (total_block >= opp_power).
+        if has_dangerous_on_hit and opp_power > 0 and my_hp > 6:
+            valid_subsets = []
+            max_hand_in_subset = turn_plan.max_block_cards if turn_plan.can_absorb_damage else (
+                2 if my_hp > 12 else 3
+            )
+            for r in range(1, min(len(block_candidates) + 1, 5)):
+                for subset in itertools.combinations(block_candidates, r):
+                    tot_block = sum(item["block"] for item in subset)
+                    if tot_block >= opp_power:
+                        hand_count = sum(1 for item in subset if item.get("is_hand"))
+                        if hand_count > max_hand_in_subset:
+                            continue
+                        overblock = tot_block - opp_power
+                        sub_cost = sum(item["cost"] for item in subset) + (overblock * 0.7)
+                        valid_subsets.append((sub_cost, subset))
+
+            if valid_subsets:
+                valid_subsets.sort(key=lambda x: x[0])
+                best_subset = valid_subsets[0][1]
+                return [(item["idx"], item["card_id"], item["name"], item["mode"]) for item in best_subset]
+
+        # ── 3.3 Refinamento ISMCTS para Bloqueio ────────────────────
         if len(block_candidates) > 1 and self.num_mcts_sims > 0:
             opp_hand = state.get("opponentHand", [])
             opp_hand_count = len(opp_hand) if isinstance(opp_hand, list) and len(opp_hand) > 0 else int(
@@ -756,7 +1056,6 @@ class PolicyEngine:
                     )
                 except Exception:
                     pass
-                # Prioriza a melhor carta selecionada pelo ISMCTS
                 best_item = block_candidates[best_idx]
                 best_item["score"] += 10.0
 
@@ -766,31 +1065,37 @@ class PolicyEngine:
         chosen_blocks = []
         current_blocked = 0
 
-        # Limite máximo de cartas para bloquear
+        # Limite máximo de cartas da MÃO para bloquear
         if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= my_hp):
-            max_blocks = len(block_candidates)  # Modo Sobrevivência (Bloqueio total)
+            max_hand_blocks = len(block_candidates)  # Modo Sobrevivência (Bloqueio total)
+        elif turn_plan.plan_type in ("DEFENSIVE_TRAP", "FULL_DEFENSE", "DEFENSIVE"):
+            max_hand_blocks = min(turn_plan.max_block_cards, len(block_candidates))
         elif turn_plan.can_absorb_damage:
-            # Respeita estritamente o limite de bloqueios do plano (ex: 0 no Fused Oaken Old pivot!)
-            max_blocks = min(turn_plan.max_block_cards, len(block_candidates))
+            max_hand_blocks = min(turn_plan.max_block_cards, len(block_candidates))
+        elif not has_dangerous_on_hit and my_hp > 15:
+            # Em ataques comuns sem On-Hit com vida saudável (> 15), limita a no máximo 1 carta de mão para preservar a mão!
+            max_hand_blocks = 1
         elif my_hp <= 12:
-            max_blocks = min(3, len(block_candidates))
+            max_hand_blocks = min(3, len(block_candidates))
         else:
-            max_blocks = min(2, len(block_candidates))
+            max_hand_blocks = min(2, len(block_candidates))
 
+        hand_blocks_count = 0
         for item in block_candidates:
-            if len(chosen_blocks) >= max_blocks:
-                break
-            
+            is_equip = item.get("is_equipment", False)
+            if not is_equip and hand_blocks_count >= max_hand_blocks:
+                continue
+
             # Poda de Bloqueio Ineficiente: Não bloqueia se score for muito negativo com HP alto
             if my_hp > 15 and item["score"] < 0 and not has_dangerous_on_hit:
                 continue
 
             chosen_blocks.append((item["idx"], item["card_id"], item["name"], item["mode"]))
             current_blocked += item["block"]
+            if not is_equip:
+                hand_blocks_count += 1
 
             # ── Poda de Overblocking Exato:
-            # Se já bloqueamos todo o dano do ataque e não estamos em perigo letal,
-            # pára imediatamente de adicionar cartas para não queimar a mão do próximo turno
             if current_blocked >= opp_power and my_hp > 6:
                 break
 

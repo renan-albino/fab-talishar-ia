@@ -168,6 +168,16 @@ class GameSimulator:
         sim_state["playerDiscard"] = discard_zone
 
         # 4. Resolução de Combate e Dano contra o Oponente
+        act_type = action.get("type", "hand").lower()
+        if act_type in ("equipment_ability", "weapon_buff", "hero_ability"):
+            # Habilidade preparatória que concede buff / recursos / Go Again
+            # Projeta o valor ofensivo do buff no estado simulado (+2 para Goliath, +4 para Hammerhead, etc.)
+            buff_power = int(action.get("buff_power", 4 if "hammerhead" in action.get("name", "") else (2 if "goliath" in action.get("name", "") else 1)))
+            opp_hp = int(sim_state.get("opponentHealth", sim_state.get("theirHealth", 40)))
+            sim_state["opponentHealth"] = max(0, opp_hp - buff_power)
+            sim_state["theirHealth"] = max(0, opp_hp - buff_power)
+            return sim_state
+
         atk_power = int(action.get("power", 4))
         opp_hp = int(sim_state.get("opponentHealth", sim_state.get("theirHealth", 40)))
         opp_hand_count = int(sim_state.get("opponentHandCount", sim_state.get("theirHandCount", 3)))

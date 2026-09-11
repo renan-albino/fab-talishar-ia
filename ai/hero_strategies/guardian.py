@@ -145,6 +145,20 @@ class GuardianStrategy(HeroStrategy):
 
         return super().analyze_turn_plan(state)
 
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        hero_name = str(hero_info.get("name") or hero_info.get("cardNumber", "")).lower()
+        if "bravo" in hero_name:
+            hand = state.get("playerHand", [])
+            arsenal = state.get("playerArsenal", [])
+            db = _get_cards_db()
+            has_cost_3_attack = any(
+                int(c.get("cost", db.get(str(c.get("cardNumber", c.get("name", ""))).lower(), {}).get("cost", 0))) >= 3
+                for c in list(hand) + list(arsenal)
+            )
+            if has_cost_3_attack:
+                return 16.0
+        return 0.0
+
 
 class JarlStrategy(GuardianStrategy):
     """

@@ -17,7 +17,7 @@ from .base import (
 )
 from .guardian import GuardianStrategy, JarlStrategy
 from .brute import BruteStrategy
-from .warrior import WarriorStrategy
+from .warrior import WarriorStrategy, KassaiStrategy
 from .ninja import NinjaStrategy
 from .ranger import RangerStrategy, MarlynnStrategy
 from .other_classes import (
@@ -36,6 +36,7 @@ __all__ = [
     "JarlStrategy",
     "BruteStrategy",
     "WarriorStrategy",
+    "KassaiStrategy",
     "NinjaStrategy",
     "RangerStrategy",
     "MarlynnStrategy",
@@ -134,9 +135,9 @@ HERO_CLASS_REGISTRY: Dict[str, type] = {
     "dorinthea_ironsong": WarriorStrategy,
     "dorinthea_quicksilver_prodigy": WarriorStrategy,
     "dorinthea": WarriorStrategy,
-    "kassai_cintari_sellsword": WarriorStrategy,
-    "kassai_of_the_golden_sand": WarriorStrategy,
-    "kassai": WarriorStrategy,
+    "kassai_cintari_sellsword": KassaiStrategy,
+    "kassai_of_the_golden_sand": KassaiStrategy,
+    "kassai": KassaiStrategy,
     "ser_boltyn_breaker_of_dawn": WarriorStrategy,
     "boltyn": WarriorStrategy,
     "olympia_prized_fighter": WarriorStrategy,

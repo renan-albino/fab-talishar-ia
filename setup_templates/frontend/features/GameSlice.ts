@@ -14,11 +14,7 @@ import {
 import InitialGameState from './InitialGameState';
 import GameStaticInfo, { AltArt } from '../GameStaticInfo';
 import { Card, isAllyCard } from '../Card';
-import {
-  BACKEND_URL,
-  PROCESS_INPUT,
-  URL_END_POINT
-} from 'appConstants';
+import { BACKEND_URL, ROGUELIKE_URL, URL_END_POINT } from 'appConstants';
 import Button from '../Button';
 import GameState from '../GameState';
 import Player from '../Player';
@@ -52,9 +48,10 @@ const sendProcessInput = async (
   gameInfo: GameStaticInfo,
   queryParams: URLSearchParams,
   extraQuery = ''
-): Promise<string> => {
+): Promise<void> => {
   const startedAt = performance.now();
-  const queryURL = `${BACKEND_URL}${URL_END_POINT.PROCESS_INPUT}`;
+  const baseURL = gameInfo.isRoguelike ? ROGUELIKE_URL : BACKEND_URL;
+  const queryURL = `${baseURL}${URL_END_POINT.PROCESS_INPUT}`;
 
   let response: Response;
   try {
@@ -87,129 +84,46 @@ const sendProcessInput = async (
     );
     throw new Error(`${label} failed (HTTP ${response.status}): ${data}`);
   }
-  return data;
 };
 
-export interface LobbyRefreshError {
-  status: number;
-  message: string;
-  terminal: boolean;
-  retryAfterMs?: number;
-  aborted?: boolean;
-}
-
-const getRetryAfterMs = (response: Response): number | undefined => {
-  const value = response.headers.get('Retry-After');
-  if (!value) return undefined;
-
-  const seconds = Number(value);
-  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
-
-  const retryAt = Date.parse(value);
-  if (Number.isNaN(retryAt)) return undefined;
-  return Math.max(0, retryAt - Date.now());
-};
-
-const isTerminalLobbyStatus = (status: number): boolean =>
-  status === 400 ||
-  status === 401 ||
-  status === 403 ||
-  status === 404 ||
-  status === 405 ||
-  status === 410;
-
-const isTerminalLegacyLobbyError = (message: string): boolean => {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes('does not exist') ||
-    normalized.includes('invalid game') ||
-    normalized.includes('invalid player') ||
-    normalized.includes('authentication') ||
-    normalized.includes('method not allowed')
-  );
-};
-
-export const gameLobby = createAsyncThunk<
-  GetLobbyRefreshResponse | undefined,
-  {
+export const gameLobby = createAsyncThunk(
+  'gameLobby/getLobby',
+  async (params: {
     game: GameStaticInfo;
     signal: AbortSignal | undefined;
     lastUpdate: number;
-  },
-  { rejectValue: LobbyRefreshError }
->('gameLobby/getLobby', async (params, { rejectWithValue }) => {
-  const queryURL = `${BACKEND_URL}${URL_END_POINT.GET_LOBBY_REFRESH}`;
+  }) => {
+    const queryURL = `${BACKEND_URL}${URL_END_POINT.GET_LOBBY_REFRESH}`;
 
-  const requestBody = {
-    gameName: params.game.gameID,
-    playerID: params.game.playerID,
-    authKey: params.game.authKey,
-    lastUpdate: params.lastUpdate
-  } as GetLobbyRefresh;
+    const requestBody = {
+      gameName: params.game.gameID,
+      playerID: params.game.playerID,
+      authKey: params.game.authKey,
+      lastUpdate: params.lastUpdate
+    } as GetLobbyRefresh;
 
-  let response: Response;
-  let data: string;
-  try {
-    response = await fetch(queryURL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      signal: params.signal,
-      body: JSON.stringify(requestBody)
-    });
-    data = (await response.text()).trim();
-  } catch (e) {
-    return rejectWithValue({
-      status: 0,
-      message: params.signal?.aborted
-        ? 'Lobby refresh timed out'
-        : e instanceof Error
-        ? e.message
-        : 'Unable to reach the lobby server',
-      terminal: false,
-      aborted: params.signal?.aborted
-    });
-  }
-
-  if (!response.ok) {
-    let message = `Lobby refresh failed (HTTP ${response.status})`;
+    let data: string;
     try {
-      const errorResponse = JSON.parse(data) as { error?: string };
-      if (errorResponse.error) message = errorResponse.error;
-    } catch {
-      // Cloudflare and proxies may return HTML/plain-text error bodies.
+      const response = await fetch(queryURL, {
+        method: 'POST',
+        headers: {},
+        credentials: 'include',
+        signal: params.signal,
+        body: JSON.stringify(requestBody)
+      });
+      data = (await response.text()).trim();
+    } catch (e) {
+      // An aborted poll is routine (game switch, unmount), not a failure.
+      if (params.signal?.aborted) return;
+      throw e;
     }
-    return rejectWithValue({
-      status: response.status,
-      message,
-      terminal: isTerminalLobbyStatus(response.status),
-      retryAfterMs: getRetryAfterMs(response)
-    });
-  }
+    if (data === '0') return;
 
-  if (data === '0') return;
-
-  const parsedData = parseBackendJson(data) as GetLobbyRefreshResponse & {
-    error?: string;
-  };
-  if (parsedData.error) {
-    return rejectWithValue({
-      status: 200,
-      message: parsedData.error,
-      // Keep compatibility during a rolling backend deployment where the
-      // old endpoint still returns terminal application errors as HTTP 200.
-      terminal: isTerminalLegacyLobbyError(parsedData.error)
-    });
+    const parsedData = parseBackendJson(data) as GetLobbyRefreshResponse;
+    if (Object.keys(parsedData).length === 0) return;
+    return parsedData;
   }
-  if (Object.keys(parsedData).length === 0) {
-    return rejectWithValue({
-      status: 502,
-      message: 'Lobby server returned an invalid response',
-      terminal: false
-    });
-  }
-  return parsedData;
-});
+);
 
 export const playCard = createAsyncThunk(
   'game/playCard',
@@ -248,14 +162,7 @@ export const submitButton = createAsyncThunk(
     if (params.button.numMode !== undefined)
       queryParams.set('numMode', String(params.button.numMode));
 
-    const response = await sendProcessInput(
-      'submitButton',
-      game.gameInfo,
-      queryParams
-    );
-    return params.button.mode === PROCESS_INPUT.CREATE_REPLAY
-      ? response
-      : undefined;
+    await sendProcessInput('submitButton', game.gameInfo, queryParams);
   }
 );
 
@@ -287,6 +194,7 @@ const STICKY_PLAYER_FIELDS = [
 
 const FALLBACK_GAME_INFO_FIELDS = [
   'gameGUID',
+  'roguelikeGameID',
   'isPrivate',
   'isReplay',
   'isOpponentAI',
@@ -437,8 +345,6 @@ function mergeReceivedGameState(
   state.opponentInactive = payload.opponentInactive ?? false;
   state.inactivityDeadline =
     payload.inactivityDeadline ?? state.inactivityDeadline;
-  state.gameDeleteDeadline =
-    payload.gameDeleteDeadline ?? state.gameDeleteDeadline;
   state.serverTimeOffset = payload.serverTimeOffset ?? state.serverTimeOffset;
   state.preventPassPrompt = payload.preventPassPrompt;
 }
@@ -757,10 +663,7 @@ export const gameSlice = createSlice({
       if (!authKey) return state;
       const seat = playerID ?? state.gameInfo.playerID;
       if (seat !== 1 && seat !== 2) return state;
-      if (
-        state.gameInfo.authKey === authKey &&
-        state.gameInfo.playerID === seat
-      )
+      if (state.gameInfo.authKey === authKey && state.gameInfo.playerID === seat)
         return state;
       state.gameInfo.playerID = seat;
       if (state.gameInfo.gameID > 0) {
@@ -831,6 +734,9 @@ export const gameSlice = createSlice({
     enableModals: (state) => {
       state.showModals = true;
     },
+    setIsRoguelike: (state, action: PayloadAction<boolean>) => {
+      state.gameInfo.isRoguelike = action.payload;
+    },
     setHeroInfo: (
       state,
       action: PayloadAction<{
@@ -899,31 +805,6 @@ export const gameSlice = createSlice({
     setHeroTransform: createRevealReducer('heroTransform'),
     setArsenalFlip: createRevealReducer('arsenalFlip'),
     setArsenalDestroy: createRevealReducer('arsenalDestroy'),
-    setEquipDestroy: (
-      state,
-      action: PayloadAction<{
-        playerId: number;
-        cardNumber: string;
-        slot: string;
-        id: number;
-      }>
-    ) => {
-      const slots = (state.equipDestroy ??= {});
-      slots[`${action.payload.playerId}:${action.payload.slot}`] = {
-        cardNumber: action.payload.cardNumber,
-        id: action.payload.id
-      };
-    },
-    clearEquipDestroy: (
-      state,
-      action: PayloadAction<{ playerId: number; slot: string; id: number }>
-    ) => {
-      const slots = state.equipDestroy;
-      if (!slots) return;
-      const key = `${action.payload.playerId}:${action.payload.slot}`;
-      // A newer destroy in the same slot owns the animation now, leave it alone.
-      if (slots[key]?.id === action.payload.id) delete slots[key];
-    },
     setReplayStart: (
       state,
       action: PayloadAction<{
@@ -1125,6 +1006,7 @@ export const {
   toggleChatModal,
   enableModals,
   disableModals,
+  setIsRoguelike,
   setHeroInfo,
   markHeroIntroAsShown,
   setLobbyAltArts,
@@ -1135,8 +1017,6 @@ export const {
   setHeroTransform,
   setArsenalFlip,
   setArsenalDestroy,
-  setEquipDestroy,
-  clearEquipDestroy,
   setReplayStart,
   setOpponentTyping,
   setOpponentPresence,

@@ -97,3 +97,40 @@ class WarriorStrategy(HeroStrategy):
             )
 
         return super().analyze_turn_plan(state)
+
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        hero_name = str(hero_info.get("name") or hero_info.get("cardNumber", "")).lower()
+        if "kassai" in hero_name:
+            return 17.0
+        return 0.0
+
+
+class KassaiStrategy(WarriorStrategy):
+    """
+    Estratégia especializada para Kassai (Cintari Sellsword / Golden Sand).
+    Foco em sequenciamento de compras para ativar a redução passiva de custo de espadas (-1),
+    e ativação da habilidade de herói para geração de Gold no acerto de arma.
+    """
+
+    @lru_cache(maxsize=1024)
+    def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
+        score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
+        c_low = card_name.lower()
+        # Cartas de compra ativam o desconto passivo de -1 de custo nas espadas de Kassai
+        if "gorganian" in c_low:
+            score += 15.0  # Compra 0 custo com go again: habilita redução passiva e mantém turno
+        elif "cash_in" in c_low or "spoils_of_war" in c_low:
+            score += 14.0
+        elif "blood_on_her_hands" in c_low:
+            score += 18.0
+        elif any(k in c_low for k in ["blade_cuff", "raise_an_army", "run_through"]):
+            score += 6.0
+        return score
+
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        """
+        Habilidade ativada de Kassai of the Golden Sand:
+        Concede o efeito de que o próximo acerto de arma cria um token de Gold.
+        Custo 0 e possui Go Again. Deve ser ativada antes dos ataques de espada.
+        """
+        return 17.0

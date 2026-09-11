@@ -334,7 +334,7 @@ class GPUTrainingOrchestrator:
         model.train()
         eff_batch = min(batch_size, len(buffer))
         states_b, policies_b, values_b = buffer.sample_batch(
-            batch_size=eff_batch, device=device
+            batch_size=eff_batch, device=device, prioritized=True
         )
 
         optimizer.zero_grad()

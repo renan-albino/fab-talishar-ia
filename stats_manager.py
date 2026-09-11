@@ -206,6 +206,14 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
     stats["recent_matches"] = stats["recent_matches"][:30]
     
     atomic_json_save(stats, STATS_FILE)
+
+    # Auto-Tuning Dinâmico dos Multiplicadores de Regras por Herói com base nos resultados
+    try:
+        from ai.dynamic_rule_tuner import sync_multipliers_with_stats
+        sync_multipliers_with_stats()
+    except Exception as e:
+        logger.warning(f"Erro ao sincronizar multiplicadores dinâmicos: {e}")
+
     return stats
 
 def delete_deck_stat(deck_name: str):

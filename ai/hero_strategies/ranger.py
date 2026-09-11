@@ -120,8 +120,10 @@ class MarlynnStrategy(RangerStrategy):
             score += 6.0
 
         # NAAs de Buff, Compra e Setup
-        if "three_of_a_kind" in c_low:
-            score += 12.0
+        if "gorganian" in c_low:
+            score += 16.0  # Compra 0 custo com go again: abastece mão para canhão e harpoons
+        elif "three_of_a_kind" in c_low:
+            score += 15.0
         elif "codex_of_frailty" in c_low:
             score += 11.0
         elif "portside_exchange" in c_low:
@@ -135,6 +137,27 @@ class MarlynnStrategy(RangerStrategy):
         if pitch == 1:
             score += 3.0
         return score
+
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        """
+        Habilidade ativada de Marlynn, Treasure Hunter:
+        Destrói 1 Gold para carregar uma flecha (LoadArrow).
+        Regras táticas:
+        - Só ativar se o jogador possuir Gold (itens, auras ou contador).
+        - Só ativar se o Arsenal estiver vazio (LoadArrow requer slot livre).
+        """
+        arsenal = state.get("playerArsenal", [])
+        if arsenal:
+            return 0.0  # Arsenal já ocupado, não gasta Gold em vão
+
+        items = list(state.get("playerItems", [])) + list(state.get("playerTokens", []))
+        has_gold = any("gold" in str(it.get("cardNumber", it.get("name", it))).lower() for it in items if isinstance(it, dict))
+        has_gold = has_gold or any("gold" in str(it).lower() for it in items if not isinstance(it, dict))
+        gold_count = int(state.get("goldCount", state.get("playerGold", state.get("gold", 0))))
+        if not has_gold and gold_count <= 0:
+            return 0.0
+
+        return 18.0
 
     def evaluate_arsenal_card(self, card_info: dict, db_entry: dict = None) -> float:
         score = super().evaluate_arsenal_card(card_info, db_entry)
@@ -165,6 +188,8 @@ class MarlynnStrategy(RangerStrategy):
 
     @lru_cache(maxsize=1024)
     def evaluate_pitch_card(self, card_name: str, pitch: int, cost: int, power: int, has_go_again: bool) -> float:
+        if pitch <= 0:
+            return -9999.0
         c_low = card_name.lower()
         if pitch == 3:
             score = 22.0

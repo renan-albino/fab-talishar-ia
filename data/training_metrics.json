@@ -1,46 +1,13 @@
 {
-  "total_games": 1422,
-  "samples_collected": 100000,
-  "epochs_completed": 414,
-  "policy_loss": 0.0252,
-  "value_loss": 0.4853,
-  "total_loss": 0.5105,
-  "active_matchup": "gravy_bones vs hala (+4 partidas)",
-  "last_summary": "═══════════════════════════════════════════════\n🏆 RESULTADO DA PARTIDA: Train_1c8514d8\n═══════════════════════════════════════════════\n• Vencedor: Jogador 1 (Mario) (Jogador 1)\n• Jogador 1 (Mario): 40 HP\n• Jogador 2 (Marlinn): 0 HP\n• Duração: 21 turnos\n• Decisões Coletadas para Treino: 361 amostras\n═══════════════════════════════════════════════\n",
+  "total_games": 1432,
+  "samples_collected": 102433,
+  "epochs_completed": 417,
+  "policy_loss": 0.0741,
+  "value_loss": 0.5848,
+  "total_loss": 0.6589,
+  "active_matchup": "teklovossen vs vynsett (+4 partidas)",
+  "last_summary": "═══════════════════════════════════════════════\n🏆 RESULTADO DA PARTIDA: Train_bae32f3d\n═══════════════════════════════════════════════\n• Vencedor: Jogador 1 (Cindra) (Jogador 1)\n• Jogador 1 (Cindra): 12 HP\n• Jogador 2 (Dash IO): 0 HP\n• Duração: 14 turnos\n• Decisões Coletadas para Treino: 336 amostras\n═══════════════════════════════════════════════\n",
   "history": [
-    {
-      "epoch": 215,
-      "policy_loss": 0.0209,
-      "value_loss": 0.5375,
-      "total_loss": 0.5585,
-      "entropy": 0.0678,
-      "value_mean": 0.0864,
-      "games": 792,
-      "samples": 100000,
-      "lr": 0.000291
-    },
-    {
-      "epoch": 216,
-      "policy_loss": 0.0129,
-      "value_loss": 0.5163,
-      "total_loss": 0.5292,
-      "entropy": 0.0881,
-      "value_mean": 0.0975,
-      "games": 792,
-      "samples": 100000,
-      "lr": 0.000291
-    },
-    {
-      "epoch": 217,
-      "policy_loss": 0.0536,
-      "value_loss": 0.573,
-      "total_loss": 0.6267,
-      "entropy": 0.1146,
-      "value_mean": 0.1459,
-      "games": 792,
-      "samples": 100000,
-      "lr": 0.000291
-    },
     {
       "epoch": 218,
       "policy_loss": 0.0325,
@@ -2207,14 +2174,48 @@
       "games": 1422,
       "samples": 100000,
       "lr": 0.000291
+    },
+    {
+      "epoch": 415,
+      "policy_loss": 0.0119,
+      "value_loss": 0.5535,
+      "total_loss": 0.5654,
+      "entropy": 0.0296,
+      "value_mean": -0.0186,
+      "games": 1427,
+      "samples": 101395,
+      "lr": 0.0003
+    },
+    {
+      "epoch": 416,
+      "policy_loss": 0.0516,
+      "value_loss": 0.5627,
+      "total_loss": 0.6143,
+      "entropy": 0.0383,
+      "value_mean": 0.2644,
+      "games": 1427,
+      "samples": 102433,
+      "lr": 0.0003
+    },
+    {
+      "epoch": 417,
+      "policy_loss": 0.0741,
+      "value_loss": 0.5848,
+      "total_loss": 0.6589,
+      "entropy": 0.0274,
+      "value_mean": 0.2812,
+      "games": 1432,
+      "samples": 102433,
+      "lr": 0.0003
     }
   ],
-  "policy_entropy": 0.0466,
-  "value_mean": -0.0257,
+  "policy_entropy": 0.0274,
+  "value_mean": 0.2812,
   "current_phase": "teacher",
   "device": "cuda:0",
   "batch_size": 32768,
   "num_workers": 5,
   "mcts_sims": 1600,
-  "max_resources": false
+  "max_resources": false,
+  "buffer_capacity": 250000
 }

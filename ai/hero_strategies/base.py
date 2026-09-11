@@ -95,14 +95,23 @@ class HeroStrategy:
     def __init__(self, hero_name: str = "generic"):
         self.hero_name = str(hero_name).lower().strip()
 
+    def get_dynamic_multiplier(self, key: str, default: float = 1.0) -> float:
+        """Obtém o multiplicador tático dinamicamente calibrado para o herói atual."""
+        try:
+            from ai.dynamic_rule_tuner import get_multipliers_for_hero
+            mults = get_multipliers_for_hero(self.hero_name)
+            return float(mults.get(key, default))
+        except Exception:
+            return default
+
     def has_heavy_attack(self, card_info: dict) -> bool:
         """Determina se uma carta é um ataque pesado que justifica linha de Pivot."""
         return False
 
-    @lru_cache(maxsize=1024)
     def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
-        """Calcula score de prioridade de ataque na cadeia de combate."""
-        score = float(power)
+        """Calcula score de prioridade de ataque na cadeia de combate calibrado por attack_weight."""
+        atk_mult = self.get_dynamic_multiplier("attack_weight", 1.0)
+        score = float(power) * atk_mult
         if has_go_again:
             score += 4.0
         score -= cost * 0.5
@@ -115,6 +124,8 @@ class HeroStrategy:
     @lru_cache(maxsize=1024)
     def evaluate_pitch_card(self, card_name: str, pitch: int, cost: int, power: int, has_go_again: bool) -> float:
         """Calcula score para escolher qual carta dar Pitch (Pitch 3 > Pitch 2 > Pitch 1)."""
+        if pitch <= 0:
+            return -9999.0
         score = float(pitch) * 4.0
         if power >= 4:
             score -= 2.0
@@ -123,6 +134,10 @@ class HeroStrategy:
         if pitch == 1:
             score -= 3.0
         return score
+
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        """Pontuação tática para ativar a habilidade do Herói (Character Ability)."""
+        return 0.0
 
     def evaluate_card_priority(self, card_name: str, cost: int, pitch: int, power: int, has_go_again: bool) -> float:
         return self.evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
@@ -133,12 +148,13 @@ class HeroStrategy:
     def should_crank(self, item_name: str, has_actions_left: bool) -> bool:
         return True
 
-    @lru_cache(maxsize=1024)
     def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool) -> float:
+        """Calcula score defensivo calibrado por block_weight."""
         if block_val <= 0:
             return -999.0
+        blk_mult = self.get_dynamic_multiplier("block_weight", 1.0)
         offensive_value = power + (3.0 if has_go_again else 0.0)
-        return float(block_val) * 2.0 - offensive_value
+        return (float(block_val) * 2.0 * blk_mult) - offensive_value
 
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
         """Pontuação tática para atacar com a arma equipada."""
@@ -146,6 +162,112 @@ class HeroStrategy:
         if not has_hand_attacks:
             score += 2.5
         return score
+
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        """Pontuação tática para ativar a habilidade do Herói."""
+        return 0.0
+
+    def evaluate_equipment_ability(self, state: dict, eq_info: dict, hand_attacks: list = None) -> float:
+        """
+        Pontuação tática para ativar habilidades de equipamento (Head, Chest, Arms, Legs, Off-Hand).
+        Abordagem 100% orientada a dados e semântica de regras, sem hardcoding de nomes de cartas,
+        calibrada dinamicamente pelo motor de aprendizado persistente EquipmentLearningEngine.
+        """
+        eq_name = str(eq_info.get("cardNumber") or eq_info.get("name", "")).lower().strip()
+        if not eq_name:
+            return 0.0
+
+        from ai.equipment_learning import load_equipment_metadata, get_equipment_learning_engine
+        eq_meta = load_equipment_metadata().get(eq_name, {})
+        cards_db = _get_cards_db()
+        hand = state.get("playerHand", [])
+        arsenal = state.get("playerArsenal", [])
+
+        # 1. Validação de requisitos de contadores (ex: Tunic precisa de 3 contadores)
+        req_counters = int(eq_meta.get("req_counters", 0))
+        if req_counters > 0:
+            current_counters = int(eq_info.get("counters", 0) or 0)
+            if current_counters < req_counters:
+                return 0.0
+
+        # 2. Avaliação semântica da habilidade
+        power_buff = int(eq_meta.get("power_buff", 0))
+        min_atk_cost = int(eq_meta.get("min_attack_cost", 0))
+        cost_discount = int(eq_meta.get("cost_discount", 0))
+        grants_res = int(eq_meta.get("grants_resource", 0))
+        creates_token = str(eq_meta.get("creates_token", ""))
+        grants_ga = bool(eq_meta.get("grants_go_again", False))
+        has_ga = bool(eq_meta.get("has_go_again", False))
+        ab_cost = int(eq_meta.get("ability_cost", 0))
+
+        base_score = 0.0
+
+        # Caso A: Buff de poder para ataques
+        if power_buff > 0:
+            if hand_attacks:
+                heavy = [a for a in hand_attacks if int(a.get("cost", 0)) >= min_atk_cost]
+                if heavy:
+                    base_score = max(float(a.get("score", 0.0)) for a in heavy) + float(power_buff) * 3.0
+                else:
+                    return 0.0
+            else:
+                heavy_attacks = [
+                    c for c in list(hand) + list(arsenal)
+                    if int(c.get("cost", cards_db.get(str(c.get("cardNumber", c.get("name", ""))).lower(), {}).get("cost", 0))) >= min_atk_cost
+                ]
+                if not heavy_attacks:
+                    return 0.0
+                base_score = 20.0 + float(power_buff) * 2.5
+
+        # Caso B: Desconto de custo de recurso
+        elif cost_discount > 0:
+            target_min_cost = 2 if cost_discount >= 2 else 1
+            if hand_attacks:
+                cost_targets = [a for a in hand_attacks if int(a.get("cost", 0)) >= target_min_cost]
+                if cost_targets:
+                    base_score = max(float(a.get("score", 0.0)) for a in cost_targets) + float(cost_discount) * 2.5
+                else:
+                    return 0.0
+            else:
+                cost_targets = [
+                    c for c in list(hand) + list(arsenal)
+                    if int(c.get("cost", cards_db.get(str(c.get("cardNumber", c.get("name", ""))).lower(), {}).get("cost", 0))) >= target_min_cost
+                ]
+                if not cost_targets:
+                    return 0.0
+                base_score = 20.0 + float(cost_discount) * 2.0
+
+        # Caso C: Geração de recursos
+        elif grants_res > 0:
+            base_score = 12.0 + float(grants_res) * 2.0
+
+        # Caso D: Criação de Tokens (ex: Seismic Surge)
+        elif creates_token:
+            base_score = 14.0
+
+        # Caso E: Concessão de Go Again
+        elif grants_ga:
+            base_score = 16.0
+
+        # Caso F: Outras habilidades ativas
+        else:
+            ab_type = str(eq_meta.get("ability_type", "")).upper()
+            if ab_type in ("A", "AR", "I", "AA"):
+                base_score = 10.0
+            else:
+                base_score = 0.0
+
+        if base_score <= 0.0:
+            return 0.0
+
+        if has_ga:
+            base_score += 4.0
+        if ab_cost > 0:
+            base_score -= float(ab_cost) * 1.5
+
+        # 3. Calibração empírica aprendida por herói / arquétipo
+        learned_mult = get_equipment_learning_engine().get_equipment_multiplier(self.hero_name, eq_name)
+        return max(0.0, base_score * learned_mult)
 
     def evaluate_arsenal_card(self, card_info: dict, db_entry: dict = None) -> float:
         """
@@ -225,6 +347,9 @@ class HeroStrategy:
 
         if card_type == "I" or any(k in c_name for k in ["sigil", "oasis", "whisper"]):
             score += 4.0
+
+        if score > 0:
+            score *= self.get_dynamic_multiplier("arsenal_bonus", 1.0)
 
         return score
 

@@ -45,8 +45,8 @@ def test_unpayable_hand_attack_pruning():
 def test_unpayable_weapon_pruning():
     pe = PolicyEngine()
 
-    # Cenário A: Sledge of Anvilheim (Hammer, custo 3) com apenas 2 cartas vermelhas (pitch 1 cada = 2).
-    # Total pitch = 2 < 3. A arma NÃO pode ser usada!
+    # Cenário A: Sledge of Anvilheim (Hammer, custo real 4 no FaB/Talishar) com apenas 2 cartas vermelhas (pitch 1 cada = 2).
+    # Total pitch = 2 < 4. A arma NÃO pode ser usada!
     state_weapon_unpayable = {
         "playerAP": 1,
         "playerPitchCount": 0,
@@ -60,15 +60,16 @@ def test_unpayable_weapon_pruning():
         "opponentHand": [{"cardNumber": "CardBack"}]
     }
     atk_w_fail = pe.select_best_attack(state_weapon_unpayable, unpayable_set=set())
-    assert atk_w_fail is None, f"Arma custo 3 não deveria ser jogável com apenas 2 de pitch na mão, mas retornou {atk_w_fail}"
+    assert atk_w_fail is None, f"Arma custo 4 não deveria ser jogável com apenas 2 de pitch na mão, mas retornou {atk_w_fail}"
 
-    # Cenário B: Sledge of Anvilheim com 1 carta azul (pitch 3) na mão.
-    # Total pitch = 3 >= 3. A arma PODE ser usada!
+    # Cenário B: Sledge of Anvilheim com 1 carta azul (pitch 3) + 1 carta vermelha (pitch 1) na mão.
+    # Total pitch = 4 >= 4. A arma PODE ser usada!
     state_weapon_payable = {
         "playerAP": 1,
         "playerPitchCount": 0,
         "playerHand": [
             {"cardNumber": "crumble_to_eternity_blue", "action": 0, "actionDataOverride": "0"},
+            {"cardNumber": "sink_below_red", "action": 0, "actionDataOverride": "1"},
         ],
         "playerEquipment": [
             {"cardNumber": "sledge_of_anvilheim", "action": 27, "actionDataOverride": "W1", "slot": "Weapon"}
@@ -76,9 +77,9 @@ def test_unpayable_weapon_pruning():
         "opponentHand": [{"cardNumber": "CardBack"}]
     }
     atk_w_ok = pe.select_best_attack(state_weapon_payable, unpayable_set=set())
-    assert atk_w_ok is not None, "Arma custo 3 deveria ser jogável com 3 de pitch na mão!"
+    assert atk_w_ok is not None, "Arma custo 4 deveria ser jogável com 4 de pitch na mão!"
     assert atk_w_ok["name"] == "sledge_of_anvilheim"
-    assert atk_w_ok["cost"] == 3
+    assert atk_w_ok["cost"] == 4
 
 def test_combat_chain_desc():
     from bot_client import FabBotClient

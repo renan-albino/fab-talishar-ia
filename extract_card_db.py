@@ -98,6 +98,11 @@ def extract_from_local():
     blocks = parse_match("GeneratedBlockValue($cardID)", "GeneratedCardName($cardID)")
     pitches = parse_match("GeneratedPitchValue($cardID)", "GeneratedCardCost($cardID)")
     go_agains = parse_match("GeneratedGoAgain($cardID)", "GeneratedHasAmbush($cardID)")
+    ambushes = parse_match("GeneratedHasAmbush($cardID)", "GeneratedHasAmp($cardID)")
+    battleworns = parse_match("GeneratedHasBattleworn($cardID)", "GeneratedHasBeatChest($cardID)")
+    blade_breaks = parse_match("GeneratedHasBladeBreak($cardID)", "GeneratedHasBloodDebt($cardID)")
+    tempers = parse_match("GeneratedHasTemper($cardID)", "GeneratedHasTheCrowdBoos($cardID)")
+    arcane_barriers = parse_match("GeneratedHasArcaneBarrier($cardID)", "GeneratedArcaneBarrierAmount($cardID)")
     types = parse_match("GeneratedCardType($cardID)", "GeneratedPowerValue($cardID)")
     subtypes = parse_match("GeneratedCardSubtype($cardID)", "GeneratedCharacterHealth($cardID)")
     names = parse_match("GeneratedCardName($cardID)", "GeneratedPitchValue($cardID)")
@@ -139,9 +144,33 @@ def extract_from_local():
             card_data["defense"] = blocks[cid]
         if cid in pitches and pitches[cid] >= 0:
             card_data["pitch"] = pitches[cid]
-        if cid in go_agains:
-            card_data["has_go_again"] = bool(go_agains[cid])
+        if cid in go_agains and go_agains[cid]:
+            card_data["has_go_again"] = True
+        if cid in battleworns and battleworns[cid]:
+            card_data["has_battleworn"] = True
+        if cid in blade_breaks and blade_breaks[cid]:
+            card_data["has_blade_break"] = True
+        if cid in tempers and tempers[cid]:
+            card_data["has_temper"] = True
+        if cid in ambushes and ambushes[cid]:
+            card_data["has_ambush"] = True
+        if cid in arcane_barriers and arcane_barriers[cid]:
+            card_data["has_arcane_barrier"] = True
         db[cid] = card_data
+
+    try:
+        from scripts.extract_ability_costs import extract_ability_costs
+        tal_path = os.path.join(os.path.dirname(__file__), "Talishar")
+        ab_costs = extract_ability_costs(tal_path)
+        for cid, cost in ab_costs.items():
+            if cid in db:
+                db[cid]["ability_cost"] = cost
+                if db[cid].get("slot") in ("Weapon", "Equipment", "Head", "Chest", "Arms", "Legs", "Off-Hand") and db[cid].get("cost", 0) == 0:
+                    db[cid]["cost"] = cost
+        print(f"✅ {len(ab_costs)} custos de habilidade integrados ao banco de cartas.")
+    except Exception as e:
+        print(f"Aviso ao extrair custos de habilidade: {e}")
+
     return db
 
 data = extract_from_local()

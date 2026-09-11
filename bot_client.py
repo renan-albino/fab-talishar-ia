@@ -5,6 +5,7 @@ import os
 import requests
 from datetime import datetime
 from ai.policy_engine import PolicyEngine
+from ai.equipment_learning import EquipmentTracker, get_equipment_learning_engine
 from ai.talishar_api import TalisharApiClient, DEFAULT_BACKEND_URL
 from ai.chat_badges import evaluate_board_state, format_html_line, format_attack_chat_message
 
@@ -50,6 +51,7 @@ class FabBotClient:
                 pass
         if not self.hero_name:
             self.hero_name = self.clean_deck.replace("_", " ").title()
+        self.equipment_tracker = EquipmentTracker(hero_name=self.hero_name)
 
         os.makedirs("logs", exist_ok=True)
         try:
@@ -903,11 +905,35 @@ class FabBotClient:
                 if hasattr(self, "trajectory") and self.trajectory:
                     try:
                         from ai.experience_collector import get_global_buffer
+                        from ai.blunder_reviewer import review_trajectory_for_blunders
+                        weights, b_stats = review_trajectory_for_blunders(
+                            self.trajectory,
+                            winner_player_id=winner_id,
+                            bot_player_id=self.player_id
+                        )
+                        if b_stats.get("blunders", 0) > 0 or b_stats.get("brilliants", 0) > 0:
+                            self.log(
+                                f"[PER / BLUNDER REVIEW] Trajetória avaliada: {b_stats.get('blunders', 0)} blunders, "
+                                f"{b_stats.get('inaccuracies', 0)} imprecisões, {b_stats.get('brilliants', 0)} viradas. "
+                                f"Peso médio amostral: {b_stats.get('avg_weight', 1.0):.2f}"
+                            )
                         buf = get_global_buffer(self.buffer_capacity)
-                        buf.add_trajectory(self.trajectory, winner_player_id=winner_id)
+                        buf.add_trajectory(self.trajectory, winner_player_id=winner_id, weights=weights)
                         buf.save()
                     except Exception as e:
                         self.log(f"[ERRO BUFFER] {e}")
+
+                if hasattr(self, "equipment_tracker") and self.equipment_tracker.get_events():
+                    try:
+                        won = (winner_id == self.player_id)
+                        get_equipment_learning_engine().record_match_result(
+                            hero_name=self.hero_name,
+                            events=self.equipment_tracker.get_events(),
+                            won=won,
+                        )
+                        self.equipment_tracker.clear()
+                    except Exception as e:
+                        self.log(f"[ERRO EQ STATS] {e}")
 
                 p1_hp = my_h if self.player_id == 1 else opp_h
                 p2_hp = opp_h if self.player_id == 1 else my_h
@@ -1016,7 +1042,8 @@ class FabBotClient:
             s_vec = FaBPolicyValueNetwork.extract_state_vector(state, self.player_id)
             p_dist = np.zeros(32, dtype=np.float32)
             p_dist[0] = 1.0
-            self.trajectory.append((s_vec, p_dist, self.player_id))
+            b_eval = self.evaluate_board_state(state)
+            self.trajectory.append((s_vec, p_dist, self.player_id, b_eval))
         except Exception:
             pass
         
@@ -1337,13 +1364,21 @@ class FabBotClient:
                 self.log(f"[PLANO DE DEFESA] 🎯 Estratégia: {current_plan.plan_type} - {current_plan.reason}")
 
             chosen_blocks = self.policy_engine.select_defense_blocks(state)
-            unblocked = [b for b in chosen_blocks if str(b[1]) not in self.declared_blocks_link]
+            unblocked = [b for b in chosen_blocks if (b[3], str(b[1])) not in self.declared_blocks_link]
             if unblocked:
                 b_idx, b_id, b_name, b_action = unblocked[0]
-                self.declared_blocks_link.add(str(b_id))
+                self.declared_blocks_link.add((b_action, str(b_id)))
+                if hasattr(self, "equipment_tracker"):
+                    equip_names = {str(eq.get("cardNumber", "")).lower() for eq in state.get("playerEquipment", []) if isinstance(eq, dict)}
+                    if str(b_name).lower() in equip_names:
+                        self.equipment_tracker.track_block(
+                            hero=self.hero_name,
+                            eq_name=b_name,
+                            turn=turn_num,
+                        )
                 chat_msg = f"<b>[Turno {turn_num}] 🛡️ Bloqueio Tático</b> -> <b>{b_name}</b> (Defesa Otimizada)"
                 self.send_chat_log(chat_msg, highlight=True, bg_color="#1e1b4b", text_color="#c084fc")
-                self.log(f"[AÇÃO JOGADOR {self.player_id}] Bloqueio Tático -> {b_name} (ID: {b_id})")
+                self.log(f"[AÇÃO JOGADOR {self.player_id}] Bloqueio Tático -> {b_name} (ID: {b_id}, Mode: {b_action})")
                 self.send_action(mode=b_action, card_id=str(b_id), button_input=b_name)
                 time.sleep(0.002)
                 return True
@@ -1377,6 +1412,7 @@ class FabBotClient:
             if not hasattr(self, "reaction_attempts"):
                 self.reaction_attempts = {}
 
+            # 6a. Reações / Instantâneos via Mão
             for idx, c in enumerate(hand):
                 c_action = c.get("action", 0)
                 c_name = c.get("cardNumber", "")
@@ -1397,8 +1433,37 @@ class FabBotClient:
                         self.reaction_attempts[c_name] = attempts + 1
                         chat_msg = f"<b>[Turno {turn_num}] ⚡ Reação Tática</b> -> <b>{c_name}</b> (Modo {c_action})"
                         self.send_chat_log(chat_msg, highlight=True, bg_color="#14532d", text_color="#4ade80")
-                        self.log(f"[AÇÃO JOGADOR {self.player_id}] Jogou Reação/Instant -> {c_name}")
+                        self.log(f"[AÇÃO JOGADOR {self.player_id}] Jogou Reação/Instant (Mão) -> {c_name}")
                         self.send_action(mode=c_action, card_id=c_id, button_input=c_name)
+                        time.sleep(0.002)
+                        return True
+
+            # 6b. Reações / Instantâneos via Equipamentos (Snapdragon Scalers, Prized Galea, etc.)
+            equip = state.get("playerEquipment", [])
+            for eq_idx, eq in enumerate(equip):
+                if not isinstance(eq, dict):
+                    continue
+                eq_action = int(eq.get("action", 0))
+                eq_name = str(eq.get("cardNumber", "")).lower()
+                slot = str(eq.get("slot", "")).lower()
+                if slot == "hero" or eq.get("isBroken") or eq.get("onChain"):
+                    continue
+
+                attempts = self.reaction_attempts.get(eq_name, 0)
+                if attempts >= 2:
+                    unpayable_set.add(eq_name)
+
+                if eq_action > 0 and eq_name not in unpayable_set:
+                    eq_cost = self.policy_engine.get_weapon_cost(eq_name, eq, state)
+                    floating_res, total_res = self.policy_engine.calculate_available_resources(state)
+                    if total_res >= eq_cost:
+                        eq_id = eq.get("actionDataOverride", str(eq_idx))
+                        self.last_attempted_play = eq_name
+                        self.reaction_attempts[eq_name] = attempts + 1
+                        chat_msg = f"<b>[Turno {turn_num}] ⚡ Reação de Equipamento</b> -> <b>{eq_name}</b> (Modo {eq_action})"
+                        self.send_chat_log(chat_msg, highlight=True, bg_color="#14532d", text_color="#4ade80")
+                        self.log(f"[AÇÃO JOGADOR {self.player_id}] Ativou Reação/Instant (Equipamento) -> {eq_name} (ID: {eq_id}, Custo: {eq_cost})")
+                        self.send_action(mode=eq_action, card_id=str(eq_id), button_input=eq_name)
                         time.sleep(0.002)
                         return True
 
@@ -1455,6 +1520,14 @@ class FabBotClient:
                     score_val  = best_attack.get("score", 0.0)
                     board_eval = self.evaluate_board_state(state)
 
+                    if best_attack.get("type") == "equipment_ability" and hasattr(self, "equipment_tracker"):
+                        self.equipment_tracker.track_activation(
+                            hero=self.hero_name,
+                            eq_name=best_attack["name"],
+                            turn=turn_num,
+                            pre_eval=board_eval,
+                        )
+
                     # ── Capturar e registrar log ISMCTS (se presente) ────────
                     ismcts_log = best_attack.pop("_ismcts_log", None)
                     if ismcts_log:
@@ -1489,15 +1562,19 @@ class FabBotClient:
                             pol_dist = np.zeros(32, dtype=np.float32)
                             m_idx = min(int(best_attack.get("mode", 27)), 31)
                             pol_dist[m_idx] = 1.0
-                        self.trajectory.append((state_vec, pol_dist, self.player_id))
+                        self.trajectory.append((state_vec, pol_dist, self.player_id, board_eval))
                     except Exception:
                         pass
 
-                    atk_type = str(best_attack.get("type", "ação")).capitalize()
+                    raw_type = str(best_attack.get("type", "ação")).lower()
+                    atk_type = raw_type.replace("_", " ").title()
                     atk_name = best_attack["name"]
                     atk_power = best_attack.get("power", 0)
                     atk_cost = best_attack.get("cost", 0)
-                    self.log(f"[AÇÃO JOGADOR {self.player_id}] Atacou com -> {atk_name} (Tipo: {atk_type}, Poder: {atk_power}, Custo: {atk_cost})")
+                    if raw_type in ("hero_ability", "weapon_buff", "equipment_ability"):
+                        self.log(f"[AÇÃO JOGADOR {self.player_id}] Ativou -> {atk_name} (Tipo: {atk_type}, Custo: {atk_cost})")
+                    else:
+                        self.log(f"[AÇÃO JOGADOR {self.player_id}] Atacou com -> {atk_name} (Tipo: {atk_type}, Poder: {atk_power}, Custo: {atk_cost})")
 
                     self.send_action(mode=best_attack["mode"], card_id=best_attack["card_id"], button_input=best_attack["name"])
                     time.sleep(0.002)

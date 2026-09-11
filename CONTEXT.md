@@ -29,6 +29,11 @@ Glossary of domain terms used in this project. AI agents and contributors must u
 - **Prior Threshold Pruning**: Poda de ações com prior abaixo de −1.5σ da média, eliminando movimentos claramente inferiores durante a expansão MCTS.
 - **Distilação Assimétrica (Asymmetric Distillation)**: Treinamento da rede neural usando a distribuição de visitas do MCTS (π_MCTS) como target via Cross-Entropy/KL-Divergence, em vez de vitória/derrota binária.
 - **CR 3.1.5**: Regra oficial de Flesh and Blood que proíbe Resource/Gem cards de serem colocadas no Arsenal. Implementada em `ai/hero_strategies/` com score −9999.0.
+- **Equipment Learning Engine (`ai/equipment_learning.py`)**: Motor de aprendizado empírico persistente que registra ativações e bloqueios por partida em `EquipmentTracker`, atualizando multiplicadores calibrados em `data/equipment_usage_stats.json` com base em vitórias.
+- **Equipment Metadata (`data/equipment_metadata.json`)**: Metadados semânticos de 624 equipamentos extraídos automaticamente do Talishar, definindo bônus numéricos (`power_buff`, `cost_discount`, `grants_resource`, `min_attack_cost`, `req_counters`, `has_go_again`, `creates_token`) sem hardcoding nominal.
+- **On-Hit Threat Quantification**: Escala hierárquica de ameaça (Catastrófico [8.5-10.0], Alto [5.0-7.0], Médio [3.5-4.5], Vanilla [0.0]) em `ai/policy_engine.py` para avaliar severidade de efeitos ao acertar.
+- **Knapsack Breakpoint Defense**: Resolvedor de subconjunto ótimo em `select_defense_blocks` que combina o mínimo de cartas de mão e armaduras para neutralizar On-Hits ($\sum \text{block} \ge \text{opp\_power}$) poupando a mão para o contra-ataque.
+- **Vanilla Armor Pruning**: Regra estrita de conservação que proíbe o bloqueio com armaduras em ataques comuns (ameaça 0.0) quando a vida é saudável ($HP > 12$), reservando-as para neutralizar On-Hits ou perigo letal.
 
 ## Domain: Architecture
 
