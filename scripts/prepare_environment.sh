@@ -13,18 +13,40 @@ echo "=================================================="
 
 cd "$ROOT_DIR"
 
-# 1. Configurar Python Virtualenv se necessário
+# Auto-configura socket do Podman para Vanilla OS / Podman rootless
+if [ -S "/run/user/$UID/podman/podman.sock" ]; then
+    export DOCKER_HOST="unix:///run/user/$UID/podman/podman.sock"
+elif command -v distrobox-host-exec >/dev/null 2>&1; then
+    distrobox-host-exec systemctl --user start podman.socket 2>/dev/null || true
+    if [ -S "/run/user/$UID/podman/podman.sock" ]; then
+        export DOCKER_HOST="unix:///run/user/$UID/podman/podman.sock"
+    fi
+fi
+
+# 1. Verificar python3 e configurar Python Virtualenv se necessário
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "[ERRO] python3 não encontrado! Instale Python 3.10+ (ex: sudo apt install python3 python3-venv python3-pip)."
+    exit 1
+fi
+
 if [ ! -d "venv" ]; then
     echo "[*] Criando ambiente virtual Python (venv)..."
-    python3 -m venv venv
+    if ! python3 -m venv venv 2>/dev/null; then
+        echo "[ERRO] Falha ao criar o virtualenv com 'python3 -m venv venv'."
+        echo "Em sistemas Debian/Ubuntu/WSL, execute:"
+        echo "  sudo apt update && sudo apt install -y python3-venv python3-pip"
+        echo "Em sistemas Fedora/RHEL, execute:"
+        echo "  sudo dnf install -y python3 python3-pip"
+        exit 1
+    fi
 fi
 
 echo "[*] Instalando/atualizando dependências Python..."
 ./venv/bin/pip install -q --upgrade pip
 ./venv/bin/pip install -q -r requirements.txt || true
 
-# Validação e autocura de dependências Python C-extensions (NumPy / PyTorch)
-if ! ./venv/bin/python -c "import numpy, torch, streamlit" >/dev/null 2>&1; then
+# Validação e autocura de dependências Python C-extensions (NumPy / PyTorch / psutil)
+if ! ./venv/bin/python -c "import numpy, torch, streamlit, psutil" >/dev/null 2>&1; then
     echo "[!] Dependências binárias do Python com erro de importação. Reparando com --force-reinstall..."
     ./venv/bin/pip install --force-reinstall numpy
     ./venv/bin/pip install -r requirements.txt

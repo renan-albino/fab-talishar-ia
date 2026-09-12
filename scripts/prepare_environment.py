@@ -32,13 +32,18 @@ TALISHAR_DIR = os.path.join(BASE_DIR, "Talishar")
 TALISHAR_FE_DIR = os.path.join(BASE_DIR, "Talishar-FE")
 
 BACKEND_MAPPINGS = [
+    ("docker-compose.yml", "docker-compose.yml"),
+    ("APIKeys/APIKeys.php.template", "APIKeys/APIKeys.php.template"),
     ("APIs/AppendGameLog.php", "APIs/AppendGameLog.php"),
     ("APIs/GetLobbyRefresh.php", "APIs/GetLobbyRefresh.php"),
+    ("APIs/GetFavoriteDecks.php", "APIs/GetFavoriteDecks.php"),
     ("APIs/JoinGame.php", "APIs/JoinGame.php"),
     ("APIs/CreateGame.php", "APIs/CreateGame.php"),
     ("APIs/APIParseGamefile.php", "APIs/APIParseGamefile.php"),
     ("APIs/SubmitSideboard.php", "APIs/SubmitSideboard.php"),
     ("AI/CombatDummy.php", "AI/CombatDummy.php"),
+    ("Libraries/HTTPLibraries.php", "Libraries/HTTPLibraries.php"),
+    ("Libraries/PlayerSettings.php", "Libraries/PlayerSettings.php"),
     ("ProcessInput.php", "ProcessInput.php"),
     ("MenuFiles/WriteGamefile.php", "MenuFiles/WriteGamefile.php"),
 ]
@@ -75,6 +80,7 @@ def get_docker_compose_cmd():
         pass
     if shutil.which("docker-compose"):
         return ["docker-compose"]
+    return None
 def ensure_system_idempotence():
     log("Inspecionando sistema operacional e camada de idempotência...")
     is_container = os.path.exists("/run/.containerenv") or os.path.exists("/.dockerenv")
@@ -260,7 +266,7 @@ def check_unmapped_changes():
             for line in res.stdout.splitlines():
                 status = line[:2]
                 fpath = line[3:].strip()
-                if fpath.startswith(("Games/", "HostFiles/", "logs/", "decks", "deck.json", "game/", "fix_and_start", "composer.lock")):
+                if fpath.startswith(("Games/", "HostFiles/", "logs/", "decks", "deck.json", "game/", "fix_and_start", "composer.lock", "data")):
                     continue
                 if (status == "??" or fpath.startswith(("APIs/", "AI/"))) and fpath not in mapped_srcs and not any(src.startswith(fpath) for src in mapped_srcs):
                     unmapped.append(("Backend", fpath))
@@ -335,12 +341,47 @@ def check_docker():
             log_warn("Containers Docker do Talishar não detectados. Subindo backend...")
             if os.path.exists(TALISHAR_DIR) and os.path.exists(os.path.join(TALISHAR_DIR, "docker-compose.yml")):
                 dc_cmd = get_docker_compose_cmd()
-                subprocess.run(dc_cmd + ["up", "-d"], cwd=TALISHAR_DIR, check=False)
-                log_success("Comando de inicialização Docker disparado.")
+                if dc_cmd:
+                    subprocess.run(dc_cmd + ["up", "-d"], cwd=TALISHAR_DIR, check=False)
+                    log_success("Comando de inicialização Docker disparado.")
+                else:
+                    log_warn("Comando docker compose ou docker-compose não encontrado.")
             else:
                 log_warn("Talishar/docker-compose.yml não disponível.")
     except Exception as e:
         log_warn(f"Docker não disponível ou aviso de verificação: {e}")
+
+def ensure_frontend_dependencies():
+    log("Verificando dependências do Frontend (Talishar-FE)...")
+    if not os.path.exists(TALISHAR_FE_DIR) or not os.path.exists(os.path.join(TALISHAR_FE_DIR, "package.json")):
+        log_warn("Talishar-FE/package.json não encontrado. Ignorando setup do frontend.")
+        return
+
+    npm_cmd = shutil.which("npm")
+    if not npm_cmd:
+        log_warn("npm/Node.js não encontrado no PATH. Instale Node.js >= 20 para compilar e rodar o frontend.")
+        return
+
+    node_modules = os.path.join(TALISHAR_FE_DIR, "node_modules")
+    if not os.path.exists(node_modules):
+        log("Instalando dependências npm do Frontend (pode levar alguns instantes)...")
+        try:
+            subprocess.run([npm_cmd, "install"], cwd=TALISHAR_FE_DIR, check=True)
+            log_success("Dependências npm do Frontend instaladas com sucesso.")
+        except Exception as e:
+            log_warn(f"Erro durante npm install no frontend: {e}")
+
+    build_dir = os.path.join(TALISHAR_FE_DIR, "build")
+    if not os.path.exists(build_dir):
+        log("Validando compilação do Frontend pela primeira vez (npx vite build)...")
+        npx_cmd = shutil.which("npx") or "npx"
+        try:
+            subprocess.run([npx_cmd, "vite", "build"], cwd=TALISHAR_FE_DIR, check=False)
+            log_success("Compilação inicial do Frontend concluída.")
+        except Exception as e:
+            log_warn(f"Aviso durante validação do build do frontend: {e}")
+    else:
+        log_success("Frontend validado e pronto para execução.")
 
 def sync_agents_environment_rules():
     """
@@ -497,23 +538,45 @@ def main():
     if args.frontend_only:
         ensure_talishar_frontend()
         apply_frontend_templates()
+        ensure_frontend_dependencies()
         log_success("Frontend Talishar-FE preparado e sincronizado com sucesso!")
         return
 
+    # 1. Estrutura base de diretórios
     ensure_directories()
-    ensure_system_idempotence()
+
+    # 2. Garantir repositórios do Talishar clonados/disponíveis
     ensure_talishar_repositories()
+
+    # 3. Aplicar patches e templates customizados sobre os repositórios
     apply_custom_templates()
+
+    # 4. Camada de idempotência do sistema e configs obrigatórios (executado APÓS repositórios e templates)
+    ensure_system_idempotence()
+
+    # 5. Permissões de escrita
     fix_permissions()
+
+    # 6. Dependências do Frontend (npm install / validação de build)
+    ensure_frontend_dependencies()
+
+    # 7. Containers Docker (Apache, MySQL, Redis)
     check_docker()
+
+    # 8. Extração e indexação do banco oficial de cartas
     sync_card_database()
+
+    # 9. Verificação dos decks no diretório central
     verify_decks()
+
+    # 10. Regras de agente dinâmicas para o runtime
     sync_agents_environment_rules()
     print("==================================================")
     log_success("Ambiente preparado com sucesso!")
     print("Para rodar o projeto:")
-    print("  1. Dashboard: ./venv/bin/streamlit run dashboard.py")
-    print("  2. Frontend:  ./start_frontend.sh (ou via Dashboard)")
+    print("  1. Iniciar tudo (Docker + Dashboard): ./start.sh")
+    print("  2. Iniciar Frontend Web:              ./start_frontend.sh")
+    print("  3. Parar serviços:                    ./stop.sh")
     print("==================================================")
 
 if __name__ == "__main__":

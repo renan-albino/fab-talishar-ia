@@ -1,0 +1,34 @@
+<?php
+
+$APP_ENV = getenv('APP_ENV') ?: 'local';
+
+// Fabrary
+$FaBraryKey = "local_key";
+$fabraryOutgoingKey = "local_key";
+
+// Sendgrid
+$sendgridKey = "local_key";
+
+// Adsense - Not used
+$adsenseClientId = "local_key";
+
+// FABDB
+$fabDBToken = "local_key";
+$fabDBSecret = "local_key";
+
+// Patreon
+$patreonClientID = "local_key";
+$patreonClientSecret = "local_key";
+
+// SSH for loading bugged games
+$prodServerIP = "127.0.0.1";
+$prodServerUsername = "local";
+$prodServerPassword = "local";
+
+// Metafy
+$metafyClientID = "local_key";
+$metafyClientSecret = "local_key";
+
+// FaB Bazaar
+$FaBBazaarKey = "local_key";
+$FaBBazaarSalt = "local_key";

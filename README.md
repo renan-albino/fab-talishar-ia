@@ -268,66 +268,91 @@ Para navegar a complexidade de regras do Flesh and Blood e garantir jogadas de n
 
 ## 🛠️ Como Funciona o Preparo Automatizado do Ambiente
 
-Para permitir que **qualquer pessoa ou IA replique o ambiente em 1 clique em qualquer computador**, o projeto utiliza uma pasta central de templates (`setup_templates/`) e um script de automação (`scripts/prepare_environment.py` / `scripts/prepare_environment.sh`).
+Para permitir que **qualquer pessoa ou IA replique o ambiente em 1 clique em qualquer computador**, o projeto utiliza uma pasta central de templates (`setup_templates/`) e um script de automação unificado e idempotente (`scripts/prepare_environment.sh` / `scripts/prepare_environment.py`).
 
-### O que o script de preparação faz automaticamente:
-1. **Camada de Idempotência e Autodiagnóstico do Sistema (`ensure_system_idempotence`):**
-   - Detecta dinamicamente a distribuição hospedeira (ex: Vanilla OS 3, Fedora Silverblue, Apx, Debian/Ubuntu).
-   - Se estiver sob Podman rootless, verifica e ativa automaticamente o socket do usuário (`systemctl --user enable --now podman.socket`).
-   - Garante que a variável `DOCKER_HOST` ou o symlink `/var/run/docker.sock` apontem para o socket ativo do Podman/Docker.
-   - Configura o arquivo de ambiente do Streamlit (`~/.streamlit/config.toml`) para execução limpa (`headless = true`, `gatherUsageStats = false`).
-   - Garante que arquivos essenciais como `GameIDCounter.txt` e chaves de API existam e estejam inicializados antes da subida dos containers.
-2. **Verificação e Auto-reparo de Dependências Python:** Configura o `venv` e verifica a integridade de extensões binárias em C (como NumPy e PyTorch), reinstalando-as automaticamente se arquivos `.so` estiverem corrompidos.
-3. **Garantia dos Repositórios Base (`Talishar` e `Talishar-FE`):** Detecta se as pastas base existem e estão completas (`docker-compose.yml` e `package.json`). Se ausentes, importa do diretório de workspace ou clona automaticamente dos repositórios oficiais do GitHub (`Talishar/Talishar` e `Talishar/Talishar-FE`).
-4. **Criação de Diretórios e Permissões:** Garante a existência de `data/`, `logs/`, `decks/` e pastas de escrita do Talishar (`Talishar/Games/`, `Talishar/HostFiles/`, `Talishar/AccountFiles/`, `Talishar/APIKeys/`) com permissões completas de I/O (`chmod 777`), assegurando que o servidor web Apache (`www-data`) em containers rootless (Docker / Podman) possa criar salas, atualizar `GameIDCounter.txt` e salvar partidas sem erro de permissão.
-5. **Aplicação de Patches do Backend (`setup_templates/backend/` $\to$ `Talishar/`):**
-   - Injeta `AppendGameLog.php` (API de chat em tempo real).
-   - Injeta `JoinGame.php` (Handshake do bot e geração de `authKey`).
-   - Injeta `CombatDummy.php` (Desativa o auto-pass legado do PHP para ceder prioridade à IA).
-   - Injeta `ProcessInput.php` (Tratamento de ações com modo padrão `27`).
-   - Define fallback de `$APP_ENV` em `APIKeys.php` para suprimir warnings em produção local.
-6. **Aplicação de Componentes do Frontend (`setup_templates/frontend/` $\to$ `Talishar-FE/`):**
+### O que o script de preparação faz automaticamente e de forma idempotente:
+1. **Garantia dos Repositórios Base (`Talishar` e `Talishar-FE`):** Detecta se as pastas base existem e estão completas (`docker-compose.yml` e `package.json`). Se ausentes (como em um clone limpo), importa do workspace ou clona automaticamente dos repositórios oficiais (`Talishar/Talishar` e `Talishar/Talishar-FE`).
+2. **Aplicação de Patches e Arquivos Críticos do Backend (`setup_templates/backend/` $\to$ `Talishar/`):**
+   - **`docker-compose.yml` Customizado:** Injeta os pontos de montagem essenciais dos volumes compartilhados (`../decks` $\to$ `/var/www/html/game/decks` e `../data` $\to$ `/var/www/html/game/data`) e configura `MYSQL_ROOT_HOST: "%"` para permitir conexões de rede locais.
+   - **`APIs/GetFavoriteDecks.php`:** Integra dinamicamente todos os baralhos presentes no diretório central `decks/` para o menu do frontend web.
+   - **`APIs/AppendGameLog.php`:** API de chat e telemetria de lances da IA em tempo real.
+   - **`APIs/JoinGame.php` & `APIs/CreateGame.php`:** Handshake do bot e geração de `authKey`.
+   - **`AI/CombatDummy.php`:** Desativa o auto-pass legado do PHP para ceder prioridade de decisão ao motor de IA.
+   - **`Libraries/HTTPLibraries.php` & `Libraries/PlayerSettings.php`:** Suprime warnings PHP (`ini_set('display_errors', '0')`) para evitar que quebrem as respostas JSON das APIs, além de tratar preferências de sessão de bots locais sem erro.
+   - **`ProcessInput.php`:** Tratamento de ações com modo padrão `27`.
+3. **Aplicação de Componentes do Frontend (`setup_templates/frontend/` $\to$ `Talishar-FE/`):**
    - Injeta `ChessAdvantageTracker.tsx` e `ChessAdvantageTracker.module.css` no topo do chat.
-   - Sincroniza `GameSlice.ts` e `Header.tsx` para suporte a login livre e atalhos de duelo.
-   - **Imunidade a Adblockers (BannerUnit):** Cria o componente `bannerUnit/AdUnit.tsx` e configura o alias `components/ads` $\to$ `bannerUnit` no `vite.config.mts`, impedindo que extensões como uBlock Origin, Firefox Enhanced Tracking Protection e Brave Shields bloqueiem o carregamento de rotas e scripts React.
-7. **Autoverificação e Compatibilidade Docker e Podman:**
-   - Suporte transparente a **Docker Compose v1 (`docker-compose`)**, **Docker Compose v2 (`docker compose`)** e emulação via **Podman API Socket** (`/run/user/$UID/podman/podman.sock` ou symlink `/var/run/docker.sock`).
-   - Resolução dinâmica de nomes de containers (`talishar_web-server_1` ou `talishar-web-server-1`).
-8. **Indexação Oficial de Cartas:**
-   - Executa `extract_card_db.py` conectando dinamicamente ao container web ativo e extrai cartas do Talishar para `data/fab_cards_db.json`.
-9. **Compilação e Validação do Frontend:**
-   - Instala pacotes via `npm` (somente após confirmar a integridade de `package.json`) e valida a compilação com `npx vite build`.
-   - Compatibilidade com o upstream mais recente do Talishar-FE (mantém redutores `setEquipDestroy`, animações e rotas limpas, com fallback para ações com modo `27`).
-10. **Exportação com 1 Comando (`--export-templates`):**
-    - Caso você ou uma nova IA faça modificações no frontend ou backend, basta rodar `./venv/bin/python scripts/prepare_environment.py --export-templates` para salvar as alterações em `setup_templates/`.
+   - Sincroniza `GameSlice.ts`, `Header.tsx` e rotas para suporte a login livre e atalhos de duelo.
+   - **Imunidade a Adblockers (BannerUnit):** Cria o componente `bannerUnit/AdUnit.tsx` e configura o alias `components/ads` $\to$ `bannerUnit` no `vite.config.mts`, impedindo que extensões como uBlock Origin, Firefox Tracking Protection e Brave Shields bloqueiem o carregamento de rotas e scripts React.
+4. **Camada de Idempotência do Sistema e Configurações Essenciais (`ensure_system_idempotence`):**
+   - Detecta dinamicamente a distribuição hospedeira (Vanilla OS, Fedora, Debian/Ubuntu, WSL2).
+   - Se estiver sob Podman rootless, verifica e ativa automaticamente o socket do usuário (`systemctl --user enable --now podman.socket`).
+   - Garante que a variável `DOCKER_HOST` aponte para o socket ativo do Podman/Docker.
+   - Configura o arquivo de ambiente do Streamlit (`~/.streamlit/config.toml`) para execução limpa (`headless = true`, `gatherUsageStats = false`).
+   - Garante a existência de `HostFiles/Redirector.php` (a partir do template), `APIKeys/APIKeys.php` (com credenciais locais de fallback sem 1Password), `HostFiles/GameIDCounter.txt` (iniciado em 1) e `Talishar-FE/.env` (a partir do `.env.template`).
+5. **Criação de Diretórios e Permissões:** Garante a existência de `data/`, `logs/`, `decks/` e pastas de escrita do Talishar (`Talishar/Games/`, `Talishar/HostFiles/`, `Talishar/AccountFiles/`, `Talishar/APIKeys/`) com permissões completas de I/O (`chmod 777`), assegurando que o Apache (`www-data`) em containers rootless possa criar salas e salvar partidas sem erro de permissão.
+6. **Dependências do Frontend (Node / npm):** Detecta se `Talishar-FE/node_modules` existe; caso não exista, executa `npm install` automaticamente e valida a compilação inicial com `npx vite build`. Se já instalado, avança instantaneamente.
+7. **Verificação de Containers Docker:** Inspeciona containers ativos e inicia o compose em segundo plano caso estejam desligados.
+8. **Indexação Oficial de Cartas:** Executa `extract_card_db.py` lendo os dicionários de cartas do Talishar para compilar `data/fab_cards_db.json`.
+9. **Exportação com 1 Comando (`--export-templates`):** Caso faça alterações em arquivos do frontend ou backend, basta rodar `./venv/bin/python scripts/prepare_environment.py --export-templates` para salvar as modificações em `setup_templates/`.
 
 ---
 
 ## 🚀 Instalação e Execução Rápida
 
-### 0. Pré-requisitos do Sistema (Linux, Fedora, Vanilla OS & Podman)
-- **Ferramentas de Container:** `docker` + `docker compose` (ou `docker-compose`). Caso utilize **Podman** (ex: Vanilla OS, Fedora Silverblue, Apx), ative o socket do Podman para emular a API do Docker:
-  ```bash
-  systemctl --user enable --now podman.socket
-  sudo ln -sfn /run/user/$UID/podman/podman.sock /var/run/docker.sock
-  ```
-- **Node.js & npm:** Node >= 20 (ex: `nodejs24-bin`, `nodejs24-npm-bin`) para o frontend Talishar-FE.
-- **Python 3.10+ com venv:** Dependências em `requirements.txt` (`torch`, `streamlit`, `numpy`, `psutil`).
+### 0. Pré-requisitos Mínimos do Sistema
+
+O projeto é projetado para configurar virtualenvs, repositórios, patches e dependências automaticamente. Você só precisa ter instalado no seu sistema hospedeiro (Linux nativo ou WSL2) as ferramentas básicas:
+
+#### 🐧 No Ubuntu / Debian / WSL2:
+```bash
+sudo apt update && sudo apt install -y git python3 python3-venv python3-pip curl nodejs npm docker.io docker-compose-v2
+
+# (Opcional, mas recomendado) Permitir rodar docker sem sudo:
+sudo usermod -aG docker $USER && newgrp docker
+```
+> *Nota: Recomenda-se Node.js >= 20 para compilação otimizada do frontend Vite.*
+
+#### 🎩 No Fedora / Vanilla OS / RHEL (com Podman):
+```bash
+sudo dnf install -y git python3 python3-pip nodejs npm podman podman-docker
+
+# Ativar o socket da API Docker via Podman:
+systemctl --user enable --now podman.socket
+```
+
+---
 
 ### 1. Clonar o Repositório
 ```bash
-git clone git@github.com:renan-albino/fab-talishar-ia.git
+git clone https://github.com/renan-albino/fab-talishar-ia.git
 cd fab-talishar-ia
 ```
 
-### 2. Executar o Script de Preparação Unificado
+---
+
+### 2. Executar o Script de Preparação Unificado (1 Comando)
+Execute o script orquestrador:
 ```bash
 ./scripts/prepare_environment.sh
 ```
-*(Ou execute diretamente via Python: `./venv/bin/python scripts/prepare_environment.py`)*
+*(Ou execute diretamente pelo Python caso já possua virtualenv ativo: `python scripts/prepare_environment.py`)*
 
-### 3. Iniciar Todos os Serviços via Script Orquestrador (`./start.sh`)
-Para subir o backend Docker e o Dashboard Streamlit automaticamente em segundo plano:
+Esse script é **totalmente idempotente**: ele pode ser executado quantas vezes você desejar. Ele criará o virtualenv `venv/`, instalará as dependências Python (`torch`, `streamlit`, `numpy`, `psutil`, etc.), clonará `Talishar` e `Talishar-FE`, aplicará todos os templates e patches, configurará os arquivos locais, instalará os pacotes npm, compilará o frontend e indexará a base de dados de cartas.
+
+---
+
+### 3. Validar a Instalação com os Testes Automatizados (Pytest)
+Para garantir que todos os módulos de IA, simulador, ISMCTS e podas táticas estão operando perfeitamente no seu ambiente:
+```bash
+./venv/bin/python -m pytest tests/
+```
+*(Todos os 83 testes devem passar com sucesso em menos de 5 segundos).*
+
+---
+
+### 4. Iniciar Todos os Serviços via Script Orquestrador (`./start.sh`)
+Para subir o backend Docker (Talishar PHP, MySQL, Redis) e o Dashboard Streamlit automaticamente em segundo plano:
 ```bash
 ./start.sh
 ```
@@ -339,16 +364,20 @@ Para subir o backend Docker e o Dashboard Streamlit automaticamente em segundo p
 * `./start.sh --no-dashboard` : Inicia apenas o backend Docker do Talishar.
 * `./start.sh --port 8502` : Altera a porta do Streamlit Dashboard.
 
-### 4. Iniciar o Frontend do Talishar (Partidas contra o Bot)
-Em outro terminal (ou via botão na aba *"🎮 Jogar no Talishar"* do Dashboard):
+---
+
+### 5. Iniciar o Frontend do Talishar (Partidas Humano vs Bot)
+Em outro terminal (ou clicando no botão na aba *"🎮 Jogar no Talishar"* do Dashboard):
 ```bash
 ./start_frontend.sh
 ```
-* **Frontend Web:** `http://localhost:3000`
-* **Dashboard Streamlit:** `http://localhost:8501`
-* **Backend Talishar:** `http://localhost:8080`
+* **Frontend Web (Interface do Jogo):** `http://localhost:3000`
+* **Dashboard Streamlit (Treino e Métricas):** `http://localhost:8501`
+* **Backend Talishar (APIs de Jogo):** `http://localhost:8080`
 
-### 5. Parar Todos os Serviços (`./stop.sh`)
+---
+
+### 6. Parar Todos os Serviços (`./stop.sh`)
 Para desligar com segurança todos os containers Docker, processos do Dashboard e bots em execução:
 ```bash
 ./stop.sh
@@ -361,7 +390,9 @@ Para desligar com segurança todos os containers Docker, processos do Dashboard 
 * `./stop.sh --clean-logs` : Finaliza os serviços e limpa arquivos de logs temporários.
 * `./stop.sh --status` : Consulta o status atual dos processos.
 
-### 6. Automação Pré-Commit & Sincronização (`./scripts/sync_and_clean.sh`)
+---
+
+### 7. Automação Pré-Commit & Sincronização (`./scripts/sync_and_clean.sh`)
 Para nunca se preocupar em esquecer de sincronizar templates com `setup_templates/` ou limpar logs de partidas antes de enviar commits para o repositório:
 ```bash
 # Executa limpeza de logs, exportação de templates e teste de sintaxe:
