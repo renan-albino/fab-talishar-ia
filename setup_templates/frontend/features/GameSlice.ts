@@ -14,7 +14,7 @@ import {
 import InitialGameState from './InitialGameState';
 import GameStaticInfo, { AltArt } from '../GameStaticInfo';
 import { Card, isAllyCard } from '../Card';
-import { BACKEND_URL, ROGUELIKE_URL, URL_END_POINT } from 'appConstants';
+import { BACKEND_URL, URL_END_POINT } from 'appConstants';
 import Button from '../Button';
 import GameState from '../GameState';
 import Player from '../Player';
@@ -50,7 +50,7 @@ const sendProcessInput = async (
   extraQuery = ''
 ): Promise<void> => {
   const startedAt = performance.now();
-  const baseURL = gameInfo.isRoguelike ? ROGUELIKE_URL : BACKEND_URL;
+  const baseURL = BACKEND_URL;
   const queryURL = `${baseURL}${URL_END_POINT.PROCESS_INPUT}`;
 
   let response: Response;
@@ -805,6 +805,31 @@ export const gameSlice = createSlice({
     setHeroTransform: createRevealReducer('heroTransform'),
     setArsenalFlip: createRevealReducer('arsenalFlip'),
     setArsenalDestroy: createRevealReducer('arsenalDestroy'),
+    setEquipDestroy: (
+      state,
+      action: PayloadAction<{
+        playerId: number;
+        cardNumber: string;
+        slot: string;
+        id: number;
+      }>
+    ) => {
+      const slots = (state.equipDestroy ??= {});
+      slots[`${action.payload.playerId}:${action.payload.slot}`] = {
+        cardNumber: action.payload.cardNumber,
+        id: action.payload.id
+      };
+    },
+    clearEquipDestroy: (
+      state,
+      action: PayloadAction<{ playerId: number; slot: string; id: number }>
+    ) => {
+      const slots = state.equipDestroy;
+      if (!slots) return;
+      const key = `${action.payload.playerId}:${action.payload.slot}`;
+      // A newer destroy in the same slot owns the animation now, leave it alone.
+      if (slots[key]?.id === action.payload.id) delete slots[key];
+    },
     setReplayStart: (
       state,
       action: PayloadAction<{
@@ -1017,6 +1042,8 @@ export const {
   setHeroTransform,
   setArsenalFlip,
   setArsenalDestroy,
+  setEquipDestroy,
+  clearEquipDestroy,
   setReplayStart,
   setOpponentTyping,
   setOpponentPresence,
