@@ -4,6 +4,7 @@ import requests
 import time
 import json
 import uuid
+import socket
 from typing import Dict, Any, Optional
 
 from ai.logger import get_logger
@@ -15,17 +16,28 @@ FRONTEND_URL = "http://localhost:3000"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PYTHON_BIN = os.path.join(BASE_DIR, "venv", "bin", "python")
 
-def is_backend_running() -> bool:
+def _is_port_open(port: int, host: str = "127.0.0.1", timeout: float = 0.15) -> bool:
     try:
-        r = requests.get(f"{BACKEND_URL}/APIs/GetGameList.php", timeout=2)
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+def is_backend_running() -> bool:
+    if not _is_port_open(8080):
+        return False
+    try:
+        r = requests.get(f"{BACKEND_URL}/APIs/GetGameList.php", timeout=0.5)
         return r.status_code == 200
     except Exception as e:
         logger.warning(f"Falha ao verificar backend: {e}")
         return False
 
 def is_frontend_running() -> bool:
+    if not _is_port_open(3000):
+        return False
     try:
-        r = requests.get(FRONTEND_URL, timeout=2)
+        r = requests.get(FRONTEND_URL, timeout=0.5)
         return r.status_code == 200
     except Exception as e:
         logger.warning(f"Falha ao verificar frontend: {e}")

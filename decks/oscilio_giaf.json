@@ -154,5 +154,10 @@
       "identifier": "sigil_of_brilliance_yellow",
       "total": 3
     }
-  ]
+  ],
+  "hero": "oscilio_constella_intelligence",
+  "hero_name": "Oscilio, Constella Intelligence",
+  "class": "WIZARD",
+  "talents": [],
+  "is_young": false
 }

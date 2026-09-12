@@ -146,7 +146,7 @@ class MarlynnStrategy(RangerStrategy):
         - Só ativar se o jogador possuir Gold (itens, auras ou contador).
         - Só ativar se o Arsenal estiver vazio (LoadArrow requer slot livre).
         """
-        arsenal = state.get("playerArsenal", [])
+        arsenal = state.get("playerArsenal") or state.get("playerArse") or []
         if arsenal:
             return 0.0  # Arsenal já ocupado, não gasta Gold em vão
 
@@ -207,7 +207,7 @@ class MarlynnStrategy(RangerStrategy):
     def analyze_turn_plan(self, state: dict) -> TurnPlan:
         my_hp = int(state.get("playerHealth", 20))
         hand = state.get("playerHand", [])
-        arsenal = state.get("playerArsenal", [])
+        arsenal = state.get("playerArsenal") or state.get("playerArse") or []
         discard = state.get("playerDiscard") or state.get("discard") or []
         active_chain = state.get("activeChainLink") or {}
         opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
@@ -217,12 +217,12 @@ class MarlynnStrategy(RangerStrategy):
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
         # 1. Modo Sobrevivência
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
-                reason="Marlynn survival mode: blocking dangerous damage"
+                reason="Marlynn survival mode: blocking critical or fatal damage"
             )
 
         def _is_arrow(c):

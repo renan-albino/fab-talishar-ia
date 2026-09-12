@@ -122,8 +122,30 @@ echo -e "${BLUE}[4/5] Validando sintaxe do código Python...${NC}"
 $PY_BIN -m py_compile *.py ai/*.py scripts/*.py tests/*.py
 echo -e "${GREEN}[OK] Sintaxe de todos os módulos Python validada sem erros!${NC}"
 
-# 5. Adicionar setup_templates/ ao stage do Git se dentro de repositório
-echo -e "${BLUE}[5/5] Atualizando staging do Git com templates sincronizados...${NC}"
+# 5. Validar compilação do Frontend Vite (Prevenção de quebras no CI)
+echo -e "${BLUE}[5/7] Validando compilação do Frontend Talishar-FE (Vite build)...${NC}"
+if [ -d "Talishar-FE" ] && [ -f "Talishar-FE/package.json" ]; then
+    (cd Talishar-FE && npx vite build)
+    echo -e "${GREEN}[OK] Frontend Talishar-FE compilado com sucesso!${NC}"
+else
+    echo -e "${YELLOW}[!] Talishar-FE não encontrado. Pulando build do frontend.${NC}"
+fi
+
+# 6. Auditar vazamentos de privacidade e caminhos pessoais em arquivos staged
+echo -e "${BLUE}[6/7] Auditando vazamento de caminhos pessoais e privacidade...${NC}"
+if command -v git &>/dev/null && [ -d ".git" ]; then
+    PRIVACY_LEAKS=$(git diff --cached | grep '^\+' | grep -v '^\+\+\+' | grep -E "(/home/[a-zA-Z0-9_-]+|W:\\\\home\\\\)" | grep -v -E "(renan-albino|github\.com)" || true)
+    if [ -n "$PRIVACY_LEAKS" ]; then
+        echo -e "${RED}[ERRO] Foram detectados caminhos pessoais/absolutos adicionados no staging do Git:${NC}"
+        echo "$PRIVACY_LEAKS"
+        echo -e "${RED}Remova os caminhos pessoais antes de commitar para proteger sua privacidade.${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}[OK] Nenhum caminho pessoal ou privado detectado no commit.${NC}"
+fi
+
+# 7. Adicionar setup_templates/ ao stage do Git se dentro de repositório
+echo -e "${BLUE}[7/7] Atualizando staging do Git com templates sincronizados...${NC}"
 if command -v git &>/dev/null && [ -d ".git" ]; then
     git add setup_templates/
     echo -e "${GREEN}[OK] setup_templates/ adicionado ao stage do Git.${NC}"
@@ -133,5 +155,5 @@ echo ""
 echo -e "${GREEN}======================================================${NC}"
 echo -e "${GREEN}   ✓ Limpeza, Sincronização e Validação Concluídas!   ${NC}"
 echo -e "${GREEN}======================================================${NC}"
-echo -e "O repositório está pronto e limpo para novos commits ou testes."
-echo -e "Dica: Execute ${YELLOW}./scripts/sync_and_clean.sh --install-hook${NC} para rodar isso automaticamente a cada 'git commit'."
+echo -e "O repositório está pronto, auditado e limpo para novos commits."
+echo -e "Dica: Execute ${YELLOW}./scripts/sync_and_clean.sh --install-hook${NC} para garantir execução automática a cada 'git commit'."

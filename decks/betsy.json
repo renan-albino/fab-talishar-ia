@@ -142,5 +142,10 @@
       "identifier": "warmongers_diplomacy_blue",
       "total": 3
     }
-  ]
+  ],
+  "hero": "betsy_skin_in_the_game",
+  "hero_name": "Betsy, Skin in the Game",
+  "class": "GUARDIAN",
+  "talents": [],
+  "is_young": false
 }

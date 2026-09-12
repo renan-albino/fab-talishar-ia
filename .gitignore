@@ -50,3 +50,6 @@ deck.json
 
 # Agentes
 .gemini/
+
+AGENTS.md
+!AGENTS.template.md

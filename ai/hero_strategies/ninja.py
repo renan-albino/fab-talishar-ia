@@ -45,12 +45,12 @@ class NinjaStrategy(HeroStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
-                reason="Ninja survival mode: blocking dangerous incoming damage"
+                reason="Ninja survival mode: blocking critical or fatal damage"
             )
 
         # Identificar starter com Go Again de custo baixo

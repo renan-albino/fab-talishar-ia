@@ -142,5 +142,10 @@
       "identifier": "warmongers_diplomacy_blue",
       "total": 2
     }
-  ]
+  ],
+  "hero": "cindra_dracai_of_retribution",
+  "hero_name": "Cindra, Dracai of Retribution",
+  "class": "NINJA",
+  "talents": [],
+  "is_young": false
 }

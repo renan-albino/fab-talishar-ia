@@ -6,9 +6,9 @@ Definição base de TurnPlan, utilitários globais de cartas e HeroStrategy.
 
 import os
 import json
-from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Optional, Dict, Any, Set, List
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, Set, List, Tuple
 
 _FAB_CARDS_DB = None
 
@@ -167,13 +167,22 @@ class HeroStrategy:
         """Pontuação tática para ativar a habilidade do Herói."""
         return 0.0
 
-    def evaluate_equipment_ability(self, state: dict, eq_info: dict, hand_attacks: list = None) -> float:
+    def evaluate_equipment_ability(self, state_or_name, eq_info_or_floating: Any = None, hand_attacks: list = None, **kwargs) -> float:
         """
         Pontuação tática para ativar habilidades de equipamento (Head, Chest, Arms, Legs, Off-Hand).
         Abordagem 100% orientada a dados e semântica de regras, sem hardcoding de nomes de cartas,
         calibrada dinamicamente pelo motor de aprendizado persistente EquipmentLearningEngine.
+        Suporta chamadas polimórficas (state, eq_info) ou legadas (eq_name, floating_res, total_res).
         """
-        eq_name = str(eq_info.get("cardNumber") or eq_info.get("name", "")).lower().strip()
+        if isinstance(state_or_name, dict):
+            state = state_or_name
+            eq_info = eq_info_or_floating if isinstance(eq_info_or_floating, dict) else kwargs.get("eq_info", {})
+            eq_name = str(eq_info.get("cardNumber") or eq_info.get("name", "")).lower().strip()
+        else:
+            eq_name = str(state_or_name or "").lower().strip()
+            state = kwargs.get("state", {})
+            eq_info = kwargs.get("eq_info", {"cardNumber": eq_name})
+
         if not eq_name:
             return 0.0
 
@@ -183,7 +192,21 @@ class HeroStrategy:
         hand = state.get("playerHand", [])
         arsenal = state.get("playerArsenal", [])
 
-        # 1. Validação de requisitos de contadores (ex: Tunic precisa de 3 contadores)
+        # Se for equipamento puramente defensivo ou de prevenção (ex: ward, barrier, prevent):
+        # Na fase principal, sem dano ativo na cadeia, nunca deve pontuar para ativação no vazio!
+        is_defensive_instant = bool(
+            "ward" in eq_name
+            or "barrier" in eq_name
+            or "prevent" in eq_name
+            or eq_meta.get("is_defense_reaction")
+        )
+        if is_defensive_instant:
+            active_chain = state.get("activeChainLink") or {}
+            opp_pow = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+            if opp_pow <= 0 and int(state.get("arcaneDamage", 0)) <= 0:
+                return 0.0
+
+        # 1. Validação de requisitos de contadores (ex: contadores mínimos exigidos)
         req_counters = int(eq_meta.get("req_counters", 0))
         if req_counters > 0:
             current_counters = int(eq_info.get("counters", 0) or 0)
@@ -353,10 +376,123 @@ class HeroStrategy:
 
         return score
 
+    def calculate_hand_conversion_potential(self, hand: list, floating_res: int = 0) -> Tuple[float, Set[str]]:
+        """
+        Calcula o potencial ofensivo de dano e sinergia que a mão atual consegue converter.
+        Retorna (potencial_total, conjunto_de_cartas_chave_reservadas).
+        """
+        if not hand:
+            return 0.0, set()
+
+        cards_db = _get_cards_db()
+        attacks = []
+        pitches = []
+
+        for c in hand:
+            c_name = str(c.get("cardNumber") or c.get("name", "")).lower()
+            c_meta = cards_db.get(c_name, {})
+            c_power = int(c.get("power", c_meta.get("power", 0) or 0))
+            c_cost = int(c.get("cost", c_meta.get("cost", 0) or 0))
+            c_pitch = int(c.get("pitch", c_meta.get("pitch", 1) or 1))
+            has_ga = bool(c.get("has_go_again", c_meta.get("has_go_again", False)))
+
+            if c_power > 0 or has_ga:
+                attacks.append({
+                    "card": c,
+                    "name": c_name,
+                    "power": c_power,
+                    "cost": c_cost,
+                    "pitch": c_pitch,
+                    "has_ga": has_ga,
+                    "value": float(c_power) + (3.0 if has_ga else 0.0)
+                })
+            else:
+                pitches.append({
+                    "card": c,
+                    "name": c_name,
+                    "pitch": c_pitch,
+                })
+
+        if not attacks:
+            return 0.0, set()
+
+        attacks.sort(key=lambda x: x["value"], reverse=True)
+        primary = attacks[0]
+        reserved = {primary["name"]}
+        total_potential = primary["value"]
+
+        cost_needed = max(0, primary["cost"] - floating_res)
+        if cost_needed > 0:
+            all_other = [p for p in pitches if p["name"] not in reserved] + [
+                {"name": a["name"], "pitch": a["pitch"]} for a in attacks[1:]
+            ]
+            all_other.sort(key=lambda x: x["pitch"], reverse=True)
+            res_gathered = 0
+            for item in all_other:
+                if res_gathered < cost_needed:
+                    res_gathered += item["pitch"]
+                    reserved.add(item["name"])
+
+        if primary["has_ga"] and len(attacks) > 1:
+            secondary = [a for a in attacks[1:] if a["name"] not in reserved]
+            if secondary:
+                sec = secondary[0]
+                total_potential += sec["value"]
+                reserved.add(sec["name"])
+
+        return total_potential, reserved
+
+    def should_trigger_survival_block(
+        self,
+        my_hp: int,
+        opp_power: int,
+        is_fatal: bool,
+        has_dangerous_on_hit: bool,
+        hand: list = None,
+        floating_res: int = 0,
+        survival_hp_threshold: int = 6
+    ) -> bool:
+        """
+        Determina se o herói DEVE entrar em SURVIVAL_BLOCK estrito.
+        Não força bloqueio cego se:
+          - A vida estiver saudável (my_hp > 12)
+          - O dano não for fatal
+          - A conversão ofensiva da mão superar o dano recebido + on-hit
+          - O bloqueio exigiria queimar múltiplas cartas com block baixo (<= 2).
+        """
+        if is_fatal or my_hp <= survival_hp_threshold:
+            return True
+
+        if not has_dangerous_on_hit:
+            return False
+
+        # Se há on-hit perigoso e vida saudável (> 12), avalia conversão da mão
+        if my_hp > 12 and hand:
+            hand_conv, _ = self.calculate_hand_conversion_potential(hand, floating_res)
+            cards_db = _get_cards_db()
+            block_vals = [
+                int(c.get("block", c.get("defense", cards_db.get(str(c.get("cardNumber") or c.get("name", "")).lower(), {}).get("block", 0))) or 0)
+                for c in hand
+            ]
+            sorted_b = sorted([b for b in block_vals if b > 0], reverse=True)
+            acc = 0
+            cards_needed = 0
+            for b in sorted_b:
+                acc += b
+                cards_needed += 1
+                if acc >= opp_power:
+                    break
+
+            absorb_mult = self.get_dynamic_multiplier("absorb_tempo_bonus", 1.0)
+            if cards_needed >= 2 and (hand_conv * absorb_mult) >= (float(opp_power) + 3.5):
+                return False
+
+        return opp_power >= 4
+
     def analyze_turn_plan(self, state: dict) -> TurnPlan:
         """
         Analisa o estado atual (mão, arsenal, vida, recursos, poder inimigo)
-        e formula o TurnPlan genérico.
+        e formula o TurnPlan com avaliação flexível de conversão de mão vs bloqueio.
         """
         my_hp = int(state.get("playerHealth", 20))
         hand = state.get("playerHand", [])
@@ -367,27 +503,59 @@ class HeroStrategy:
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        # 1. Modo Sobrevivência
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
-            return TurnPlan(
-                plan_type="SURVIVAL_BLOCK",
-                can_absorb_damage=False,
-                max_block_cards=len(hand),
-                reason="Low HP or dangerous/fatal on-hit: blocking with all available resources"
-            )
-
         floating_res = int(state.get("playerPitchCount", 0))
         if floating_res == 0:
             resources = state.get("playerResources", [0, 0])
             floating_res = int(resources[0]) if isinstance(resources, list) and resources else 0
 
-        # 2. Generic Pivot Check
+        # 1. Modo Sobrevivência Flexível: avalia letalidade e valor
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, floating_res):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Critical HP, fatal attack or unavoidable on-hit: blocking with available resources"
+            )
+
+        # 2. Avaliação de Conversão Ofensiva da Mão (Hand Conversion vs Inefficient Block)
+        hand_conversion, key_cards = self.calculate_hand_conversion_potential(hand, floating_res)
+        cards_db = _get_cards_db()
+        block_values = [
+            int(c.get("block", c.get("defense", cards_db.get(str(c.get("cardNumber") or c.get("name", "")).lower(), {}).get("block", 0))) or 0)
+            for c in hand
+        ]
+        sorted_blocks = sorted([b for b in block_values if b > 0], reverse=True)
+        acc_block = 0
+        cards_needed_to_block = 0
+        for b in sorted_blocks:
+            acc_block += b
+            cards_needed_to_block += 1
+            if acc_block >= opp_power:
+                break
+
+        on_hit_penalty = 3.5 if has_dangerous_on_hit else 0.0
+        absorb_mult = self.get_dynamic_multiplier("absorb_tempo_bonus", 1.0)
+
+        # Condição de Absorção Inteligente (Início/Meio de jogo com vida saudável):
+        # Se bloquear consumiria 2 ou mais cartas da mão e a conversão ofensiva supera o dano
+        if my_hp > 12 and cards_needed_to_block >= 2 and opp_power > 0:
+            if (hand_conversion * absorb_mult) >= (float(opp_power) + on_hit_penalty):
+                max_allowed_blocks = max(0, len(hand) - len(key_cards))
+                return TurnPlan(
+                    plan_type="TEMPO_COUNTER_ATTACK",
+                    reserved_card_names=key_cards,
+                    can_absorb_damage=True,
+                    max_block_cards=min(1, max_allowed_blocks),
+                    offensive_potential=hand_conversion,
+                    reason=f"Hand offensive conversion ({hand_conversion:.1f}) exceeds inefficient block ({opp_power} dmg needing {cards_needed_to_block} cards); absorbing to counter-attack"
+                )
+
+        # 3. Generic Pivot Check
         if my_hp >= 12 and not has_dangerous_on_hit and hand:
             best_attack = None
             best_pitch = None
             max_attack_power = -1
 
-            # Procura cartas de ataque na mão
             for c in hand:
                 c_name = str(c.get("cardNumber") or c.get("name", "")).lower()
                 c_power = int(c.get("power", 0))
@@ -395,7 +563,6 @@ class HeroStrategy:
                 c_pitch = int(c.get("pitch", 1))
                 has_ga = bool(c.get("has_go_again", False))
 
-                # Ataque sólido: poder >= 5 ou (poder >= 4 com go again)
                 if c_power >= 5 or (c_power >= 4 and has_ga):
                     needed_pitch = max(0, c_cost - floating_res)
                     candidate_pitch = None
@@ -427,7 +594,7 @@ class HeroStrategy:
                     reason=f"Strong attack line ({list(reserved)[0]}) ready; absorbing damage to counter-attack"
                 )
 
-        # 3. Fallback: Troca de valor
+        # 4. Fallback: Troca de valor
         return TurnPlan(
             plan_type="VALUE_TRADE",
             can_absorb_damage=False,

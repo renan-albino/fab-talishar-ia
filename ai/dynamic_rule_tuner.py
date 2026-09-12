@@ -22,6 +22,7 @@ DEFAULT_MULTIPLIERS = {
     "block_weight": 1.0,
     "pivot_bonus": 1.0,
     "arsenal_bonus": 1.0,
+    "absorb_tempo_bonus": 1.0,
 }
 
 _CACHE = {
@@ -115,6 +116,9 @@ def sync_multipliers_with_stats() -> Dict[str, Any]:
         old_blk = current.get("block_weight", 1.0)
         old_piv = current.get("pivot_bonus", 1.0)
         old_ars = current.get("arsenal_bonus", 1.0)
+        old_abs = current.get("absorb_tempo_bonus", 1.0)
+
+        human_wins = d_info.get("human_wins", 0)
 
         if win_rate < 0.45:
             # Herói com dificuldades: reforçar postura defensiva e sobrevivência
@@ -122,25 +126,35 @@ def sync_multipliers_with_stats() -> Dict[str, Any]:
             new_piv = min(1.35, old_piv + 0.03)
             new_atk = max(0.80, old_atk - 0.02)
             new_ars = min(1.25, old_ars + 0.02)
+            new_abs = max(0.85, old_abs - 0.02)
         elif win_rate > 0.60:
-            # Herói dominante: manter agressividade controlada
+            # Herói dominante: manter agressividade controlada e capacidade de absorver e punir
             new_atk = min(1.35, old_atk + 0.03)
             new_blk = max(0.85, old_blk - 0.01)
             new_piv = max(0.90, old_piv)
             new_ars = min(1.30, old_ars + 0.01)
+            new_abs = min(1.35, old_abs + 0.03)
         else:
             # Equilíbrio (45% a 60%): decaimento suave em direção ao neutro (1.0)
             new_atk = old_atk * 0.98 + 1.0 * 0.02
             new_blk = old_blk * 0.98 + 1.0 * 0.02
             new_piv = old_piv * 0.98 + 1.0 * 0.02
             new_ars = old_ars * 0.98 + 1.0 * 0.02
+            new_abs = old_abs * 0.98 + 1.0 * 0.02
+
+        # Bônus de prestígio por vitórias contra humanos
+        if human_wins > 0:
+            new_atk = min(1.40, new_atk + min(0.05, human_wins * 0.015))
+            new_abs = min(1.40, new_abs + min(0.05, human_wins * 0.02))
 
         updated = {
             "attack_weight": round(float(new_atk), 3),
             "block_weight": round(float(new_blk), 3),
             "pivot_bonus": round(float(new_piv), 3),
             "arsenal_bonus": round(float(new_ars), 3),
+            "absorb_tempo_bonus": round(float(new_abs), 3),
             "last_win_rate": round(float(win_rate), 3),
+            "human_wins": human_wins,
             "matches_evaluated": matches,
             "updated_at": time.time(),
         }

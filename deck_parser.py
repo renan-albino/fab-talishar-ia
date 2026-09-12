@@ -340,16 +340,75 @@ def parse_deck_text(deck_text: str, default_name: str = "Meu Deck") -> dict:
         
     final_name = extracted_name if extracted_name else default_name
     
-    return {
+    deck_dict = {
         "name": final_name,
         "format": format_type,
         "cards": cards
     }
+    return enrich_deck_metadata(deck_dict)
+
+def enrich_deck_metadata(deck_obj: dict, db: dict = None) -> dict:
+    """Extrai e preenche metadados canônicos de herói, classe, talentos e formato no deck."""
+    if db is None:
+        db = load_fab_cards_db()
+        
+    cards = deck_obj.get("cards", [])
+    hero_id = deck_obj.get("hero", "")
+    hero_name = deck_obj.get("hero_name", "")
+    hero_class = deck_obj.get("class", "")
+    talents = deck_obj.get("talents", [])
+    is_young = bool(deck_obj.get("is_young", False))
+    
+    # 1. Localizar a carta do Herói nos cards se não estiver identificada
+    hero_meta = None
+    if hero_id and hero_id in db:
+        hero_meta = db[hero_id]
+    else:
+        for c in cards:
+            cid = c.get("identifier", "") if isinstance(c, dict) else str(c)
+            meta = db.get(cid, {})
+            if meta.get("slot") == "Hero" or meta.get("type") == "C":
+                hero_id = cid
+                hero_meta = meta
+                break
+
+    if hero_meta:
+        if not hero_name:
+            hero_name = hero_meta.get("name", hero_id.replace("_", " ").title())
+        if not hero_class:
+            hero_class = hero_meta.get("class", "GENERIC")
+        is_young = "young" in str(hero_meta.get("subtype", "")).lower()
+        
+        # Detectar talentos conhecidos de Flesh and Blood
+        h_low = f"{hero_id} {hero_name} {hero_class}".lower()
+        detected_talents = []
+        for t_candidate in ["SHADOW", "LIGHT", "DRACONIC", "ELEMENTAL", "EARTH", "ICE", "LIGHTNING", "CHAOS", "MYSTIC", "PIRATE", "NECROMANCER"]:
+            if t_candidate.lower() in h_low:
+                detected_talents.append(t_candidate)
+        if not talents:
+            talents = detected_talents
+    else:
+        if not hero_name:
+            hero_name = deck_obj.get("name", "Unknown Hero")
+        if not hero_class:
+            hero_class = "GENERIC"
+
+    deck_obj["hero"] = hero_id or deck_obj.get("name", "").lower().replace(" ", "_")
+    deck_obj["hero_name"] = hero_name
+    deck_obj["class"] = hero_class
+    deck_obj["talents"] = talents
+    deck_obj["is_young"] = is_young
+    if "format" not in deck_obj:
+        deck_obj["format"] = "cc"
+        
+    return deck_obj
 
 def extract_hero_from_deck(d: dict, db: dict = None) -> str:
     """Extrai o nome canônico do Herói de um deck FAB."""
+    if d.get("hero_name"):
+        return str(d["hero_name"])
     if d.get("hero"):
-        return str(d["hero"])
+        return str(d["hero"]).replace("_", " ").title()
     cards = d.get("cards", [])
     if db:
         for c in cards:
@@ -367,12 +426,13 @@ def extract_hero_from_deck(d: dict, db: dict = None) -> str:
 def save_deck_to_workspace(deck_obj: dict, base_dir: str = None) -> dict:
     if base_dir is None:
         base_dir = BASE_DIR
+    deck_obj = enrich_deck_metadata(deck_obj)
     deck_name = deck_obj.get("name", "Custom_Deck")
     safe_slug = re.sub(r"[^a-zA-Z0-9_]+", "_", deck_name).strip("_").lower()
     if not safe_slug:
         safe_slug = "custom_deck"
         
-    deck_str = json.dumps(deck_obj, indent=2)
+    deck_str = json.dumps(deck_obj, indent=2, ensure_ascii=False)
     saved_files = []
     
     # Save to decks/ directory
@@ -438,6 +498,8 @@ def list_saved_decks(base_dir: str = None) -> list:
                     "slug": df[:-5],
                     "name": d.get("name", df[:-5]),
                     "hero": hero,
+                    "class": d.get("class", "GENERIC"),
+                    "talents": d.get("talents", []),
                     "format": d.get("format", "blitz"),
                     "total_cards": sum(c.get("total", 1) for c in d.get("cards", [])),
                     "data": d
@@ -484,3 +546,28 @@ def load_current_deck(base_dir: str = None) -> dict:
                 except Exception:
                     pass
     return {}
+
+def normalize_all_saved_decks(base_dir: str = None) -> list[str]:
+    """Reavalia e normaliza todos os arquivos JSON em decks/ com metadados canônicos."""
+    if base_dir is None:
+        base_dir = BASE_DIR
+    db = load_fab_cards_db()
+    decks_dir = os.path.join(base_dir, "decks")
+    if not os.path.exists(decks_dir):
+        decks_dir = "decks"
+    normalized = []
+    if os.path.exists(decks_dir):
+        for df in sorted(os.listdir(decks_dir)):
+            if df.endswith(".json"):
+                fpath = os.path.join(decks_dir, df)
+                try:
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        d = json.load(f)
+                    enriched = enrich_deck_metadata(d, db=db)
+                    with open(fpath, "w", encoding="utf-8") as f:
+                        json.dump(enriched, f, indent=2, ensure_ascii=False)
+                    normalized.append(df)
+                except Exception as e:
+                    print(f"Erro ao normalizar deck {df}: {e}")
+    return normalized
+

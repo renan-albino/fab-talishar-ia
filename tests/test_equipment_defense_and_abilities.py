@@ -173,3 +173,89 @@ def test_equipment_activated_ability_main_phase():
     # Deve ser ativado como prioridade máxima antes de atacar da mão
     assert best_action["type"] == "equipment_ability"
     assert best_action["name"] == "goliath_gauntlet"
+
+
+def test_crown_of_providence_defends_to_protect_arsenal():
+    """Se houver carta no Arsenal e o oponente atacar com Command and Conquer, Crown of Providence deve defender."""
+    pe = PolicyEngine(hero_name="dorinthea_ironsong")
+
+    state_cnc_arsenal = {
+        "turnPlayer": 2,
+        "playerID": 1,
+        "playerHealth": 30,
+        "combatChainPower": 6,
+        "activeChainLink": {"cardNumber": "command_and_conquer", "totalPower": 6},
+        "playerHand": [
+            {"cardNumber": "ironsong_response_red", "action": 27, "block": 3, "defense": 3, "pitch": 1}
+        ],
+        "playerArsenal": [
+            {"cardNumber": "singing_steel_yellow", "action": 0}
+        ],
+        "playerEquipment": [
+            {"cardNumber": "dorinthea_ironsong", "slot": "Hero", "action": 0},
+            {"cardNumber": "dawnblade", "slot": "Weapon", "action": 0},
+            {"cardNumber": "crown_of_providence", "slot": "Head", "action": 3, "defense": 2, "actionDataOverride": "2"},
+        ],
+    }
+
+    blocks = pe.select_defense_blocks(state_cnc_arsenal)
+    blocked_card_ids = [b[1] for b in blocks]
+    assert "2" in blocked_card_ids, "Crown of Providence DEVE bloquear para salvar o Arsenal de Command and Conquer"
+
+
+def test_crown_of_providence_cycles_awkward_hand():
+    """Se a mão estiver disfuncional (3+ cartas sem nenhum pitch azul/amarelo para pagar), Crown pode defender para ciclar."""
+    pe = PolicyEngine(hero_name="dorinthea_ironsong")
+
+    state_awkward = {
+        "turnPlayer": 2,
+        "playerID": 1,
+        "playerHealth": 20,
+        "combatChainPower": 4,
+        "activeChainLink": {"cardNumber": "scar_for_a_scar_red", "totalPower": 4},
+        "playerHand": [
+            {"cardNumber": "red_card_1", "action": 27, "block": 2, "defense": 2, "pitch": 1, "power": 4},
+            {"cardNumber": "red_card_2", "action": 27, "block": 2, "defense": 2, "pitch": 1, "power": 4},
+            {"cardNumber": "red_card_3", "action": 27, "block": 2, "defense": 2, "pitch": 1, "power": 4},
+        ],
+        "playerArsenal": [],
+        "playerEquipment": [
+            {"cardNumber": "crown_of_providence", "slot": "Head", "action": 3, "defense": 2, "actionDataOverride": "2"},
+        ],
+    }
+
+    blocks = pe.select_defense_blocks(state_awkward)
+    blocked_card_ids = [b[1] for b in blocks]
+    assert "2" in blocked_card_ids, "Crown of Providence deve defender para ciclar mão disfuncional de 3 vermelhas sem pitch"
+
+
+def test_boots_of_omniward_not_popped_in_void():
+    """Garante que Boots of Omniward NUNCA é ativada no vazio quando opp_power <= 0 e arcane_damage <= 0."""
+    from bot_client import FabBotClient
+    bot = FabBotClient("test_room", "decks/dash_io.json", "host", "TestBot")
+
+    actions_sent = []
+    bot.send_action = lambda **kwargs: actions_sent.append(kwargs)
+
+    state_void = {
+        "turnPlayer": 2,
+        "playerID": 1,
+        "turnPhase": "D",
+        "turnNo": 1,
+        "playerHealth": 30,
+        "activeChainLink": {"cardNumber": "generic_attack", "totalPower": 0},
+        "arcaneDamage": 0,
+        "playerHand": [],
+        "playerEquipment": [
+            {"cardNumber": "boots_of_omniward", "slot": "Legs", "action": 3, "actionDataOverride": "3"},
+        ],
+        "promptButtons": [{"caption": "Pass", "mode": 99, "buttonInput": "PASS"}],
+    }
+
+    result = bot.decide_and_act(state_void)
+    assert result is True
+    assert len(actions_sent) == 1
+    # Deve ter passado a reação (modo 99) e NÃO ativado a bota (modo 3)
+    assert actions_sent[0]["mode"] == 99, f"Esperado passar a reação no vazio, mas executou: {actions_sent[0]}"
+
+

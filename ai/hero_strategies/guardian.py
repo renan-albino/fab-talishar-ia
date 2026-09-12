@@ -94,18 +94,18 @@ class GuardianStrategy(HeroStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
-            return TurnPlan(
-                plan_type="SURVIVAL_BLOCK",
-                can_absorb_damage=False,
-                max_block_cards=len(hand),
-                reason="Guardian survival mode: blocking dangerous damage"
-            )
-
         floating_res = int(state.get("playerPitchCount", 0))
         if floating_res == 0:
             resources = state.get("playerResources", [0, 0])
             floating_res = int(resources[0]) if isinstance(resources, list) and resources else 0
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, floating_res):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Guardian survival mode: blocking critical or fatal damage"
+            )
 
         # Pivot com Ataque Pesado
         if my_hp >= 10 and not has_dangerous_on_hit:
@@ -229,18 +229,18 @@ class JarlStrategy(GuardianStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
-            return TurnPlan(
-                plan_type="SURVIVAL_BLOCK",
-                can_absorb_damage=False,
-                max_block_cards=len(hand),
-                reason="Jarl survival mode: blocking dangerous damage"
-            )
-
         floating_res = int(state.get("playerPitchCount", 0))
         if floating_res == 0:
             resources = state.get("playerResources", [0, 0])
             floating_res = int(resources[0]) if isinstance(resources, list) and resources else 0
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, floating_res):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Jarl survival mode: blocking critical or fatal damage"
+            )
 
         # Detecção de Fusão Oaken Old (Oaken Old + Terra + Gelo + Blue pitch)
         if my_hp >= 10 and not has_dangerous_on_hit and not is_fatal:

@@ -46,7 +46,16 @@ class FabBotClient:
             try:
                 with open(target_path, "r", encoding="utf-8") as f:
                     d_data = json.load(f)
-                    self.hero_name = d_data.get("hero", d_data.get("name", ""))
+                    self.hero_name = d_data.get("hero", "")
+                    if not self.hero_name and isinstance(d_data.get("cards"), list):
+                        for c_entry in d_data["cards"]:
+                            cid = c_entry.get("identifier", "") if isinstance(c_entry, dict) else str(c_entry)
+                            meta = self.get_card_meta(cid)
+                            if meta.get("slot") == "Hero":
+                                self.hero_name = cid
+                                break
+                    if not self.hero_name:
+                        self.hero_name = d_data.get("name", "")
             except Exception:
                 pass
         if not self.hero_name:
@@ -231,7 +240,9 @@ class FabBotClient:
                 self.player_id = data.get("playerID", 2)
                 self.auth_key = data.get("authKey", "")
                 if not self.auth_key:
-                    for gfp in [f"Talishar/Games/{self.game_id}/GameFile.txt", f"/home/renan/fab-talishar-ia/Talishar/Games/{self.game_id}/GameFile.txt"]:
+                    base_root = os.path.dirname(os.path.abspath(__file__))
+                    for gfp in [os.path.join("Talishar", "Games", str(self.game_id), "GameFile.txt"),
+                                os.path.join(base_root, "Talishar", "Games", str(self.game_id), "GameFile.txt")]:
                         if os.path.exists(gfp):
                             try:
                                 with open(gfp, "r") as gf:
@@ -431,7 +442,8 @@ class FabBotClient:
 
     def get_card_meta(self, card_id: str) -> dict:
         if not hasattr(self, "_card_db") or self._card_db is None:
-            for p in ["data/fab_cards_db.json", "/home/renan/fab-talishar-ia/data/fab_cards_db.json"]:
+            base_root = os.path.dirname(os.path.abspath(__file__))
+            for p in ["data/fab_cards_db.json", os.path.join(base_root, "data", "fab_cards_db.json")]:
                 if os.path.exists(p):
                     try:
                         with open(p, "r", encoding="utf-8") as f:
@@ -792,6 +804,14 @@ class FabBotClient:
         if "opponentHand" in state and "opponentHandCount" not in state:
             state["opponentHandCount"] = len(state.get("opponentHand", []))
 
+        # Compatibilidade com backend Talishar (playerArse -> playerArsenal, theirArse -> theirArsenal)
+        if "playerArse" in state and "playerArsenal" not in state:
+            state["playerArsenal"] = state.get("playerArse") or []
+        if "theirArse" in state and "theirArsenal" not in state:
+            state["theirArsenal"] = state.get("theirArse") or []
+        if "theirArsenal" in state and "opponentArsenal" not in state:
+            state["opponentArsenal"] = state.get("theirArsenal") or []
+
         raw_my_h = state.get("playerHealth")
         raw_opp_h = state.get("opponentHealth")
         
@@ -902,6 +922,9 @@ class FabBotClient:
                 elif opp_h > my_h:
                     winner_id = 3 - self.player_id
 
+                is_vs_human = (getattr(self, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
+                is_human_victory = is_vs_human and (winner_id == self.player_id)
+
                 if hasattr(self, "trajectory") and self.trajectory:
                     try:
                         from ai.experience_collector import get_global_buffer
@@ -911,6 +934,12 @@ class FabBotClient:
                             winner_player_id=winner_id,
                             bot_player_id=self.player_id
                         )
+                        if is_human_victory:
+                            weights = [float(w) * 3.0 for w in weights]
+                            self.log(
+                                "🏆 [VITÓRIA CONTRA HUMANO] O Bot AI Master superou o jogador Humano! "
+                                "Recompensando todas as decisões da partida com peso amostral amplificado 3.0x no Replay Buffer!"
+                            )
                         if b_stats.get("blunders", 0) > 0 or b_stats.get("brilliants", 0) > 0:
                             self.log(
                                 f"[PER / BLUNDER REVIEW] Trajetória avaliada: {b_stats.get('blunders', 0)} blunders, "
@@ -1018,7 +1047,98 @@ class FabBotClient:
             input_text=input_text
         )
 
+    def _score_choice_candidate(self, candidate, turn_phase: str = "", state: dict = None, popup: dict = None) -> float:
+        """Pontua um candidato para escolha múltipla ou alvo de primeira tentativa."""
+        c_name = ""
+        c_mode = 0
+        c_override = ""
+        c_label = ""
+        if isinstance(candidate, dict):
+            c_name = str(candidate.get("buttonInput") or candidate.get("caption") or candidate.get("cardNumber") or candidate.get("name") or "").lower()
+            c_mode = int(candidate.get("mode", 0) or 0)
+            c_override = str(candidate.get("actionDataOverride", "")).lower()
+            c_label = str(candidate.get("label", "")).lower()
+        else:
+            c_name = str(candidate).lower()
+
+        # Pass tem prioridade mínima a menos que seja forçado
+        if c_name in ("pass", "pass priority", "cancel") or c_mode == 10000:
+            return -100.0
+
+        state = state or {}
+        popup_obj = popup if isinstance(popup, dict) else {}
+        p_title = str(popup_obj.get("title") or popup_obj.get("caption") or popup_obj.get("text") or "").lower()
+        p_prompt = str(state.get("promptText") or "").lower()
+
+        # Contexto de Sinking / Bottom / Discard
+        is_sink = any(k in p_title or k in p_prompt for k in ["sink", "bottom", "providence"])
+        is_self_discard = ("DISCARD" in turn_phase and "HAND" in turn_phase) or "discard" in p_title or "discard" in p_prompt
+
+        # Identificar se o candidato é do Arsenal
+        arsenal = state.get("playerArsenal") or state.get("playerArse") or []
+        arsenal_names = [str(a.get("cardNumber", a.get("name", "")) if isinstance(a, dict) else a).lower() for a in arsenal]
+        is_from_arsenal = (
+            "ars" in c_override
+            or "arsenal" in c_label
+            or (c_name in arsenal_names and len(arsenal_names) > 0)
+        )
+
+        # Checagem de ameaça ao Arsenal (ex: Command and Conquer, Leave No Witnesses)
+        active_chain = state.get("activeChainLink") or {}
+        incoming_name = str(active_chain.get("cardNumber", "")).lower()
+        is_arsenal_threat = len(arsenal) > 0 and any(k in incoming_name for k in [
+            "command_and_conquer", "leave_no_witnesses", "wreck_havoc", "eradicate", "humble", "righteous_cleansing"
+        ])
+
+        # Se for escolha de afundar (Crown of Providence / Sink Below) e o Arsenal está em perigo iminente:
+        # A carta do Arsenal DEVE ser afundada imediatamente para salvá-la e comprar uma nova carta!
+        if is_sink and is_arsenal_threat:
+            if is_from_arsenal:
+                return 150.0  # Protege o Arsenal salvando a carta no deck e comprando 1 nova
+            else:
+                return -50.0  # Não afunda da mão se precisa salvar o Arsenal
+
+        score = 0.0
+        c_info = self.policy_engine.extract_card_info({"cardNumber": c_name}) if hasattr(self, "policy_engine") else {}
+        score += float(c_info.get("power", 0))
+
+        # Prioridades específicas por sinergia e valor
+        if any(k in c_name for k in ["leave_no_witnesses", "codex_of_frailty", "pulsewave", "conqueror_of_the_high_seas"]):
+            score += 25.0
+        elif any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]):
+            score += 20.0
+        elif any(k in c_name for k in ["boom_grenade", "convection_amplifier", "penetration_script", "foundry_heart"]):
+            score += 18.0
+        elif any(k in c_name for k in ["riggermortis", "zenith_blade", "edict_of_steel", "sink_below"]):
+            score += 15.0
+        elif c_info.get("pitch") == 1:
+            score += 6.0
+        elif c_info.get("has_go_again"):
+            score += 5.0
+
+        # Se for para descartar ou afundar (e não era para salvar o Arsenal):
+        # Inverte o score para descartar/afundar a PIOR carta (ciclando e preservando peças nobres)
+        if is_self_discard or is_sink:
+            # Nunca afundar o Arsenal se ele não estava sob ameaça
+            if is_from_arsenal and is_sink:
+                return -200.0
+            return -score
+
+        return score
+
+    def _rank_choice_candidates(self, candidates: list, turn_phase: str = "", state: dict = None, popup: dict = None) -> list:
+        """Ordena uma lista de candidatos do mais recomendado ao menos recomendado."""
+        return sorted(candidates, key=lambda c: self._score_choice_candidate(c, turn_phase=turn_phase, state=state, popup=popup), reverse=True)
+
     def decide_and_act(self, state: dict):
+        # Compatibilidade com backend Talishar (playerArse -> playerArsenal, theirArse -> theirArsenal)
+        if "playerArse" in state and "playerArsenal" not in state:
+            state["playerArsenal"] = state.get("playerArse") or []
+        if "theirArse" in state and "theirArsenal" not in state:
+            state["theirArsenal"] = state.get("theirArse") or []
+        if "theirArsenal" in state and "opponentArsenal" not in state:
+            state["opponentArsenal"] = state.get("theirArsenal") or []
+
         tp_raw = state.get("turnPhase", "M")
         if isinstance(tp_raw, dict):
             turn_phase = str(tp_raw.get("turnPhase", "M"))
@@ -1092,7 +1212,7 @@ class FabBotClient:
                 time.sleep(0.005)
                 return True
 
-            if turn_phase == "MAYCHOOSEMULTIZONE":
+            if turn_phase in ("MAYCHOOSEMULTIZONE", "MAYMULTICHOOSETEXT"):
                 self.log(f"[AÇÃO JOGADOR {self.player_id}] Anti-Loop ({turn_phase}) -> Pass (Mode 99)")
                 self.send_action(mode=99, button_input="PASS")
                 self.recent_phases.clear()
@@ -1103,6 +1223,16 @@ class FabBotClient:
             if turn_phase in ("CHOOSEMULTIZONE", "MULTICHOOSE", "MULTICHOOSEHAND"):
                 self.log(f"[AÇÃO JOGADOR {self.player_id}] Anti-Loop ({turn_phase}) -> Submetendo vazio (Mode 19)")
                 self.send_action(mode=19, chk_count=0, chk_input=[])
+                self.recent_phases.clear()
+                self.consecutive_same_state = 0
+                time.sleep(0.005)
+                return True
+
+            # MULTICHOOSETEXT: fase de seleção de texto obrigatória (ex: Fabricate do Teklovossen).
+            # O servidor NÃO aceita PASS (mode=99); deve-se enviar mode=19 selecionando pelo menos 1 item.
+            if turn_phase == "MULTICHOOSETEXT":
+                self.log(f"[AÇÃO JOGADOR {self.player_id}] Anti-Loop (MULTICHOOSETEXT) -> Selecionando índice 0 (Mode 19)")
+                self.send_action(mode=19, chk_count=1, chk_input=["0"])
                 self.recent_phases.clear()
                 self.consecutive_same_state = 0
                 time.sleep(0.005)
@@ -1232,8 +1362,26 @@ class FabBotClient:
             return True
 
         if turn_phase in ("CHOOSECARD", "CHOOSECARDID", "MAYCHOOSECARD", "CHOOSEZONE", "CHOOSEDECK", "MAYCHOOSEDECK", "CHOOSEHAND", "MAYCHOOSEHAND", "CHOOSEDISCARD", "MAYCHOOSEDISCARD", "CHOOSEPERMANENT", "MAYCHOOSEPERMANENT", "CHOOSEMYSOUL", "MAYCHOOSEMYSOUL", "CHOOSETARGET"):
-            self.log(f"[AÇÃO JOGADOR {self.player_id}] Seleção de Alvo/Zona -> {turn_phase}")
-            self.send_action(mode=16, card_id="0", button_input="0")
+            p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
+            cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
+            if not cards_arr and "DISCARD" in turn_phase:
+                cards_arr = state.get("playerDiscard", [])
+            elif not cards_arr and "HAND" in turn_phase:
+                cards_arr = state.get("playerHand", [])
+
+            best_card_id = "0"
+            best_btn_inp = "0"
+            if cards_arr:
+                best_score = -9999.0
+                for idx, c_item in enumerate(cards_arr):
+                    score = self._score_choice_candidate(c_item, turn_phase=turn_phase, state=state, popup=popup)
+                    if score > best_score:
+                        best_score = score
+                        best_card_id = str(c_item.get("actionDataOverride", c_item.get("cardNumber", str(idx)))) if isinstance(c_item, dict) else str(idx)
+                        best_btn_inp = best_card_id
+
+            self.log(f"[AÇÃO JOGADOR {self.player_id}] Seleção Inteligente de Alvo/Zona -> {turn_phase} (CardID: {best_card_id})")
+            self.send_action(mode=16, card_id=best_card_id, button_input=best_btn_inp)
             time.sleep(0.002)
             return True
 
@@ -1255,22 +1403,13 @@ class FabBotClient:
                 time.sleep(0.002)
                 return True
 
-            # Heurística Tática: Selecionar a melhor carta (prioridade máxima para Flechas de Ranger no Arsenal)
+            # Heurística Tática: Selecionar a melhor carta de primeira tentativa
             best_idx = 0
             target_list = cards_arr if cards_arr else hand
             if len(target_list) > 1:
                 best_score = -9999.0
                 for c_idx, c_item in enumerate(target_list):
-                    c_name = str(c_item.get("cardNumber", c_item.get("name", c_item)) if isinstance(c_item, dict) else c_item).lower()
-                    c_info = self.policy_engine.extract_card_info({"cardNumber": c_name})
-                    score = 0.0
-                    # Ranger: Flechas carregadas no Arsenal ganham prioridade absoluta
-                    if any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]):
-                        score += 25.0
-                        if c_info["pitch"] == 1:
-                            score += 5.0
-                    elif c_info["pitch"] == 1 and c_info["power"] >= 4:
-                        score += 8.0
+                    score = self._score_choice_candidate(c_item, turn_phase=turn_phase, state=state, popup=popup)
                     if score > best_score:
                         best_score = score
                         best_idx = c_idx
@@ -1288,6 +1427,56 @@ class FabBotClient:
             self.send_action(mode=19, button_input=btn_inp, chk_count=chk_cnt, chk_input=chk_inp)
             time.sleep(0.002)
             return True
+
+        # Handler dedicado para MULTICHOOSETEXT / MAYMULTICHOOSETEXT
+        # Usado por cartas com efeito de Fabricate (Teklovossen, Dash IO), escolhas de efeitos de texto, etc.
+        if turn_phase in ("MULTICHOOSETEXT", "MAYMULTICHOOSETEXT"):
+            popup_obj = popup if isinstance(popup, dict) else {}
+            form_opts = popup_obj.get("formOptions", {}) if isinstance(popup_obj, dict) else {}
+            min_no = int(form_opts.get("minNo", 0))
+            max_no = int(form_opts.get("maxNo", form_opts.get("maxCount", 1)))
+
+            multi_text = (
+                state.get("multiChooseText")
+                or popup_obj.get("multiChooseText")
+                or (popup_obj.get("popup", {}) or {}).get("multiChooseText")
+                or []
+            )
+
+            is_optional = (turn_phase == "MAYMULTICHOOSETEXT") or (min_no == 0)
+            if is_optional and not multi_text:
+                self.log(f"[AÇÃO JOGADOR {self.player_id}] {turn_phase} Opcional/Sem itens -> Pass (Mode 99)")
+                self.send_action(mode=99, button_input="PASS")
+                time.sleep(0.002)
+                return True
+
+            n_select = max(1, min_no) if not is_optional else min(1, max_no)
+            n_available = len(multi_text) if multi_text else max(1, n_select)
+            n_select = min(n_select, n_available)
+
+            # Avaliação semântica e inteligente das opções de texto na PRIMEIRA tentativa
+            def _score_text_option(opt_obj) -> float:
+                raw_text = str(opt_obj.get("text", opt_obj.get("caption", opt_obj.get("label", opt_obj))) if isinstance(opt_obj, dict) else opt_obj).lower()
+                s = 0.0
+                if any(w in raw_text for w in ["evo", "equipment", "item", "pounder", "crank"]):
+                    s += 15.0
+                if any(w in raw_text for w in ["draw", "action point", "resource", "steam", "counter"]):
+                    s += 12.0
+                if any(w in raw_text for w in ["damage", "attack", "overpower", "dominate", "piercing"]):
+                    s += 10.0
+                if any(w in raw_text for w in ["gold", "silver", "treasure", "token"]):
+                    s += 8.0
+                if any(w in raw_text for w in ["opt", "look", "search"]):
+                    s += 5.0
+                return s
+
+            scored_indices = sorted(range(len(multi_text)), key=lambda i: _score_text_option(multi_text[i]), reverse=True) if multi_text else list(range(n_select))
+            chk = [str(i) for i in scored_indices[:n_select]]
+            self.log(f"[AÇÃO JOGADOR {self.player_id}] {turn_phase} -> Selecionando opções inteligentes {chk} (Mode 19, minNo={min_no})")
+            self.send_action(mode=19, chk_count=n_select, chk_input=chk)
+            time.sleep(0.002)
+            return True
+
 
         if turn_phase in ("CHOOSENUMBER", "DYNPITCH", "NUMBERINPUT"):
             self.log(f"[AÇÃO JOGADOR {self.player_id}] Entrada Numérica (Custo/Valor X) -> {turn_phase}")
@@ -1438,8 +1627,16 @@ class FabBotClient:
                         time.sleep(0.002)
                         return True
 
-            # 6b. Reações / Instantâneos via Equipamentos (Snapdragon Scalers, Prized Galea, etc.)
+            # 6b. Reações / Instantâneos via Equipamentos (Snapdragon Scalers, Boots of Omniward, etc.)
             equip = state.get("playerEquipment", [])
+            turn_player = state.get("turnPlayer", 1)
+            is_defending = (turn_player != self.player_id)
+            is_attacking = (turn_player == self.player_id)
+            active_chain = state.get("activeChainLink") or {}
+            opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+            arcane_dmg = int(state.get("arcaneDamage", 0) or 0)
+            my_hp = int(state.get("playerHealth", 20))
+
             for eq_idx, eq in enumerate(equip):
                 if not isinstance(eq, dict):
                     continue
@@ -1454,6 +1651,41 @@ class FabBotClient:
                     unpayable_set.add(eq_name)
 
                 if eq_action > 0 and eq_name not in unpayable_set:
+                    # ── Poda 1: Equipamentos de Prevenção / Defesa (Boots of Omniward, Ward, Barrier, Prevent) ──
+                    is_prevention_eq = any(k in eq_name for k in ["boots_of_omni", "omniward", "barrier", "ward", "prevent", "spellvoid"])
+                    if is_prevention_eq:
+                        # NUNCA ativar no vazio quando não há dano físico ou arcano sendo causado!
+                        if opp_power <= 0 and arcane_dmg <= 0:
+                            continue
+                        # Se for nosso turno de ataque e não há dano arcano contra nós, não queima prevenção
+                        if is_attacking and arcane_dmg <= 0:
+                            continue
+                        # Boots of Omniward é destruída ao ativar. Se HP alto e sem dano crítico/on-hit, poupar!
+                        if "omniward" in eq_name:
+                            incoming_name = str(active_chain.get("cardNumber", "")).lower()
+                            has_threat = any(oh in incoming_name for oh in ["command_and_conquer", "red_in_the_ledger", "snatch", "mask", "leave_no_witnesses", "crush"])
+                            if my_hp > 15 and not has_threat and (my_hp - opp_power) > 10:
+                                continue
+
+                    # ── Poda 2: Reações Ofensivas de Ataque (Snapdragon Scalers, Flick Knives) ──
+                    if "snapdragon_scalers" in eq_name:
+                        if not is_attacking:
+                            continue
+                        # Se o ataque já possui go again, não gasta Snapdragon
+                        if active_chain.get("hasGoAgain") or active_chain.get("goAgain"):
+                            continue
+                        # Se não há mais cartas ou ações em mãos, não desperdiça
+                        if not hand:
+                            continue
+                    elif "flick_knives" in eq_name:
+                        if not is_attacking:
+                            continue
+
+                    # ── Poda 3: Validação de Pontuação Semântica da Estratégia ──
+                    eq_score = self.policy_engine.strategy.evaluate_equipment_ability(state, eq)
+                    if eq_score <= 0.0 and not (is_prevention_eq and (opp_power > 0 or arcane_dmg > 0)):
+                        continue
+
                     eq_cost = self.policy_engine.get_weapon_cost(eq_name, eq, state)
                     floating_res, total_res = self.policy_engine.calculate_available_resources(state)
                     if total_res >= eq_cost:

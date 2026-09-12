@@ -150,5 +150,10 @@
       "identifier": "truce_blue",
       "total": 3
     }
-  ]
+  ],
+  "hero": "hala_bladesaint_of_the_vow",
+  "hero_name": "Hala, Bladesaint of the Vow",
+  "class": "WARRIOR",
+  "talents": [],
+  "is_young": false
 }

@@ -146,5 +146,10 @@
       "identifier": "zipper_hit_blue",
       "total": 2
     }
-  ]
+  ],
+  "hero": "dash_io",
+  "hero_name": "Dash I/O",
+  "class": "MECHANOLOGIST",
+  "talents": [],
+  "is_young": false
 }

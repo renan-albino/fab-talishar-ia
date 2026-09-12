@@ -162,5 +162,10 @@
       "identifier": "gorganian_tome",
       "total": 1
     }
-  ]
+  ],
+  "hero": "kassai_of_the_golden_sand",
+  "hero_name": "Kassai of the Golden Sand",
+  "class": "WARRIOR",
+  "talents": [],
+  "is_young": false
 }

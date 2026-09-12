@@ -54,18 +54,18 @@ class WarriorStrategy(HeroStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
-            return TurnPlan(
-                plan_type="SURVIVAL_BLOCK",
-                can_absorb_damage=False,
-                max_block_cards=len(hand),
-                reason="Warrior survival mode: blocking dangerous incoming damage"
-            )
-
         floating_res = int(state.get("playerPitchCount", 0))
         if floating_res == 0:
             resources = state.get("playerResources", [0, 0])
             floating_res = int(resources[0]) if isinstance(resources, list) and resources else 0
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, floating_res):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Warrior survival mode: blocking critical or fatal damage"
+            )
 
         # Identificar reações de ataque na mão
         def _is_attack_reaction(c):
@@ -134,3 +134,75 @@ class KassaiStrategy(WarriorStrategy):
         Custo 0 e possui Go Again. Deve ser ativada antes dos ataques de espada.
         """
         return 17.0
+
+
+class HalaStrategy(WarriorStrategy):
+    """
+    Estratégia especializada para Hala, Bladesaint of the Vow.
+    Foco absoluto em pressão com a Zenith Blade, potencializada por buffs como
+    Edict of Steel, Brimming Blade e Imperial Seal of Command.
+    Evita passar turnos jogando curas passivas (Sigil of Solace) quando pode atacar.
+    """
+
+    @lru_cache(maxsize=1024)
+    def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
+        score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
+        c_low = card_name.lower()
+        if "imperial_seal" in c_low:
+            score += 12.0
+        elif "edict_of_steel" in c_low:
+            score += 10.0
+        elif "brimming_blade" in c_low:
+            score += 8.0
+        elif "command_and_conquer" in c_low:
+            score += 8.0
+        elif "sigil_of_solace" in c_low:
+            # Não prioriza cura passiva se estiver em condição de atacar
+            score -= 4.0
+        return score
+
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+        # Zenith Blade é o motor de dano de Hala: valoriza swing em qualquer oportunidade
+        score = 12.0 + (3.0 if floating_res >= 2 else 1.0)
+        return score
+
+    def analyze_turn_plan(self, state: dict) -> TurnPlan:
+        my_hp = int(state.get("playerHealth", 40))
+        hand = state.get("playerHand", [])
+        active_chain = state.get("activeChainLink") or {}
+        opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+        incoming_name = str(active_chain.get("cardNumber", "")).lower()
+
+        is_fatal = (my_hp - opp_power) <= 0
+        has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Hala survival mode: blocking fatal or critical damage"
+            )
+
+        # Buscar buffs de arma na mão para sequenciar com a Zenith Blade
+        buffs = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "ironsong"])]
+        pitch_cards = [c for c in hand if int(c.get("pitch", 1)) >= 2]
+
+        if buffs and pitch_cards and my_hp >= 10:
+            b_name = str(buffs[0].get("cardNumber") or buffs[0].get("name", ""))
+            p_name = str(pitch_cards[0].get("cardNumber") or pitch_cards[0].get("name", ""))
+            reserved: Set[str] = {b_name, p_name}
+            reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+            max_blocks = max(0, len(hand) - len(reserved_in_hand))
+            return TurnPlan(
+                plan_type="HALA_ZENITH_PRESSURE",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 12),
+                max_block_cards=max_blocks,
+                priority_action_types=["weapon_buff", "weapon"],
+                offensive_potential=8.0,
+                reason=f"Hala Zenith Blade plan: reserving {b_name} and pitch for boosted weapon strike"
+            )
+
+        return super().analyze_turn_plan(state)
+

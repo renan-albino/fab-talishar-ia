@@ -342,6 +342,144 @@ def check_docker():
     except Exception as e:
         log_warn(f"Docker não disponível ou aviso de verificação: {e}")
 
+def sync_agents_environment_rules():
+    """
+    Inspeciona dinamicamente o ambiente de execução (WSL2 vs Linux Nativo vs Container)
+    e atualiza AGENTS.md garantindo que:
+    1. Agentes IA saibam exatamente como executar comandos sem gastar tokens com testes.
+    2. Nenhuma informação pessoal (nomes de usuário, paths absolutos privados) seja registrada.
+    """
+    log("Inspecionando ambiente para configuração de regras de agentes (AGENTS.md)...")
+    is_wsl = False
+    if os.path.exists("/proc/version"):
+        try:
+            with open("/proc/version", "r") as f:
+                ver = f.read().lower()
+                if "microsoft" in ver or "wsl" in ver:
+                    is_wsl = True
+        except Exception:
+            pass
+
+    distro_name = os.environ.get("WSL_DISTRO_NAME", "")
+    if not distro_name and is_wsl:
+        if os.path.exists("/etc/os-release"):
+            try:
+                with open("/etc/os-release") as f:
+                    for line in f:
+                        if line.startswith("ID="):
+                            distro_name = line.strip().split("=")[1].strip('"')
+            except Exception:
+                pass
+    if not distro_name:
+        distro_name = "Ubuntu-22.04"
+
+    linux_repo_path = BASE_DIR
+
+    # Garante que AGENTS.md e .gemini/ estejam protegidos no .gitignore
+    gitignore_path = os.path.join(BASE_DIR, ".gitignore")
+    if os.path.exists(gitignore_path):
+        try:
+            with open(gitignore_path, "r", encoding="utf-8") as f:
+                gi_content = f.read()
+            gi_modified = False
+            if ".gemini/" not in gi_content:
+                gi_content += "\n.gemini/\n"
+                gi_modified = True
+            if "AGENTS.md" not in gi_content:
+                gi_content += "\nAGENTS.md\n!AGENTS.template.md\n"
+                gi_modified = True
+            if gi_modified:
+                with open(gitignore_path, "w", encoding="utf-8") as f:
+                    f.write(gi_content)
+                log_success("Proteção de privacidade aplicada no .gitignore (.gemini/ e AGENTS.md).")
+        except Exception as e:
+            log_warn(f"Aviso ao verificar .gitignore: {e}")
+
+    agents_file = os.path.join(BASE_DIR, "AGENTS.md")
+    template_file = os.path.join(BASE_DIR, "AGENTS.template.md")
+
+    if not os.path.exists(agents_file) and os.path.exists(template_file):
+        shutil.copyfile(template_file, agents_file)
+
+    if not os.path.exists(agents_file):
+        log_warn("AGENTS.md não encontrado para sincronização de regras.")
+        return
+
+    try:
+        with open(agents_file, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        if is_wsl:
+            section = f"""### Execução de Comandos (Ambiente Híbrido Windows / WSL2)
+
+O agente executa em **Windows (PowerShell)**, porém todo o ecossistema (Python, PyTorch, Docker, Node) reside no **WSL2 ({distro_name})** no diretório `{linux_repo_path}`.
+
+**NUNCA execute:**
+- `git`, `python` ou `pytest` diretamente no PowerShell do Windows (as ferramentas e dependências não existem no host Windows).
+- `./venv/bin/python` diretamente no PowerShell (é um binário ELF Linux e falhará no Windows).
+- `wsl` sem `--cd {linux_repo_path}` (gera erro de tradução da unidade de rede).
+
+**SEMPRE execute via WSL com `--cd {linux_repo_path}`:**
+- **Git:** `wsl -d {distro_name} --cd {linux_repo_path} git <args>`
+- **Python / Scripts:** `wsl -d {distro_name} --cd {linux_repo_path} ./venv/bin/python <script>`
+- **Testes (Pytest):** `wsl -d {distro_name} --cd {linux_repo_path} ./venv/bin/python -m pytest <args>`
+- **Docker:** `wsl -d {distro_name} --cd {linux_repo_path} docker <args>`
+- **Frontend (Node/NPM):** `wsl -d {distro_name} --cd {linux_repo_path} npm <args>`
+- **Comandos Linux/Bash:** `wsl -d {distro_name} --cd {linux_repo_path} <comando>`"""
+        else:
+            section = f"""### Execução de Comandos (Ambiente Linux Nativo)
+
+O agente executa nativamente no Linux/Container no diretório `{linux_repo_path}`.
+
+**SEMPRE execute no diretório do projeto:**
+- **Git:** `git <args>`
+- **Python / Scripts:** `./venv/bin/python <script>`
+- **Testes (Pytest):** `./venv/bin/python -m pytest <args>`
+- **Docker:** `docker <args>`
+- **Frontend (Node/NPM):** `npm <args>`
+- **Comandos Linux/Bash:** `<comando>`"""
+
+        header = "### Execução de Comandos"
+        if header in content:
+            start_idx = content.find(header)
+            next_header = content.find("\n### ", start_idx + len(header))
+            if next_header == -1:
+                next_header = content.find("\n## ", start_idx + len(header))
+            if next_header != -1:
+                new_content = content[:start_idx] + section + "\n\n" + content[next_header:].lstrip("\n")
+            else:
+                new_content = content[:start_idx] + section + "\n"
+        else:
+            if "### Architecture" in content:
+                new_content = content.replace("### Architecture", f"{section}\n\n### Architecture")
+            else:
+                new_content = content.rstrip() + f"\n\n{section}\n"
+
+        # Atualiza a regra 4 de sincronização de templates com o comando correto
+        if is_wsl:
+            export_cmd = f'wsl -d {distro_name} --cd {linux_repo_path} ./venv/bin/python scripts/prepare_environment.py --export-templates'
+        else:
+            export_cmd = './venv/bin/python scripts/prepare_environment.py --export-templates'
+
+        import re
+        new_content = re.sub(
+            r'execute `[^`]*prepare_environment\.py --export-templates`',
+            f'execute `{export_cmd}`',
+            new_content
+        )
+        new_content = re.sub(
+            r'execute \./venv/bin/python scripts/prepare_environment\.py --export-templates',
+            f'execute `{export_cmd}`',
+            new_content
+        )
+
+        with open(agents_file, "w", encoding="utf-8") as f:
+            f.write(new_content)
+
+        log_success(f"AGENTS.md atualizado localmente com as regras de execução do ambiente ({linux_repo_path}).")
+    except Exception as e:
+        log_warn(f"Falha ao sincronizar AGENTS.md: {e}")
+
 def main():
     parser = argparse.ArgumentParser(description="Automação de Preparação de Ambiente do FaB Talishar AI")
     parser.add_argument("--export-templates", action="store_true", help="Salva os arquivos modificados em setup_templates/")
@@ -370,6 +508,7 @@ def main():
     check_docker()
     sync_card_database()
     verify_decks()
+    sync_agents_environment_rules()
     print("==================================================")
     log_success("Ambiente preparado com sucesso!")
     print("Para rodar o projeto:")

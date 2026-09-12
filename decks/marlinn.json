@@ -162,5 +162,12 @@
       "identifier": "yellow_fin_harpoon_blue",
       "total": 3
     }
-  ]
+  ],
+  "hero": "marlynn_treasure_hunter",
+  "hero_name": "Marlynn, Treasure Hunter",
+  "class": "PIRATE,RANGER",
+  "talents": [
+    "PIRATE"
+  ],
+  "is_young": false
 }

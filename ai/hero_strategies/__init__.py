@@ -17,17 +17,24 @@ from .base import (
 )
 from .guardian import GuardianStrategy, JarlStrategy
 from .brute import BruteStrategy
-from .warrior import WarriorStrategy, KassaiStrategy
+from .warrior import WarriorStrategy, KassaiStrategy, HalaStrategy
 from .ninja import NinjaStrategy
 from .ranger import RangerStrategy, MarlynnStrategy
 from .other_classes import (
     MechanologistStrategy,
+    DashIOStrategy,
     RunebladeStrategy,
+    VynnsetStrategy,
     WizardStrategy,
     IllusionistStrategy,
     AssassinStrategy,
+    ArakniMarionetteStrategy,
     MerchantStrategy,
+    GravyBonesStrategy,
 )
+
+MarioStrategy = ArakniMarionetteStrategy
+MarlinnStrategy = MarlynnStrategy
 
 __all__ = [
     "HeroStrategy",
@@ -37,15 +44,22 @@ __all__ = [
     "BruteStrategy",
     "WarriorStrategy",
     "KassaiStrategy",
+    "HalaStrategy",
     "NinjaStrategy",
     "RangerStrategy",
     "MarlynnStrategy",
+    "MarlinnStrategy",
     "MechanologistStrategy",
+    "DashIOStrategy",
     "RunebladeStrategy",
+    "VynnsetStrategy",
     "WizardStrategy",
     "IllusionistStrategy",
     "AssassinStrategy",
+    "ArakniMarionetteStrategy",
+    "MarioStrategy",
     "MerchantStrategy",
+    "GravyBonesStrategy",
     "is_resource_or_gem_card",
     "KNOWN_AMBUSH_CARDS",
     "get_hero_strategy",
@@ -144,16 +158,16 @@ HERO_CLASS_REGISTRY: Dict[str, type] = {
     "olympia": WarriorStrategy,
     "fang_dracai_of_blades": WarriorStrategy,
     "fang": WarriorStrategy,
-    "hala_bladesaint_of_the_vow": WarriorStrategy,
-    "hala": WarriorStrategy,
+    "hala_bladesaint_of_the_vow": HalaStrategy,
+    "hala": HalaStrategy,
     "killjoy_the_crooked_blade": WarriorStrategy,
     "killjoy": WarriorStrategy,
     "warrior": WarriorStrategy,
 
     # ── MECHANOLOGIST ───────────────────────────────────────────
     "dash_inventor_extraordinaire": MechanologistStrategy,
-    "dash_io": MechanologistStrategy,
-    "dash_database": MechanologistStrategy,
+    "dash_io": DashIOStrategy,
+    "dash_database": DashIOStrategy,
     "dash": MechanologistStrategy,
     "data_doll_mkii": MechanologistStrategy,
     "data_doll": MechanologistStrategy,
@@ -176,8 +190,9 @@ HERO_CLASS_REGISTRY: Dict[str, type] = {
     "chane": RunebladeStrategy,
     "briar_warden_of_thorns": RunebladeStrategy,
     "briar": RunebladeStrategy,
-    "vynnset_iron_maiden": RunebladeStrategy,
-    "vynnset": RunebladeStrategy,
+    "vynnset_iron_maiden": VynnsetStrategy,
+    "vynnset": VynnsetStrategy,
+    "vynsett": VynnsetStrategy,
     "florian_rotwood_harbinger": RunebladeStrategy,
     "florian": RunebladeStrategy,
     "aurora_shooting_star": RunebladeStrategy,
@@ -222,7 +237,7 @@ HERO_CLASS_REGISTRY: Dict[str, type] = {
     # ── ASSASSIN ────────────────────────────────────────────────
     "arakni_huntsman": AssassinStrategy,
     "arakni_solitary_confinement": AssassinStrategy,
-    "arakni_marionette": AssassinStrategy,
+    "arakni_marionette": ArakniMarionetteStrategy,
     "arakni_web_of_deceit": AssassinStrategy,
     "arakni_5lp3d_7hru_7h3_cr4x": AssassinStrategy,
     "arakni": AssassinStrategy,
@@ -232,6 +247,8 @@ HERO_CLASS_REGISTRY: Dict[str, type] = {
     "nuu": AssassinStrategy,
     "dr_mortimer_blight_of_the_pits": AssassinStrategy,
     "dr_mortimer": AssassinStrategy,
+    "mario": ArakniMarionetteStrategy,
+    "mario_deck": ArakniMarionetteStrategy,
     "assassin": AssassinStrategy,
 
     # ── MERCHANT / BARD / MISC ──────────────────────────────────
@@ -243,8 +260,9 @@ HERO_CLASS_REGISTRY: Dict[str, type] = {
     "melody": MerchantStrategy,
     "shiyana_diamond_gemini": MerchantStrategy,
     "shiyana": MerchantStrategy,
-    "gravy_bones_shipwrecked_looter": MerchantStrategy,
-    "gravy_bones": MerchantStrategy,
+    "gravy_bones_shipwrecked_looter": GravyBonesStrategy,
+    "gravy_bones": GravyBonesStrategy,
+    "gravy": GravyBonesStrategy,
     "scurv_stowaway": MerchantStrategy,
     "scurv": MerchantStrategy,
     "malice_domina_of_the_dead": MerchantStrategy,

@@ -125,7 +125,8 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
     # Calculate Global Elo
     r1 = stats.get("bot1_elo", 1200)
     r2 = stats.get("bot2_elo", 1200)
-    k = 32
+    # Recompensa acelerada de ELO (K=48) quando o bot vence um jogador humano
+    k = 48 if (is_human_p1 and winner_id == 2) else 32
     
     e1 = 1 / (1 + 10 ** ((r2 - r1) / 400))
     e2 = 1 / (1 + 10 ** ((r1 - r2) / 400))
@@ -154,7 +155,7 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
         
     for d_name in [tracked_p1, tracked_p2]:
         if d_name not in stats["deck_stats"]:
-            stats["deck_stats"][d_name] = {"matches": 0, "wins": 0, "losses": 0, "elo": 1200}
+            stats["deck_stats"][d_name] = {"matches": 0, "wins": 0, "losses": 0, "elo": 1200, "human_matches": 0, "human_wins": 0}
 
     # Calculate Individual Deck / Human ELO
     d1_elo = stats["deck_stats"][tracked_p1].get("elo", 1200)
@@ -166,6 +167,11 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
     stats["deck_stats"][tracked_p2]["elo"] = round(d2_elo + k * (s2 - ed2))
     stats["deck_stats"][tracked_p1]["matches"] += 1
     stats["deck_stats"][tracked_p2]["matches"] += 1
+
+    if is_human_p1:
+        stats["deck_stats"][tracked_p2]["human_matches"] = stats["deck_stats"][tracked_p2].get("human_matches", 0) + 1
+        if winner_id == 2:
+            stats["deck_stats"][tracked_p2]["human_wins"] = stats["deck_stats"][tracked_p2].get("human_wins", 0) + 1
 
     if winner_id == 1:
         stats["deck_stats"][tracked_p1]["wins"] += 1

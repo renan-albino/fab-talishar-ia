@@ -6,7 +6,7 @@ Mechanologist, Runeblade, Wizard, Illusionist, Assassin e Merchant.
 """
 
 from functools import lru_cache
-from typing import Set
+from typing import Set, Any, Optional, List
 from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS
 
 
@@ -22,9 +22,11 @@ class MechanologistStrategy(HeroStrategy):
         score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
         c_low = card_name.lower()
         if "zero_to_sixty" in c_low or "zipper" in c_low:
-            score += 3.0
+            score += 3.5
         elif "throttle" in c_low or "fast_and_furious" in c_low or "high_octane" in c_low:
-            score += 2.5
+            score += 3.0
+        elif any(k in c_low for k in ["boom_grenade", "convection_amplifier", "penetration_script", "bios_update", "expedite", "t_bone", "sparks_of_strength", "pulsewave_harpoon"]):
+            score += 4.0
         return score
 
     def should_boost(self, card_name: str, hand_size: int, deck_size: int) -> bool:
@@ -44,16 +46,22 @@ class MechanologistStrategy(HeroStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
+        # Dash IO e heróis jovens de Blitz começam com 20 HP, calibrando thresholds proporcionais
+        is_young = "dash_io" in self.hero_name or "young" in self.hero_name or my_hp <= 20
+        survival_threshold = 3 if is_young else 6
+        tempo_hp_threshold = 5 if is_young else 10
+        absorb_threshold = 7 if is_young else 12
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, survival_hp_threshold=survival_threshold):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
-                reason="Mechanologist survival mode: blocking dangerous damage"
+                reason="Mechanologist survival mode: blocking critical or fatal damage"
             )
 
-        if deck_size > 6 and my_hp >= 10 and not has_dangerous_on_hit:
-            boost_cards = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["zero_to_sixty", "zipper", "throttle", "boost"])]
+        if deck_size > 6 and my_hp >= tempo_hp_threshold and not has_dangerous_on_hit:
+            boost_cards = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["zero_to_sixty", "zipper", "throttle", "boost", "t_bone", "expedite"])]
             if boost_cards:
                 b_name = str(boost_cards[0].get("cardNumber") or boost_cards[0].get("name", ""))
                 reserved: Set[str] = {b_name}
@@ -62,12 +70,105 @@ class MechanologistStrategy(HeroStrategy):
                 return TurnPlan(
                     plan_type="MECH_BOOST_TEMPO",
                     reserved_card_names=reserved,
-                    can_absorb_damage=(my_hp >= 12),
+                    can_absorb_damage=(my_hp >= absorb_threshold),
                     max_block_cards=max_blocks,
                     priority_action_types=["boost_attack"],
                     offensive_potential=float(boost_cards[0].get("power", 4)),
                     reason=f"Mechanologist boost tempo plan: holding {b_name} with safe deck count"
                 )
+
+        return super().analyze_turn_plan(state)
+
+
+class DashIOStrategy(MechanologistStrategy):
+    """
+    Estratégia especializada para Dash I/O.
+    Foco absoluto em itens com Crank (Boom Grenade, Convection Amplifier, Penetration Script, etc.),
+    ativação de Teklo Foundry Heart para geração de 2 recursos livres, e pressão com Symbiosis Shot.
+    """
+
+    @lru_cache(maxsize=1024)
+    def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
+        score = float(power)
+        c_low = card_name.lower()
+
+        # Itens com Crank geram Action Points e buffs cumulativos gigantescos
+        if "boom_grenade" in c_low:
+            score += 10.0  # +4 de dano no próximo ataque de arma ou boost
+        elif "convection_amplifier" in c_low:
+            score += 9.0   # Concede Dominate
+        elif "penetration_script" in c_low:
+            score += 8.5   # Concede Piercing 1
+        elif any(k in c_low for k in ["heatsink", "prismatic_lens", "backup_protocol"]):
+            score += 8.0
+        elif "pulsewave_harpoon" in c_low:
+            score += 11.0  # Disrupt de mão / bloqueio
+        elif "zero_to_sixty" in c_low or "zipper" in c_low:
+            score += 6.0
+        elif any(k in c_low for k in ["t_bone", "expedite", "sparks_of_strength"]):
+            score += 7.0
+
+        if has_go_again:
+            score += 4.0
+        score -= cost * 0.5
+        return score
+
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+        # Symbiosis Shot: arma barata que acumula steam counters com cada item jogado
+        score = 8.0 + (3.0 if floating_res >= 1 else 0.0)
+        return score
+
+    def evaluate_equipment_ability(self, state_or_name, eq_info_or_floating: Any = None, hand_attacks: list = None, **kwargs) -> float:
+        if isinstance(state_or_name, dict):
+            eq_info = eq_info_or_floating if isinstance(eq_info_or_floating, dict) else kwargs.get("eq_info", {})
+            eq_name = str(eq_info.get("cardNumber") or eq_info.get("name", "")).lower()
+        else:
+            eq_name = str(state_or_name or "").lower()
+
+        if "teklo_foundry_heart" in eq_name or "foundry_heart" in eq_name:
+            # Ativação do peito gera 2 recursos livres por turno (crucial para pagar itens/boost)
+            return 16.0
+        elif "achilles_accelerator" in eq_name:
+            return 12.0  # Concede Action Point extra
+        return super().evaluate_equipment_ability(state_or_name, eq_info_or_floating, hand_attacks=hand_attacks, **kwargs)
+
+    def analyze_turn_plan(self, state: dict) -> TurnPlan:
+        my_hp = int(state.get("playerHealth", 20))
+        hand = state.get("playerHand", [])
+        active_chain = state.get("activeChainLink") or {}
+        opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+        incoming_name = str(active_chain.get("cardNumber", "")).lower()
+
+        is_fatal = (my_hp - opp_power) <= 0
+        has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, survival_hp_threshold=3):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Dash IO survival mode: blocking critical or fatal damage"
+            )
+
+        # Buscar itens com Crank e ataques com boost na mão
+        crank_items = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["boom_grenade", "convection_amplifier", "penetration_script", "heatsink", "prismatic_lens", "backup_protocol"])]
+        boost_atks = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["zero_to_sixty", "zipper", "pulsewave", "t_bone", "expedite"])]
+
+        if (crank_items or boost_atks) and my_hp >= 4:
+            primary = crank_items[0] if crank_items else boost_atks[0]
+            p_name = str(primary.get("cardNumber") or primary.get("name", ""))
+            reserved: Set[str] = {p_name}
+            reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+            max_blocks = max(0, len(hand) - len(reserved_in_hand))
+            return TurnPlan(
+                plan_type="DASH_IO_CRANK_CHAIN",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 8),
+                max_block_cards=max_blocks,
+                priority_action_types=["crank_item", "weapon", "boost_attack"],
+                offensive_potential=float(boost_atks[0].get("power", 4) if boost_atks else 5.0) + 4.0,
+                reason=f"Dash IO plan: sequencing Crank item {p_name} into weapon/boost attacks"
+            )
 
         return super().analyze_turn_plan(state)
 
@@ -103,12 +204,12 @@ class RunebladeStrategy(HeroStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
-                reason="Runeblade survival mode: blocking dangerous damage"
+                reason="Runeblade survival mode: blocking critical or fatal damage"
             )
 
         if my_hp >= 10 and not has_dangerous_on_hit:
@@ -130,6 +231,74 @@ class RunebladeStrategy(HeroStrategy):
                     offensive_potential=float(aa_cards[0].get("power", 4)) + 3.0,
                     reason="Runeblade hybrid plan: sequencing NAA aura into physical/arcane attack"
                 )
+
+        return super().analyze_turn_plan(state)
+
+
+class VynnsetStrategy(RunebladeStrategy):
+    """
+    Estratégia especializada para Vynnset, Iron Maiden.
+    Sinergia com Shadow e Runegate: banimento no início do turno para criar Runechants,
+    reduzindo o custo de ataques jogados do Banish (Flail of Agony, Grimoire, etc.).
+    """
+
+    @lru_cache(maxsize=1024)
+    def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
+        score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
+        c_low = card_name.lower()
+        if "flail_of_agony" in c_low:
+            score += 10.0
+        elif "grimoire_of_haunt" in c_low or "grimoire_of_fellingsong" in c_low:
+            score += 9.0
+        elif any(k in c_low for k in ["runegate", "funeral_moon", "shadow_puppetry", "dimenxxional"]):
+            score += 8.0
+        return score
+
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        """Habilidade de início de turno de Vynnset: banir carta da mão para criar Runechant."""
+        hand = state.get("playerHand", [])
+        if len(hand) >= 2:
+            return 18.0
+        return 0.0
+
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+        score = 8.0 + (3.0 if floating_res >= 1 else 0.0)
+        return score
+
+    def analyze_turn_plan(self, state: dict) -> TurnPlan:
+        my_hp = int(state.get("playerHealth", 40))
+        hand = state.get("playerHand", [])
+        banish = state.get("playerBanish", [])
+        active_chain = state.get("activeChainLink") or {}
+        opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+        incoming_name = str(active_chain.get("cardNumber", "")).lower()
+
+        is_fatal = (my_hp - opp_power) <= 0
+        has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Vynnset survival mode: blocking critical or fatal damage"
+            )
+
+        runegate_cards = [c for c in list(banish) + list(hand) if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["flail", "grimoire", "runegate", "shadow"])]
+        if runegate_cards and my_hp >= 10:
+            rg_name = str(runegate_cards[0].get("cardNumber") or runegate_cards[0].get("name", ""))
+            reserved: Set[str] = {rg_name}
+            reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+            max_blocks = max(0, len(hand) - len(reserved_in_hand))
+            return TurnPlan(
+                plan_type="VYNNSET_RUNEGATE_PRESSURE",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 12),
+                max_block_cards=max_blocks,
+                priority_action_types=["banish_ability", "runegate_attack", "weapon"],
+                offensive_potential=7.0,
+                reason=f"Vynnset plan: setting up Runegate attack {rg_name} via Runechants"
+            )
 
         return super().analyze_turn_plan(state)
 
@@ -170,12 +339,12 @@ class WizardStrategy(HeroStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
-                reason="Wizard survival mode: blocking dangerous physical damage"
+                reason="Wizard survival mode: blocking critical or fatal damage"
             )
 
         blue_pitches = [c for c in hand if int(c.get("pitch", 1)) == 3]
@@ -227,12 +396,12 @@ class IllusionistStrategy(HeroStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
-                reason="Illusionist survival mode: blocking dangerous damage"
+                reason="Illusionist survival mode: blocking critical or fatal damage"
             )
 
         heralds = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["herald", "phantasm"])]
@@ -286,12 +455,12 @@ class AssassinStrategy(HeroStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= 4) or is_fatal:
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
-                reason="Assassin survival mode: blocking dangerous damage"
+                reason="Assassin survival mode: blocking critical or fatal damage"
             )
 
         contracts = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["contract", "stealth", "surgical", "leave_no_witnesses"])]
@@ -313,6 +482,89 @@ class AssassinStrategy(HeroStrategy):
         return super().analyze_turn_plan(state)
 
 
+class ArakniMarionetteStrategy(AssassinStrategy):
+    """
+    Estratégia especializada para Arakni, Marionette ("Mario").
+    Combina contratos de banimento (Leave no Witnesses, Cut from the Same Cloth),
+    ataques com adagas com Piercing (Hunters Klaive), ativação punitiva de
+    Flick Knives na etapa de reação e recuperação via Codex of Frailty.
+    """
+
+    @lru_cache(maxsize=1024)
+    def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
+        score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
+        c_low = card_name.lower()
+        if "leave_no_witnesses" in c_low:
+            score += 12.0  # On-hit bane todo o arsenal e gera prata
+        elif "cut_from_the_same_cloth" in c_low:
+            score += 9.0
+        elif "art_of_desire" in c_low:
+            score += 8.0
+        elif "codex_of_frailty" in c_low:
+            score += 14.0  # Cria ponder, força descarte no oponente e recupera ataque do cemitério
+        elif any(k in c_low for k in ["incision", "kiss_of_death", "meet_madness", "mark_of_the_black_widow"]):
+            score += 7.0
+        return score
+
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+        # Hunters Klaive com Piercing 1 é pressão contínua
+        score = 6.0 + (3.0 if floating_res >= 2 else 0.0)
+        return score
+
+    def evaluate_equipment_ability(self, state_or_name, eq_info_or_floating: Any = None, hand_attacks: list = None, **kwargs) -> float:
+        if isinstance(state_or_name, dict):
+            eq_info = eq_info_or_floating if isinstance(eq_info_or_floating, dict) else kwargs.get("eq_info", {})
+            eq_name = str(eq_info.get("cardNumber") or eq_info.get("name", "")).lower()
+        else:
+            eq_name = str(state_or_name or "").lower()
+
+        if "flick_knives" in eq_name:
+            # Arremessar adaga na Reaction Step é a finalização perfeita de Arakni Marionette
+            return 18.0
+        elif "blacktek_whisperers" in eq_name:
+            return 14.0  # Concede Go Again ao ataque de adaga/contrato
+        return super().evaluate_equipment_ability(state_or_name, eq_info_or_floating, hand_attacks=hand_attacks, **kwargs)
+
+    def analyze_turn_plan(self, state: dict) -> TurnPlan:
+        my_hp = int(state.get("playerHealth", 40))
+        hand = state.get("playerHand", [])
+        active_chain = state.get("activeChainLink") or {}
+        opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+        incoming_name = str(active_chain.get("cardNumber", "")).lower()
+
+        is_fatal = (my_hp - opp_power) <= 0
+        has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Arakni Marionette survival mode: blocking critical or fatal damage"
+            )
+
+        # Se tiver Codex of Frailty na mão: jogar primeiro para forçar oponente a descartar e recuperar ataque
+        has_codex = any("codex_of_frailty" in str(c.get("cardNumber") or c.get("name", "")).lower() for c in hand)
+        contracts = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["leave_no_witnesses", "cut_from_the_same_cloth", "art_of_desire", "incision"])]
+
+        if (has_codex or contracts) and my_hp >= 10:
+            c_target = "codex_of_frailty" if has_codex else str(contracts[0].get("cardNumber") or contracts[0].get("name", ""))
+            reserved: Set[str] = {c_target}
+            reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+            max_blocks = max(0, len(hand) - len(reserved_in_hand))
+            return TurnPlan(
+                plan_type="ARAKNI_MARIONETTE_CONTRACT",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 12),
+                max_block_cards=max_blocks,
+                priority_action_types=["codex_disrupt", "contract_attack", "flick_knives", "weapon"],
+                offensive_potential=8.0,
+                reason=f"Arakni Marionette plan: holding {c_target} for contract banish and dagger tempo"
+            )
+
+        return super().analyze_turn_plan(state)
+
+
 class MerchantStrategy(HeroStrategy):
     """
     Estratégia especializada para a classe Merchant / Bard / Misc
@@ -320,3 +572,105 @@ class MerchantStrategy(HeroStrategy):
     Gerenciamento de recursos utilitários e moedas Gold/Silver.
     """
     is_heavy_hero: bool = False
+
+    @lru_cache(maxsize=1024)
+    def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
+        score = float(power)
+        c_low = card_name.lower()
+        if any(k in c_low for k in ["gold", "silver", "treasure", "bounty", "cash"]):
+            score += 4.0
+        if has_go_again:
+            score += 3.5
+        return score
+
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+        score = 5.0 + (2.0 if floating_res >= 2 else 0.0)
+        return score
+
+
+class GravyBonesStrategy(MerchantStrategy):
+    """
+    Estratégia especializada para Gravy Bones, Shipwrecked Looter (Pirata / Necromante).
+    Utiliza ativamente Compass of Sunken Depths e Gold Baited Hook para geração de valor,
+    e finaliza com ataques de pirata devastadores (Conqueror of the High Seas, Riggermortis,
+    Saltwater Swell, Sawbones) em vez de permanecer passivo.
+    """
+
+    @lru_cache(maxsize=1024)
+    def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
+        score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
+        c_low = card_name.lower()
+        if "conqueror_of_the_high_seas" in c_low:
+            score += 12.0  # Finalizador massivo com alto poder
+        elif "riggermortis" in c_low:
+            score += 10.0
+        elif "saltwater_swell" in c_low:
+            score += 7.0
+        elif "sawbones_dock_hand" in c_low:
+            score += 7.0
+        elif "blood_in_the_water" in c_low:
+            score += 8.0
+        elif any(k in c_low for k in ["chum", "fearless_confrontation", "avast_ye"]):
+            score += 6.0
+        return score
+
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+        # Compass of Sunken Depths: ativa para interagir com o cemitério e gerar cartas
+        score = 8.0 + (2.0 if floating_res >= 1 else 0.0)
+        return score
+
+    def evaluate_equipment_ability(self, state_or_name, eq_info_or_floating: Any = None, hand_attacks: list = None, **kwargs) -> float:
+        if isinstance(state_or_name, dict):
+            eq_info = eq_info_or_floating if isinstance(eq_info_or_floating, dict) else kwargs.get("eq_info", {})
+            eq_name = str(eq_info.get("cardNumber") or eq_info.get("name", "")).lower()
+        else:
+            eq_name = str(state_or_name or "").lower()
+        if "gold_baited_hook" in eq_name or "hook" in eq_name:
+            return 14.0
+        elif "dead_threads" in eq_name:
+            return 10.0
+        return super().evaluate_equipment_ability(state_or_name, eq_info_or_floating, hand_attacks=hand_attacks, **kwargs)
+
+    def analyze_turn_plan(self, state: dict) -> TurnPlan:
+        my_hp = int(state.get("playerHealth", 40))
+        hand = state.get("playerHand", [])
+        active_chain = state.get("activeChainLink") or {}
+        opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+        incoming_name = str(active_chain.get("cardNumber", "")).lower()
+
+        is_fatal = (my_hp - opp_power) <= 0
+        has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Gravy Bones survival mode: blocking critical or fatal damage"
+            )
+
+        # Buscar ataques de pirata fortes para ofensiva agressiva
+        heavy_atks = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["conqueror_of_the_high_seas", "riggermortis", "sawbones", "saltwater_swell", "blood_in_the_water"])]
+        pitch_cards = [c for c in hand if int(c.get("pitch", 1)) >= 2]
+
+        if heavy_atks and my_hp >= 10:
+            atk_card = heavy_atks[0]
+            a_name = str(atk_card.get("cardNumber") or atk_card.get("name", ""))
+            reserved: Set[str] = {a_name}
+            if pitch_cards and pitch_cards[0] is not atk_card:
+                reserved.add(str(pitch_cards[0].get("cardNumber") or pitch_cards[0].get("name", "")))
+
+            reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+            max_blocks = max(0, len(hand) - len(reserved_in_hand))
+            return TurnPlan(
+                plan_type="GRAVY_PIRATE_ASSAULT",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 12),
+                max_block_cards=max_blocks,
+                priority_action_types=["compass_ability", "pirate_attack", "weapon"],
+                offensive_potential=float(atk_card.get("power", 6)),
+                reason=f"Gravy Bones plan: reserving {a_name} for pirate assault and treasure pressure"
+            )
+
+        return super().analyze_turn_plan(state)
+

@@ -158,5 +158,10 @@
       "identifier": "unmake_the_underlings_blue",
       "total": 1
     }
-  ]
+  ],
+  "hero": "arakni_marionette",
+  "hero_name": "Arakni, Marionette",
+  "class": "ASSASSIN",
+  "talents": [],
+  "is_young": false
 }

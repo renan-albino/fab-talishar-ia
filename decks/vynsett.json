@@ -146,5 +146,10 @@
       "identifier": "widespread_annihilation_blue",
       "total": 3
     }
-  ]
+  ],
+  "hero": "vynnset_iron_maiden",
+  "hero_name": "Vynnset, Iron Maiden",
+  "class": "RUNEBLADE",
+  "talents": [],
+  "is_young": false
 }

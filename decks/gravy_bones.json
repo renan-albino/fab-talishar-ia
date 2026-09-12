@@ -166,5 +166,13 @@
       "identifier": "tip_the_barkeep_blue",
       "total": 3
     }
-  ]
+  ],
+  "hero": "gravy_bones_shipwrecked_looter",
+  "hero_name": "Gravy Bones, Shipwrecked Looter",
+  "class": "PIRATE,NECROMANCER",
+  "talents": [
+    "PIRATE",
+    "NECROMANCER"
+  ],
+  "is_young": false
 }

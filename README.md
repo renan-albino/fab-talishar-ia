@@ -90,7 +90,7 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
 ### 3. 📦 Gestão de Estado Essencial & Releases Automáticas
 - **Pacotes Ultracompactos (`scripts/manage_state.py`)**: Empacotamento inteligente de checkpoints, replay buffer e métricas em pacotes `.tar.gz` de apenas **~6.5 MB** (ao invés de gigabytes de logs ou lixo temporário).
 - **Git Hooks Integrados (`pre-commit` e `post-commit`)**:
-  - `pre-commit`: Higieniza logs, exporta templates e valida sintaxe.
+  - `pre-commit`: Higieniza logs, exporta templates, valida sintaxe Python, testa a compilação do Frontend Vite (`npx vite build`) e audita contra vazamentos de caminhos pessoais (`/home/<user>`).
   - `post-commit`: Detecta quando novos modelos foram treinados e atualiza instantaneamente a release **`checkpoint-latest`** no GitHub usando o `gh release upload --clobber`.
 - **Portabilidade Total**: Clone o repositório em uma máquina remota ou VPS, baixe o checkpoint mais recente com `python scripts/manage_state.py --download-release` e continue o treino de onde parou em segundos.
 
@@ -120,12 +120,12 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 | Módulo | Responsabilidade Principal |
 | :--- | :--- |
 | [`ai/model.py`](ai/model.py) | Rede Neural ResNet Dual-Head (`FaBPolicyValueNetwork`) com LayerNorm e 192 entradas de estado. |
-| [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tática unificado. Alterna dinamicamente entre **ISMCTS** (quando o oponente tem cartas na mão) e **MCTS clássico** (quando a informação é completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl` em todas as fases, coordena quantificação de ameaça On-Hit, otimizador de breakpoint mínimo de defesa e podas táticas de ataque, pitch, bloqueio e arsenal. |
+| [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tática unificado. Alterna dinamicamente entre **ISMCTS** (quando o oponente tem cartas na mão) e **MCTS clássico** (quando a informação é completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl` em todas as fases, coordena quantificação de ameaça On-Hit, otimizador de breakpoint mínimo de defesa, proteção ativa de arsenal com Crown of Providence, bloqueio flexível e podas táticas de ataque, pitch, bloqueio e arsenal. |
 | [`ai/equipment_learning.py`](ai/equipment_learning.py) | Motor de aprendizado empírico de equipamentos por experiência pós-partida. Rastreia ativações e bloqueios por herói (`EquipmentTracker`), monitora taxas de vitória e calibra multiplicadores aprendidos dinâmicos $\in [0.5, 2.0]$ em `data/equipment_usage_stats.json`. |
 | [`ai/dynamic_rule_tuner.py`](ai/dynamic_rule_tuner.py) | Auto-tuner dinâmico de pesos heurísticos (ataque, bloqueio, pivot e arsenal) ajustados em tempo real com base nas taxas de vitória empíricas de cada herói em `data/hero_rule_multipliers.json`. |
 | [`ai/blunder_reviewer.py`](ai/blunder_reviewer.py) | Analisador automático de trajetórias para Prioritized Experience Replay (PER). Identifica e pondera blunders (-3.0), imprecisões e viradas brilhantes (+3.0) para acelerar o treinamento neural. |
 | [`ai/mcts.py`](ai/mcts.py) | Motores `MCTSEngine` e `ISMCTSEngine`. Amostragem de mundos (*Deck-Aware World Sampling* com leitura dinâmica de `opponentHand`) e agregação ponderada de votos. |
-| [`ai/hero_strategies/`](ai/hero_strategies/) | Registro canônico de todos os 139 heróis oficiais e estratégias polimórficas por arquétipo/classe: `GuardianStrategy`, `JarlStrategy`, `BruteStrategy`, `WarriorStrategy`, `NinjaStrategy`, `RangerStrategy`, `MarlynnStrategy`, `MechanologistStrategy`, `RunebladeStrategy`, `WizardStrategy`, `IllusionistStrategy`, `AssassinStrategy` e `MerchantStrategy`. Avaliação 100% orientada a dados sem nomes fixos de equipamentos. |
+| [`ai/hero_strategies/`](ai/hero_strategies/) | Registro canônico de todos os 139 heróis oficiais e estratégias polimórficas por arquétipo/classe: `GuardianStrategy`, `JarlStrategy`, `BruteStrategy`, `WarriorStrategy`, `NinjaStrategy`, `RangerStrategy`, `MarlynnStrategy`, `MechanologistStrategy`, `RunebladeStrategy`, `WizardStrategy`, `IllusionistStrategy`, `AssassinStrategy` e `MerchantStrategy`. Avaliação 100% orientada a dados sem nomes fixos de equipamentos, com assinatura polimórfica universal e planos de turno dedicados (ex.: DashIO, GravyBones, Arakni). |
 | [`ai/game_simulator.py`](ai/game_simulator.py) | Simulador determinístico de regras de FaB para expansão sintética nas folhas da árvore de busca. |
 | [`ai/trainer.py`](ai/trainer.py) | Orquestrador de self-play e treino com Distilação Assimétrica contra $\pi_{\text{MCTS}}$, Prioritized Experience Replay (PER), AMP FP16 e prioridade `nice 10`. |
 | [`ai/experience_collector.py`](ai/experience_collector.py) | Replay Buffer circular em memória com amostragem priorizada por importância (PER), dense reward shaping e serialização compacta em `.npz`. |
@@ -243,6 +243,26 @@ Para navegar a complexidade de regras do Flesh and Blood e garantir jogadas de n
 * **Amostragem Ponderada de Experiências (`ai/experience_collector.py`)**: Replay buffer com amostragem priorizada por importância (PER) e dense reward shaping.
 * **Blunder Reviewer Automático (`ai/blunder_reviewer.py`)**: Identifica e superamostra lances críticos de erro (-3.0) e viradas brilhantes (+3.0) para acelerar o treinamento da rede neural com partidas de alta densidade tática.
 * **Dynamic Rule Tuner (`ai/dynamic_rule_tuner.py`)**: Modula multiplicadores heurísticos de ataque, bloqueio, pivot e arsenal em `data/hero_rule_multipliers.json` com base na taxa de vitórias real de cada herói.
+
+### 10. Proteção Ativa de Arsenal & Otimização da Crown of Providence
+* **Detecção de Ameaças Críticas ao Arsenal**: Se o oponente ataca com cartas que destroem ou banem o Arsenal (*Command and Conquer*, *Leave No Witnesses*, *Eradicate*, *Wreck Havoc*, *Humble*) e o bot possui carta guardada no Arsenal, a `Crown of Providence` ganha prioridade defensiva máxima (`score +35.0`, custo `1.0`), entrando na cadeia de bloqueio para conceder 2 de defesa e ativar seu gatilho de *Blade Break*.
+* **Sinking / Tuck Tático Inteligente (`_score_choice_candidate`)**:
+  * **Sob Ameaça ao Arsenal**: O bot seleciona a própria carta do Arsenal para ser enviada ao fundo do deck (`score +150.0`), anulando a destruição do Arsenal pelo oponente e comprando uma nova carta para a mão.
+  * **Arsenal Seguro**: O bot protege o Arsenal (`score -200.0`) e inverte a pontuação das cartas da mão (`score = -raw_score`), afundando a **pior carta** da mão (com menor valor tático) para ciclar e buscar recursos ou cartas vermelhas de pressão.
+* **Ciclo de Mão Disfuncional**: Se a mão contiver $\ge 3$ cartas e nenhuma tiver pitch azul/amarelo (ou não houver cartas de ataque), a Crown bloqueia para destravar a mão e comprar uma peça útil para o turno seguinte.
+
+### 11. Poda de Equipamentos de Prevenção e Reação no Vazio
+* **Prevenção Sem Dano Ativo (`Boots of Omniward`, Ward, Arcane Barrier, Prevent)**: Proíbe terminantemente a ativação ou sacrifício de equipamentos de prevenção em janelas de reação/instante quando `opp_power <= 0` e `arcane_damage <= 0`, eliminando o desperdício de itens descartáveis sem valor extraído.
+* **Preservação Contra Dano Trivial em Vida Alta**: Se o herói está saudável ($HP > 15$) e o dano não é fatal nem possui efeito on-hit, itens de sacrifício único como *Boots of Omniward* são preservados para a fase de sobrevivência.
+* **Validação de Reações Ofensivas (`Snapdragon Scalers`, `Flick Knives`)**: Ativação restrita ao próprio turno de ataque, exigindo que o ataque não possua *Go Again* prévio e que haja cartas na mão para converter o Ponto de Ação ganho em novas ações de ataque.
+
+### 12. Bloqueio Flexível com Validação de Conversão de Mão
+* **Conversão de Mão vs Absorção de Dano**: Em vez de bloquear obrigatoriamente quando não há perigo letal, a IA avalia se as cartas da mão possuem baixa eficiência defensiva (média de bloco $\le 2.0$) e se o plano de turno permite absorver dano (`can_absorb_damage`). Nesses casos, o bot prefere sofrer o dano para manter 3 ou 4 cartas e converter um contra-ataque de alto valor ofensivo no seu próprio turno.
+* **Sobrevivência Estrita**: Quando a vida entra em risco crítico ($HP \le 6$) ou diante de dano letal iminente, o modo de sobrevivência sobrepõe o pivot e bloqueia com todas as peças necessárias para salvar a vida do herói.
+
+### 13. Treino Híbrido Humano vs Bot com Telemetria e Bônus ELO
+* **Registro de Salas Humanas**: Identificação de partidas jogadas na sala humana (`human_player_match`), exibindo no dashboard o log completo para pós-análise e pruning de estratégias de heróis.
+* **Bônus de Aprendizado contra Humanos**: Vitórias contra jogadores humanos atribuem maior pontuação de reforço e métricas calibradas para acelerar a especialização dos bots.
 
 ---
 

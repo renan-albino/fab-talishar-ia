@@ -560,7 +560,7 @@ class PolicyEngine:
 
                     # Poda de arcos tradicionais: só carrega flecha se o Arsenal estiver livre
                     if is_traditional_bow:
-                        arsenal_cards = state.get("playerArsenal", [])
+                        arsenal_cards = state.get("playerArsenal") or state.get("playerArse") or []
                         if isinstance(arsenal_cards, list) and len(arsenal_cards) > 0:
                             continue
                         if turn_plan.plan_type == "DEFENSIVE_TRAP":
@@ -569,7 +569,7 @@ class PolicyEngine:
                     # Tratamento de Hammerhead, Harpoon Cannon:
                     # É uma habilidade de canhão que concede +4 e Overpower ao próximo ataque Harpoon
                     if is_hammerhead:
-                        all_cards = list(state.get("playerHand", [])) + list(state.get("playerArsenal", []))
+                        all_cards = list(state.get("playerHand", [])) + list(state.get("playerArsenal") or state.get("playerArse") or [])
                         arrows_ready = [
                             c for c in all_cards
                             if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["arrow", "harpoon", "bolt", "trophy", "goldfin", "king_kraken", "king_shark"])
@@ -639,7 +639,7 @@ class PolicyEngine:
 
         # ── 1.4 Arsenal e Banish ────────────────────────────────────
         for zone_name, key in [("Arsenal", "playerArsenal"), ("Banish", "playerBanish")]:
-            zone = state.get(key, [])
+            zone = state.get(key) or (state.get("playerArse", []) if key == "playerArsenal" else [])
             for c in zone:
                 action = c.get("action", 0)
                 c_name = str(c.get("cardNumber", "Card")).lower()
@@ -896,7 +896,7 @@ class PolicyEngine:
                     })
 
         # ── 3.1b Cartas no Arsenal que podem defender (Ambush e Down and Dirty) ──
-        arsenal = state.get("playerArsenal", [])
+        arsenal = state.get("playerArsenal") or state.get("playerArse") or []
         for a_idx, c in enumerate(arsenal):
             info = self.extract_card_info(c)
             c_name_low = info["name"].lower()
@@ -956,25 +956,57 @@ class PolicyEngine:
             if eq_action <= 0 and "action" in eq:
                 continue
 
+            is_crown = "crown_of_providence" in eq_name
+            arsenal = state.get("playerArsenal") or state.get("playerArse") or []
+            has_arsenal = len(arsenal) > 0
+            is_arsenal_threat = has_arsenal and (
+                any(k in incoming_name for k in ["command_and_conquer", "leave_no_witnesses", "wreck_havoc", "eradicate", "humble", "righteous_cleansing"])
+                or ("arsenal" in incoming_text and any(w in incoming_text for w in ["destroy", "banish", "put"]))
+            )
+            # Avaliação de mão para Crown of Providence ciclar cartas
+            hand_cards = state.get("playerHand", [])
+            hand_info = [self.extract_card_info(c) for c in hand_cards]
+            num_attacks = sum(1 for c in hand_info if c["power"] > 0)
+            num_pitches = sum(1 for c in hand_info if c["pitch"] >= 2)
+            is_awkward_hand = (len(hand_cards) >= 3 and (num_pitches == 0 or num_attacks == 0))
+
             # ── REGRA DE OURO: Poda Estrita de Armadura em Ataques Vanilla ──
             # Se o ataque NÃO possui efeito On-Hit e nossa vida está saudável (HP > 12),
             # armaduras NUNCA devem ser queimadas para mitigar dano comum!
+            # Exceção: Crown of Providence quando a mão está disfuncional e precisa de ciclo
             if on_hit_threat == 0.0 and my_hp > 12:
-                continue
+                if not (is_crown and is_awkward_hand):
+                    continue
 
             has_bw = bool(db_entry.get("has_battleworn") or "battleworn" in str(db_entry.get("subtype", "")).lower())
             has_bb = bool(db_entry.get("has_blade_break") or "blade break" in str(db_entry.get("subtype", "")).lower() or "ironrot" in eq_name)
             has_temp = bool(db_entry.get("has_temper") or "temper" in str(db_entry.get("subtype", "")).lower())
 
             has_active_ability = bool(db_entry.get("ability_cost") is not None or any(k in eq_name for k in [
-                "crown_of_providence", "goliath_gauntlet", "heartened_cross_strap", "snapdragon_scalers",
+                "goliath_gauntlet", "heartened_cross_strap", "snapdragon_scalers",
                 "fyendals_spring_tunic", "scabskin_leathers", "barkbone_strapping", "tunic"
             ]))
 
             eq_cost = 3.5
             eq_score = float(effective_block) * 3.0
 
-            if has_bw:
+            if is_crown:
+                if is_arsenal_threat:
+                    eq_score += 35.0  # Prioridade máxima: salva o Arsenal de destruição/on-hit e puxa carta nova
+                    eq_cost = 1.0
+                elif my_hp <= 6 or (has_dangerous_on_hit and opp_power >= my_hp):
+                    eq_score += 20.0  # Modo sobrevivência: salva vida crítica
+                    eq_cost = 1.5
+                elif has_dangerous_on_hit and not (any(k in incoming_name for k in ["command_and_conquer", "leave_no_witnesses", "wreck_havoc", "eradicate"]) and not has_arsenal):
+                    eq_score += 16.0  # Parar on-hit perigoso ativo
+                    eq_cost = 2.0
+                elif my_hp <= 12 or is_awkward_hand:
+                    eq_score += 10.0  # Pressão ou ciclo de mão disfuncional
+                    eq_cost = 2.5
+                else:
+                    eq_score -= 25.0  # Poupar Crown (Blade Break valioso)
+                    eq_cost = 25.0
+            elif has_bw:
                 eq_score += 8.0  # Battleworn é prioridade máxima: bloqueia de graça e sobrevive
                 eq_cost = 1.5
             elif has_temp:
@@ -1027,6 +1059,12 @@ class PolicyEngine:
                         hand_count = sum(1 for item in subset if item.get("is_hand"))
                         if hand_count > max_hand_in_subset:
                             continue
+                        # Poda de Bloqueio Ineficiente: Se o plano permite absorver dano para pivotar
+                        # ou vida saudável (> 12), rejeitar subconjuntos com 2+ cartas de mão com média <= 2.0 block
+                        if turn_plan.can_absorb_damage and hand_count >= 2:
+                            avg_hand_block = sum(item["block"] for item in subset if item.get("is_hand")) / hand_count
+                            if avg_hand_block <= 2.0:
+                                continue
                         overblock = tot_block - opp_power
                         sub_cost = sum(item["cost"] for item in subset) + (overblock * 0.7)
                         valid_subsets.append((sub_cost, subset))
@@ -1084,6 +1122,10 @@ class PolicyEngine:
         for item in block_candidates:
             is_equip = item.get("is_equipment", False)
             if not is_equip and hand_blocks_count >= max_hand_blocks:
+                continue
+
+            # Poda de Bloqueio Ineficiente com Block <= 2 quando o plano é absorver dano:
+            if turn_plan.can_absorb_damage and not is_equip and item["block"] <= 2 and my_hp > 12:
                 continue
 
             # Poda de Bloqueio Ineficiente: Não bloqueia se score for muito negativo com HP alto

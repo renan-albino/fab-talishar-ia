@@ -20,8 +20,101 @@ orchestrator = GPUTrainingOrchestrator()
 gpu_available = torch.cuda.is_available()
 gpu_name = torch.cuda.get_device_name(0) if gpu_available else "CPU"
 
-fe_running = frontend_manager.is_frontend_running()
-be_running = frontend_manager.is_backend_running()
+# Helpers de Cache de Alta Performance (Eliminam gargalos de I/O em reruns)
+@st.cache_data(ttl=4)
+def get_cached_services_status():
+    return frontend_manager.is_frontend_running(), frontend_manager.is_backend_running()
+
+@st.cache_data(ttl=5)
+def get_cached_saved_decks():
+    return list_saved_decks()
+
+@st.cache_data(ttl=3)
+def get_cached_stats_data():
+    return get_stats_data()
+
+def read_text_tail(filepath: str, max_lines: int = 80, chunk_size: int = 32768) -> str:
+    """Lê as últimas N linhas de um arquivo de texto sem carregar o arquivo inteiro na memória."""
+    if not os.path.exists(filepath):
+        return ""
+    try:
+        fsize = os.path.getsize(filepath)
+        if fsize == 0:
+            return ""
+        with open(filepath, "rb") as f:
+            if fsize <= chunk_size:
+                lines = f.read().decode("utf-8", errors="replace").splitlines()
+                return "\n".join(lines[-max_lines:])
+            f.seek(max(0, fsize - chunk_size))
+            chunk = f.read().decode("utf-8", errors="replace")
+            lines = chunk.splitlines()
+            return "\n".join(lines[-max_lines:])
+    except Exception:
+        return ""
+
+def read_jsonl_tail(filepath: str, max_lines: int = 100, chunk_size: int = 65536) -> list:
+    """Lê eficientemente apenas as últimas N linhas de um arquivo jsonl grande sem carregar tudo na memória."""
+    if not os.path.exists(filepath):
+        return []
+    lines = []
+    try:
+        file_size = os.path.getsize(filepath)
+        if file_size == 0:
+            return []
+        with open(filepath, "rb") as f:
+            if file_size <= chunk_size:
+                raw_lines = f.read().decode("utf-8", errors="replace").splitlines()
+                for l in reversed(raw_lines):
+                    l_s = l.strip()
+                    if l_s:
+                        lines.append(l_s)
+                        if len(lines) >= max_lines:
+                            break
+            else:
+                buffer = b""
+                f.seek(0, os.SEEK_END)
+                pos = f.tell()
+                while pos > 0 and len(lines) < max_lines:
+                    read_size = min(chunk_size, pos)
+                    pos -= read_size
+                    f.seek(pos)
+                    chunk = f.read(read_size)
+                    buffer = chunk + buffer
+                    parts = buffer.split(b"\n")
+                    buffer = parts[0]
+                    for p in reversed(parts[1:]):
+                        p_s = p.strip().decode("utf-8", errors="replace")
+                        if p_s:
+                            lines.append(p_s)
+                            if len(lines) >= max_lines:
+                                break
+                if buffer and len(lines) < max_lines:
+                    p_s = buffer.strip().decode("utf-8", errors="replace")
+                    if p_s:
+                        lines.append(p_s)
+
+        records = []
+        for l in reversed(lines):
+            try:
+                records.append(json.loads(l))
+            except Exception:
+                pass
+        return records
+    except Exception:
+        return []
+
+@st.cache_data(ttl=15)
+def get_fast_line_count(filepath: str) -> int:
+    """Conta rapidamente as linhas de um arquivo grande lendo blocos binários de 1MB com cache de 15s."""
+    if not os.path.exists(filepath):
+        return 0
+    try:
+        with open(filepath, "rb") as f:
+            return sum(chunk.count(b"\n") for chunk in iter(lambda: f.read(1024 * 1024), b""))
+    except Exception:
+        return 0
+
+fe_running, be_running = get_cached_services_status()
 
 col_title1, col_title2, col_title3 = st.columns([3, 1, 1])
 with col_title1:
@@ -39,8 +132,8 @@ with col_title3:
     else:
         st.info("🌐 Frontend: **Offline**")
 
-# Carrega decks salvos
-saved_decks = list_saved_decks()
+# Carrega decks salvos (com cache)
+saved_decks = get_cached_saved_decks()
 deck_options = {f"{d.get('name', d.get('slug'))} ({str(d.get('format', 'blitz')).upper()} - {d.get('total_cards', 0)} cartas)": d.get('slug') for d in saved_decks}
 
 # Abas Principais da Aplicação
@@ -132,6 +225,86 @@ with tab_play:
         st.link_button("👉 ENTRAR NA PARTIDA (Abrir Lobby no Navegador)", match_info['lobby_url'], type="primary", use_container_width=True)
 
     st.markdown("---")
+    st.subheader("🕹️ Monitor de Sala & Análise de Pruning (Humano vs Bot)")
+    st.caption("Acompanhe os logs da sala em tempo real, revise decisões do bot e copie sumários para análise e poda de jogadas (pruning).")
+
+    # Descobrir salas de partidas Humano vs Bot
+    logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+    human_log_files = []
+    if os.path.exists(logs_dir):
+        for f in os.listdir(logs_dir):
+            if f.startswith("Human_vs_Bot_") and f.endswith(".log"):
+                human_log_files.append(f)
+
+    # Ordenar pelos mais recentes
+    human_log_files.sort(key=lambda x: os.path.getmtime(os.path.join(logs_dir, x)) if os.path.exists(os.path.join(logs_dir, x)) else 0, reverse=True)
+
+    available_rooms = []
+    if "active_human_match" in st.session_state:
+        cur_room = str(st.session_state["active_human_match"].get("game_name", ""))
+        if cur_room:
+            available_rooms.append(f"Sala #{cur_room} (Partida Atual)")
+
+    for hf in human_log_files:
+        room_cand = hf.replace("Human_vs_Bot_", "").replace(".log", "")
+        label = f"Sala #{room_cand}"
+        if label not in available_rooms and f"Sala #{room_cand} (Partida Atual)" not in available_rooms:
+            available_rooms.append(label)
+
+    if available_rooms:
+        col_r1, col_r2 = st.columns([3, 1])
+        with col_r1:
+            selected_room_label = st.selectbox("Selecione a Sala para Inspeção:", available_rooms, index=0, key="inspect_human_room")
+            sel_room_id = selected_room_label.split(" ")[1].replace("#", "")
+        with col_r2:
+            st.write("")
+            st.write("")
+            btn_refresh_log = st.button("🔄 Atualizar Log da Sala", key="btn_refresh_human_log")
+
+        # Arquivos de log associados à sala
+        bot_proc_log = os.path.join(logs_dir, f"Human_vs_Bot_{sel_room_id}.log")
+        match_feed_log = os.path.join(logs_dir, f"{sel_room_id}_match_feed.log")
+        bot_debug_log = os.path.join(logs_dir, f"{sel_room_id}_AIMaster_Bot_debug.log")
+        summary_log = os.path.join(logs_dir, f"{sel_room_id}_summary.log")
+
+        col_v1, col_v2 = st.columns([1, 1])
+
+        with col_v1:
+            st.markdown(f"##### 📜 Log de Ações & Decisões da Sala #{sel_room_id}")
+            log_content = ""
+            for lpath in [match_feed_log, bot_proc_log, bot_debug_log]:
+                if os.path.exists(lpath):
+                    log_content = read_text_tail(lpath, max_lines=80)
+                    if log_content:
+                        break
+            if log_content:
+                st.code(log_content, language="text", height=320)
+            else:
+                st.info("Aguardando as primeiras ações da partida...")
+
+        with col_v2:
+            st.markdown(f"##### 🎯 Sumário de Pruning do Herói (Sala #{sel_room_id})")
+            summary_content = ""
+            if os.path.exists(summary_log):
+                try:
+                    with open(summary_log, "r", encoding="utf-8", errors="replace") as sf:
+                        summary_content = sf.read()
+                except Exception:
+                    pass
+
+            if not summary_content and log_content:
+                key_decisions = [line.strip() for line in log_content.split("\n") if any(k in line for k in ["AÇÃO", "PLANO", "Bloqueio", "Atacou", "Ativou", "COMBAT CHAIN", "VENCEU", "FIM DE JOGO"])]
+                summary_content = f"### Partida #{sel_room_id}\n\n" + "\n".join(f"- {d}" for d in key_decisions[-25:])
+
+            if summary_content:
+                st.text_area("Copie o sumário abaixo para solicitar análise do assistente:", value=summary_content, height=260, key="pruning_summary_box")
+                st.caption("💡 **Dica de Pruning:** Envie este log no chat dizendo: *'Analise esta partida da sala para me ajudar com o pruning das jogadas do herói.'*")
+            else:
+                st.info("O sumário de pruning será gerado assim que o primeiro turno for concluído.")
+    else:
+        st.info("Nenhuma partida contra bot registrada ainda. Crie um duelo acima para visualizar os logs da sala!")
+
+    st.markdown("---")
     st.subheader("📋 Decks do Workspace Sincronizados com o Talishar")
     st.caption("Todos os decks criados no Dashboard são automaticamente injetados no menu de Favoritos do Talishar para qualquer usuário ou convidado.")
     if saved_decks:
@@ -212,36 +385,39 @@ with tab_arena:
 
     st.divider()
 
-    def get_available_rooms():
+    @st.cache_data(ttl=2)
+    def get_available_rooms(session_rooms_key: str = ""):
         discovered = set()
         if os.path.exists("logs"):
+            suffixes = (
+                "_match_feed.log",
+                "_summary.log",
+                "_Bot1_debug.log",
+                "_Bot2_debug.log",
+                "_Bot1_terminal.log",
+                "_Bot2_terminal.log",
+                "_Bot1.json",
+                "_Bot2.json",
+                "_p2_ready.txt",
+                "_host_deck.txt",
+                "_join_deck.txt"
+            )
             for fname in os.listdir("logs"):
-                for suffix in [
-                    "_match_feed.log",
-                    "_summary.log",
-                    "_Bot1_debug.log",
-                    "_Bot2_debug.log",
-                    "_Bot1_terminal.log",
-                    "_Bot2_terminal.log",
-                    "_Bot1.json",
-                    "_Bot2.json",
-                    "_p2_ready.txt",
-                    "_host_deck.txt",
-                    "_join_deck.txt"
-                ]:
-                    if fname.endswith(suffix):
-                        room_id = fname[:-len(suffix)]
-                        if room_id:
-                            discovered.add(room_id)
-                        break
+                if fname.endswith(suffixes):
+                    for s in suffixes:
+                        if fname.endswith(s):
+                            room_id = fname[:-len(s)]
+                            if room_id:
+                                discovered.add(room_id)
+                            break
         for r in st.session_state.get("rooms", []):
             if r:
                 discovered.add(r)
         return sorted(list(discovered), reverse=True)
 
-    @st.fragment(run_every="2s")
+    @st.fragment(run_every="3s")
     def render_arena_board():
-        available_rooms = get_available_rooms()
+        available_rooms = get_available_rooms(str(st.session_state.get("rooms", [])))
         if not available_rooms:
             st.info("ℹ️ Nenhuma partida ativa no momento. Escolha os decks e clique em **'🚀 Iniciar Partidas Rápidas'**.")
             return
@@ -308,19 +484,16 @@ with tab_arena:
         log2 = f"logs/{room}_Bot2_debug.log"
         combined = []
         if os.path.exists(match_feed_log):
-            with open(match_feed_log, "r", encoding="utf-8", errors="ignore") as f:
-                for l in f.readlines():
-                    line = l.strip()
-                    if line and not line.startswith("---"):
-                        combined.append(line)
+            feed_text = read_text_tail(match_feed_log, max_lines=60)
+            combined = [l.strip() for l in feed_text.splitlines() if l.strip() and not l.startswith("---")]
         else:
             for lp in [log1, log2]:
                 if os.path.exists(lp):
-                    with open(lp, "r", encoding="utf-8", errors="ignore") as f:
-                        for l in f.readlines():
-                            line = l.strip()
-                            if line and not line.startswith("---"):
-                                combined.append(line)
+                    lp_text = read_text_tail(lp, max_lines=40)
+                    for l in lp_text.splitlines():
+                        line = l.strip()
+                        if line and not line.startswith("---"):
+                            combined.append(line)
             combined.sort(key=lambda x: x[:10] if x.startswith("[") else "")
 
         if combined:
@@ -335,10 +508,15 @@ with tab_arena:
         st.write("")
         st.markdown("#### 🎴 Configuração de Decks & Equipamentos na Match")
 
+        _FALLBACK_DECK_CACHE = getattr(render_arena_board, "_deck_cache", {})
+        render_arena_board._deck_cache = _FALLBACK_DECK_CACHE
+
         def get_fallback_deck_info(d_name):
             if not d_name:
                 return {}
             clean = os.path.basename(str(d_name)).replace(".json", "").lower()
+            if clean in _FALLBACK_DECK_CACHE:
+                return _FALLBACK_DECK_CACHE[clean]
             paths = [f"decks/{clean}.json", f"Talishar/decks/{clean}.json", f"{clean}.json", "deck.json"]
             for p in paths:
                 if os.path.exists(p):
@@ -371,9 +549,13 @@ with tab_arena:
                             "sideboard_count": max(0, len(main) - 60) if len(main) > 60 else 0,
                             "sideboard_cards": main[60:] if len(main) > 60 else []
                         }
+                        _FALLBACK_DECK_CACHE[clean] = res
+                        return res
                     except Exception:
                         pass
-            return {}
+            res = {}
+            _FALLBACK_DECK_CACHE[clean] = res
+            return res
 
         sb1 = m1.get("sideboard_info", {})
         sb2 = m2.get("sideboard_info", {})
@@ -743,10 +925,15 @@ with tab_gpu:
             orchestrator.save_metrics()
             st.toast("Checkpoint manual e Replay Buffer salvos!", icon="💾")
 
-    # Fragmento de Atualização em Tempo Real (a cada 2 segundos)
-    @st.fragment(run_every="2s")
+    # Fragmento de Atualização em Tempo Real (a cada 4 segundos durante treino)
+    @st.fragment(run_every="4s")
     def render_gpu_live_telemetry():
-        orchestrator.load_metrics()
+        if orchestrator.is_running:
+            orchestrator.load_metrics()
+        else:
+            if not getattr(render_gpu_live_telemetry, "_loaded_once", False):
+                orchestrator.load_metrics()
+                render_gpu_live_telemetry._loaded_once = True
         st.divider()
         
         # Status Ativo da Sessão de Treino
@@ -880,6 +1067,7 @@ with tab_decks:
                     with c_d4:
                         if st.button(f"🗑️ Deletar", key=f"del_{d['slug']}", type="secondary"):
                             delete_saved_deck(d["slug"])
+                            get_cached_saved_decks.clear()
                             st.toast(f"Deck '{d['name']}' deletado!", icon="🗑️")
                             st.success(f"Deck **{d['name']}** deletado com sucesso!")
                             st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
@@ -910,6 +1098,7 @@ with tab_decks:
                         try:
                             parsed_cards = json.loads(edited_cards_text)
                             update_saved_deck(edit_slug, new_name_val, new_fmt_val, parsed_cards)
+                            get_cached_saved_decks.clear()
                             st.toast(f"Deck '{new_name_val}' atualizado com sucesso!", icon="💾")
                             st.success(f"Alterações salvas no deck **{new_name_val}**!")
                             st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
@@ -969,6 +1158,7 @@ with tab_decks:
                         st.toast("⚠️ Inconsistências encontradas no Deck!", icon="⚠️")
                     else:
                         res = save_deck_to_workspace(parsed)
+                        get_cached_saved_decks.clear()
                         # Incrementa form_id para resetar os campos de texto no Streamlit
                         st.session_state["import_form_id"] = form_id + 1
                         st.session_state["import_errors"] = []
@@ -993,11 +1183,17 @@ with tab_decks:
 # ABA 5: ANALYTICS & ELO POR DECK
 # ==============================================================================
 with tab_stats:
-    st.subheader("📈 Leaderboard de ELO & Desempenho por Deck")
+    col_st_hdr1, col_st_hdr2 = st.columns([3, 1])
+    with col_st_hdr1:
+        st.subheader("📈 Leaderboard de ELO & Desempenho por Deck")
+    with col_st_hdr2:
+        if st.button("🔄 Atualizar Leaderboard", key="btn_refresh_elo_data", use_container_width=True):
+            get_cached_stats_data.clear()
+            st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
     
-    @st.fragment(run_every="2s")
+    @st.fragment()
     def render_stats_leaderboard():
-        stats_data = get_stats_data()
+        stats_data = get_cached_stats_data()
         deck_stats = stats_data.get("deck_stats", {})
         tot_m = stats_data.get("total_matches", 0)
 
@@ -1072,6 +1268,7 @@ with tab_stats:
                 if st.button("❌ Remover Deck do Ranking", use_container_width=True):
                     if deck_to_del:
                         delete_deck_stat(deck_to_del)
+                        get_cached_stats_data.clear()
                         st.toast(f"Estatísticas do deck '{deck_to_del}' removidas!", icon="🗑️")
                         st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
         else:
@@ -1116,7 +1313,7 @@ with tab_stats:
 
     col_btn1, col_btn2 = st.columns([1, 1])
     with col_btn1:
-        stats_data = get_stats_data()
+        stats_data = get_cached_stats_data()
         tot_m = stats_data.get("total_matches", 0)
         total_training_games = orchestrator.stats.get("total_games", 0)
         if not total_training_games:
@@ -1130,11 +1327,13 @@ with tab_stats:
         if total_training_games > tot_m:
             if st.button(f"⚡ Sincronizar Base ELO com Todas as Partidas do Treino ({total_training_games:,})", use_container_width=True):
                 sync_training_matches(total_training_games)
+                get_cached_stats_data.clear()
                 st.toast(f"Estatísticas de ELO sincronizadas com todas as {total_training_games:,} partidas!", icon="🎉")
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
     with col_btn2:
         if st.button("🗑️ Resetar Todas as Estatísticas de ELO", use_container_width=True):
             reset_stats()
+            get_cached_stats_data.clear()
             st.toast("Estatísticas resetadas!", icon="🗑️")
             st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
@@ -1147,30 +1346,28 @@ with tab_ismcts:
 
     ismcts_log_path = "logs/ismcts_decisions.jsonl"
     if os.path.exists(ismcts_log_path):
-        records = []
-        try:
-            with open(ismcts_log_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        try:
-                            records.append(json.loads(line))
-                        except Exception:
-                            pass
-        except Exception as e:
-            st.error(f"Erro ao ler logs ISMCTS: {e}")
+        records = read_jsonl_tail(ismcts_log_path, max_lines=150)
+        tot_decisions = get_fast_line_count(ismcts_log_path)
 
         if records:
             df_ismcts = pd.DataFrame(records)
+            for col in ["turn", "total_votes", "worlds_sampled"]:
+                if col in df_ismcts.columns:
+                    df_ismcts[col] = pd.to_numeric(df_ismcts[col], errors="coerce").fillna(0).astype(int)
+            for col in ["confidence", "mcts_value_root"]:
+                if col in df_ismcts.columns:
+                    df_ismcts[col] = pd.to_numeric(df_ismcts[col], errors="coerce").fillna(0.0)
+            for col in ["timestamp", "phase", "chosen"]:
+                if col in df_ismcts.columns:
+                    df_ismcts[col] = df_ismcts[col].astype(str)
             
-            # Métricas Top-Level
-            tot_decisions = len(df_ismcts)
-            avg_conf = df_ismcts["confidence"].mean() * 100 if "confidence" in df_ismcts else 0.0
-            avg_worlds = df_ismcts["worlds_sampled"].mean() if "worlds_sampled" in df_ismcts else 0.0
+            # Métricas Top-Level calculadas sobre o histórico recente
+            avg_conf = df_ismcts["confidence"].tail(50).mean() * 100 if "confidence" in df_ismcts else 0.0
+            avg_worlds = df_ismcts["worlds_sampled"].tail(50).mean() if "worlds_sampled" in df_ismcts else 0.0
             
             col_is1, col_is2, col_is3, col_is4 = st.columns(4)
-            col_is1.metric("Decisões Registradas", tot_decisions)
-            col_is2.metric("Confiança Média", f"{avg_conf:.1f}%")
+            col_is1.metric("Decisões Registradas", f"{tot_decisions:,}")
+            col_is2.metric("Confiança Média (Recente)", f"{avg_conf:.1f}%")
             col_is3.metric("Mundos Médios / Decisão", f"{avg_worlds:.1f}")
             col_is4.metric("Última Fase Analisada", df_ismcts.iloc[-1].get("phase", "M") if "phase" in df_ismcts else "-")
 
@@ -1178,12 +1375,12 @@ with tab_ismcts:
 
             col_ch1, col_ch2 = st.columns(2)
             with col_ch1:
-                st.markdown("#### 🎯 Distribuição de Confiança por Decisão")
+                st.markdown("#### 🎯 Distribuição de Confiança por Decisão (Últimas 50)")
                 if "confidence" in df_ismcts:
                     st.bar_chart(df_ismcts["confidence"].tail(50))
 
             with col_ch2:
-                st.markdown("#### 📈 Evolução do Value da Raiz ($V_{root}$)")
+                st.markdown("#### 📈 Evolução do Value da Raiz ($V_{root}$ - Últimas 50)")
                 if "mcts_value_root" in df_ismcts:
                     st.line_chart(df_ismcts["mcts_value_root"].tail(50))
 
@@ -1195,6 +1392,7 @@ with tab_ismcts:
             if st.button("🗑️ Limpar Histórico de Telemetria ISMCTS"):
                 try:
                     os.remove(ismcts_log_path)
+                    get_fast_line_count.clear()
                     st.toast("Histórico ISMCTS limpo com sucesso!", icon="🗑️")
                     st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
                 except Exception as e:

@@ -34,12 +34,21 @@ Glossary of domain terms used in this project. AI agents and contributors must u
 - **On-Hit Threat Quantification**: Escala hierárquica de ameaça (Catastrófico [8.5-10.0], Alto [5.0-7.0], Médio [3.5-4.5], Vanilla [0.0]) em `ai/policy_engine.py` para avaliar severidade de efeitos ao acertar.
 - **Knapsack Breakpoint Defense**: Resolvedor de subconjunto ótimo em `select_defense_blocks` que combina o mínimo de cartas de mão e armaduras para neutralizar On-Hits ($\sum \text{block} \ge \text{opp\_power}$) poupando a mão para o contra-ataque.
 - **Vanilla Armor Pruning**: Regra estrita de conservação que proíbe o bloqueio com armaduras em ataques comuns (ameaça 0.0) quando a vida é saudável ($HP > 12$), reservando-as para neutralizar On-Hits ou perigo letal.
+- **Arsenal Threat Protection**: Heurística de proteção em `ai/policy_engine.py` e `bot_client.py` que detecta ataques de destruição/banimento de Arsenal (*Command and Conquer*, *Leave No Witnesses*, *Eradicate*, *Wreck Havoc*) e prioriza defender com `Crown of Providence` para colocar a carta ameaçada no fundo do deck, neutralizando a destruição pelo oponente e comprando uma nova carta.
+- **Smart Sinking / Tuck Logic**: Heurística tática de seleção em `bot_client.py` (`_score_choice_candidate`) que inverte a pontuação de utilidade de cartas em janelas de "sink" (como *Crown of Providence* e *Sink Below*) para colocar a pior carta da mão no fundo do deck para ciclar, preservando o Arsenal quando seguro e peças nobres de ataque.
+- **Void Equipment Pruning**: Poda estrita em `bot_client.py` que impede que equipamentos de prevenção ou reação (*Boots of Omniward*, *Ward*, *Barrier*, *Prevent*, *Spellvoid*) sejam ativados ou sacrificados no vazio quando não há dano físico ou arcano ativo na cadeia de combate.
+- **Flexible Block Conversion**: Mecanismo em `ai/policy_engine.py` que avalia se a mão possui baixa eficiência defensiva (média de bloco $\le 2.0$) e se o plano de turno permite absorver dano (`can_absorb_damage`), evitando queimar 2 ou mais cartas da mão em bloqueios ineficientes quando é vantajoso pivotar ofensivamente.
+- **Human ELO Feedback System**: Sistema de telemetria e pontuação ponderada em `stats_manager.py` e `dashboard.py` que identifica partidas de treino contra jogadores humanos, atribuindo peso diferenciado para aprendizado e exibindo métricas dedicadas para pós-análise e pruning de estratégias de heróis.
 
 ## Domain: Architecture
 
 - **Bot Client (`bot_client.py`)**: The autonomous agent that connects to the Talishar backend, reads game state, and submits actions.
-- **Dashboard (`dashboard.py`)**: The Streamlit web interface for training, analytics, arena combat, and ISMCTS telemetry.
+- **Dashboard (`dashboard.py`)**: The Streamlit web interface for training, analytics, arena combat, and ISMCTS telemetry. Otimizado com tailing dinâmico de logs para carregamento assíncrono e finalização limpa de subprocessos.
 - **Setup Templates (`setup_templates/`)**: Patches and custom files that are injected into the cloned Talishar and Talishar-FE repositories to extend their functionality for AI integration. This is the only source of truth for project-specific modifications to the Talishar ecosystem.
 - **Decks Directory (`decks/`)**: The single source of truth for all deck JSON files. No deck is ever duplicated into Talishar's internal folders.
 - **Chess Advantage Tracker**: The frontend component (`ChessAdvantageTracker.tsx`) that displays a Stockfish/Chess.com-style advantage bar during games.
 - **Elo Rating**: The rating system used in `stats_manager.py` to rank bot performance across training matches.
+- **Environment Auto-Detection & Sanitizer (`scripts/prepare_environment.py`)**: Rotina de inspeção dinâmica de runtime (WSL2 vs Linux nativo) que atualiza o `AGENTS.md` local com instruções cirúrgicas de execução, prevenindo gasto de tokens de descoberta pelos agentes e garantindo que paths locais/privados nunca vazem para o Git.
+- **Pre-Commit Verification & Privacy Guard (`scripts/sync_and_clean.sh`)**: Hook pré-commit que valida sincronização de templates, compilação de produção do frontend Vite (`npx vite build`), sintaxe Python e bloqueia commits que contenham caminhos pessoais de sistema de arquivos.
+- **Frontend Ads Proxy / BannerUnit Mock (`setup_templates/frontend/bannerUnit`)**: Mock headless do módulo de anúncios do Talishar-FE para evitar dependências de terceiros e falhas de compilação em builds offline e de CI.
+

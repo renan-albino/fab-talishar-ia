@@ -154,5 +154,10 @@
       "identifier": "tear_asunder_blue",
       "total": 3
     }
-  ]
+  ],
+  "hero": "jarl_vetreidi",
+  "hero_name": "Jarl Vetreiði",
+  "class": "GUARDIAN",
+  "talents": [],
+  "is_young": false
 }

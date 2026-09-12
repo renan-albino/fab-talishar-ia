@@ -188,7 +188,7 @@ class FaBPolicyValueNetwork(nn.Module):
                     vec[b_idx + 1] = 1.0 if eq.get("action", 0) > 0 else 0.0
                     vec[b_idx + 2] = float(eq.get("counters", 0)) / 5.0
 
-        arsenal = state.get("playerArsenal", [])
+        arsenal = state.get("playerArsenal") or state.get("playerArse") or []
         if isinstance(arsenal, list) and arsenal:
             vec[126] = 1.0
             if isinstance(arsenal[0], dict) and arsenal[0].get("action", 0) > 0:

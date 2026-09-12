@@ -1,5 +1,6 @@
 /// <reference types="vitest" />
 import { defineConfig, loadEnv } from 'vite';
+import path from 'path';
 import react from '@vitejs/plugin-react';
 import viteTsconfigPaths from 'vite-tsconfig-paths';
 import svgrPlugin from 'vite-plugin-svgr';
@@ -21,6 +22,11 @@ export default ({ mode }: { mode: string }) => {
   return defineConfig({
     base: './',
     build: { outDir: './build' },
+    resolve: {
+      alias: {
+        'components/ads': path.resolve(__dirname, 'src/components/bannerUnit')
+      }
+    },
     css: {
       preprocessorOptions: {
         scss: {
@@ -28,11 +34,6 @@ export default ({ mode }: { mode: string }) => {
           quietDeps: true,
           silenceDeprecations: ['import']
         }
-      }
-    },
-    resolve: {
-      alias: {
-        'components/ads': '/src/components/banners'
       }
     },
     plugins: [react(), viteTsconfigPaths(), svgrPlugin()],
