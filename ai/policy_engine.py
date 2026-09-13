@@ -1096,15 +1096,31 @@ class PolicyEngine:
 
             info = self.extract_card_info(eq)
             base_block = info["block"]
-            def_counters = int(eq.get("defCounters", 0) or 0)
-            effective_block = max(0, base_block - def_counters)
 
+            # ── Cálculo da Defesa Efetiva com Marcadores (-1 counters / defCounters) ──
+            # No Talishar nativo, marcadores de perda de defesa são números negativos (-1, -2).
+            # Em mocks/testes, podem vir como positivos (+1 para indicar 1 marcador de -1).
+            raw_def_counters = eq.get("defCounters")
+            if raw_def_counters is None and isinstance(eq.get("countersMap"), dict):
+                raw_def_counters = eq["countersMap"].get("defense")
+            try:
+                def_val = int(raw_def_counters) if raw_def_counters is not None and str(raw_def_counters).lstrip("-").isdigit() else 0
+            except Exception:
+                def_val = 0
+
+            if def_val < 0:
+                effective_block = max(0, base_block + def_val)  # Talishar nativo: 1 + (-1) = 0
+            elif def_val > 0:
+                effective_block = max(0, base_block - def_val)  # Mocks/testes: 1 - 1 = 0
+            else:
+                effective_block = base_block
+
+            # Se o equipamento já perdeu toda a defesa ou não bloqueia, descarta imediatamente!
             if effective_block <= 0:
                 continue
             # Se a engine do Talishar enviou explicitamente action == 0, o equipamento não pode defender agora
             if eq_action <= 0 and "action" in eq:
                 continue
-
             is_crown = "crown_of_providence" in eq_name
             arsenal = state.get("playerArsenal") or state.get("playerArse") or []
             has_arsenal = len(arsenal) > 0
@@ -1130,6 +1146,34 @@ class PolicyEngine:
             has_bw = bool(db_entry.get("has_battleworn") or "battleworn" in str(db_entry.get("subtype", "")).lower())
             has_bb = bool(db_entry.get("has_blade_break") or "blade break" in str(db_entry.get("subtype", "")).lower() or "ironrot" in eq_name)
             has_temp = bool(db_entry.get("has_temper") or "temper" in str(db_entry.get("subtype", "")).lower())
+
+            # ── REGRA ESPECIAL TEKLOVOSSEN: Preservação Sagrada dos Evos ──
+            is_teklo = "teklo" in str(self.hero_name).lower() or isinstance(self.strategy, TeklovossenStrategy)
+            is_evo = "evo" in eq_name or "cogwerx_base" in eq_name or "evo" in str(db_entry.get("subtype", "")).lower()
+
+            if is_teklo and is_evo:
+                # Evos são a condição de vitória do Teklovossen (4 Evos montados para Singularity / Mechropotent).
+                # NUNCA quebrar ou degradar Evos aleatoriamente!
+                is_fatal = (my_hp - opp_power) <= 0
+                opp_hero_str = str(state.get("opponentHero", "")).lower()
+                is_aggro_opp = opp_power >= 6 or any(h in opp_hero_str for h in [
+                    "fai", "katsu", "dash", "kayo", "rhinar", "chane", "briar", "vynnset", "azalea", "riptide", "aurora", "zen"
+                ])
+                is_late_game = my_hp <= 8 or current_turn >= 8
+
+                # Se o Evo for quebrar (Blade Break ou Temper no último bloco):
+                # Teklovossen NUNCA quebra um Evo a menos que seja 100% fatal!
+                will_break = has_bb or (has_temp and effective_block <= 1)
+                if will_break and not is_fatal:
+                    continue
+
+                if not is_fatal:
+                    # Contra decks lentos: só bloqueia com Evo se for MORRER!
+                    if not is_aggro_opp:
+                        continue
+                    # Contra decks agressivos: só usa Evos bem pro final do jogo!
+                    elif not is_late_game:
+                        continue
 
             has_active_ability = bool(db_entry.get("ability_cost") is not None or any(k in eq_name for k in [
                 "goliath_gauntlet", "heartened_cross_strap", "snapdragon_scalers",

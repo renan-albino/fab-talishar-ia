@@ -26,6 +26,7 @@ from .other_classes import (
     RunebladeStrategy,
     VynnsetStrategy,
     WizardStrategy,
+    OscilioStrategy,
     IllusionistStrategy,
     AssassinStrategy,
     ArakniMarionetteStrategy,
@@ -55,6 +56,7 @@ __all__ = [
     "RunebladeStrategy",
     "VynnsetStrategy",
     "WizardStrategy",
+    "OscilioStrategy",
     "IllusionistStrategy",
     "AssassinStrategy",
     "ArakniMarionetteStrategy",
@@ -212,10 +214,10 @@ HERO_CLASS_REGISTRY: Dict[str, type] = {
     "blaze": WizardStrategy,
     "verdance_thorn_of_the_rose": WizardStrategy,
     "verdance": WizardStrategy,
-    "oscilio_constella_intelligence": WizardStrategy,
-    "oscilio_forked_continuum": WizardStrategy,
-    "oscilio_scion_of_the_third_age": WizardStrategy,
-    "oscilio": WizardStrategy,
+    "oscilio_constella_intelligence": OscilioStrategy,
+    "oscilio_forked_continuum": OscilioStrategy,
+    "oscilio_scion_of_the_third_age": OscilioStrategy,
+    "oscilio": OscilioStrategy,
     "emperor_dracai_of_aesir": WizardStrategy,
     "emperor": WizardStrategy,
     "wizard": WizardStrategy,
@@ -293,6 +295,8 @@ def get_hero_strategy(hero_name: str) -> HeroStrategy:
         return JarlStrategy(h)
     if "marlynn" in h or "marlinn" in h or "marlynn" in root or "marlinn" in root:
         return MarlynnStrategy(h)
+    if "oscilio" in h or "oscilio" in root:
+        return OscilioStrategy(h)
 
     # ── ETAPA 2: Verificação de estratégia por classe ─────────────
     # 2.1 Correspondência direta no registro canônico

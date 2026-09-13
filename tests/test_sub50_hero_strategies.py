@@ -324,3 +324,109 @@ def test_minimum_viable_defense_preserves_counterattack():
     # Deve bloquear apenas o suficiente para sobreviver (1 carta bloqueia 3, projetando 2 HP de vida)
     # preservando a última carta para o contra-ataque
     assert len(blocks) == 1, f"Defesa Mínima Viável deveria usar exatamente 1 carta para sobreviver a 2 HP! Usou: {len(blocks)}"
+
+
+def test_talishar_native_negative_def_counters_reduces_block_and_excludes_zero_block():
+    """Garante que defCounters negativos nativos do Talishar (-1, -2) reduzam a defesa e impeçam re-bloqueio inútil."""
+    pe = PolicyEngine(hero_name="oscilio")
+
+    # Equipamento de 1 defesa (Bracers of Belief) com defCounters = -1 (já bloqueou 1 vez)
+    state_depleted = {
+        "playerHealth": 15,
+        "playerHand": [],
+        "activeChainLink": {"cardNumber": "command_and_conquer", "totalPower": 6},
+        "playerEquipment": [
+            {"cardNumber": "bracers_of_belief", "slot": "arms", "defense": 1, "defCounters": -1, "action": 3}
+        ]
+    }
+    blocks = pe.select_defense_blocks(state_depleted)
+    assert len(blocks) == 0, f"Equipamento com defCounters=-1 (defesa zerada) NÃO deve bloquear! Bloqueou: {blocks}"
+
+    # Também suporta string "-1"
+    state_depleted_str = {
+        "playerHealth": 15,
+        "playerHand": [],
+        "activeChainLink": {"cardNumber": "command_and_conquer", "totalPower": 6},
+        "playerEquipment": [
+            {"cardNumber": "bracers_of_belief", "slot": "arms", "defense": 1, "defCounters": "-1", "action": 3}
+        ]
+    }
+    blocks_str = pe.select_defense_blocks(state_depleted_str)
+    assert len(blocks_str) == 0, f"Equipamento com defCounters='-1' NÃO deve ser selecionado! Bloqueou: {blocks_str}"
+
+
+def test_teklovossen_evo_preservation_against_slow_and_aggro_decks():
+    """
+    Garante que Teklovossen NUNCA quebre ou degrade seus Evos aleatoriamente:
+    - Contra decks lentos: só bloqueia com Evo se for estritamente fatal.
+    - Contra decks agressivos: só usa Evos bem para o final do jogo (late game) ou se for fatal.
+    """
+    pe = PolicyEngine(hero_name="teklovossen")
+
+    # 1. Contra deck lento com ataque comum (não-fatal, HP 20, opp_power 4): Evo NÃO DEVE BLOQUEAR!
+    state_slow_non_fatal = {
+        "playerHealth": 20,
+        "currentTurn": 3,
+        "opponentHero": "victor_goldmane",
+        "activeChainLink": {"cardNumber": "machismo_red", "totalPower": 4},
+        "playerHand": [],
+        "playerEquipment": [
+            {"cardNumber": "cogwerx_base_chest", "slot": "chest", "defense": 2, "action": 3}
+        ]
+    }
+    blocks_slow = pe.select_defense_blocks(state_slow_non_fatal)
+    assert len(blocks_slow) == 0, "Teklovossen NUNCA deve gastar Evo contra deck lento se não for dano fatal!"
+
+    # 2. Contra deck lento MAS dano fatal (HP 4, opp_power 6): Evo DEVE BLOQUEAR para sobreviver!
+    state_slow_fatal = {
+        "playerHealth": 4,
+        "currentTurn": 5,
+        "opponentHero": "victor_goldmane",
+        "activeChainLink": {"cardNumber": "spinal_crush_red", "totalPower": 6},
+        "playerHand": [],
+        "playerEquipment": [
+            {"cardNumber": "cogwerx_base_chest", "slot": "chest", "defense": 2, "action": 3}
+        ]
+    }
+    blocks_fatal = pe.select_defense_blocks(state_slow_fatal)
+    assert len(blocks_fatal) == 1, "Teklovossen DEVE bloquear com Evo em situação fatal para não morrer!"
+
+    # 3. Contra deck agressivo no início/meio de jogo (Turno 2, HP 18, opp_power 6): Evo NÃO BLOQUEIA!
+    state_aggro_early = {
+        "playerHealth": 18,
+        "currentTurn": 2,
+        "opponentHero": "fai_rising_rebellion",
+        "activeChainLink": {"cardNumber": "snatch_red", "totalPower": 6},
+        "playerHand": [],
+        "playerEquipment": [
+            {"cardNumber": "cogwerx_base_chest", "slot": "chest", "defense": 2, "action": 3}
+        ]
+    }
+    blocks_early = pe.select_defense_blocks(state_aggro_early)
+    assert len(blocks_early) == 0, "Teklovossen NÃO deve queimar Evo no início de jogo contra aggro!"
+
+
+def test_oscilio_strategy_giaf_and_lightning():
+    """Garante que a OscilioStrategy valorize o pilar GIAF (Gone in a Flash) e a arma Volzar."""
+    strat = get_hero_strategy("oscilio_constella_intelligence")
+    assert strat.__class__.__name__ == "OscilioStrategy"
+
+    # Gone in a Flash deve receber pontuação altíssima
+    score_giaf = strat.evaluate_attack_card("gone_in_a_flash_red", power=4, cost=1, has_go_again=True, pitch=1)
+    score_vanilla = strat.evaluate_attack_card("generic_attack_red", power=4, cost=1, has_go_again=True, pitch=1)
+    assert score_giaf >= score_vanilla + 10.0, f"GIAF deve ter prioridade máxima para Oscilio! GIAF: {score_giaf}, Vanilla: {score_vanilla}"
+
+    # Volzar, Meteor Storm deve ser valorizada para dano arcano
+    score_weapon = strat.evaluate_weapon_attack("volzar_meteor_storm", floating_res=1, total_res=2, has_hand_attacks=False)
+    assert score_weapon >= 12.0, f"Volzar com recurso flutuante deve ter score alto! Score: {score_weapon}"
+
+    # TurnPlan OSCILIO_LIGHTNING_BURST
+    state_oscilio = {
+        "playerHealth": 18,
+        "playerHand": [
+            {"cardNumber": "gone_in_a_flash_red", "name": "Gone in a Flash", "power": 4, "cost": 1, "pitch": 1},
+            {"cardNumber": "echoflash_yellow", "name": "Echoflash", "pitch": 2}
+        ]
+    }
+    plan = strat.analyze_turn_plan(state_oscilio)
+    assert plan.plan_type == "OSCILIO_LIGHTNING_BURST", f"Deveria ativar plano OSCILIO_LIGHTNING_BURST! Plano: {plan.plan_type}"

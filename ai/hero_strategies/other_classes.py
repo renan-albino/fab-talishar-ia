@@ -420,6 +420,117 @@ class WizardStrategy(HeroStrategy):
         return super().analyze_turn_plan(state)
 
 
+class OscilioStrategy(WizardStrategy):
+    """
+    Estratégia especializada para Oscilio, Constella Intelligence / Forked Continuum (Elemental Wizard - Lightning).
+    - Foco em cadência agressiva de dano arcano e ataques relâmpago físicos (Gone in a Flash, Electrostatic Discharge).
+    - Sinergias de Lightning (Gone in a Flash, Comet Storm, Flittering Charge, Lightning Press).
+    - Uso dinâmico de Volzar, Meteor Storm para projetar dano arcano com recursos flutuantes.
+    - Banir cartas de ação com a habilidade de herói para desbloquear conjuração da zona banida.
+    """
+    is_heavy_hero: bool = False
+
+    @lru_cache(maxsize=1024)
+    def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
+        score = float(power) * 1.5
+        c_low = card_name.lower()
+
+        # Ataques centrais do arquétipo GIAF (Gone in a Flash) e Lightning
+        if "gone_in_a_flash" in c_low:
+            score += 15.0  # Pilar do deck GIAF: Go Again e dano arcano com Lightning
+        elif "electrostatic_discharge" in c_low:
+            score += 12.0
+        elif "enlightened_strike" in c_low:
+            score += 11.0
+        elif "comet_storm" in c_low:
+            score += 10.0
+        elif "flittering_charge" in c_low:
+            score += 8.5
+        elif "entwine_lightning" in c_low:
+            score += 8.0
+        elif "ravenous_rabble" in c_low:
+            score += 7.5
+        elif "scar_for_a_scar" in c_low:
+            score += 7.0
+        elif "second_strike" in c_low:
+            score += 6.5
+
+        if has_go_again:
+            score += 5.0
+        score -= cost * 0.4
+        return score
+
+    @lru_cache(maxsize=1024)
+    def evaluate_pitch_card(self, card_name: str, pitch: int, cost: int, power: int, has_go_again: bool) -> float:
+        score = float(pitch) * 4.0
+        c_low = card_name.lower()
+        # Amarelas de suporte (Constella Contemplation, Echoflash) funcionam bem como pitch para alimentar Volzar e custos 1/2
+        if pitch == 2:
+            score += 4.0
+        # Preserva Gone in a Flash e E-Strike de serem pitchadas se houver alternativa
+        if "gone_in_a_flash" in c_low or "enlightened_strike" in c_low:
+            score -= 10.0
+        return score
+
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+        c_low = str(card_name).lower()
+        if "volzar" in c_low or "meteor_storm" in c_low:
+            # Volzar, Meteor Storm projeta dano arcano
+            score = 8.0 + (4.0 if floating_res >= 1 else 0.0)
+            if not has_hand_attacks:
+                score += 5.0
+            return score
+        return super().evaluate_weapon_attack(card_name, floating_res, total_res, has_hand_attacks)
+
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        """
+        Habilidade de Oscilio:
+        Bane uma carta de ação da mão para jogar cartas do banish de custo <= dano arcano causado.
+        """
+        hand = state.get("playerHand", [])
+        banish = state.get("playerBanish", [])
+        if len(hand) >= 2 and len(banish) >= 1:
+            return 14.0
+        return 0.0
+
+    def analyze_turn_plan(self, state: dict) -> TurnPlan:
+        my_hp = int(state.get("playerHealth", 20))
+        hand = state.get("playerHand", [])
+        active_chain = state.get("activeChainLink") or {}
+        opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+        incoming_name = str(active_chain.get("cardNumber", "")).lower()
+
+        is_fatal = (my_hp - opp_power) <= 0
+        has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, survival_hp_threshold=3):
+            return TurnPlan(
+                plan_type="SURVIVAL_BLOCK",
+                can_absorb_damage=False,
+                max_block_cards=len(hand),
+                reason="Oscilio survival mode: blocking critical or fatal damage"
+            )
+
+        giaf_cards = [c for c in hand if "gone_in_a_flash" in str(c.get("cardNumber") or c.get("name", "")).lower()]
+        if giaf_cards and my_hp >= 6:
+            primary = giaf_cards[0]
+            p_name = str(primary.get("cardNumber") or primary.get("name", ""))
+            reserved: Set[str] = {p_name}
+            reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+            max_blocks = max(0, len(hand) - len(reserved_in_hand) - 1)
+            return TurnPlan(
+                plan_type="OSCILIO_LIGHTNING_BURST",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 10),
+                max_block_cards=max_blocks,
+                priority_action_types=["attack_card", "weapon", "hero_ability"],
+                offensive_potential=7.0,
+                reason=f"Oscilio burst plan: chaining {p_name} with lightning tempo"
+            )
+
+        return super().analyze_turn_plan(state)
+
+
 class IllusionistStrategy(HeroStrategy):
     """
     Estratégia especializada para a classe Illusionist (Prism, Dromai, Enigma, Pleiades, Zyggy, etc.).
