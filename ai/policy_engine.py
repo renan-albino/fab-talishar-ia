@@ -551,11 +551,10 @@ class PolicyEngine:
                 )
                 if is_weapon:
                     weapon_cost = self.get_weapon_cost(eq_name, eq, state=state)
-                    is_hammerhead = "hammerhead" in eq_name
                     is_traditional_bow = (
                         ("bow" in str(_load_cards_db().get(eq_name, {}).get("subtype", "")).lower()
                          or any(b in eq_name for b in ["shiver", "death_dealer", "dread_bore", "dreadbore", "redback", "sandscour"]))
-                        and not is_hammerhead
+                        and "hammerhead" not in eq_name
                     )
 
                     # Poda de arcos tradicionais: só carrega flecha se o Arsenal estiver livre
@@ -566,32 +565,16 @@ class PolicyEngine:
                         if turn_plan.plan_type == "DEFENSIVE_TRAP":
                             continue
 
-                    # Tratamento de Hammerhead, Harpoon Cannon:
-                    # É uma habilidade de canhão que concede +4 e Overpower ao próximo ataque Harpoon
-                    if is_hammerhead:
-                        all_cards = list(state.get("playerHand", [])) + list(state.get("playerArsenal") or state.get("playerArse") or [])
-                        arrows_ready = [
-                            c for c in all_cards
-                            if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["arrow", "harpoon", "bolt", "trophy", "goldfin", "king_kraken", "king_shark"])
-                        ]
-                        # Sem flecha disponível para disparar: proibido ativar à toa
-                        if not arrows_ready:
-                            continue
-
-                        min_arrow_cost = min(int(self.extract_card_info(c).get("cost", 0)) for c in arrows_ready)
-                        # Só ativa se houver recursos para o Hammerhead (4) + a flecha
-                        if total_res < (weapon_cost + min_arrow_cost):
-                            continue
-
-                        # Prioridade máxima: ativar o buff de canhão (+4 e Overpower com Go Again) antes de disparar a flecha
-                        weapon_score = 32.0
-                        if turn_plan.plan_type == "HARPOON_CHAIN":
-                            weapon_score += 20.0
-                        candidates.append({
-                            "type": "weapon_buff", "idx": 0, "card_id": str(eq_id), "mode": action,
-                            "name": eq_name, "score": weapon_score, "cost": weapon_cost,
-                            "power": 0, "has_go_again": True
-                        })
+                    # Habilidade especial de arma delegada à estratégia do herói (ex: Hammerhead em MarlynnStrategy)
+                    weapon_ability_candidate = self.strategy.evaluate_weapon_ability(
+                        eq_name, weapon_cost, state, total_res, turn_plan=turn_plan
+                    )
+                    if weapon_ability_candidate is not None:
+                        if weapon_ability_candidate:  # Não foi podada pela estratégia
+                            weapon_ability_candidate["idx"] = 0
+                            weapon_ability_candidate["card_id"] = str(eq_id)
+                            weapon_ability_candidate["mode"] = action
+                            candidates.append(weapon_ability_candidate)
                         continue
 
                     # Armas convencionais de ataque
@@ -672,10 +655,33 @@ class PolicyEngine:
                             "power": c_info["power"], "has_go_again": c_info["has_go_again"]
                         })
 
+        # ── 1.5 Aliados em Jogo (playerAllies) ───────────────────────
+        allies = state.get("playerAllies", [])
+        if isinstance(allies, list):
+            for idx, ally in enumerate(allies):
+                if not isinstance(ally, dict):
+                    continue
+                action = ally.get("action", 0)
+                a_name = str(ally.get("cardNumber") or ally.get("name", "")).lower()
+                if action > 0 and a_name not in unpayable_set:
+                    a_id = ally.get("actionDataOverride") or str(ally.get("uniqueID", idx))
+                    a_info = self.extract_card_info(ally)
+                    ability_cost = int(_load_cards_db().get(a_name, {}).get("ability_cost", 0))
+                    if total_res >= ability_cost:
+                        ally_power = a_info.get("power", 0) or int(_load_cards_db().get(a_name, {}).get("power", 0))
+                        base_score = float(ally_power) * 2.0
+                        if getattr(self.strategy, "is_ally_hero", False) or "gravy" in str(self.hero_name).lower():
+                            base_score += 15.0  # Gravy Bones valoriza ataques de aliados agressivamente
+                        candidates.append({
+                            "type": "ally", "idx": idx, "card_id": str(a_id), "mode": action,
+                            "name": a_name, "score": base_score, "cost": ability_cost,
+                            "power": ally_power, "has_go_again": False
+                        })
+
         if not candidates:
             return None
 
-        # ── 1.5 Refinamento via Busca em Árvore ─────────────────────
+        # ── 1.6 Refinamento via Busca em Árvore ─────────────────────
         if len(candidates) > 1 and self.num_mcts_sims > 0:
             opp_hand = state.get("opponentHand", [])
             if isinstance(opp_hand, list) and len(opp_hand) > 0:

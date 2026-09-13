@@ -1,4 +1,5 @@
 import os
+import glob
 import json
 import time
 from datetime import datetime
@@ -9,20 +10,68 @@ logger = get_logger("stats_manager")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATS_FILE = os.path.join(BASE_DIR, "data", "training_stats.json")
+DECKS_DIR = os.path.join(BASE_DIR, "decks")
 
 CANONICAL_DECK_NAMES = {
+    # Dash IO
     "dash_io": "Dash IO",
     "dash io": "Dash IO",
+    "dash_i/o": "Dash IO",
+    "dash i/o": "Dash IO",
+    # Oscilio GIAF
     "oscilio_giaf": "Oscilio GIAF",
     "oscilio giaf": "Oscilio GIAF",
+    "oscilio_constella_intelligence": "Oscilio GIAF",
+    "oscilio constella intelligence": "Oscilio GIAF",
+    # Gravy Bones
     "gravy_bones": "Gravy Bones",
     "gravy bones": "Gravy Bones",
+    "gravy_bones_shipwrecked_looter": "Gravy Bones",
+    "gravy bones shipwrecked looter": "Gravy Bones",
+    # Marlinn
     "marlynn": "Marlinn",
     "marlinn": "Marlinn",
     "marlynn_treasure_hunter": "Marlinn",
     "marlynn treasure hunter": "Marlinn",
     "marlinn_treasure_hunter": "Marlinn",
     "marlinn treasure hunter": "Marlinn",
+    # Teklovossen
+    "teklovossen": "Teklovossen",
+    "teklovossen_esteemed_magnate": "Teklovossen",
+    "teklovossen esteemed magnate": "Teklovossen",
+    "professor_teklovossen": "Teklovossen",
+    "professor teklovossen": "Teklovossen",
+    # Betsy
+    "betsy": "Betsy",
+    "betsy_skin_in_the_game": "Betsy",
+    "betsy skin in the game": "Betsy",
+    # Kassai
+    "kassai": "Kassai",
+    "kassai_of_the_golden_sand": "Kassai",
+    "kassai of the golden sand": "Kassai",
+    # Cindra
+    "cindra": "Cindra",
+    "cindra_dracai_of_retribution": "Cindra",
+    "cindra dracai of retribution": "Cindra",
+    # Jarl
+    "jarl": "Jarl",
+    "jarl_vetreidi": "Jarl",
+    "jarl vetreidi": "Jarl",
+    "jarl_vetreiði": "Jarl",
+    "jarl vetreiði": "Jarl",
+    # Vynsett
+    "vynsett": "Vynsett",
+    "vynnset": "Vynsett",
+    "vynnset_iron_maiden": "Vynsett",
+    "vynnset iron maiden": "Vynsett",
+    # Mario (Arakni)
+    "mario": "Mario",
+    "arakni_marionette": "Mario",
+    "arakni marionette": "Mario",
+    # Hala
+    "hala": "Hala",
+    "hala_bladesaint_of_the_vow": "Hala",
+    "hala bladesaint of the vow": "Hala",
 }
 
 def canonicalize_deck_name(name: str) -> str:
@@ -30,9 +79,22 @@ def canonicalize_deck_name(name: str) -> str:
     if not name or name.strip() == "👤 Humano (Você)":
         return name
     clean = str(name).strip()
-    low = clean.lower().replace("-", "_")
+    low = clean.lower().replace("-", "_").replace(",", "")
+    while "  " in low:
+        low = low.replace("  ", " ")
     if low in CANONICAL_DECK_NAMES:
         return CANONICAL_DECK_NAMES[low]
+    # Fallback dinâmico: verificar decks salvos no workspace
+    try:
+        from deck_parser import list_saved_decks
+        for d in list_saved_decks():
+            d_name = d.get("name", "")
+            d_slug = d.get("slug", "").lower()
+            d_hero = d.get("hero", "").lower().replace("-", "_").replace(",", "")
+            if low in (d_slug, d_name.lower(), d_hero):
+                return d_name
+    except Exception:
+        pass
     if "_" in clean:
         clean = clean.replace("_", " ")
     return clean.title()
@@ -81,6 +143,25 @@ def consolidate_deck_stats(deck_stats: dict):
 
     return consolidated, had_duplicates
 
+def get_expected_starting_health(deck_name: str) -> int:
+    """Retorna o total de vida inicial esperado para o deck (40 para CC, 20 para Blitz)."""
+    clean = canonicalize_deck_name(deck_name).lower()
+    for d_path in glob.glob(os.path.join(DECKS_DIR, "*.json")):
+        try:
+            with open(d_path, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            name = (d.get("name") or "").lower()
+            hero = (d.get("hero") or "").lower()
+            if clean in name or clean in hero or name in clean or hero in clean:
+                fmt = str(d.get("format", "")).lower()
+                if "blitz" in fmt:
+                    return 20
+                if "cc" in fmt or "classic" in fmt:
+                    return 40
+        except Exception:
+            pass
+    return 40
+
 def get_stats_data():
     os.makedirs("data", exist_ok=True)
     if not os.path.exists(STATS_FILE):
@@ -101,14 +182,30 @@ def get_stats_data():
         with open(STATS_FILE, "r") as f:
             data = json.load(f)
             # Consolida decks duplicados se existirem
+            modified_any = False
             if "deck_stats" in data:
                 consolidated, modified = consolidate_deck_stats(data["deck_stats"])
                 if modified:
                     data["deck_stats"] = consolidated
-                    try:
-                        atomic_json_save(data, STATS_FILE)
-                    except Exception as e:
-                        logger.warning(f"Erro ao salvar stats consolidado: {e}")
+                    modified_any = True
+            # Também consolidar recent_matches se contiver nomes legados de heróis
+            if "recent_matches" in data:
+                for m in data["recent_matches"]:
+                    p1_d = m.get("p1_deck", "")
+                    p2_d = m.get("p2_deck", "")
+                    c1 = canonicalize_deck_name(p1_d)
+                    c2 = canonicalize_deck_name(p2_d)
+                    if c1 != p1_d:
+                        m["p1_deck"] = c1
+                        modified_any = True
+                    if c2 != p2_d:
+                        m["p2_deck"] = c2
+                        modified_any = True
+            if modified_any:
+                try:
+                    atomic_json_save(data, STATS_FILE)
+                except Exception as e:
+                    logger.warning(f"Erro ao salvar stats consolidado: {e}")
             return data
     except Exception as e:
         logger.warning(f"Erro lendo STATS_FILE: {e}")
@@ -127,6 +224,13 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
         logger.debug(f"Ignorando partida de teste '{room_id}' no arquivo de produção STATS_FILE.")
         return stats
 
+    # Deduplicação de partidas já registradas recentemente (evita contagem dupla entre bot_client e trainer)
+    if not is_test_room and "recent_matches" in stats:
+        for rm in stats["recent_matches"]:
+            if rm.get("room") == room_id:
+                logger.debug(f"Partida '{room_id}' já registrada previamente. Ignorando duplicata.")
+                return stats
+
     p1_deck_clean = canonicalize_deck_name(p1_deck)
     p2_deck_clean = canonicalize_deck_name(p2_deck)
     tracked_p1 = "👤 Humano (Você)" if is_human_p1 else p1_deck_clean
@@ -141,13 +245,17 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
         ):
             is_invalid_match = True
             invalid_reason = "Empate 0 Dano (Mutual Stall)"
-        # Caso 2: Bot travou só apanhando (Punching Bag): vencedor com vida intacta e perdedor <= 0 em >= 6 turnos
-        elif winner_id == 1 and p1_health in (20, 40) and p2_health <= 0 and total_turns >= 6:
-            is_invalid_match = True
-            invalid_reason = "Bot Inerte (Punching Bag)"
-        elif winner_id == 2 and p2_health in (20, 40) and p1_health <= 0 and total_turns >= 6:
-            is_invalid_match = True
-            invalid_reason = "Bot Inerte (Punching Bag)"
+        # Caso 2: Bot travou só apanhando (Punching Bag): vencedor com vida intacta (>= vida inicial) e perdedor <= 0 em >= 6 turnos
+        elif winner_id == 1:
+            p1_init_expected = get_expected_starting_health(p1_deck_clean)
+            if p1_health >= p1_init_expected and p2_health <= 0 and total_turns >= 6:
+                is_invalid_match = True
+                invalid_reason = "Bot Inerte (Punching Bag)"
+        elif winner_id == 2:
+            p2_init_expected = get_expected_starting_health(p2_deck_clean)
+            if p2_health >= p2_init_expected and p1_health <= 0 and total_turns >= 6:
+                is_invalid_match = True
+                invalid_reason = "Bot Inerte (Punching Bag)"
 
     if is_invalid_match:
         logger.warning(
@@ -362,27 +470,44 @@ def clean_stalled_matches(stats_file: str = None) -> dict:
     except Exception as e:
         logger.warning(f"Não foi possível salvar backup: {e}")
 
-    # 1. Higienização de recent_matches (remover testes e marcar empates/inertes)
+    # 1. Higienização de recent_matches (remover testes, normalizar decks e marcar empates/inertes)
     cleaned_recent = []
+    seen_rooms = set()
     for m in data.get("recent_matches", []):
         r_id = str(m.get("room", "")).lower()
         if "test" in r_id or "deadlock" in r_id:
             continue
+        if r_id in seen_rooms:
+            continue
+        seen_rooms.add(r_id)
+
+        m["p1_deck"] = canonicalize_deck_name(m.get("p1_deck", ""))
+        m["p2_deck"] = canonicalize_deck_name(m.get("p2_deck", ""))
+
         p1_h = m.get("p1_health", 0)
         p2_h = m.get("p2_health", 0)
         t = m.get("turns", 0)
         w = m.get("winner", "")
-        if w == "Empate" and ((p1_h >= 18 and p2_h >= 18) or (p1_h >= 38 and p2_h >= 38)):
+        p1_init = get_expected_starting_health(m["p1_deck"])
+        p2_init = get_expected_starting_health(m["p2_deck"])
+        is_zero_dmg_draw = w == "Empate" and (
+            (p1_h >= 18 and p2_h >= 18) or
+            (p1_h >= 38 and p2_h >= 38) or
+            (p1_h >= (p1_init - 2) and p2_h >= (p2_init - 2))
+        )
+        if is_zero_dmg_draw:
             m["winner"] = "Anulada (Empate 0 Dano)"
-        elif (p1_h in (20, 40) and p2_h <= 0 and t >= 6) or (p2_h in (20, 40) and p1_h <= 0 and t >= 6):
+        elif (p1_h >= p1_init and p2_h <= 0 and t >= 6) or (p2_h >= p2_init and p1_h <= 0 and t >= 6):
             if "Anulada" not in w:
                 m["winner"] = "Anulada (Bot Inerte / Travado)"
         cleaned_recent.append(m)
     data["recent_matches"] = cleaned_recent
 
-    # 2. Higienização de deck_stats
+    # 2. Consolidação e higienização de deck_stats
     total_cleaned_draws = 0
-    deck_stats = data.get("deck_stats", {})
+    raw_deck_stats = data.get("deck_stats", {})
+    consolidated_decks, _ = consolidate_deck_stats(raw_deck_stats)
+    deck_stats = consolidated_decks
     for deck_name, d_info in deck_stats.items():
         wins = d_info.get("wins", 0)
         losses = d_info.get("losses", 0)
@@ -397,6 +522,7 @@ def clean_stalled_matches(stats_file: str = None) -> dict:
     for d_k in list(deck_stats.keys()):
         if deck_stats[d_k].get("matches", 0) == 0:
             del deck_stats[d_k]
+    data["deck_stats"] = deck_stats
 
     # 3. Atualizar totais globais
     old_draws = data.get("draws", 0)

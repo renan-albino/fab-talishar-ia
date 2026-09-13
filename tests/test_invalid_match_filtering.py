@@ -102,6 +102,25 @@ def test_legitimate_fatigue_draw_is_preserved():
     assert stats["deck_stats"]["Jarl"]["matches"] == 1
     assert stats["deck_stats"]["Ira Blitz"]["matches"] == 1
 
+def test_cc_winner_with_20_hp_is_not_punching_bag():
+    """Valida que vencedor em formato CC (40 HP) terminando com 20 HP (sofreu 20 dano) NÃO é anulado como Punching Bag."""
+    stats = update_match_result(
+        room_id="room_ce73adf8_repro",
+        p1_deck="Vynsett",
+        p2_deck="Kassai",
+        p1_health=-1,
+        p2_health=20,
+        total_turns=8,
+        winner_id=2
+    )
+
+    # Não deve ser anulado: Kassai sofreu 20 de dano e venceu de forma legítima
+    assert stats["total_matches"] == 1
+    assert stats["bot2_wins"] == 1
+    assert stats["recent_matches"][0]["winner"] == "🤖 Bot 2 (Kassai)"
+    assert stats["deck_stats"]["Kassai"]["wins"] == 1
+    assert stats["deck_stats"]["Vynsett"]["losses"] == 1
+
 def test_clean_stalled_matches_routine():
     """Valida que clean_stalled_matches remove empates residuais dos decks e ajusta contagens."""
     initial_data = {

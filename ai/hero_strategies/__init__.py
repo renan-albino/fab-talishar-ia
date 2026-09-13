@@ -32,6 +32,7 @@ from .other_classes import (
     MerchantStrategy,
     GravyBonesStrategy,
 )
+from .teklovossen import TeklovossenStrategy
 
 MarioStrategy = ArakniMarionetteStrategy
 MarlinnStrategy = MarlynnStrategy
@@ -60,6 +61,7 @@ __all__ = [
     "MarioStrategy",
     "MerchantStrategy",
     "GravyBonesStrategy",
+    "TeklovossenStrategy",
     "is_resource_or_gem_card",
     "KNOWN_AMBUSH_CARDS",
     "get_hero_strategy",
@@ -171,9 +173,9 @@ HERO_CLASS_REGISTRY: Dict[str, type] = {
     "dash": MechanologistStrategy,
     "data_doll_mkii": MechanologistStrategy,
     "data_doll": MechanologistStrategy,
-    "professor_teklovossen": MechanologistStrategy,
-    "teklovossen_esteemed_magnate": MechanologistStrategy,
-    "teklovossen": MechanologistStrategy,
+    "professor_teklovossen": TeklovossenStrategy,
+    "teklovossen_esteemed_magnate": TeklovossenStrategy,
+    "teklovossen": TeklovossenStrategy,
     "maxx_the_hype_nitro": MechanologistStrategy,
     "maxx_nitro": MechanologistStrategy,
     "maxx": MechanologistStrategy,

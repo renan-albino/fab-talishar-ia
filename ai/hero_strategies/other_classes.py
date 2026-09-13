@@ -592,9 +592,10 @@ class GravyBonesStrategy(MerchantStrategy):
     """
     Estratégia especializada para Gravy Bones, Shipwrecked Looter (Pirata / Necromante).
     Utiliza ativamente Compass of Sunken Depths e Gold Baited Hook para geração de valor,
-    e finaliza com ataques de pirata devastadores (Conqueror of the High Seas, Riggermortis,
-    Saltwater Swell, Sawbones) em vez de permanecer passivo.
+    comanda Aliados da arena (Riggermortis, Sawbones, Anka, Chum, Scooba) e finaliza com
+    ataques de pirata devastadores em vez de permanecer passivo em bloqueio infinito.
     """
+    is_ally_hero: bool = True
 
     @lru_cache(maxsize=1024)
     def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
@@ -610,12 +611,14 @@ class GravyBonesStrategy(MerchantStrategy):
             score += 7.0
         elif "blood_in_the_water" in c_low:
             score += 8.0
-        elif any(k in c_low for k in ["chum", "fearless_confrontation", "avast_ye"]):
+        elif any(k in c_low for k in ["anka", "chum", "scooba", "swiftwater", "scoundrel"]):
+            score += 7.0
+        elif any(k in c_low for k in ["fearless_confrontation", "avast_ye"]):
             score += 6.0
         return score
 
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
-        # Compass of Sunken Depths: ativa para interagir com o cemitério e gerar cartas
+        # Compass of Sunken Depths / Armas de Pirata
         score = 8.0 + (2.0 if floating_res >= 1 else 0.0)
         return score
 
@@ -649,8 +652,32 @@ class GravyBonesStrategy(MerchantStrategy):
                 reason="Gravy Bones survival mode: blocking critical or fatal damage"
             )
 
-        # Buscar ataques de pirata fortes para ofensiva agressiva
-        heavy_atks = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["conqueror_of_the_high_seas", "riggermortis", "sawbones", "saltwater_swell", "blood_in_the_water"])]
+        # 1. Aliados Ativos na Mesa (playerAllies): se houver aliados prontos, ativar ataque do enxame
+        allies = state.get("playerAllies", [])
+        if isinstance(allies, list) and allies and my_hp >= 8:
+            active_allies = [a for a in allies if isinstance(a, dict) and a.get("action", 0) > 0]
+            if active_allies:
+                ally_target = active_allies[0]
+                al_name = str(ally_target.get("cardNumber") or ally_target.get("name", "ally"))
+                max_blocks = max(0, len(hand) - 1) if hand else 0
+                return TurnPlan(
+                    plan_type="GRAVY_ALLY_SWARM",
+                    can_absorb_damage=(my_hp >= 10),
+                    max_block_cards=max_blocks,
+                    priority_action_types=["ally_attack", "pirate_attack"],
+                    offensive_potential=float(ally_target.get("power", 5)),
+                    reason=f"Gravy Bones plan: commanding arena ally {al_name} for swarm pressure"
+                )
+
+        # 2. Buscar ataques de pirata e aliados na mão para ofensiva agressiva
+        pirate_keywords = [
+            "conqueror_of_the_high_seas", "riggermortis", "sawbones", "saltwater_swell",
+            "blood_in_the_water", "anka", "chum", "scooba", "swiftwater_sloop", "cheating_scoundrel"
+        ]
+        heavy_atks = [
+            c for c in hand
+            if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in pirate_keywords)
+        ]
         pitch_cards = [c for c in hand if int(c.get("pitch", 1)) >= 2]
 
         if heavy_atks and my_hp >= 10:
@@ -667,7 +694,7 @@ class GravyBonesStrategy(MerchantStrategy):
                 reserved_card_names=reserved,
                 can_absorb_damage=(my_hp >= 12),
                 max_block_cards=max_blocks,
-                priority_action_types=["compass_ability", "pirate_attack", "weapon"],
+                priority_action_types=["compass_ability", "pirate_attack", "ally_play"],
                 offensive_potential=float(atk_card.get("power", 6)),
                 reason=f"Gravy Bones plan: reserving {a_name} for pirate assault and treasure pressure"
             )

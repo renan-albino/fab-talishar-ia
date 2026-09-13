@@ -5,8 +5,8 @@ Estratégias para Ranger (Azalea, Lexi, Riptide) e especialização para Marlynn
 """
 
 from functools import lru_cache
-from typing import Set, List, Optional
-from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS, is_resource_or_gem_card, KNOWN_AMBUSH_CARDS
+from typing import Set, List, Optional, Dict, Any
+from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS, is_resource_or_gem_card, KNOWN_AMBUSH_CARDS, _get_cards_db
 
 
 class RangerStrategy(HeroStrategy):
@@ -185,6 +185,76 @@ class MarlynnStrategy(RangerStrategy):
             return 15.0
 
         return score
+
+    def evaluate_weapon_ability(
+        self,
+        weapon_name: str,
+        weapon_cost: int,
+        state: dict,
+        total_res: int,
+        turn_plan: Optional[TurnPlan] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Validação e pontuação especializada para Hammerhead, Harpoon Cannon.
+        Regra FaB CR 2.1.2: Flechas só podem ser atacadas a partir do ARSENAL.
+        Exceção Tática Especial: se segurar Codex of Frailty com Arsenal vazio, ativa antes para pitchar a mão
+        e recarregar flecha do cemitério no Arsenal vazio via Codex.
+        """
+        w_low = str(weapon_name).lower()
+        if "hammerhead" not in w_low:
+            return None  # Tratar como arma convencional de ataque
+
+        arsenal_cards = list(state.get("playerArsenal") or state.get("playerArse") or [])
+        arrows_in_arsenal = [
+            c for c in arsenal_cards
+            if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["arrow", "harpoon", "bolt", "trophy", "goldfin", "king_kraken", "king_shark", "endless"])
+        ]
+
+        hand = state.get("playerHand", [])
+        has_codex_in_hand = any(
+            "codex_of_frailty" in str(c.get("cardNumber") or c.get("name", "")).lower()
+            for c in hand
+        )
+        is_codex_setup = has_codex_in_hand and not arsenal_cards
+
+        # Sem flecha no ARSENAL e sem setup de Codex of Frailty: proibido ativar o canhão à toa!
+        if not arrows_in_arsenal and not is_codex_setup:
+            return {}
+
+        cards_db = _get_cards_db()
+        plan_type = turn_plan.plan_type if turn_plan else "DEFAULT"
+
+        if is_codex_setup:
+            # Requer recursos suficientes para o canhão (4)
+            if total_res < weapon_cost:
+                return {}
+            weapon_score = 36.0  # Prioridade máxima para abrir a sequência antes do Codex
+            if plan_type in ("OVERPITCH_RECOVERY", "HARPOON_CHAIN"):
+                weapon_score += 15.0
+        else:
+            def _get_cost(c):
+                num = str(c.get("cardNumber") or c.get("name", "")).lower()
+                db_c = cards_db.get(num, {})
+                if "cost" in db_c:
+                    return max(0, int(db_c["cost"]))
+                return max(0, int(c.get("cost", 0)))
+
+            min_arrow_cost = min(_get_cost(c) for c in arrows_in_arsenal)
+            # Só ativa se houver recursos para o Hammerhead (4) + a flecha
+            if total_res < (weapon_cost + min_arrow_cost):
+                return {}
+            weapon_score = 32.0
+            if plan_type == "HARPOON_CHAIN":
+                weapon_score += 20.0
+
+        return {
+            "type": "weapon_buff",
+            "name": weapon_name,
+            "score": weapon_score,
+            "cost": weapon_cost,
+            "power": 0,
+            "has_go_again": True
+        }
 
     @lru_cache(maxsize=1024)
     def evaluate_pitch_card(self, card_name: str, pitch: int, cost: int, power: int, has_go_again: bool) -> float:

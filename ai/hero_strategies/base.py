@@ -163,6 +163,23 @@ class HeroStrategy:
             score += 2.5
         return score
 
+    def evaluate_weapon_ability(
+        self,
+        weapon_name: str,
+        weapon_cost: int,
+        state: dict,
+        total_res: int,
+        turn_plan: Optional[TurnPlan] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Pontuação e validação de ativação para habilidades de armas (ex: Hammerhead Harpoon Cannon).
+        Retorna:
+          - Dict com dados do candidato (score, cost, power, etc.) se for uma habilidade de arma válida.
+          - {} (dicionário vazio) se a habilidade existe mas foi podada/inválida no estado atual.
+          - None se a arma não possui habilidade especial e deve ser tratada como ataque convencional.
+        """
+        return None
+
     def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
         """Pontuação tática para ativar a habilidade do Herói."""
         return 0.0

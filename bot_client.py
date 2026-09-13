@@ -45,13 +45,15 @@ class FabBotClient:
         self.execution_exceptions_count = 0
         self.clean_deck = os.path.basename(self.deck_url).replace(".json", "") if self.deck_url else "default_deck"
         
-        # Identificar nome do Herói ou Deck
+        # Identificar nome do Herói e Nome do Deck
         self.hero_name = ""
+        self.deck_name = ""
         target_path = self.deck_url if (self.deck_url and os.path.exists(self.deck_url)) else f"decks/{self.clean_deck}.json"
         if os.path.exists(target_path):
             try:
                 with open(target_path, "r", encoding="utf-8") as f:
                     d_data = json.load(f)
+                    self.deck_name = d_data.get("name", "")
                     self.hero_name = d_data.get("hero", "")
                     if not self.hero_name and isinstance(d_data.get("cards"), list):
                         for c_entry in d_data["cards"]:
@@ -60,18 +62,18 @@ class FabBotClient:
                             if meta.get("slot") == "Hero":
                                 self.hero_name = cid
                                 break
-                    if not self.hero_name:
-                        self.hero_name = d_data.get("name", "")
             except Exception:
                 pass
+        if not self.deck_name:
+            self.deck_name = self.clean_deck.replace("_", " ").title()
         if not self.hero_name:
-            self.hero_name = self.clean_deck.replace("_", " ").title()
+            self.hero_name = self.deck_name
         self.equipment_tracker = EquipmentTracker(hero_name=self.hero_name)
 
         os.makedirs("logs", exist_ok=True)
         try:
             with open(f"logs/{self.room_id}_{self.role}_deck.txt", "w", encoding="utf-8") as f:
-                f.write(self.hero_name or self.clean_deck)
+                f.write(self.deck_name or self.clean_deck)
         except Exception:
             pass
 
@@ -82,14 +84,14 @@ class FabBotClient:
             if target_player_id == 1:
                 return "Humano (Você)"
             else:
-                bot_hero = getattr(self, "hero_name", "") or self.clean_deck.replace("_", " ").title()
-                return f"Bot AI ({bot_hero})"
+                bot_deck = getattr(self, "deck_name", "") or self.clean_deck.replace("_", " ").title()
+                return f"Bot AI ({bot_deck})"
 
         # Partida de Treino / Arena entre Bots
         p1_deck_file = f"logs/{self.room_id}_host_deck.txt"
         p2_deck_file = f"logs/{self.room_id}_join_deck.txt"
-        p1_deck = self.hero_name if self.player_id == 1 else "Host"
-        p2_deck = self.hero_name if self.player_id == 2 else "Join"
+        p1_deck = getattr(self, "deck_name", self.clean_deck) if self.player_id == 1 else "Host"
+        p2_deck = getattr(self, "deck_name", self.clean_deck) if self.player_id == 2 else "Join"
 
         if os.path.exists(p1_deck_file):
             try:
@@ -538,6 +540,11 @@ class FabBotClient:
         main_cards = []
         inv = []
 
+        base_head_cands = []
+        base_chest_cands = []
+        base_arms_cands = []
+        base_legs_cands = []
+
         for c in raw_cards:
             cid = c.get("identifier", "") if isinstance(c, dict) else str(c)
             tot = int(c.get("count", c.get("total", 1))) if isinstance(c, dict) else 1
@@ -575,7 +582,37 @@ class FabBotClient:
             elif slot in ("Weapon", "Off-Hand") or meta.get("type") == "W":
                 raw_weapon_candidates.append(cid)
             else:
+                if "base" in subtype:
+                    if "head" in subtype:
+                        base_head_cands.append(cid)
+                    elif "chest" in subtype:
+                        base_chest_cands.append(cid)
+                    elif "arms" in subtype:
+                        base_arms_cands.append(cid)
+                    elif "legs" in subtype:
+                        base_legs_cands.append(cid)
                 main_cards.extend([cid] * tot)
+
+        # ── Resolução de Equipamentos Base / Evo Base (ex: Teklovossen) para slots vagos ──
+        if not head and base_head_cands:
+            head = base_head_cands[0]
+            if head in main_cards:
+                main_cards.remove(head)
+        if not chest and base_chest_cands:
+            chest = base_chest_cands[0]
+            if chest in main_cards:
+                main_cards.remove(chest)
+        if not arms and base_arms_cands:
+            if is_arcane and any("arcbane" in x for x in base_arms_cands):
+                arms = next(x for x in base_arms_cands if "arcbane" in x)
+            else:
+                arms = base_arms_cands[0]
+            if arms in main_cards:
+                main_cards.remove(arms)
+        if not legs and base_legs_cands:
+            legs = base_legs_cands[0]
+            if legs in main_cards:
+                main_cards.remove(legs)
 
         # ── Resolução de Quivers (Aljavas de Ranger) ──
         if raw_quivers:
@@ -951,8 +988,8 @@ class FabBotClient:
                 p2_lbl = self.get_player_label(2)
 
                 # ── Avaliação de Partida Inválida (Empate 0 Dano ou Bot Inerte / Punching Bag) ──
-                p1_init_hp = self.initial_my_health if self.player_id == 1 else (self.initial_opp_health or 20)
-                p2_init_hp = self.initial_opp_health if self.player_id == 1 else (self.initial_my_health or 20)
+                p1_init_hp = self.initial_my_health if self.player_id == 1 else (self.initial_opp_health or 40)
+                p2_init_hp = self.initial_opp_health if self.player_id == 1 else (self.initial_my_health or 40)
                 p1_dmg_dealt = max(0, p2_init_hp - p2_hp)
                 p2_dmg_dealt = max(0, p1_init_hp - p1_hp)
                 total_dmg_exchanged = p1_dmg_dealt + p2_dmg_dealt
@@ -1053,11 +1090,11 @@ class FabBotClient:
                     try:
                         p1_d_file = f"logs/{self.room_id}_host_deck.txt"
                         p2_d_file = f"logs/{self.room_id}_join_deck.txt"
-                        p1_d = "Humano (Você)" if is_vs_human else self.clean_deck
+                        p1_d = "Humano (Você)" if is_vs_human else getattr(self, "deck_name", self.clean_deck)
                         if not is_vs_human and os.path.exists(p1_d_file):
                             with open(p1_d_file, encoding="utf-8") as f1:
                                 p1_d = f1.read().strip()
-                        p2_d = self.clean_deck
+                        p2_d = getattr(self, "deck_name", self.clean_deck)
                         if os.path.exists(p2_d_file):
                             with open(p2_d_file, encoding="utf-8") as f2:
                                 p2_d = f2.read().strip()
