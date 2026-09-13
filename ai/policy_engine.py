@@ -705,17 +705,17 @@ class PolicyEngine:
                             c_name, c_info["power"], effective_cost, c_info["has_go_again"], c_info["pitch"]
                         )
                         has_ga = c_info["has_go_again"]
-                        gains_ap = False
+                        is_instant = False
 
                         if zone_name == "Banish":
                             # Jogar do Banish alivia Blood Debt e projeta dano alto
                             play_score = base_score + 10.0
                             if isinstance(self.strategy, RunebladeStrategy) or "vynnset" in str(self.hero_name).lower():
                                 play_score += 15.0  # Vynnset quer esvaziar o Banish para não morrer de Blood Debt
-                            # Regra oficial Teklovossen: equipar Evo da zona banida concede +1 Action Point
+                            # Regra oficial Teklovossen: equipar Evo da zona banida é jogado como Instant (custo 0 de Action Point)
                             if ("teklo" in str(self.hero_name).lower() or isinstance(self.strategy, TeklovossenStrategy)) and "evo" in c_name:
-                                gains_ap = True
-                                has_ga = True  # Ganho de AP compensa o custo de ação
+                                is_instant = True
+                                has_ga = True  # Instant resolve sem consumir Action Point
                                 play_score += 12.0
                             if "singularity" in c_name:
                                 play_score += 35.0  # Mechropotent Singularity é o finalizador absoluto
@@ -740,8 +740,9 @@ class PolicyEngine:
                             "name": c_name, "score": play_score, "cost": effective_cost,
                             "power": c_info["power"], "has_go_again": has_ga
                         }
-                        if gains_ap:
-                            candidate_item["gains_ap"] = True
+                        if is_instant:
+                            candidate_item["is_instant"] = True
+                            candidate_item["ap_cost"] = 0
                         candidates.append(candidate_item)
 
         # ── 1.5 Aliados em Jogo (playerAllies) ───────────────────────

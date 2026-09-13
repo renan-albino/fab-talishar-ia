@@ -183,8 +183,8 @@ def test_teklovossen_evo_assembly_and_singularity():
     assert pitch_score_singularity <= -50.0, "Singularity NUNCA pode ser dada pitch!"
 
 
-def test_teklovossen_banish_evo_action_point_gain():
-    """Garante que equipar Evo do Banish conceda AP (+1) e seja priorizado pela PolicyEngine."""
+def test_teklovossen_banish_evo_instant_speed():
+    """Garante que equipar Evo do Banish seja jogado na velocidade Instant (custo 0 de AP, sem ganho de AP)."""
     engine = PolicyEngine(hero_name="teklovossen")
     state = {
         "playerHealth": 30,
@@ -197,7 +197,9 @@ def test_teklovossen_banish_evo_action_point_gain():
     attack = engine.select_best_attack(state)
     assert attack is not None
     assert "evo" in attack["name"]
-    assert attack.get("gains_ap") is True or attack.get("has_go_again") is True
+    assert attack.get("is_instant") is True
+    assert attack.get("ap_cost") == 0
+    assert attack.get("gains_ap") is not True
 
 
 def test_warrior_hala_and_kassai_sequence_naa_buff_before_weapon():
