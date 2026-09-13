@@ -148,7 +148,7 @@ class HeroStrategy:
     def should_crank(self, item_name: str, has_actions_left: bool) -> bool:
         return True
 
-    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool) -> float:
+    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool, **kwargs) -> float:
         """Calcula score defensivo calibrado por block_weight."""
         if block_val <= 0:
             return -999.0

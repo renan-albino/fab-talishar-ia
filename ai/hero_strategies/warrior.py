@@ -23,8 +23,10 @@ class WarriorStrategy(HeroStrategy):
     def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
         score = float(power)
         c_low = card_name.lower()
-        if any(w in c_low for w in ["reprise", "glint", "ironsong", "singing_steel", "spoils_of_war", "out_for_blood", "hit_and_run", "stroke"]):
-            score += 5.0
+        if any(w in c_low for w in ["spoils_of_war", "blood_on_her_hands", "hit_and_run"]):
+            score += 18.0
+        elif any(w in c_low for w in ["reprise", "glint", "ironsong", "singing_steel", "out_for_blood", "stroke"]):
+            score += 8.0
         if has_go_again:
             score += 4.0
         return score
@@ -34,8 +36,7 @@ class WarriorStrategy(HeroStrategy):
         score = 10.0 + (2.0 if floating_res >= 1 else 0.0)
         return score
 
-    @lru_cache(maxsize=1024)
-    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool) -> float:
+    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool, **kwargs) -> float:
         if block_val <= 0:
             return -999.0
         c_low = card_name.lower()
@@ -116,13 +117,13 @@ class KassaiStrategy(WarriorStrategy):
     def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
         score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
         c_low = card_name.lower()
-        # Cartas de compra ativam o desconto passivo de -1 de custo nas espadas de Kassai
+        # Cartas de compra e buffs ativam o desconto passivo de -1 e potencializam os sabers
         if "gorganian" in c_low:
-            score += 15.0  # Compra 0 custo com go again: habilita redução passiva e mantém turno
-        elif "cash_in" in c_low or "spoils_of_war" in c_low:
-            score += 14.0
+            score += 20.0  # Compra 0 custo com go again: habilita redução passiva e mantém turno
         elif "blood_on_her_hands" in c_low:
-            score += 18.0
+            score += 25.0  # NAA devastadora: DEVE ser jogada antes dos swings das espadas!
+        elif "cash_in" in c_low or "spoils_of_war" in c_low:
+            score += 20.0  # Buff/draw NAA prioritário
         elif any(k in c_low for k in ["blade_cuff", "raise_an_army", "run_through"]):
             score += 6.0
         return score
@@ -149,11 +150,11 @@ class HalaStrategy(WarriorStrategy):
         score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
         c_low = card_name.lower()
         if "imperial_seal" in c_low:
-            score += 12.0
+            score += 26.0  # Buff NAA: DEVE ser jogado antes do ataque da espada!
         elif "edict_of_steel" in c_low:
-            score += 10.0
+            score += 24.0  # Buff NAA: DEVE ser jogado antes do ataque da espada!
         elif "brimming_blade" in c_low:
-            score += 8.0
+            score += 22.0  # Buff NAA: DEVE ser jogado antes do ataque da espada!
         elif "command_and_conquer" in c_low:
             score += 8.0
         elif any(k in c_low for k in ["swordmasters_path", "swordmasters_shine", "toe_the_line"]):

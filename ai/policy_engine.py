@@ -31,11 +31,15 @@ from .hero_strategies import (
     JarlStrategy,
     BruteStrategy,
     WarriorStrategy,
+    KassaiStrategy,
+    HalaStrategy,
     RangerStrategy,
     MarlynnStrategy,
     NinjaStrategy,
     MechanologistStrategy,
     RunebladeStrategy,
+    VynnsetStrategy,
+    TeklovossenStrategy,
     WizardStrategy,
     IllusionistStrategy,
     AssassinStrategy,
@@ -382,12 +386,18 @@ class PolicyEngine:
             elif ("harpoon" in card_number and "hammerhead" not in card_number) or "command_and_conquer" in card_number:
                 power = 6 if pitch == 1 else 4
 
-        # Inferência de bloqueio padrão (FaB: maioria das cartas de ação defende 2 ou 3)
-        # Regra Oficial FaB: Itens (Item), Flechas (Arrow), Aliados (Ally) e certas Auras NÃO possuem defesa (defense: None)
-        # e NUNCA podem ser usados para defender.
+        # Exceção especial FaB: Goldfin Harpoon não defende (block = 0) e não gera recurso (pitch = 0)
+        if "goldfin" in card_number:
+            pitch = 0
+            block = 0
+
+        # Inferência de bloqueio padrão (FaB: maioria das cartas de ação e flechas defende 2 ou 3)
+        # Regra Oficial FaB: Itens (Item), Aliados (Ally) e certas Auras NÃO possuem defesa (defense: None)
+        # e NUNCA podem ser usados para defender. Flechas (Arrows) POSSUEM defesa legítima (exceto Goldfin Harpoon).
         subtype_str = str((db_entry.get("subtype") if db_entry else "") or card.get("subtype", "")).lower()
         is_non_blocking_type = (
-            any(nb in subtype_str for nb in ["item", "arrow", "ally", "landmark"])
+            any(nb in subtype_str for nb in ["item", "ally", "landmark"])
+            or "goldfin" in card_number
             or any(k in card_number for k in [
                 "boom_grenade", "convection_amplifier", "penetration_script",
                 "teklo_core", "cerebellum_processor", "null_time_zone",
@@ -398,7 +408,7 @@ class PolicyEngine:
         if is_non_blocking_type:
             block = 0
         elif block == 0 and not is_equip_or_weapon:
-            # Para cartas de ação convencionais (AA ou A) onde a defesa não veio catalogada no banco,
+            # Para cartas de ação convencionais (AA ou A) e Flechas onde a defesa não veio catalogada no banco,
             # infere a defesa padrão do Flesh and Blood (3 para azul, 2 para amarelo/vermelho)
             if any(k in card_number for k in ["_red", "_yellow", "_blue"]) and not any(k in card_number for k in ["heart", "accelerator", "providence", "tunic"]):
                 block = 3 if pitch == 3 else (2 if pitch == 2 else 2)
@@ -507,6 +517,12 @@ class PolicyEngine:
                         base_score += 30.0  # Prioridade máxima: jogar NAA de recuperação para recarregar o arsenal
                     elif turn_plan.plan_type == "HARPOON_CHAIN" and any(k in c_clean for k in ["portside_exchange", "three_of_a_kind", "cheating_scoundrel"]):
                         base_score += 20.0  # Buffs antes do disparo do arsenal
+                    elif "singularity" in c_clean:
+                        base_score += 35.0  # Singularity é a condição de vitória absoluta de Teklovossen
+                    elif turn_plan.plan_type == "HALA_ZENITH_PRESSURE" and any(k in c_clean for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "ironsong"]):
+                        base_score += 25.0  # Buffs de Guerreiro DEVEM ser jogados antes do ataque da espada!
+                    elif (isinstance(self.strategy, WarriorStrategy) or "warrior" in str(self.hero_name).lower() or "hala" in str(self.hero_name).lower() or "kassai" in str(self.hero_name).lower()) and any(k in c_clean for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "blood_on_her_hands", "spoils_of_war", "hit_and_run"]):
+                        base_score += 20.0  # Sequenciar NAA buffs sempre antes do swing da arma
                     elif c_name in turn_plan.reserved_card_names or c_clean in turn_plan.reserved_card_names:
                         base_score += 15.0  # Peça chave do plano ofensivo reservada
 
@@ -669,11 +685,12 @@ class PolicyEngine:
                     effective_cost = card_cost
 
                     # No FaB oficial, Runegate permite jogar do Banish destruindo Runechants em vez de pagar recursos
+                    # Regra FaB: apenas cartas de ATAQUE possuem Runegate (fasting_carcass NÃO possui Runegate)
                     if zone_name == "Banish":
                         db_c = _load_cards_db().get(c_name, {})
                         is_runegate = (
                             any(k in c_name for k in [
-                                "cull", "deathly", "fasting", "widespread",
+                                "cull", "deathly", "widespread",
                                 "oblivion", "beseech", "runegate"
                             ])
                             or "runegate" in str(db_c.get("text", "")).lower()
@@ -687,11 +704,21 @@ class PolicyEngine:
                         base_score = self.strategy.evaluate_attack_card(
                             c_name, c_info["power"], effective_cost, c_info["has_go_again"], c_info["pitch"]
                         )
+                        has_ga = c_info["has_go_again"]
+                        gains_ap = False
+
                         if zone_name == "Banish":
                             # Jogar do Banish alivia Blood Debt e projeta dano alto
                             play_score = base_score + 10.0
                             if isinstance(self.strategy, RunebladeStrategy) or "vynnset" in str(self.hero_name).lower():
                                 play_score += 15.0  # Vynnset quer esvaziar o Banish para não morrer de Blood Debt
+                            # Regra oficial Teklovossen: equipar Evo da zona banida concede +1 Action Point
+                            if ("teklo" in str(self.hero_name).lower() or isinstance(self.strategy, TeklovossenStrategy)) and "evo" in c_name:
+                                gains_ap = True
+                                has_ga = True  # Ganho de AP compensa o custo de ação
+                                play_score += 12.0
+                            if "singularity" in c_name:
+                                play_score += 35.0  # Mechropotent Singularity é o finalizador absoluto
                         else:
                             # Jogar do Arsenal executa a ofensiva e libera o slot para o canhão carregar nova flecha
                             play_score = base_score + 4.0
@@ -708,11 +735,14 @@ class PolicyEngine:
                                 if turn_plan.plan_type == "HARPOON_CHAIN":
                                     play_score += 15.0
 
-                        candidates.append({
+                        candidate_item = {
                             "type": zone_name.lower(), "idx": 0, "card_id": str(c_id), "mode": action,
                             "name": c_name, "score": play_score, "cost": effective_cost,
-                            "power": c_info["power"], "has_go_again": c_info["has_go_again"]
-                        })
+                            "power": c_info["power"], "has_go_again": has_ga
+                        }
+                        if gains_ap:
+                            candidate_item["gains_ap"] = True
+                        candidates.append(candidate_item)
 
         # ── 1.5 Aliados em Jogo (playerAllies) ───────────────────────
         allies = state.get("playerAllies", [])
@@ -883,6 +913,7 @@ class PolicyEngine:
     def select_defense_blocks(self, state: dict) -> List[Tuple[int, str, str, int]]:
         hand = state.get("playerHand", [])
         my_hp = int(state.get("playerHealth", 20))
+        opp_hp = int(state.get("opponentHealth", 20))
         cards_db = _get_cards_db()
         
         active_chain = state.get("activeChainLink", {})
@@ -901,6 +932,17 @@ class PolicyEngine:
         is_heavy_hero = getattr(self.strategy, "is_heavy_hero", False)
         current_turn = int(state.get("turnNo", state.get("currentTurn", 1)))
 
+        # Contagem de cartas de ataque Runegate na mão para Vynnset
+        runegate_in_hand = 0
+        if "vynnset" in str(self.hero_name).lower():
+            runegate_in_hand = sum(
+                1 for hc in hand
+                if any(rk in str(hc.get("cardNumber", "")).lower() for rk in [
+                    "cull", "deathly_delight", "deathly_wail", "widespread_ruin",
+                    "widespread_destruction", "widespread_annihilation", "oblivion", "eloquent_eulogy"
+                ])
+            )
+
         block_candidates = []
         for idx, c in enumerate(hand):
             info = self.extract_card_info(c)
@@ -909,9 +951,15 @@ class PolicyEngine:
 
             c_id = info["actionDataOverride"] or str(idx)
             c_action = info["action"] if info["action"] > 0 else 27
-            score = self.strategy.evaluate_block_card(
-                info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"]
-            )
+            if isinstance(self.strategy, VynnsetStrategy):
+                score = self.strategy.evaluate_block_card(
+                    info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"],
+                    runegate_in_hand=runegate_in_hand
+                )
+            else:
+                score = self.strategy.evaluate_block_card(
+                    info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"]
+                )
 
             # ── Poda Estrita de Peças Reservadas pelo TurnPlan ────────
             c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
@@ -944,13 +992,6 @@ class PolicyEngine:
                         score -= 30.0  # Bloquear com a única azul deixaria o herói desativado no contra-ataque
                     elif blue_count == 2 and is_heavy_hero:
                         score -= 15.0  # Preserva a 2ª azul para fusão elemental / pagar ataque de custo 3 + Titan's Fist
-
-            # ── Poda Anti-Stalemate (Decaimento Temporal de Bloqueio):
-            # A partir do turno 18 (e escalando até turnos 30-50), penaliza o overblocking
-            # sistemático para forçar trocas de dano e quebrar empates de tartaruga (mutual stall)
-            if current_turn >= 18 and not has_dangerous_on_hit and not (is_reserved and my_hp <= 6):
-                turn_decay = min(20.0, (current_turn - 17) * 1.0)
-                score -= turn_decay
 
             # Bônus para reações de defesa dedicadas (Sink, Fate, Staunch)
             if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
@@ -1193,11 +1234,6 @@ class PolicyEngine:
         else:
             max_hand_blocks = min(2, len(block_candidates))
 
-        # Poda Anti-Stalemate no Endgame: se a partida se prolongar (turno >= 20),
-        # impede gastar 3+ cartas da mão em bloqueios para garantir que sobre recurso de contra-ataque!
-        if current_turn >= 20 and my_hp > 6 and not (has_dangerous_on_hit and opp_power >= my_hp):
-            max_hand_blocks = min(max_hand_blocks, 2)
-
         hand_blocks_count = 0
         for item in block_candidates:
             is_equip = item.get("is_equipment", False)
@@ -1216,6 +1252,27 @@ class PolicyEngine:
             current_blocked += item["block"]
             if not is_equip:
                 hand_blocks_count += 1
+
+            # ── Defesa Mínima Viável (FaB Minimum Viable Defense / Preservação de Contra-Ataque) ──
+            # Em vez de decaimento artificial baseado em turnos, preserva recurso de contra-ataque (pitch ou arma)
+            # se já mitigamos o dano para uma faixa segura de sobrevivência (projetado >= 2 HP, ou >= 1 se opp_hp <= 4).
+            # Não se aplica quando o plano tático for explicitamente DEFENSIVE_TRAP ou FULL_DEFENSE.
+            remaining_dmg = max(0, opp_power - current_blocked)
+            projected_hp = my_hp - remaining_dmg
+            if current_blocked > 0 and turn_plan.plan_type not in ("DEFENSIVE_TRAP", "FULL_DEFENSE"):
+                remaining_hand = len(hand) - hand_blocks_count
+                # Se o ataque ameaça destruir Arsenal mas não temos cartas no Arsenal, o on-hit é inócuo
+                arsenal_cards = state.get("playerArsenal") or state.get("playerArse") or []
+                is_real_on_hit = has_dangerous_on_hit and not (
+                    any(k in incoming_name for k in ["command_and_conquer", "leave_no_witnesses", "wreck_havoc", "eradicate"])
+                    and len(arsenal_cards) == 0
+                )
+                if projected_hp >= 2 and remaining_hand <= 1 and not is_real_on_hit:
+                    # Preserva a última carta da mão para poder dar pitch / jogar ação ofensiva
+                    break
+                elif projected_hp >= 1 and opp_hp <= 4 and remaining_hand <= 1:
+                    # Risco tático de vitória: aceita dano residual seguro para garantir o swing letal!
+                    break
 
             # ── Poda de Overblocking Exato:
             if current_blocked >= opp_power and my_hp > 6:

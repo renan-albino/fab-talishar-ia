@@ -248,11 +248,18 @@ class RunebladeStrategy(HeroStrategy):
         return super().analyze_turn_plan(state)
 
 
+_VYNNSET_RUNEGATE_ATTACKS = {
+    "cull", "deathly_delight", "deathly_wail",
+    "widespread_ruin", "widespread_destruction", "widespread_annihilation",
+    "oblivion", "eloquent_eulogy"
+}
+
+
 class VynnsetStrategy(RunebladeStrategy):
     """
     Estratégia especializada para Vynnset, Iron Maiden.
-    Sinergia com Shadow e Runegate: banimento no início do turno para criar Runechants,
-    reduzindo o custo de ataques jogados do Banish (Flail of Agony, Grimoire, etc.).
+    Sinergia com Shadow e Runegate: banimento no início do turno de ataques com Runegate
+    para criar Runechants, reduzindo o custo de ataques jogados do Banish.
     """
 
     @lru_cache(maxsize=1024)
@@ -260,9 +267,9 @@ class VynnsetStrategy(RunebladeStrategy):
         score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
         c_low = card_name.lower()
         if any(k in c_low for k in [
-            "cull", "deathly_delight", "deathly_wail", "fasting_carcass",
+            "cull", "deathly_delight", "deathly_wail",
             "widespread_ruin", "widespread_destruction", "widespread_annihilation",
-            "oblivion", "beseech_the_demigon", "runegate"
+            "oblivion", "eloquent_eulogy", "beseech_the_demigon", "runegate"
         ]):
             score += 10.0
         elif any(k in c_low for k in ["funeral_moon", "shadow_puppetry", "dimenxxional", "revel_in_runeblood", "malefic_incantation", "tear_through_the_portal", "reduce_to_runechant"]):
@@ -271,21 +278,36 @@ class VynnsetStrategy(RunebladeStrategy):
             score += 6.0
         return score
 
-    @lru_cache(maxsize=1024)
-    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool) -> float:
+    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool, runegate_in_hand: int = 1, **kwargs) -> float:
         if block_val <= 0:
             return -999.0
         c_low = card_name.lower()
-        # Preserva cartas vermelhas de Runegate e geradores de Runechant na mão para atacar
-        if pitch == 1 and (power >= 4 or any(k in c_low for k in ["cull", "deathly", "widespread", "fasting", "shadow_puppetry", "revel_in_runeblood"])):
+        is_runegate_atk = any(k in c_low for k in _VYNNSET_RUNEGATE_ATTACKS)
+
+        # Regra tática de Vynnset: se houver 2+ ataques de Runegate na mão, ela não se importa de bloquear
+        # com a carta sobressalente, pois dificilmente conseguirá converter mais de um ataque da mão no mesmo turno.
+        if is_runegate_atk and runegate_in_hand >= 2:
+            return float(block_val) * 2.0 - (power * 0.5)
+
+        # Preserva única carta vermelha de Runegate e geradores de Runechant na mão para atacar
+        if pitch == 1 and (power >= 4 or is_runegate_atk or any(k in c_low for k in ["shadow_puppetry", "revel_in_runeblood"])):
             return -12.0
         return float(block_val) * 2.0 - (power * 0.5)
 
     def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
-        """Habilidade de início de turno de Vynnset: banir carta da mão para criar Runechant."""
+        """
+        Habilidade de início da fase de ação de Vynnset:
+        Bane uma carta da mão para criar um Runechant e dar Piercing 1 ao próximo ataque Runegate.
+        Regra estrita: DEVE banir quase que estritamente ataques de Runegate para convertê-los do Banish!
+        Se a mão não possuir nenhum ataque de Runegate, NÃO ativa para não prender cartas não jogáveis no Banish.
+        """
         hand = state.get("playerHand", [])
-        if len(hand) >= 2:
-            return 18.0
+        has_runegate_attack_in_hand = any(
+            any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in _VYNNSET_RUNEGATE_ATTACKS)
+            for c in hand
+        )
+        if has_runegate_attack_in_hand and len(hand) >= 2:
+            return 25.0
         return 0.0
 
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
@@ -314,7 +336,7 @@ class VynnsetStrategy(RunebladeStrategy):
         runegate_cards = [
             c for c in list(banish) + list(hand)
             if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in [
-                "cull", "deathly", "fasting", "widespread", "oblivion",
+                "cull", "deathly", "widespread", "oblivion",
                 "beseech", "runegate", "shadow", "flail"
             ])
         ]

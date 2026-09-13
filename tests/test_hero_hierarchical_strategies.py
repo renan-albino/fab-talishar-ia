@@ -114,8 +114,8 @@ def test_vynnset_heuristics():
     gen_score = strat.evaluate_attack_card("generic_swing", power=5, cost=2, has_go_again=False, pitch=1)
     assert rg_score > gen_score, f"Rune gate card ({rg_score}) deve superar genérico ({gen_score})"
 
-    # Habilidade de herói (banir carta para criar Runechant)
-    ability_score = strat.evaluate_hero_ability(state={"playerHand": ["card1", "card2"]}, hero_info={})
+    # Habilidade de herói (banir ataque de Runegate para criar Runechant e Piercing 1)
+    ability_score = strat.evaluate_hero_ability(state={"playerHand": [{"cardNumber": "cull_red"}, {"cardNumber": "card2"}]}, hero_info={})
     assert ability_score >= 15.0
 
 

@@ -48,7 +48,7 @@ class TeklovossenStrategy(HeroStrategy):
         elif "command_and_conquer" in c_low:
             score += 11.0
         elif "singularity" in c_low:
-            score += 14.0  # Condição de vitória do Mechropotent
+            score += 35.0  # Condição de vitória absoluta: Mechropotent
         elif "fabricate" in c_low:
             score += 8.5
         elif "scrap_trader" in c_low:
@@ -62,7 +62,9 @@ class TeklovossenStrategy(HeroStrategy):
         score = float(power) * 1.5
         c_low = card_name.lower()
 
-        if "command_and_conquer" in c_low:
+        if "singularity" in c_low:
+            score += 35.0  # Mechropotent
+        elif "command_and_conquer" in c_low:
             score += 12.0
         elif "terminator_tank" in c_low:
             score += 10.0
@@ -78,8 +80,11 @@ class TeklovossenStrategy(HeroStrategy):
 
     @lru_cache(maxsize=1024)
     def evaluate_pitch_card(self, card_name: str, pitch: int, cost: int, power: int, has_go_again: bool) -> float:
-        score = float(pitch) * 4.5
         c_low = card_name.lower()
+        if "singularity" in c_low:
+            return -999.0  # NUNCA dar pitch em Singularity!
+
+        score = float(pitch) * 4.5
 
         # Evos azuis e cards azuis são ótimos pitches para pagar Teklo Leveler ou Evo upgrades
         if pitch == 3:
@@ -171,10 +176,49 @@ class TeklovossenStrategy(HeroStrategy):
             if "evo" in str(c.get("cardNumber") or c.get("name", "")).lower()
         ]
 
+        # Detectar Evos já equipados nos 4 slots fundamentais (Head, Chest, Arms, Legs)
+        equipped_evo_slots = set()
+        for eq in (state.get("playerEquipment") or []):
+            slot = str(eq.get("slot", "")).lower()
+            if slot in ("head", "chest", "arms", "legs"):
+                c_num = str(eq.get("cardNumber", "")).lower()
+                subtype = str(eq.get("subtype", "")).lower()
+                if "evo" in c_num or "evo" in subtype:
+                    equipped_evo_slots.add(slot)
+
+        singularity_cards = [
+            c for c in hand
+            if "singularity" in str(c.get("cardNumber") or c.get("name", "")).lower()
+        ]
+
+        # Em partidas lentas contra oponentes sem burst agressivo (opp_power <= 5),
+        # prioriza absolutamente montar os 4 Evos para abusar de valor defensivo contínuo e finalizar com Singularity
+        if evo_cards and len(equipped_evo_slots) < 4 and opp_power <= 5 and my_hp >= 6:
+            primary_evo = evo_cards[0]
+            evo_name = str(primary_evo.get("cardNumber") or primary_evo.get("name", ""))
+            reserved: Set[str] = {evo_name}
+            if singularity_cards:
+                s_name = str(singularity_cards[0].get("cardNumber") or singularity_cards[0].get("name", ""))
+                reserved.add(s_name)
+            reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+            max_blocks = max(0, len(hand) - len(reserved_in_hand))
+            return TurnPlan(
+                plan_type="TEKLOVOSSEN_EVO_ASSEMBLY",
+                reserved_card_names=reserved,
+                can_absorb_damage=True,
+                max_block_cards=max_blocks,
+                priority_action_types=["evo_equip", "hero_ability", "weapon"],
+                offensive_potential=6.0,
+                reason=f"Teklovossen assembly: assembling 4 Evos ({len(equipped_evo_slots)}/4) to build Mechropotent"
+            )
+
         if heavy_attacks and my_hp >= 6:
             primary = heavy_attacks[0]
             p_name = str(primary.get("cardNumber") or primary.get("name", ""))
             reserved: Set[str] = {p_name}
+            if singularity_cards:
+                s_name = str(singularity_cards[0].get("cardNumber") or singularity_cards[0].get("name", ""))
+                reserved.add(s_name)
             reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
             max_blocks = max(0, len(hand) - len(reserved_in_hand) - 1)  # poupa o ataque e um recurso de pitch
             return TurnPlan(
@@ -191,6 +235,9 @@ class TeklovossenStrategy(HeroStrategy):
             primary_evo = evo_cards[0]
             evo_name = str(primary_evo.get("cardNumber") or primary_evo.get("name", ""))
             reserved = {evo_name}
+            if singularity_cards:
+                s_name = str(singularity_cards[0].get("cardNumber") or singularity_cards[0].get("name", ""))
+                reserved.add(s_name)
             max_blocks = max(0, len(hand) - len(reserved))
             return TurnPlan(
                 plan_type="TEKLOVOSSEN_EVO_UPGRADE",

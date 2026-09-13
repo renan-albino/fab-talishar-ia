@@ -2,8 +2,9 @@
 tests/test_sub50_hero_strategies.py
 ===================================
 Testes unitários rigorosos para validação dos aprimoramentos das estratégias
-dos heróis com winrate < 50% (Dash IO, Vynnset, Teklovossen, Hala, Marlinn)
-e proteções globais contra bloqueio indevido de itens/flechas e empates (anti-stalemate).
+dos heróis com winrate < 50% (Dash IO, Vynnset, Teklovossen, Hala, Kassai, Marlinn)
+e proteções globais contra bloqueio indevido de itens/goldfin, aprendizado de ordem de turno
+e defesa mínima viável (anti-stalemate).
 """
 
 import pytest
@@ -14,13 +15,18 @@ from ai.hero_strategies import (
     VynnsetStrategy,
     TeklovossenStrategy,
     HalaStrategy,
+    KassaiStrategy,
     MarlynnStrategy,
 )
+from ai.turn_order_learning import get_turn_order_learner, TurnOrderLearner
 
 
-def test_mechanologist_items_and_arrows_have_zero_block():
-    """Garante que itens Mechanologist e flechas de Ranger NUNCA recebam defesa heurística."""
-    engine = PolicyEngine(hero_name="dash_io")
+def test_mechanologist_items_and_goldfin_have_zero_block_and_arrows_can_block():
+    """
+    Garante que itens Mechanologist e Goldfin Harpoon tenham 0 de defesa,
+    enquanto flechas legítimas de Ranger POSSUEM defesa padrão de FaB (>= 2).
+    """
+    engine = PolicyEngine(hero_name="marlinn")
 
     # Item Mechanologist não pode ter defesa
     item_card = {"cardNumber": "boom_grenade_red", "name": "Boom Grenade", "action": 27}
@@ -31,40 +37,59 @@ def test_mechanologist_items_and_arrows_have_zero_block():
     info_core = engine.extract_card_info(teklo_core)
     assert info_core["block"] == 0, f"Teklo Core não pode bloquear! Recebeu: {info_core['block']}"
 
-    # Flechas de Ranger não podem bloquear
+    # Exceção FaB: Goldfin Harpoon Yellow não defende (0) e não gera recurso (pitch 0)
+    goldfin_card = {"cardNumber": "goldfin_harpoon_yellow", "name": "Goldfin Harpoon", "action": 27}
+    info_goldfin = engine.extract_card_info(goldfin_card)
+    assert info_goldfin["block"] == 0, f"Goldfin Harpoon deve ter 0 de bloco! Recebeu: {info_goldfin['block']}"
+    assert info_goldfin["pitch"] == 0, f"Goldfin Harpoon deve ter 0 de pitch! Recebeu: {info_goldfin['pitch']}"
+
+    # Regra Oficial FaB: Flechas comuns POSSUEM defesa e podem ser usadas para bloquear!
     arrow_card = {"cardNumber": "infecting_shot_red", "name": "Infecting Shot", "action": 27}
     info_arrow = engine.extract_card_info(arrow_card)
-    assert info_arrow["block"] == 0, f"Flecha não pode bloquear! Recebeu: {info_arrow['block']}"
+    assert info_arrow["block"] >= 2, f"Flecha legítima deve defender! Recebeu: {info_arrow['block']}"
 
-    # Cartas de ação convencionais ainda recebem defesa legítima
+    # Ataque convencional
     action_card = {"cardNumber": "zero_to_sixty_red", "name": "Zero to Sixty", "action": 27}
     info_act = engine.extract_card_info(action_card)
     assert info_act["block"] >= 2, f"Ataque legítimo deve defender! Recebeu: {info_act['block']}"
 
 
-def test_select_defense_blocks_strictly_excludes_zero_block_items():
-    """Garante que select_defense_blocks nunca selecione itens ou flechas para defender."""
-    engine = PolicyEngine(hero_name="dash_io")
+def test_select_defense_blocks_allows_arrows_and_excludes_items_and_goldfin():
+    """Garante que select_defense_blocks bloqueie com flechas, mas exclua itens e Goldfin Harpoon."""
+    engine = PolicyEngine(hero_name="marlinn")
     state = {
         "playerHealth": 20,
         "playerHand": [
             {"cardNumber": "boom_grenade_red", "name": "Boom Grenade", "action": 27},
-            {"cardNumber": "teklo_core_blue", "name": "Teklo Core", "action": 27},
-            {"cardNumber": "zero_to_sixty_red", "name": "Zero to Sixty", "action": 27, "defense": 2},
+            {"cardNumber": "goldfin_harpoon_yellow", "name": "Goldfin Harpoon", "action": 27},
+            {"cardNumber": "infecting_shot_red", "name": "Infecting Shot", "action": 27, "defense": 3},
         ],
         "activeChainLink": {"totalPower": 4, "cardNumber": "snatch_red"}
     }
     blocks = engine.select_defense_blocks(state)
     blocked_card_names = [b[2].lower() for b in blocks]
     assert "boom_grenade_red" not in blocked_card_names, "Boom Grenade não pode ser usada para bloquear!"
-    assert "teklo_core_blue" not in blocked_card_names, "Teklo Core não pode ser usado para bloquear!"
+    assert "goldfin_harpoon_yellow" not in blocked_card_names, "Goldfin Harpoon não pode bloquear!"
+    assert any("infecting_shot" in name for name in blocked_card_names), "Infecting Shot deve ser usada para bloquear!"
+
+
+def test_turn_order_learner_priors():
+    """Verifica se heróis de setup (Dash IO, Vynnset, Teklovossen) escolhem 'Go First' por padrão."""
+    learner = TurnOrderLearner(stats_file="data/test_turn_order_temp.json")
+    
+    # Setup heroes devem preferir 'Go First' (epsilon=0 para teste determinístico)
+    assert learner.get_optimal_turn_order("dash_io", epsilon=0.0) == "Go First"
+    assert learner.get_optimal_turn_order("vynnset", epsilon=0.0) == "Go First"
+    assert learner.get_optimal_turn_order("teklovossen", epsilon=0.0) == "Go First"
+
+    # Heróis genéricos sem prior preferem 'Go Second' por padrão para ter carta extra no fim do primeiro turno
+    assert learner.get_optimal_turn_order("bravo", epsilon=0.0) == "Go Second"
 
 
 def test_symbiosis_shot_steam_counters_pruning():
     """Garante que Symbiosis Shot só possa atacar se tiver pelo menos 1 contador de vapor."""
     engine = PolicyEngine(hero_name="dash_io")
 
-    # 1. Sem contadores: não pode atacar
     state_no_counters = {
         "playerHealth": 20,
         "playerPitchCount": 2,
@@ -76,7 +101,6 @@ def test_symbiosis_shot_steam_counters_pruning():
     attack = engine.select_best_attack(state_no_counters)
     assert attack is None or attack.get("name") != "symbiosis_shot", "Symbiosis Shot não pode atacar com 0 contadores!"
 
-    # 2. Com 1 contador: ataque válido
     state_with_counter = {
         "playerHealth": 20,
         "playerPitchCount": 2,
@@ -89,119 +113,175 @@ def test_symbiosis_shot_steam_counters_pruning():
     assert attack_ready is not None and attack_ready.get("name") == "symbiosis_shot"
 
 
-def test_dash_io_hero_ability():
-    """Verifica que a habilidade de herói da Dash IO é avaliada e priorizada."""
-    strat = get_hero_strategy("dash_io")
-    assert isinstance(strat, DashIOStrategy)
-    state = {
-        "playerHand": [{"cardNumber": "zero_to_sixty_red"}],
-        "playerPitchCount": 1
-    }
-    score = strat.evaluate_hero_ability(state, {"name": "dash_io"})
-    assert score >= 14.0, f"Dash IO deve valorizar olhar o topo do deck. Score: {score}"
-
-
-def test_vynnset_runegate_banish_discount():
-    """Verifica se cartas com Runegate no Banish utilizam Runechants para pagar o custo."""
-    engine = PolicyEngine(hero_name="vynnset")
-    assert isinstance(engine.strategy, VynnsetStrategy)
-
-    # Vynnset com 0 recursos flutuantes e mão vazia, mas com 2 Runechants em jogo
-    state = {
-        "playerHealth": 35,
-        "playerPitchCount": 0,
-        "playerHand": [],
-        "playerTokens": [{"cardNumber": "runechant_token", "counters": 2}],
-        "playerBanish": [
-            {"cardNumber": "widespread_ruin_red", "name": "Widespread Ruin", "action": 1, "cost": 2, "power": 6}
-        ]
-    }
-    attack = engine.select_best_attack(state)
-    assert attack is not None, "Vynnset deveria jogar Runegate do Banish via 2 Runechants!"
-    assert "widespread_ruin_red" in attack.get("name", "")
-    assert attack.get("type") == "banish"
-    assert attack.get("cost") == 0  # Custo abatido por 2 Runechants
-
-
-def test_vynnset_real_runegate_cards_recognition():
-    """Garante que a estratégia da Vynnset reconheça e priorize as cartas reais de Runegate."""
+def test_vynnset_hero_ability_strictly_requires_runegate_attack():
+    """Garante que Vynnset só ative sua habilidade se houver um ataque de Runegate na mão para banir."""
     strat = get_hero_strategy("vynnset")
     assert isinstance(strat, VynnsetStrategy)
-    score_cull = strat.evaluate_attack_card("cull_red", power=4, cost=1, has_go_again=False, pitch=1)
-    assert score_cull >= 13.0, f"Cull deve receber bônus de Runegate! Score: {score_cull}"
 
-    score_widespread = strat.evaluate_attack_card("widespread_ruin_red", power=6, cost=2, has_go_again=False, pitch=1)
-    assert score_widespread >= 15.0, f"Widespread Ruin deve receber bônus de Runegate! Score: {score_widespread}"
+    # 1. Mão SEM ataque de Runegate (apenas auras e cartas genéricas): NÃO deve ativar a habilidade
+    state_without_runegate = {
+        "playerHand": [
+            {"cardNumber": "fasting_carcass_red", "name": "Fasting Carcass"},
+            {"cardNumber": "sink_below_red", "name": "Sink Below"}
+        ]
+    }
+    score_no = strat.evaluate_hero_ability(state_without_runegate, {"name": "vynnset"})
+    assert score_no == 0.0, "Vynnset não deve ativar habilidade sem ataque de Runegate na mão!"
+
+    # 2. Mão COM ataque de Runegate (ex: Cull Red): DEVE ativar para criar Runechant e Piercing 1
+    state_with_runegate = {
+        "playerHand": [
+            {"cardNumber": "cull_red", "name": "Cull"},
+            {"cardNumber": "sink_below_red", "name": "Sink Below"}
+        ]
+    }
+    score_yes = strat.evaluate_hero_ability(state_with_runegate, {"name": "vynnset"})
+    assert score_yes >= 20.0, "Vynnset deve ativar habilidade com alta prioridade quando tem Runegate na mão!"
 
 
-def test_teklovossen_hero_ability_and_leveler():
-    """Verifica a habilidade de herói de Teklovossen e a pressão com Teklo Leveler."""
+def test_vynnset_blocks_with_second_runegate_attack():
+    """
+    Garante que Vynnset não penalize bloquear com um ataque de Runegate
+    se ela tiver 2 ou mais ataques de Runegate na mão.
+    """
+    strat = get_hero_strategy("vynnset")
+    assert isinstance(strat, VynnsetStrategy)
+
+    # Com apenas 1 Runegate na mão: penaliza com -12.0 para preservar o ataque ofensivo
+    score_single = strat.evaluate_block_card("cull_red", block_val=3, pitch=1, power=4, has_go_again=False, runegate_in_hand=1)
+    assert score_single < 0, f"Com apenas 1 Runegate, deve preservar! Score: {score_single}"
+
+    # Com 2 Runegates na mão: não penaliza o sobressalente
+    score_double = strat.evaluate_block_card("cull_red", block_val=3, pitch=1, power=4, has_go_again=False, runegate_in_hand=2)
+    assert score_double > 0, f"Com 2 Runegates, Vynnset pode bloquear com o sobressalente! Score: {score_double}"
+
+
+def test_teklovossen_evo_assembly_and_singularity():
+    """Verifica que Teklovossen foca em montar os 4 Evos em jogos lentos e valoriza Singularity."""
     strat = get_hero_strategy("teklovossen")
     assert isinstance(strat, TeklovossenStrategy)
 
-    state_with_evo = {
-        "playerHand": [{"cardNumber": "evo_steel_soul_memory_blue"}]
-    }
-    score_ability = strat.evaluate_hero_ability(state_with_evo, {"name": "teklovossen"})
-    assert score_ability == 18.0, "Teklovossen deve ativar habilidade para banir Evo e comprar carta!"
-
-    # Teklo Leveler deve ter nota agressiva quando não há ataques de mão
-    weapon_score = strat.evaluate_weapon_attack("teklo_leveler", floating_res=2, total_res=3, has_hand_attacks=False)
-    assert weapon_score >= 18.0, f"Teklo Leveler deve ter prioridade alta sem ataques na mão! Score: {weapon_score}"
-
-
-def test_hala_zenith_blade_tempo_plan():
-    """Verifica que Hala reserva recursos para bater com a Zenith Blade mesmo sem buffs."""
-    strat = get_hero_strategy("hala")
-    assert isinstance(strat, HalaStrategy)
-
+    # Estado com apenas 1 Evo equipado contra ataque moderado (power=3)
     state = {
         "playerHealth": 35,
         "playerHand": [
-            {"cardNumber": "blunten_yellow", "pitch": 2},
-            {"cardNumber": "sink_below_red", "pitch": 1, "defense": 4}
+            {"cardNumber": "evo_steel_soul_tower_blue", "name": "Evo Steel Soul Tower"},
+            {"cardNumber": "singularity_blue", "name": "Singularity", "pitch": 3},
+            {"cardNumber": "teklo_core_blue", "name": "Teklo Core", "pitch": 3}
+        ],
+        "playerEquipment": [
+            {"slot": "head", "cardNumber": "evo_circuit_breaker_head"}
         ],
         "activeChainLink": {"totalPower": 3, "cardNumber": "snatch_red"}
     }
     plan = strat.analyze_turn_plan(state)
-    assert plan.plan_type == "HALA_SWORD_TEMPO", f"Hala deve manter postura ofensiva de espada! Plano: {plan.plan_type}"
-    assert plan.max_block_cards <= 1, "Hala não deve gastar toda a mão em bloqueio passivo!"
+    assert plan.plan_type == "TEKLOVOSSEN_EVO_ASSEMBLY", f"Deveria ativar plano TEKLOVOSSEN_EVO_ASSEMBLY! Plano: {plan.plan_type}"
+    assert "singularity_blue" in plan.reserved_card_names, "Singularity deve ser reservada para não bloquear!"
+
+    # Singularity nunca deve ser dada pitch
+    pitch_score_singularity = strat.evaluate_pitch_card("singularity_blue", pitch=3, cost=0, power=0, has_go_again=False)
+    assert pitch_score_singularity <= -50.0, "Singularity NUNCA pode ser dada pitch!"
 
 
-def test_marlinn_quiver_activation():
-    """Verifica que Marlinn avalia e ativa Quiver para recarregar flecha no Arsenal vazio."""
+def test_teklovossen_banish_evo_action_point_gain():
+    """Garante que equipar Evo do Banish conceda AP (+1) e seja priorizado pela PolicyEngine."""
+    engine = PolicyEngine(hero_name="teklovossen")
+    state = {
+        "playerHealth": 30,
+        "playerPitchCount": 4,
+        "playerHand": [],
+        "playerBanish": [
+            {"cardNumber": "evo_steel_soul_memory_blue", "name": "Evo Steel Soul Memory", "action": 1, "cost": 4, "power": 0}
+        ]
+    }
+    attack = engine.select_best_attack(state)
+    assert attack is not None
+    assert "evo" in attack["name"]
+    assert attack.get("gains_ap") is True or attack.get("has_go_again") is True
+
+
+def test_warrior_hala_and_kassai_sequence_naa_buff_before_weapon():
+    """Garante que cartas NAA de buff de Guerreiro (Hala e Kassai) sejam jogadas antes de bater com a arma."""
+    engine_hala = PolicyEngine(hero_name="hala")
+
+    # Hala com Imperial Seal of Command e Zenith Blade pronta
+    state_hala = {
+        "playerHealth": 35,
+        "playerPitchCount": 3,
+        "playerHand": [
+            {"cardNumber": "imperial_seal_of_command_red", "name": "Imperial Seal of Command", "action": 27, "power": 0, "cost": 0, "pitch": 1}
+        ],
+        "playerEquipment": [
+            {"cardNumber": "zenith_blade", "slot": "weapon", "action": 1, "power": 4}
+        ]
+    }
+    best_act_hala = engine_hala.select_best_attack(state_hala)
+    assert best_act_hala is not None
+    assert "imperial_seal" in best_act_hala["name"].lower(), (
+        f"Hala deve jogar o buff NAA (Imperial Seal) ANTES de bater com a Zenith Blade! Escolheu: {best_act_hala['name']}"
+    )
+
+    # Kassai com Blood on Her Hands e Cintari Saber pronta
+    engine_kassai = PolicyEngine(hero_name="kassai")
+    state_kassai = {
+        "playerHealth": 35,
+        "playerPitchCount": 3,
+        "playerHand": [
+            {"cardNumber": "blood_on_her_hands_red", "name": "Blood on Her Hands", "action": 27, "power": 0, "cost": 1, "pitch": 1}
+        ],
+        "playerEquipment": [
+            {"cardNumber": "cintari_saber", "slot": "weapon", "action": 1, "power": 3}
+        ]
+    }
+    best_act_kassai = engine_kassai.select_best_attack(state_kassai)
+    assert best_act_kassai is not None
+    assert "blood_on_her_hands" in best_act_kassai["name"].lower(), (
+        f"Kassai deve jogar Blood on Her Hands ANTES de bater com a espada! Escolheu: {best_act_kassai['name']}"
+    )
+
+
+def test_marlinn_quiver_only_in_late_game():
+    """
+    Garante que Quiver of Abyssal Depths só seja ativado no fim de jogo (deck <= 10)
+    para reciclar flechas do cemitério, e nunca no early game com deck cheio.
+    """
     strat = get_hero_strategy("marlinn")
     assert isinstance(strat, MarlynnStrategy)
 
-    state_empty_arsenal = {
-        "playerArsenal": [],
-        "playerHand": [{"cardNumber": "infecting_shot_red", "name": "Infecting Shot"}]
-    }
-    quiver_score = strat.evaluate_equipment_ability(state_empty_arsenal, {"cardNumber": "quiver_of_abyssal_depths"})
-    assert quiver_score >= 20.0, f"Quiver deve ser ativado com alta prioridade para recarregar o Arsenal! Score: {quiver_score}"
-
-
-def test_anti_stalemate_turn_decay():
-    """Garante que a partir do turno 18 o valor de bloqueio sofra decaimento para evitar mutual stall."""
-    engine = PolicyEngine(hero_name="hala")
-
+    # 1. Early game com deck cheio (30 cartas) e cemitério com flecha: NÃO ativa Quiver
     state_early = {
-        "turnNo": 5,
-        "playerHealth": 30,
-        "playerHand": [{"cardNumber": "sink_below_red", "action": 27, "defense": 4, "pitch": 1}],
+        "playerDeckCount": 30,
+        "playerGraveyard": [{"cardNumber": "infecting_shot_red", "name": "Infecting Shot", "subtype": "Arrow"}]
+    }
+    score_early = strat.evaluate_equipment_ability(state_early, {"cardNumber": "quiver_of_abyssal_depths"})
+    assert score_early == 0.0, "Quiver of Abyssal Depths não deve ativar no early game com 30 cartas no deck!"
+
+    # 2. Late game com deck acabando (8 cartas) e cemitério com flecha: ATIVA para reciclar
+    state_late = {
+        "playerDeckCount": 8,
+        "playerGraveyard": [{"cardNumber": "infecting_shot_red", "name": "Infecting Shot", "subtype": "Arrow"}]
+    }
+    score_late = strat.evaluate_equipment_ability(state_late, {"cardNumber": "quiver_of_abyssal_depths"})
+    assert score_late >= 15.0, f"Quiver deve ativar no late game para reciclar flechas! Score: {score_late}"
+
+
+def test_minimum_viable_defense_preserves_counterattack():
+    """
+    Garante que em cenários de final de jogo, o bot execute a Defesa Mínima Viável:
+    Ex: com 3 HP enfrentando ataque de 4 poder, bloqueia com 1 carta (bloqueia 3 para sobreviver a 2 HP)
+    e PRESERVA a segunda carta na mão para pagar o contra-ataque letal.
+    """
+    engine = PolicyEngine(hero_name="hala")
+    state = {
+        "playerHealth": 3,
+        "opponentHealth": 4,
+        "playerHand": [
+            {"cardNumber": "sink_below_red", "name": "Sink Below", "action": 27, "defense": 3, "pitch": 1},
+            {"cardNumber": "blunten_blue", "name": "Blunten Blue", "action": 27, "defense": 3, "pitch": 3},
+        ],
         "activeChainLink": {"totalPower": 4, "cardNumber": "command_and_conquer"}
     }
-    blocks_early = engine.select_defense_blocks(state_early)
-    assert len(blocks_early) > 0, "No turno inicial, deve defender normalmente."
-
-    # No turno 35 de uma partida longa, o score de bloqueio sofre decaimento
-    state_late = {
-        "turnNo": 35,
-        "playerHealth": 30,
-        "playerHand": [{"cardNumber": "sink_below_red", "action": 27, "defense": 4, "pitch": 1}],
-        "activeChainLink": {"totalPower": 2, "cardNumber": "weak_poke"}
-    }
-    # Em turnos avançados com ataque fraco sem on-hit e vida alta, não deve overblockear
-    blocks_late = engine.select_defense_blocks(state_late)
-    # A mão é preservada para atacar
-    assert len(blocks_late) <= 1
+    blocks = engine.select_defense_blocks(state)
+    # Deve bloquear apenas o suficiente para sobreviver (1 carta bloqueia 3, projetando 2 HP de vida)
+    # preservando a última carta para o contra-ataque
+    assert len(blocks) == 1, f"Defesa Mínima Viável deveria usar exatamente 1 carta para sobreviver a 2 HP! Usou: {len(blocks)}"

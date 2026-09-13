@@ -168,8 +168,26 @@ class MarlynnStrategy(RangerStrategy):
             state = kwargs.get("state", {})
             eq_name = str(state_or_name or "").lower()
 
-        # Quivers (Quiver of Abyssal Depths / Enchanted Quiver):
-        # Recarrega uma flecha no Arsenal vazio com Go Again por 1 recurso!
+        # Quiver of Abyssal Depths: {r}{r}{r} para colocar flecha do cemitério no fundo do deck.
+        # Regra Oficial: NÃO carrega flecha no arsenal! Serve estritamente para reciclar flechas no fim de jogo (anti-fadiga).
+        if "quiver_of_abyssal_depths" in eq_name:
+            deck = state.get("playerDeck", [])
+            deck_count = len(deck) if isinstance(deck, list) and deck else int(state.get("playerDeckCount", 30))
+            gy = state.get("playerDiscard", []) or state.get("playerGraveyard", [])
+            cards_db = _get_cards_db()
+            def _is_gy_arrow(c):
+                c_num = str(c.get("cardNumber") or c.get("name", "")).lower()
+                db_c = cards_db.get(c_num, {})
+                subtype = str(db_c.get("subtype", "")).lower()
+                return "arrow" in subtype or any(k in c_num for k in ["arrow", "shot", "harpoon", "bolt", "goldfin", "king_kraken", "king_shark"])
+
+            has_gy_arrow = any(_is_gy_arrow(c) for c in gy if isinstance(c, dict))
+            # Só ativa se o deck estiver no fim (<= 10 cartas) e houver flechas para reciclar
+            if deck_count <= 10 and has_gy_arrow:
+                return 18.0
+            return 0.0
+
+        # Outros Quivers convencionais (Enchanted Quiver, Driftwood Quiver): carregam flecha no Arsenal
         if "quiver" in eq_name:
             arsenal = state.get("playerArsenal") or state.get("playerArse") or []
             if not arsenal:

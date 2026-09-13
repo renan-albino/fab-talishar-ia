@@ -8,6 +8,7 @@ from ai.policy_engine import PolicyEngine
 from ai.equipment_learning import EquipmentTracker, get_equipment_learning_engine
 from ai.talishar_api import TalisharApiClient, DEFAULT_BACKEND_URL
 from ai.chat_badges import evaluate_board_state, format_html_line, format_attack_chat_message
+from ai.turn_order_learning import get_turn_order_learner
 
 TALISHAR_API_URL = DEFAULT_BACKEND_URL
 
@@ -337,11 +338,14 @@ class FabBotClient:
             time.sleep(0.005)
 
     def choose_first_player(self):
-        ok = self.api.choose_first_player(self.game_id, self.player_id, self.auth_key, action="Go First")
+        learner = get_turn_order_learner()
+        choice = learner.get_optimal_turn_order(self.player_name or self.deck_url)
+        self.chosen_turn_order = choice
+        ok = self.api.choose_first_player(self.game_id, self.player_id, self.auth_key, action=choice)
         if ok:
-            self.log(f"[FIRST PLAYER] Escolha 'Go First' enviada para Jogador {self.player_id}.")
+            self.log(f"[FIRST PLAYER] Escolha '{choice}' enviada para Jogador {self.player_id} (Hero: {self.player_name}).")
         else:
-            self.log(f"[ERRO FIRST PLAYER] Falha ao enviar escolha 'Go First'")
+            self.log(f"[ERRO FIRST PLAYER] Falha ao enviar escolha '{choice}'")
 
     def wait_in_lobby_and_start(self):
         """
@@ -1112,6 +1116,9 @@ class FabBotClient:
                             is_invalid_match=is_invalid_match,
                             invalid_reason=invalid_reason
                         )
+                        if hasattr(self, "chosen_turn_order") and self.chosen_turn_order and not is_invalid_match:
+                            won = (winner_id == self.player_id)
+                            get_turn_order_learner().record_match_result(self.player_name or self.deck_url, self.chosen_turn_order, won)
                     except Exception as e:
                         self.log(f"[ERRO STATS] {e}")
 
