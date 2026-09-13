@@ -1,10 +1,10 @@
 {
-  "total_matches": 1837,
-  "bot1_wins": 706,
-  "bot2_wins": 1113,
-  "draws": 18,
-  "bot1_elo": 1224,
-  "bot2_elo": 1176,
+  "total_matches": 1933,
+  "bot1_wins": 760,
+  "bot2_wins": 1153,
+  "draws": 20,
+  "bot1_elo": 1222,
+  "bot2_elo": 1178,
   "elo_history": [
     {
       "match": 1,
@@ -12833,1831 +12833,967 @@
       "bot1_elo": 1224,
       "bot2_elo": 1176,
       "timestamp": 1789326470.2923946
+    },
+    {
+      "match": 1838,
+      "bot1_elo": 1238,
+      "bot2_elo": 1162,
+      "timestamp": 1789327550.994848
+    },
+    {
+      "match": 1839,
+      "bot1_elo": 1251,
+      "bot2_elo": 1149,
+      "timestamp": 1789327605.356443
+    },
+    {
+      "match": 1840,
+      "bot1_elo": 1262,
+      "bot2_elo": 1138,
+      "timestamp": 1789327647.62831
+    },
+    {
+      "match": 1841,
+      "bot1_elo": 1273,
+      "bot2_elo": 1127,
+      "timestamp": 1789327649.3719916
+    },
+    {
+      "match": 1842,
+      "bot1_elo": 1283,
+      "bot2_elo": 1117,
+      "timestamp": 1789327662.1445076
+    },
+    {
+      "match": 1843,
+      "bot1_elo": 1260,
+      "bot2_elo": 1140,
+      "timestamp": 1789327694.685556
+    },
+    {
+      "match": 1844,
+      "bot1_elo": 1239,
+      "bot2_elo": 1161,
+      "timestamp": 1789327702.5486012
+    },
+    {
+      "match": 1845,
+      "bot1_elo": 1251,
+      "bot2_elo": 1149,
+      "timestamp": 1789327716.45511
+    },
+    {
+      "match": 1846,
+      "bot1_elo": 1262,
+      "bot2_elo": 1138,
+      "timestamp": 1789327749.1297884
+    },
+    {
+      "match": 1847,
+      "bot1_elo": 1241,
+      "bot2_elo": 1159,
+      "timestamp": 1789327750.9619286
+    },
+    {
+      "match": 1848,
+      "bot1_elo": 1221,
+      "bot2_elo": 1179,
+      "timestamp": 1789327765.1973646
+    },
+    {
+      "match": 1849,
+      "bot1_elo": 1203,
+      "bot2_elo": 1197,
+      "timestamp": 1789327799.1269941
+    },
+    {
+      "match": 1850,
+      "bot1_elo": 1187,
+      "bot2_elo": 1213,
+      "timestamp": 1789327808.46955
+    },
+    {
+      "match": 1851,
+      "bot1_elo": 1172,
+      "bot2_elo": 1228,
+      "timestamp": 1789327932.3842356
+    },
+    {
+      "match": 1852,
+      "bot1_elo": 1191,
+      "bot2_elo": 1209,
+      "timestamp": 1789327984.6827998
+    },
+    {
+      "match": 1853,
+      "bot1_elo": 1208,
+      "bot2_elo": 1192,
+      "timestamp": 1789328045.7250807
+    },
+    {
+      "match": 1854,
+      "bot1_elo": 1223,
+      "bot2_elo": 1177,
+      "timestamp": 1789328059.492495
+    },
+    {
+      "match": 1855,
+      "bot1_elo": 1205,
+      "bot2_elo": 1195,
+      "timestamp": 1789328070.2101657
+    },
+    {
+      "match": 1856,
+      "bot1_elo": 1221,
+      "bot2_elo": 1179,
+      "timestamp": 1789328109.7122638
+    },
+    {
+      "match": 1857,
+      "bot1_elo": 1235,
+      "bot2_elo": 1165,
+      "timestamp": 1789328117.4964852
+    },
+    {
+      "match": 1858,
+      "bot1_elo": 1216,
+      "bot2_elo": 1184,
+      "timestamp": 1789328217.4529529
+    },
+    {
+      "match": 1859,
+      "bot1_elo": 1215,
+      "bot2_elo": 1185,
+      "timestamp": 1789328264.994599
+    },
+    {
+      "match": 1860,
+      "bot1_elo": 1198,
+      "bot2_elo": 1202,
+      "timestamp": 1789328367.1910598
+    },
+    {
+      "match": 1861,
+      "bot1_elo": 1214,
+      "bot2_elo": 1186,
+      "timestamp": 1789328376.3733037
+    },
+    {
+      "match": 1862,
+      "bot1_elo": 1197,
+      "bot2_elo": 1203,
+      "timestamp": 1789328488.3394852
+    },
+    {
+      "match": 1863,
+      "bot1_elo": 1181,
+      "bot2_elo": 1219,
+      "timestamp": 1789328490.7833495
+    },
+    {
+      "match": 1864,
+      "bot1_elo": 1167,
+      "bot2_elo": 1233,
+      "timestamp": 1789328492.376464
+    },
+    {
+      "match": 1865,
+      "bot1_elo": 1154,
+      "bot2_elo": 1246,
+      "timestamp": 1789328519.5386806
+    },
+    {
+      "match": 1866,
+      "bot1_elo": 1174,
+      "bot2_elo": 1226,
+      "timestamp": 1789328531.055782
+    },
+    {
+      "match": 1867,
+      "bot1_elo": 1192,
+      "bot2_elo": 1208,
+      "timestamp": 1789328682.648289
+    },
+    {
+      "match": 1868,
+      "bot1_elo": 1209,
+      "bot2_elo": 1191,
+      "timestamp": 1789328732.4009871
+    },
+    {
+      "match": 1869,
+      "bot1_elo": 1224,
+      "bot2_elo": 1176,
+      "timestamp": 1789328777.8987045
+    },
+    {
+      "match": 1870,
+      "bot1_elo": 1206,
+      "bot2_elo": 1194,
+      "timestamp": 1789328779.8410668
+    },
+    {
+      "match": 1871,
+      "bot1_elo": 1221,
+      "bot2_elo": 1179,
+      "timestamp": 1789328884.3775916
+    },
+    {
+      "match": 1872,
+      "bot1_elo": 1203,
+      "bot2_elo": 1197,
+      "timestamp": 1789329027.7026978
+    },
+    {
+      "match": 1873,
+      "bot1_elo": 1219,
+      "bot2_elo": 1181,
+      "timestamp": 1789329105.9987152
+    },
+    {
+      "match": 1874,
+      "bot1_elo": 1233,
+      "bot2_elo": 1167,
+      "timestamp": 1789329129.1055121
+    },
+    {
+      "match": 1875,
+      "bot1_elo": 1246,
+      "bot2_elo": 1154,
+      "timestamp": 1789329228.182765
+    },
+    {
+      "match": 1876,
+      "bot1_elo": 1226,
+      "bot2_elo": 1174,
+      "timestamp": 1789329230.140571
+    },
+    {
+      "match": 1877,
+      "bot1_elo": 1240,
+      "bot2_elo": 1160,
+      "timestamp": 1789329342.8812437
+    },
+    {
+      "match": 1878,
+      "bot1_elo": 1252,
+      "bot2_elo": 1148,
+      "timestamp": 1789329488.321832
+    },
+    {
+      "match": 1879,
+      "bot1_elo": 1263,
+      "bot2_elo": 1137,
+      "timestamp": 1789329513.9719431
+    },
+    {
+      "match": 1880,
+      "bot1_elo": 1273,
+      "bot2_elo": 1127,
+      "timestamp": 1789329523.2215614
+    },
+    {
+      "match": 1881,
+      "bot1_elo": 1283,
+      "bot2_elo": 1117,
+      "timestamp": 1789329568.6105595
+    },
+    {
+      "match": 1882,
+      "bot1_elo": 1292,
+      "bot2_elo": 1108,
+      "timestamp": 1789329571.5116904
+    },
+    {
+      "match": 1883,
+      "bot1_elo": 1268,
+      "bot2_elo": 1132,
+      "timestamp": 1789329624.8879745
+    },
+    {
+      "match": 1884,
+      "bot1_elo": 1246,
+      "bot2_elo": 1154,
+      "timestamp": 1789329667.9300325
+    },
+    {
+      "match": 1885,
+      "bot1_elo": 1258,
+      "bot2_elo": 1142,
+      "timestamp": 1789329672.3832476
+    },
+    {
+      "match": 1886,
+      "bot1_elo": 1269,
+      "bot2_elo": 1131,
+      "timestamp": 1789329780.436613
+    },
+    {
+      "match": 1887,
+      "bot1_elo": 1247,
+      "bot2_elo": 1153,
+      "timestamp": 1789329791.0972574
+    },
+    {
+      "match": 1888,
+      "bot1_elo": 1227,
+      "bot2_elo": 1173,
+      "timestamp": 1789329904.3165593
+    },
+    {
+      "match": 1889,
+      "bot1_elo": 1209,
+      "bot2_elo": 1191,
+      "timestamp": 1789329921.9730442
+    },
+    {
+      "match": 1890,
+      "bot1_elo": 1224,
+      "bot2_elo": 1176,
+      "timestamp": 1789330049.6005356
+    },
+    {
+      "match": 1891,
+      "bot1_elo": 1238,
+      "bot2_elo": 1162,
+      "timestamp": 1789330059.156323
+    },
+    {
+      "match": 1892,
+      "bot1_elo": 1219,
+      "bot2_elo": 1181,
+      "timestamp": 1789330061.3787344
+    },
+    {
+      "match": 1893,
+      "bot1_elo": 1201,
+      "bot2_elo": 1199,
+      "timestamp": 1789330114.6255617
+    },
+    {
+      "match": 1894,
+      "bot1_elo": 1217,
+      "bot2_elo": 1183,
+      "timestamp": 1789330122.7440293
+    },
+    {
+      "match": 1895,
+      "bot1_elo": 1199,
+      "bot2_elo": 1201,
+      "timestamp": 1789330136.9727697
+    },
+    {
+      "match": 1896,
+      "bot1_elo": 1215,
+      "bot2_elo": 1185,
+      "timestamp": 1789330178.4240947
+    },
+    {
+      "match": 1897,
+      "bot1_elo": 1230,
+      "bot2_elo": 1170,
+      "timestamp": 1789330195.9446802
+    },
+    {
+      "match": 1898,
+      "bot1_elo": 1243,
+      "bot2_elo": 1157,
+      "timestamp": 1789330243.1332674
+    },
+    {
+      "match": 1899,
+      "bot1_elo": 1255,
+      "bot2_elo": 1145,
+      "timestamp": 1789330250.7581377
+    },
+    {
+      "match": 1900,
+      "bot1_elo": 1266,
+      "bot2_elo": 1134,
+      "timestamp": 1789330255.6574786
+    },
+    {
+      "match": 1901,
+      "bot1_elo": 1276,
+      "bot2_elo": 1124,
+      "timestamp": 1789330418.526871
+    },
+    {
+      "match": 1902,
+      "bot1_elo": 1285,
+      "bot2_elo": 1115,
+      "timestamp": 1789330428.4578426
+    },
+    {
+      "match": 1903,
+      "bot1_elo": 1294,
+      "bot2_elo": 1106,
+      "timestamp": 1789330445.7466617
+    },
+    {
+      "match": 1904,
+      "bot1_elo": 1302,
+      "bot2_elo": 1098,
+      "timestamp": 1789330481.3648252
+    },
+    {
+      "match": 1905,
+      "bot1_elo": 1310,
+      "bot2_elo": 1090,
+      "timestamp": 1789330503.5093613
+    },
+    {
+      "match": 1906,
+      "bot1_elo": 1285,
+      "bot2_elo": 1115,
+      "timestamp": 1789330540.5508165
+    },
+    {
+      "match": 1907,
+      "bot1_elo": 1262,
+      "bot2_elo": 1138,
+      "timestamp": 1789330552.6090074
+    },
+    {
+      "match": 1908,
+      "bot1_elo": 1273,
+      "bot2_elo": 1127,
+      "timestamp": 1789330590.558611
+    },
+    {
+      "match": 1909,
+      "bot1_elo": 1251,
+      "bot2_elo": 1149,
+      "timestamp": 1789330599.0510564
+    },
+    {
+      "match": 1910,
+      "bot1_elo": 1230,
+      "bot2_elo": 1170,
+      "timestamp": 1789330599.183152
+    },
+    {
+      "match": 1911,
+      "bot1_elo": 1211,
+      "bot2_elo": 1189,
+      "timestamp": 1789330633.132253
+    },
+    {
+      "match": 1912,
+      "bot1_elo": 1194,
+      "bot2_elo": 1206,
+      "timestamp": 1789330651.9933481
+    },
+    {
+      "match": 1913,
+      "bot1_elo": 1195,
+      "bot2_elo": 1205,
+      "timestamp": 1789330663.911743
+    },
+    {
+      "match": 1914,
+      "bot1_elo": 1211,
+      "bot2_elo": 1189,
+      "timestamp": 1789330719.423172
+    },
+    {
+      "match": 1915,
+      "bot1_elo": 1194,
+      "bot2_elo": 1206,
+      "timestamp": 1789330748.6371553
+    },
+    {
+      "match": 1916,
+      "bot1_elo": 1179,
+      "bot2_elo": 1221,
+      "timestamp": 1789330821.5881464
+    },
+    {
+      "match": 1917,
+      "bot1_elo": 1197,
+      "bot2_elo": 1203,
+      "timestamp": 1789330958.8524506
+    },
+    {
+      "match": 1918,
+      "bot1_elo": 1181,
+      "bot2_elo": 1219,
+      "timestamp": 1789330962.9515955
+    },
+    {
+      "match": 1919,
+      "bot1_elo": 1167,
+      "bot2_elo": 1233,
+      "timestamp": 1789330981.7043207
+    },
+    {
+      "match": 1920,
+      "bot1_elo": 1186,
+      "bot2_elo": 1214,
+      "timestamp": 1789331017.9850888
+    },
+    {
+      "match": 1921,
+      "bot1_elo": 1171,
+      "bot2_elo": 1229,
+      "timestamp": 1789331022.5850022
+    },
+    {
+      "match": 1922,
+      "bot1_elo": 1190,
+      "bot2_elo": 1210,
+      "timestamp": 1789331138.3176222
+    },
+    {
+      "match": 1923,
+      "bot1_elo": 1207,
+      "bot2_elo": 1193,
+      "timestamp": 1789331144.6703928
+    },
+    {
+      "match": 1924,
+      "bot1_elo": 1190,
+      "bot2_elo": 1210,
+      "timestamp": 1789331159.531944
+    },
+    {
+      "match": 1925,
+      "bot1_elo": 1207,
+      "bot2_elo": 1193,
+      "timestamp": 1789331206.0714526
+    },
+    {
+      "match": 1926,
+      "bot1_elo": 1190,
+      "bot2_elo": 1210,
+      "timestamp": 1789331206.1930218
+    },
+    {
+      "match": 1927,
+      "bot1_elo": 1207,
+      "bot2_elo": 1193,
+      "timestamp": 1789331242.5809798
+    },
+    {
+      "match": 1928,
+      "bot1_elo": 1222,
+      "bot2_elo": 1178,
+      "timestamp": 1789331242.8401208
+    },
+    {
+      "match": 1929,
+      "bot1_elo": 1236,
+      "bot2_elo": 1164,
+      "timestamp": 1789331366.044465
+    },
+    {
+      "match": 1930,
+      "bot1_elo": 1249,
+      "bot2_elo": 1151,
+      "timestamp": 1789331425.8848662
+    },
+    {
+      "match": 1931,
+      "bot1_elo": 1229,
+      "bot2_elo": 1171,
+      "timestamp": 1789331455.9496021
+    },
+    {
+      "match": 1932,
+      "bot1_elo": 1242,
+      "bot2_elo": 1158,
+      "timestamp": 1789331465.4608016
+    },
+    {
+      "match": 1933,
+      "bot1_elo": 1222,
+      "bot2_elo": 1178,
+      "timestamp": 1789331475.4656594
     }
   ],
   "deck_stats": {
     "Vynsett": {
-      "matches": 338,
+      "matches": 360,
       "wins": 45,
-      "losses": 293,
-      "elo": 817
+      "losses": 315,
+      "elo": 764
     },
     "Betsy": {
-      "matches": 554,
-      "wins": 309,
-      "losses": 244,
-      "elo": 1413
+      "matches": 575,
+      "wins": 322,
+      "losses": 252,
+      "elo": 1380
     },
     "Cindra": {
-      "matches": 562,
-      "wins": 483,
-      "losses": 78,
-      "elo": 1538
+      "matches": 580,
+      "wins": 492,
+      "losses": 85,
+      "elo": 1402
     },
     "Dash IO": {
-      "matches": 406,
-      "wins": 26,
-      "losses": 380,
-      "elo": 1038
+      "matches": 423,
+      "wins": 30,
+      "losses": 393,
+      "elo": 983
     },
     "Gravy Bones": {
-      "matches": 116,
-      "wins": 113,
+      "matches": 124,
+      "wins": 121,
       "losses": 0,
-      "elo": 1232
+      "elo": 1322
     },
     "Oscilio GIAF": {
-      "matches": 243,
-      "wins": 236,
-      "losses": 6,
-      "elo": 1509
+      "matches": 259,
+      "wins": 245,
+      "losses": 13,
+      "elo": 1411
     },
     "Hala": {
-      "matches": 260,
-      "wins": 94,
-      "losses": 166,
-      "elo": 1180
+      "matches": 275,
+      "wins": 103,
+      "losses": 170,
+      "elo": 1295
     },
     "Jarl": {
-      "matches": 350,
-      "wins": 195,
-      "losses": 155,
-      "elo": 1435
+      "matches": 366,
+      "wins": 207,
+      "losses": 159,
+      "elo": 1436
     },
     "Mario": {
-      "matches": 206,
-      "wins": 103,
-      "losses": 103,
-      "elo": 1040
+      "matches": 222,
+      "wins": 112,
+      "losses": 110,
+      "elo": 1152
     },
     "Kassai": {
-      "matches": 214,
-      "wins": 175,
-      "losses": 38,
-      "elo": 1486
+      "matches": 228,
+      "wins": 188,
+      "losses": 39,
+      "elo": 1537
     },
     "Teklovossen": {
-      "matches": 79,
+      "matches": 91,
       "wins": 33,
-      "losses": 46,
-      "elo": 941
+      "losses": 58,
+      "elo": 901
     },
-    "\ud83d\udc64 Humano (Voc\u00ea)": {
+    "👤 Humano (Você)": {
       "matches": 8,
       "wins": 2,
       "losses": 6,
       "elo": 1021
     },
     "Marlinn": {
-      "matches": 8,
-      "wins": 3,
-      "losses": 4,
-      "elo": 1175
+      "matches": 25,
+      "wins": 11,
+      "losses": 13,
+      "elo": 1221
     }
   },
   "recent_matches": [
     {
-      "room": "Train_c76c404a",
-      "date": "13/09/2026 16:07:50",
-      "winner": "Bot 1 (Jarl)",
-      "p1_deck": "Jarl",
-      "p2_deck": "Kassai",
-      "p1_health": 27,
-      "p2_health": -2,
-      "turns": 17
-    },
-    {
-      "room": "Train_24c3d67c",
-      "date": "13/09/2026 16:07:47",
-      "winner": "\ud83e\udd16 Bot 2 (Jarl)",
-      "p1_deck": "Betsy",
-      "p2_deck": "Jarl",
-      "p1_health": -1,
-      "p2_health": 4,
-      "turns": 34
-    },
-    {
-      "room": "Train_9d2fed66",
-      "date": "13/09/2026 16:06:47",
-      "winner": "Bot 1 (Oscilio GIAF)",
+      "room": "Train_c88abf8c",
+      "date": "13/09/2026 17:31:15",
+      "winner": "🤖 Bot 2 (Betsy)",
       "p1_deck": "Oscilio GIAF",
-      "p2_deck": "Kassai",
-      "p1_health": 19,
-      "p2_health": -1,
-      "turns": 9
-    },
-    {
-      "room": "Train_f22d2700",
-      "date": "13/09/2026 16:06:38",
-      "winner": "Bot 1 (Dash IO)",
-      "p1_deck": "Dash IO",
-      "p2_deck": "Vynsett",
-      "p1_health": 13,
-      "p2_health": 0,
-      "turns": 6
-    },
-    {
-      "room": "Train_77b65761",
-      "date": "13/09/2026 16:06:36",
-      "winner": "Anulada (Bot Inerte (Travou sem atacar / Punching Bag))",
-      "p1_deck": "Marlinn",
-      "p2_deck": "Dash IO",
-      "p1_health": -1,
-      "p2_health": 36,
-      "turns": 11
-    },
-    {
-      "room": "Train_5c808e95",
-      "date": "13/09/2026 16:06:10",
-      "winner": "\ud83e\udd16 Bot 2 (Jarl)",
-      "p1_deck": "Teklovossen",
-      "p2_deck": "Jarl",
+      "p2_deck": "Betsy",
       "p1_health": -4,
-      "p2_health": 45,
-      "turns": 24
-    },
-    {
-      "room": "Train_4d89acf2",
-      "date": "13/09/2026 16:06:00",
-      "winner": "Anulada (Bot Oponente Inerte (Punching Bag))",
-      "p1_deck": "Betsy",
-      "p2_deck": "Teklovossen",
-      "p1_health": 49,
-      "p2_health": 0,
-      "turns": 13
-    },
-    {
-      "room": "Train_4a733efb",
-      "date": "13/09/2026 16:05:58",
-      "winner": "Bot 1 (Oscilio GIAF)",
-      "p1_deck": "Oscilio GIAF",
-      "p2_deck": "Vynsett",
-      "p1_health": 22,
-      "p2_health": 0,
-      "turns": 7
-    },
-    {
-      "room": "Train_8f88415d",
-      "date": "13/09/2026 16:04:30",
-      "winner": "Empate",
-      "p1_deck": "Oscilio GIAF",
-      "p2_deck": "Gravy Bones",
-      "p1_health": 3,
-      "p2_health": 24,
-      "turns": 36
-    },
-    {
-      "room": "Train_fafc2e86",
-      "date": "13/09/2026 16:03:55",
-      "winner": "Bot 1 (Dash IO)",
-      "p1_deck": "Dash IO",
-      "p2_deck": "Teklovossen",
-      "p1_health": 18,
-      "p2_health": -1,
-      "turns": 10
-    },
-    {
-      "room": "Train_9a7d501e",
-      "date": "13/09/2026 16:03:22",
-      "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
-      "p1_deck": "Mario",
-      "p2_deck": "Gravy Bones",
-      "p1_health": 20,
-      "p2_health": 36,
-      "turns": 55
-    },
-    {
-      "room": "Train_d74e0892",
-      "date": "13/09/2026 16:03:06",
-      "winner": "Bot 1 (Hala)",
-      "p1_deck": "Hala",
-      "p2_deck": "Oscilio GIAF",
-      "p1_health": 20,
-      "p2_health": -1,
-      "turns": 27
-    },
-    {
-      "room": "Train_e5a16621",
-      "date": "13/09/2026 16:03:01",
-      "winner": "\ud83e\udd16 Bot 2 (Cindra)",
-      "p1_deck": "Dash IO",
-      "p2_deck": "Cindra",
-      "p1_health": -2,
-      "p2_health": 26,
-      "turns": 14
-    },
-    {
-      "room": "Train_59d4207d",
-      "date": "13/09/2026 16:00:52",
-      "winner": "Bot 1 (Oscilio GIAF)",
-      "p1_deck": "Oscilio GIAF",
-      "p2_deck": "Hala",
-      "p1_health": 33,
-      "p2_health": -1,
-      "turns": 16
-    },
-    {
-      "room": "Train_ce1a278c",
-      "date": "13/09/2026 16:00:05",
-      "winner": "\ud83e\udd16 Bot 2 (Cindra)",
-      "p1_deck": "Oscilio GIAF",
-      "p2_deck": "Cindra",
-      "p1_health": 0,
-      "p2_health": 8,
-      "turns": 22
-    },
-    {
-      "room": "Train_be30acfd",
-      "date": "13/09/2026 15:59:51",
-      "winner": "\ud83e\udd16 Bot 2 (Jarl)",
-      "p1_deck": "Oscilio GIAF",
-      "p2_deck": "Jarl",
-      "p1_health": 0,
       "p2_health": 9,
-      "turns": 20
-    },
-    {
-      "room": "Train_ce73adf8",
-      "date": "13/09/2026 15:59:39",
-      "winner": "\ud83e\udd16 Bot 2 (Kassai)",
-      "p1_deck": "Vynsett",
-      "p2_deck": "Kassai",
-      "p1_health": -1,
-      "p2_health": 20,
-      "turns": 8
-    },
-    {
-      "room": "Train_aa2642e2",
-      "date": "13/09/2026 15:59:08",
-      "winner": "Empate",
-      "p1_deck": "Kassai",
-      "p2_deck": "Gravy Bones",
-      "p1_health": 3,
-      "p2_health": 34,
-      "turns": 43
-    },
-    {
-      "room": "Train_ec47cde5",
-      "date": "13/09/2026 15:58:26",
-      "winner": "Empate",
-      "p1_deck": "Cindra",
-      "p2_deck": "Gravy Bones",
-      "p1_health": 15,
-      "p2_health": 23,
-      "turns": 34
-    },
-    {
-      "room": "Train_ec7b8266",
-      "date": "13/09/2026 15:57:48",
-      "winner": "Bot 1 (Gravy Bones)",
-      "p1_deck": "Gravy Bones",
-      "p2_deck": "Vynsett",
-      "p1_health": 22,
-      "p2_health": 0,
-      "turns": 10
-    },
-    {
-      "room": "Train_460e4b4a",
-      "date": "13/09/2026 15:57:07",
-      "winner": "Anulada (Bot Oponente Inerte (Punching Bag))",
-      "p1_deck": "Hala",
-      "p2_deck": "Teklovossen",
-      "p1_health": 45,
-      "p2_health": -2,
-      "turns": 31
-    },
-    {
-      "room": "Train_5a098a46",
-      "date": "13/09/2026 15:56:55",
-      "winner": "Bot 1 (Vynsett)",
-      "p1_deck": "Vynsett",
-      "p2_deck": "Teklovossen",
-      "p1_health": 10,
-      "p2_health": -1,
-      "turns": 11
-    },
-    {
-      "room": "Train_97028b4c",
-      "date": "13/09/2026 15:56:45",
-      "winner": "\ud83e\udd16 Bot 2 (Hala)",
-      "p1_deck": "Vynsett",
-      "p2_deck": "Hala",
-      "p1_health": 0,
-      "p2_health": 22,
-      "turns": 7
-    },
-    {
-      "room": "Train_ca5c56e4",
-      "date": "13/09/2026 15:56:15",
-      "winner": "\ud83e\udd16 Bot 2 (Jarl)",
-      "p1_deck": "Vynsett",
-      "p2_deck": "Jarl",
-      "p1_health": 0,
-      "p2_health": 22,
-      "turns": 15
-    },
-    {
-      "room": "Train_a93f3363",
-      "date": "13/09/2026 15:56:14",
-      "winner": "\ud83e\udd16 Bot 2 (Cindra)",
-      "p1_deck": "Teklovossen",
-      "p2_deck": "Cindra",
-      "p1_health": 0,
-      "p2_health": 31,
-      "turns": 7
-    },
-    {
-      "room": "Train_c9766f3e",
-      "date": "13/09/2026 15:56:07",
-      "winner": "\ud83e\udd16 Bot 2 (Betsy)",
-      "p1_deck": "Teklovossen",
-      "p2_deck": "Betsy",
-      "p1_health": -1,
-      "p2_health": 42,
-      "turns": 8
-    },
-    {
-      "room": "Train_7784fe21",
-      "date": "13/09/2026 15:55:39",
-      "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
-      "p1_deck": "Gravy Bones",
-      "p2_deck": "Betsy",
-      "p1_health": 26,
-      "p2_health": 29,
-      "turns": 55
-    },
-    {
-      "room": "Train_5a59d6ca",
-      "date": "13/09/2026 15:55:08",
-      "winner": "Bot 1 (Oscilio GIAF)",
-      "p1_deck": "Oscilio GIAF",
-      "p2_deck": "Betsy",
-      "p1_health": 8,
-      "p2_health": -5,
       "turns": 23
     },
     {
-      "room": "Train_8bacbb5b",
-      "date": "13/09/2026 15:55:02",
-      "winner": "\ud83e\udd16 Bot 2 (Hala)",
-      "p1_deck": "Mario",
-      "p2_deck": "Hala",
-      "p1_health": -2,
-      "p2_health": 22,
-      "turns": 27
+      "room": "Train_77787de4",
+      "date": "13/09/2026 17:31:05",
+      "winner": "Bot 1 (Betsy)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Dash IO",
+      "p1_health": 8,
+      "p2_health": -6,
+      "turns": 21
     },
     {
-      "room": "Train_295aa3fc",
-      "date": "13/09/2026 15:53:34",
-      "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
-      "p1_deck": "Jarl",
+      "room": "Train_24071680",
+      "date": "13/09/2026 17:30:55",
+      "winner": "🤖 Bot 2 (Betsy)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Betsy",
+      "p1_health": 0,
+      "p2_health": 16,
+      "turns": 9
+    },
+    {
+      "room": "Train_85973819",
+      "date": "13/09/2026 17:30:25",
+      "winner": "Bot 1 (Kassai)",
+      "p1_deck": "Kassai",
+      "p2_deck": "Jarl",
+      "p1_health": 17,
+      "p2_health": 0,
+      "turns": 39
+    },
+    {
+      "room": "Train_2a28c992",
+      "date": "13/09/2026 17:29:40",
+      "winner": "Anulada (Bot Inerte (Travou sem atacar / Punching Bag))",
+      "p1_deck": "Teklovossen",
       "p2_deck": "Gravy Bones",
+      "p1_health": 0,
+      "p2_health": 40,
+      "turns": 21
+    },
+    {
+      "room": "Train_579441ac",
+      "date": "13/09/2026 17:29:26",
+      "winner": "Bot 1 (Mario)",
+      "p1_deck": "Mario",
+      "p2_deck": "Vynsett",
+      "p1_health": 20,
+      "p2_health": -4,
+      "turns": 9
+    },
+    {
+      "room": "Train_5a8d066a",
+      "date": "13/09/2026 17:27:22",
+      "winner": "Bot 1 (Marlinn)",
+      "p1_deck": "Marlinn",
+      "p2_deck": "Jarl",
+      "p1_health": 9,
+      "p2_health": -2,
+      "turns": 16
+    },
+    {
+      "room": "Train_bdebb3db",
+      "date": "13/09/2026 17:27:22",
+      "winner": "Bot 1 (Oscilio GIAF)",
+      "p1_deck": "Oscilio GIAF",
+      "p2_deck": "Vynsett",
+      "p1_health": 18,
+      "p2_health": 0,
+      "turns": 10
+    },
+    {
+      "room": "Train_c0ef1b9c",
+      "date": "13/09/2026 17:26:46",
+      "winner": "🤖 Bot 2 (Oscilio GIAF)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Oscilio GIAF",
+      "p1_health": -4,
+      "p2_health": 11,
+      "turns": 20
+    },
+    {
+      "room": "Train_91d21074",
+      "date": "13/09/2026 17:26:46",
+      "winner": "Bot 1 (Jarl)",
+      "p1_deck": "Jarl",
+      "p2_deck": "Teklovossen",
+      "p1_health": 39,
+      "p2_health": -3,
+      "turns": 21
+    },
+    {
+      "room": "Train_ba6883c0",
+      "date": "13/09/2026 17:26:39",
+      "winner": "Anulada (Bot Oponente Inerte (Punching Bag))",
+      "p1_deck": "Gravy Bones",
+      "p2_deck": "Kassai",
       "p1_health": 40,
+      "p2_health": -3,
+      "turns": 14
+    },
+    {
+      "room": "Train_9573a7f9",
+      "date": "13/09/2026 17:25:59",
+      "winner": "🤖 Bot 2 (Hala)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Hala",
+      "p1_health": 0,
+      "p2_health": 13,
+      "turns": 42
+    },
+    {
+      "room": "Train_a938cd63",
+      "date": "13/09/2026 17:25:44",
+      "winner": "Bot 1 (Jarl)",
+      "p1_deck": "Jarl",
+      "p2_deck": "Dash IO",
+      "p1_health": 22,
+      "p2_health": -2,
+      "turns": 15
+    },
+    {
+      "room": "Train_2a6496c8",
+      "date": "13/09/2026 17:25:38",
+      "winner": "Bot 1 (Mario)",
+      "p1_deck": "Mario",
+      "p2_deck": "Dash IO",
+      "p1_health": 15,
+      "p2_health": 0,
+      "turns": 7
+    },
+    {
+      "room": "Train_084ca61d",
+      "date": "13/09/2026 17:23:42",
+      "winner": "🤖 Bot 2 (Gravy Bones)",
+      "p1_deck": "Oscilio GIAF",
+      "p2_deck": "Gravy Bones",
+      "p1_health": -1,
       "p2_health": 32,
-      "turns": 51
+      "turns": 14
+    },
+    {
+      "room": "Train_097e523f",
+      "date": "13/09/2026 17:23:37",
+      "winner": "Bot 1 (Betsy)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Marlinn",
+      "p1_health": 8,
+      "p2_health": -2,
+      "turns": 21
+    },
+    {
+      "room": "Train_0a24c1bd",
+      "date": "13/09/2026 17:23:01",
+      "winner": "🤖 Bot 2 (Gravy Bones)",
+      "p1_deck": "Cindra",
+      "p2_deck": "Gravy Bones",
+      "p1_health": -1,
+      "p2_health": 32,
+      "turns": 22
+    },
+    {
+      "room": "Train_ea5bcb03",
+      "date": "13/09/2026 17:22:42",
+      "winner": "🤖 Bot 2 (Kassai)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Kassai",
+      "p1_health": -3,
+      "p2_health": 25,
+      "turns": 11
+    },
+    {
+      "room": "Train_568d305d",
+      "date": "13/09/2026 17:22:38",
+      "winner": "Bot 1 (Jarl)",
+      "p1_deck": "Jarl",
+      "p2_deck": "Mario",
+      "p1_health": 10,
+      "p2_health": -1,
+      "turns": 20
+    },
+    {
+      "room": "Train_62abc80b",
+      "date": "13/09/2026 17:20:21",
+      "winner": "🤖 Bot 2 (Gravy Bones)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Gravy Bones",
+      "p1_health": 0,
+      "p2_health": 26,
+      "turns": 10
+    },
+    {
+      "room": "Train_58c774f1",
+      "date": "13/09/2026 17:19:08",
+      "winner": "🤖 Bot 2 (Kassai)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Kassai",
+      "p1_health": -1,
+      "p2_health": 6,
+      "turns": 25
+    },
+    {
+      "room": "Train_bdd2f6a7",
+      "date": "13/09/2026 17:18:39",
+      "winner": "Bot 1 (Mario)",
+      "p1_deck": "Mario",
+      "p2_deck": "Teklovossen",
+      "p1_health": 13,
+      "p2_health": -1,
+      "turns": 22
+    },
+    {
+      "room": "Train_18f6a93b",
+      "date": "13/09/2026 17:17:43",
+      "winner": "Empate",
+      "p1_deck": "Hala",
+      "p2_deck": "Cindra",
+      "p1_health": 10,
+      "p2_health": 16,
+      "turns": 55
+    },
+    {
+      "room": "Train_a86b248d",
+      "date": "13/09/2026 17:17:31",
+      "winner": "🤖 Bot 2 (Mario)",
+      "p1_deck": "Oscilio GIAF",
+      "p2_deck": "Mario",
+      "p1_health": -4,
+      "p2_health": 3,
+      "turns": 24
+    },
+    {
+      "room": "Train_3fe98296",
+      "date": "13/09/2026 17:17:13",
+      "winner": "🤖 Bot 2 (Oscilio GIAF)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Oscilio GIAF",
+      "p1_health": 0,
+      "p2_health": 14,
+      "turns": 8
+    },
+    {
+      "room": "Train_e4b77367",
+      "date": "13/09/2026 17:16:39",
+      "winner": "🤖 Bot 2 (Cindra)",
+      "p1_deck": "Vynsett",
+      "p2_deck": "Cindra",
+      "p1_health": -1,
+      "p2_health": 17,
+      "turns": 9
+    },
+    {
+      "room": "Train_9ca27329",
+      "date": "13/09/2026 17:16:39",
+      "winner": "🤖 Bot 2 (Jarl)",
+      "p1_deck": "Mario",
+      "p2_deck": "Jarl",
+      "p1_health": -2,
+      "p2_health": 7,
+      "turns": 22
+    },
+    {
+      "room": "Train_cda3716f",
+      "date": "13/09/2026 17:16:30",
+      "winner": "Bot 1 (Hala)",
+      "p1_deck": "Hala",
+      "p2_deck": "Vynsett",
+      "p1_health": 13,
+      "p2_health": -1,
+      "turns": 12
+    },
+    {
+      "room": "Train_45f8e923",
+      "date": "13/09/2026 17:15:52",
+      "winner": "🤖 Bot 2 (Oscilio GIAF)",
+      "p1_deck": "Cindra",
+      "p2_deck": "Oscilio GIAF",
+      "p1_health": 0,
+      "p2_health": 5,
+      "turns": 15
+    },
+    {
+      "room": "Train_b3125811",
+      "date": "13/09/2026 17:15:40",
+      "winner": "🤖 Bot 2 (Mario)",
+      "p1_deck": "Marlinn",
+      "p2_deck": "Mario",
+      "p1_health": -5,
+      "p2_health": 29,
+      "turns": 19
     }
   ],
   "deck_elo_history": [
-    {
-      "match": 1639,
-      "Vynsett": 847,
-      "Betsy": 1376,
-      "Cindra": 1660,
-      "Dash IO": 944,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1517,
-      "Hala": 1086,
-      "Jarl": 1380,
-      "Mario": 1082,
-      "Kassai": 1438,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1640,
-      "Vynsett": 847,
-      "Betsy": 1376,
-      "Cindra": 1660,
-      "Dash IO": 944,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1517,
-      "Hala": 1086,
-      "Jarl": 1367,
-      "Mario": 1082,
-      "Kassai": 1451,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1641,
-      "Vynsett": 847,
-      "Betsy": 1376,
-      "Cindra": 1661,
-      "Dash IO": 943,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1517,
-      "Hala": 1086,
-      "Jarl": 1367,
-      "Mario": 1082,
-      "Kassai": 1451,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1642,
-      "Vynsett": 847,
-      "Betsy": 1376,
-      "Cindra": 1661,
-      "Dash IO": 943,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1517,
-      "Hala": 1081,
-      "Jarl": 1372,
-      "Mario": 1082,
-      "Kassai": 1451,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1643,
-      "Vynsett": 847,
-      "Betsy": 1376,
-      "Cindra": 1661,
-      "Dash IO": 943,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1517,
-      "Hala": 1081,
-      "Jarl": 1360,
-      "Mario": 1082,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1644,
-      "Vynsett": 847,
-      "Betsy": 1376,
-      "Cindra": 1661,
-      "Dash IO": 943,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1518,
-      "Hala": 1081,
-      "Jarl": 1360,
-      "Mario": 1082,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1645,
-      "Vynsett": 847,
-      "Betsy": 1376,
-      "Cindra": 1661,
-      "Dash IO": 943,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1518,
-      "Hala": 1081,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1646,
-      "Vynsett": 847,
-      "Betsy": 1376,
-      "Cindra": 1661,
-      "Dash IO": 943,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1519,
-      "Hala": 1081,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1647,
-      "Vynsett": 846,
-      "Betsy": 1377,
-      "Cindra": 1661,
-      "Dash IO": 943,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1519,
-      "Hala": 1081,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1648,
-      "Vynsett": 846,
-      "Betsy": 1377,
-      "Cindra": 1662,
-      "Dash IO": 942,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1519,
-      "Hala": 1081,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1649,
-      "Vynsett": 846,
-      "Betsy": 1372,
-      "Cindra": 1667,
-      "Dash IO": 942,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1519,
-      "Hala": 1081,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1650,
-      "Vynsett": 846,
-      "Betsy": 1372,
-      "Cindra": 1667,
-      "Dash IO": 949,
-      "Gravy Bones": 1106,
-      "Oscilio GIAF": 1519,
-      "Hala": 1081,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1651,
-      "Vynsett": 846,
-      "Betsy": 1372,
-      "Cindra": 1667,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1519,
-      "Hala": 1082,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1652,
-      "Vynsett": 845,
-      "Betsy": 1373,
-      "Cindra": 1667,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1519,
-      "Hala": 1082,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1653,
-      "Vynsett": 845,
-      "Betsy": 1368,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1519,
-      "Hala": 1082,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1654,
-      "Vynsett": 845,
-      "Betsy": 1368,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1519,
-      "Hala": 1082,
-      "Jarl": 1360,
-      "Mario": 1075,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1655,
-      "Vynsett": 845,
-      "Betsy": 1368,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1519,
-      "Hala": 1082,
-      "Jarl": 1360,
-      "Mario": 1084,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1656,
-      "Vynsett": 845,
-      "Betsy": 1368,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1520,
-      "Hala": 1082,
-      "Jarl": 1360,
-      "Mario": 1084,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1657,
-      "Vynsett": 845,
-      "Betsy": 1368,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1520,
-      "Hala": 1109,
-      "Jarl": 1333,
-      "Mario": 1084,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1658,
-      "Vynsett": 845,
-      "Betsy": 1368,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1520,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1084,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1659,
-      "Vynsett": 845,
-      "Betsy": 1368,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1520,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1660,
-      "Vynsett": 845,
-      "Betsy": 1368,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1521,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1661,
-      "Vynsett": 843,
-      "Betsy": 1370,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1521,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1662,
-      "Vynsett": 843,
-      "Betsy": 1370,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1521,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1663,
-      "Vynsett": 842,
-      "Betsy": 1371,
-      "Cindra": 1672,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1521,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1664,
-      "Vynsett": 842,
-      "Betsy": 1366,
-      "Cindra": 1677,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1521,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1665,
-      "Vynsett": 842,
-      "Betsy": 1366,
-      "Cindra": 1677,
-      "Dash IO": 949,
-      "Gravy Bones": 1105,
-      "Oscilio GIAF": 1521,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1666,
-      "Vynsett": 842,
-      "Betsy": 1366,
-      "Cindra": 1677,
-      "Dash IO": 956,
-      "Gravy Bones": 1098,
-      "Oscilio GIAF": 1521,
-      "Hala": 1134,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1667,
-      "Vynsett": 842,
-      "Betsy": 1366,
-      "Cindra": 1677,
-      "Dash IO": 956,
-      "Gravy Bones": 1100,
-      "Oscilio GIAF": 1521,
-      "Hala": 1132,
-      "Jarl": 1308,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1668,
-      "Vynsett": 842,
-      "Betsy": 1366,
-      "Cindra": 1677,
-      "Dash IO": 956,
-      "Gravy Bones": 1100,
-      "Oscilio GIAF": 1521,
-      "Hala": 1155,
-      "Jarl": 1285,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1669,
-      "Vynsett": 842,
-      "Betsy": 1366,
-      "Cindra": 1677,
-      "Dash IO": 956,
-      "Gravy Bones": 1100,
-      "Oscilio GIAF": 1521,
-      "Hala": 1177,
-      "Jarl": 1263,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1670,
-      "Vynsett": 841,
-      "Betsy": 1367,
-      "Cindra": 1677,
-      "Dash IO": 956,
-      "Gravy Bones": 1100,
-      "Oscilio GIAF": 1521,
-      "Hala": 1177,
-      "Jarl": 1263,
-      "Mario": 1093,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1671,
-      "Vynsett": 841,
-      "Betsy": 1367,
-      "Cindra": 1677,
-      "Dash IO": 956,
-      "Gravy Bones": 1100,
-      "Oscilio GIAF": 1521,
-      "Hala": 1177,
-      "Jarl": 1263,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1672,
-      "Vynsett": 840,
-      "Betsy": 1368,
-      "Cindra": 1677,
-      "Dash IO": 956,
-      "Gravy Bones": 1100,
-      "Oscilio GIAF": 1521,
-      "Hala": 1177,
-      "Jarl": 1263,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1673,
-      "Vynsett": 840,
-      "Betsy": 1368,
-      "Cindra": 1677,
-      "Dash IO": 956,
-      "Gravy Bones": 1100,
-      "Oscilio GIAF": 1521,
-      "Hala": 1177,
-      "Jarl": 1263,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1674,
-      "Vynsett": 840,
-      "Betsy": 1395,
-      "Cindra": 1650,
-      "Dash IO": 956,
-      "Gravy Bones": 1100,
-      "Oscilio GIAF": 1521,
-      "Hala": 1177,
-      "Jarl": 1263,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1675,
-      "Vynsett": 840,
-      "Betsy": 1395,
-      "Cindra": 1650,
-      "Dash IO": 946,
-      "Gravy Bones": 1110,
-      "Oscilio GIAF": 1521,
-      "Hala": 1177,
-      "Jarl": 1263,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1676,
-      "Vynsett": 840,
-      "Betsy": 1395,
-      "Cindra": 1650,
-      "Dash IO": 946,
-      "Gravy Bones": 1110,
-      "Oscilio GIAF": 1521,
-      "Hala": 1165,
-      "Jarl": 1275,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1677,
-      "Vynsett": 840,
-      "Betsy": 1395,
-      "Cindra": 1650,
-      "Dash IO": 946,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1521,
-      "Hala": 1162,
-      "Jarl": 1275,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1678,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1624,
-      "Dash IO": 946,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1521,
-      "Hala": 1162,
-      "Jarl": 1275,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1679,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 945,
-      "Gravy Bones": 1113,
-      "Oscilio GIAF": 1521,
-      "Hala": 1162,
-      "Jarl": 1275,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1680,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1521,
-      "Hala": 1162,
-      "Jarl": 1275,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1681,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1521,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1682,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1522,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1085,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1683,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1522,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1094,
-      "Kassai": 1463,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1684,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1522,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1091,
-      "Kassai": 1466,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1685,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1522,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1088,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1686,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1522,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1687,
-      "Vynsett": 840,
-      "Betsy": 1421,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1688,
-      "Vynsett": 839,
-      "Betsy": 1422,
-      "Cindra": 1625,
-      "Dash IO": 936,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1689,
-      "Vynsett": 839,
-      "Betsy": 1422,
-      "Cindra": 1626,
-      "Dash IO": 935,
-      "Gravy Bones": 1122,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1690,
-      "Vynsett": 839,
-      "Betsy": 1422,
-      "Cindra": 1626,
-      "Dash IO": 927,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1691,
-      "Vynsett": 839,
-      "Betsy": 1446,
-      "Cindra": 1602,
-      "Dash IO": 927,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1692,
-      "Vynsett": 838,
-      "Betsy": 1447,
-      "Cindra": 1602,
-      "Dash IO": 927,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1693,
-      "Vynsett": 838,
-      "Betsy": 1470,
-      "Cindra": 1579,
-      "Dash IO": 927,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1694,
-      "Vynsett": 838,
-      "Betsy": 1470,
-      "Cindra": 1580,
-      "Dash IO": 926,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1695,
-      "Vynsett": 838,
-      "Betsy": 1470,
-      "Cindra": 1580,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1096,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1696,
-      "Vynsett": 838,
-      "Betsy": 1470,
-      "Cindra": 1580,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1523,
-      "Hala": 1151,
-      "Jarl": 1286,
-      "Mario": 1104,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1697,
-      "Vynsett": 838,
-      "Betsy": 1470,
-      "Cindra": 1580,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1523,
-      "Hala": 1141,
-      "Jarl": 1296,
-      "Mario": 1104,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1698,
-      "Vynsett": 838,
-      "Betsy": 1470,
-      "Cindra": 1580,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1523,
-      "Hala": 1141,
-      "Jarl": 1296,
-      "Mario": 1104,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1699,
-      "Vynsett": 838,
-      "Betsy": 1470,
-      "Cindra": 1580,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1523,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1104,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1700,
-      "Vynsett": 838,
-      "Betsy": 1470,
-      "Cindra": 1580,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1523,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1701,
-      "Vynsett": 837,
-      "Betsy": 1471,
-      "Cindra": 1580,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1523,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1702,
-      "Vynsett": 837,
-      "Betsy": 1471,
-      "Cindra": 1580,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1524,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1703,
-      "Vynsett": 837,
-      "Betsy": 1492,
-      "Cindra": 1559,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1524,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1704,
-      "Vynsett": 837,
-      "Betsy": 1492,
-      "Cindra": 1559,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1525,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1705,
-      "Vynsett": 836,
-      "Betsy": 1493,
-      "Cindra": 1559,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1525,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1706,
-      "Vynsett": 836,
-      "Betsy": 1512,
-      "Cindra": 1540,
-      "Dash IO": 918,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1525,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1707,
-      "Vynsett": 836,
-      "Betsy": 1512,
-      "Cindra": 1541,
-      "Dash IO": 917,
-      "Gravy Bones": 1138,
-      "Oscilio GIAF": 1525,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1708,
-      "Vynsett": 836,
-      "Betsy": 1512,
-      "Cindra": 1541,
-      "Dash IO": 926,
-      "Gravy Bones": 1129,
-      "Oscilio GIAF": 1525,
-      "Hala": 1132,
-      "Jarl": 1305,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1709,
-      "Vynsett": 836,
-      "Betsy": 1512,
-      "Cindra": 1541,
-      "Dash IO": 926,
-      "Gravy Bones": 1129,
-      "Oscilio GIAF": 1525,
-      "Hala": 1155,
-      "Jarl": 1282,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1710,
-      "Vynsett": 836,
-      "Betsy": 1512,
-      "Cindra": 1541,
-      "Dash IO": 926,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1525,
-      "Hala": 1154,
-      "Jarl": 1282,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1711,
-      "Vynsett": 836,
-      "Betsy": 1512,
-      "Cindra": 1542,
-      "Dash IO": 925,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1525,
-      "Hala": 1154,
-      "Jarl": 1282,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1712,
-      "Vynsett": 836,
-      "Betsy": 1512,
-      "Cindra": 1542,
-      "Dash IO": 925,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1525,
-      "Hala": 1176,
-      "Jarl": 1260,
-      "Mario": 1111,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1713,
-      "Vynsett": 836,
-      "Betsy": 1512,
-      "Cindra": 1542,
-      "Dash IO": 925,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1525,
-      "Hala": 1176,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1714,
-      "Vynsett": 835,
-      "Betsy": 1513,
-      "Cindra": 1542,
-      "Dash IO": 925,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1525,
-      "Hala": 1176,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1715,
-      "Vynsett": 835,
-      "Betsy": 1513,
-      "Cindra": 1543,
-      "Dash IO": 924,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1525,
-      "Hala": 1176,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1716,
-      "Vynsett": 835,
-      "Betsy": 1498,
-      "Cindra": 1558,
-      "Dash IO": 924,
-      "Gravy Bones": 1130,
-      "Oscilio GIAF": 1525,
-      "Hala": 1176,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1717,
-      "Vynsett": 835,
-      "Betsy": 1498,
-      "Cindra": 1558,
-      "Dash IO": 933,
-      "Gravy Bones": 1121,
-      "Oscilio GIAF": 1525,
-      "Hala": 1176,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1718,
-      "Vynsett": 835,
-      "Betsy": 1498,
-      "Cindra": 1558,
-      "Dash IO": 933,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1525,
-      "Hala": 1173,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1719,
-      "Vynsett": 834,
-      "Betsy": 1499,
-      "Cindra": 1558,
-      "Dash IO": 933,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1525,
-      "Hala": 1173,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1720,
-      "Vynsett": 834,
-      "Betsy": 1486,
-      "Cindra": 1571,
-      "Dash IO": 933,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1525,
-      "Hala": 1173,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1721,
-      "Vynsett": 834,
-      "Betsy": 1486,
-      "Cindra": 1572,
-      "Dash IO": 932,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1525,
-      "Hala": 1173,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1722,
-      "Vynsett": 834,
-      "Betsy": 1486,
-      "Cindra": 1572,
-      "Dash IO": 932,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1526,
-      "Hala": 1173,
-      "Jarl": 1260,
-      "Mario": 1102,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1723,
-      "Vynsett": 834,
-      "Betsy": 1486,
-      "Cindra": 1572,
-      "Dash IO": 932,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1526,
-      "Hala": 1173,
-      "Jarl": 1260,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1724,
-      "Vynsett": 834,
-      "Betsy": 1486,
-      "Cindra": 1572,
-      "Dash IO": 932,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1526,
-      "Hala": 1161,
-      "Jarl": 1272,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1725,
-      "Vynsett": 834,
-      "Betsy": 1486,
-      "Cindra": 1572,
-      "Dash IO": 932,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1526,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1726,
-      "Vynsett": 834,
-      "Betsy": 1486,
-      "Cindra": 1572,
-      "Dash IO": 932,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1727,
-      "Vynsett": 833,
-      "Betsy": 1487,
-      "Cindra": 1572,
-      "Dash IO": 932,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 1030,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1728,
-      "Vynsett": 857,
-      "Betsy": 1487,
-      "Cindra": 1572,
-      "Dash IO": 932,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 1006,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1729,
-      "Vynsett": 857,
-      "Betsy": 1487,
-      "Cindra": 1573,
-      "Dash IO": 931,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 1006,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1730,
-      "Vynsett": 857,
-      "Betsy": 1475,
-      "Cindra": 1585,
-      "Dash IO": 931,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 1006,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1731,
-      "Vynsett": 879,
-      "Betsy": 1475,
-      "Cindra": 1585,
-      "Dash IO": 931,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1732,
-      "Vynsett": 878,
-      "Betsy": 1476,
-      "Cindra": 1585,
-      "Dash IO": 931,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1733,
-      "Vynsett": 878,
-      "Betsy": 1465,
-      "Cindra": 1596,
-      "Dash IO": 931,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
-    {
-      "match": 1734,
-      "Vynsett": 878,
-      "Betsy": 1465,
-      "Cindra": 1597,
-      "Dash IO": 930,
-      "Gravy Bones": 1124,
-      "Oscilio GIAF": 1527,
-      "Hala": 1150,
-      "Jarl": 1283,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
-    },
     {
       "match": 1735,
       "Vynsett": 878,
@@ -14671,7 +13807,7 @@
       "Mario": 1093,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1736,
@@ -14686,7 +13822,7 @@
       "Mario": 1093,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1737,
@@ -14701,7 +13837,7 @@
       "Mario": 1093,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1738,
@@ -14716,7 +13852,7 @@
       "Mario": 1093,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1739,
@@ -14731,7 +13867,7 @@
       "Mario": 1093,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1740,
@@ -14746,7 +13882,7 @@
       "Mario": 1093,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1741,
@@ -14761,7 +13897,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1742,
@@ -14776,7 +13912,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1743,
@@ -14791,7 +13927,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1744,
@@ -14806,7 +13942,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1745,
@@ -14821,7 +13957,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1746,
@@ -14836,7 +13972,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1747,
@@ -14851,7 +13987,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1748,
@@ -14866,7 +14002,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1749,
@@ -14881,7 +14017,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1750,
@@ -14896,7 +14032,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1751,
@@ -14911,7 +14047,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1752,
@@ -14926,7 +14062,7 @@
       "Mario": 1085,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1753,
@@ -14941,7 +14077,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1754,
@@ -14956,7 +14092,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1755,
@@ -14971,7 +14107,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1756,
@@ -14986,7 +14122,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1757,
@@ -15001,7 +14137,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1758,
@@ -15016,7 +14152,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1759,
@@ -15031,7 +14167,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1760,
@@ -15046,7 +14182,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1761,
@@ -15061,7 +14197,7 @@
       "Mario": 1077,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1762,
@@ -15076,7 +14212,7 @@
       "Mario": 1086,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1763,
@@ -15091,7 +14227,7 @@
       "Mario": 1086,
       "Kassai": 1469,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1764,
@@ -15106,7 +14242,7 @@
       "Mario": 1086,
       "Kassai": 1446,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1765,
@@ -15121,7 +14257,7 @@
       "Mario": 1086,
       "Kassai": 1446,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1766,
@@ -15136,7 +14272,7 @@
       "Mario": 1086,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1767,
@@ -15151,7 +14287,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1768,
@@ -15166,7 +14302,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1769,
@@ -15181,7 +14317,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1770,
@@ -15196,7 +14332,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1771,
@@ -15211,7 +14347,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1772,
@@ -15226,7 +14362,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1773,
@@ -15241,7 +14377,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1774,
@@ -15256,7 +14392,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1775,
@@ -15271,7 +14407,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1776,
@@ -15286,7 +14422,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1777,
@@ -15301,7 +14437,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1778,
@@ -15316,7 +14452,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1779,
@@ -15331,7 +14467,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1780,
@@ -15346,7 +14482,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1781,
@@ -15361,7 +14497,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 984,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1782,
@@ -15376,7 +14512,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 983,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1783,
@@ -15391,7 +14527,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 983,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1784,
@@ -15406,7 +14542,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1785,
@@ -15421,7 +14557,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1786,
@@ -15436,7 +14572,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1787,
@@ -15451,7 +14587,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1788,
@@ -15466,7 +14602,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1789,
@@ -15481,7 +14617,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1790,
@@ -15496,7 +14632,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1791,
@@ -15511,7 +14647,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1792,
@@ -15526,7 +14662,7 @@
       "Mario": 1094,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1793,
@@ -15541,7 +14677,7 @@
       "Mario": 1101,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1794,
@@ -15556,7 +14692,7 @@
       "Mario": 1101,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1795,
@@ -15571,7 +14707,7 @@
       "Mario": 1101,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1796,
@@ -15586,7 +14722,7 @@
       "Mario": 1108,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1797,
@@ -15601,7 +14737,7 @@
       "Mario": 1108,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1798,
@@ -15616,7 +14752,7 @@
       "Mario": 1108,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1799,
@@ -15631,7 +14767,7 @@
       "Mario": 1108,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1800,
@@ -15646,7 +14782,7 @@
       "Mario": 1108,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1801,
@@ -15661,7 +14797,7 @@
       "Mario": 1108,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1802,
@@ -15676,7 +14812,7 @@
       "Mario": 1108,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1803,
@@ -15691,7 +14827,7 @@
       "Mario": 1108,
       "Kassai": 1425,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1804,
@@ -15706,7 +14842,7 @@
       "Mario": 1104,
       "Kassai": 1429,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1805,
@@ -15721,7 +14857,7 @@
       "Mario": 1104,
       "Kassai": 1429,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1806,
@@ -15736,7 +14872,7 @@
       "Mario": 1104,
       "Kassai": 1429,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1807,
@@ -15751,7 +14887,7 @@
       "Mario": 1100,
       "Kassai": 1433,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1808,
@@ -15766,7 +14902,7 @@
       "Mario": 1100,
       "Kassai": 1433,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1809,
@@ -15781,7 +14917,7 @@
       "Mario": 1107,
       "Kassai": 1433,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1810,
@@ -15796,7 +14932,7 @@
       "Mario": 1107,
       "Kassai": 1433,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1811,
@@ -15811,7 +14947,7 @@
       "Mario": 1107,
       "Kassai": 1433,
       "Teklovossen": 961,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1812,
@@ -15826,7 +14962,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 961,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1813,
@@ -15841,7 +14977,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 961,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1814,
@@ -15856,7 +14992,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1815,
@@ -15871,7 +15007,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1816,
@@ -15886,7 +15022,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1817,
@@ -15901,7 +15037,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1818,
@@ -15916,7 +15052,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1819,
@@ -15931,7 +15067,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1820,
@@ -15946,7 +15082,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1821,
@@ -15961,7 +15097,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1822,
@@ -15976,7 +15112,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1823,
@@ -15991,7 +15127,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1824,
@@ -16006,7 +15142,7 @@
       "Mario": 1113,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1825,
@@ -16021,7 +15157,7 @@
       "Mario": 1119,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1826,
@@ -16036,7 +15172,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 942,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1827,
@@ -16051,7 +15187,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1828,
@@ -16066,7 +15202,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1829,
@@ -16081,7 +15217,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1830,
@@ -16096,7 +15232,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1831,
@@ -16111,7 +15247,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1832,
@@ -16126,7 +15262,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1833,
@@ -16141,7 +15277,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1834,
@@ -16156,7 +15292,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1835,
@@ -16171,7 +15307,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1836,
@@ -16186,7 +15322,7 @@
       "Mario": 1125,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1837,
@@ -16201,7 +15337,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1838,
@@ -16216,7 +15352,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1839,
@@ -16231,7 +15367,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1840,
@@ -16246,7 +15382,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1841,
@@ -16261,7 +15397,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1842,
@@ -16276,7 +15412,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1843,
@@ -16291,7 +15427,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1844,
@@ -16306,7 +15442,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1845,
@@ -16321,7 +15457,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1846,
@@ -16336,7 +15472,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1847,
@@ -16351,7 +15487,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1848,
@@ -16366,7 +15502,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1849,
@@ -16381,7 +15517,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1850,
@@ -16396,7 +15532,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1851,
@@ -16411,7 +15547,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1852,
@@ -16426,7 +15562,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1853,
@@ -16441,7 +15577,7 @@
       "Mario": 1114,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1854,
@@ -16456,7 +15592,7 @@
       "Mario": 1104,
       "Kassai": 1433,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1855,
@@ -16471,7 +15607,7 @@
       "Mario": 1100,
       "Kassai": 1437,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1856,
@@ -16486,7 +15622,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1857,
@@ -16501,7 +15637,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1858,
@@ -16516,7 +15652,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1859,
@@ -16531,7 +15667,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1860,
@@ -16546,7 +15682,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1861,
@@ -16561,7 +15697,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1862,
@@ -16576,7 +15712,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1863,
@@ -16591,7 +15727,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1864,
@@ -16606,7 +15742,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1865,
@@ -16621,7 +15757,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1866,
@@ -16636,7 +15772,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1867,
@@ -16651,7 +15787,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1868,
@@ -16666,7 +15802,7 @@
       "Mario": 1096,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1869,
@@ -16681,7 +15817,7 @@
       "Mario": 1087,
       "Kassai": 1441,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1870,
@@ -16696,7 +15832,7 @@
       "Mario": 1083,
       "Kassai": 1445,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1871,
@@ -16711,7 +15847,7 @@
       "Mario": 1083,
       "Kassai": 1445,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1872,
@@ -16726,7 +15862,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1873,
@@ -16741,7 +15877,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1874,
@@ -16756,7 +15892,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1875,
@@ -16771,7 +15907,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1876,
@@ -16786,7 +15922,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1877,
@@ -16801,7 +15937,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1878,
@@ -16816,7 +15952,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1879,
@@ -16831,7 +15967,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1880,
@@ -16846,7 +15982,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1881,
@@ -16861,7 +15997,7 @@
       "Mario": 1079,
       "Kassai": 1449,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1882,
@@ -16876,7 +16012,7 @@
       "Mario": 1076,
       "Kassai": 1452,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1883,
@@ -16891,7 +16027,7 @@
       "Mario": 1076,
       "Kassai": 1452,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1884,
@@ -16906,7 +16042,7 @@
       "Mario": 1076,
       "Kassai": 1452,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1885,
@@ -16921,7 +16057,7 @@
       "Mario": 1073,
       "Kassai": 1455,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1886,
@@ -16936,7 +16072,7 @@
       "Mario": 1073,
       "Kassai": 1455,
       "Teklovossen": 969,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1887,
@@ -16951,7 +16087,7 @@
       "Mario": 1073,
       "Kassai": 1455,
       "Teklovossen": 981,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1888,
@@ -16966,7 +16102,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 981,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1889,
@@ -16981,7 +16117,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 981,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1890,
@@ -16996,7 +16132,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 981,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1891,
@@ -17011,7 +16147,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1892,
@@ -17026,7 +16162,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1893,
@@ -17041,7 +16177,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1894,
@@ -17056,7 +16192,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1895,
@@ -17071,7 +16207,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1896,
@@ -17086,7 +16222,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1897,
@@ -17101,7 +16237,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1898,
@@ -17116,7 +16252,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1899,
@@ -17131,7 +16267,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1900,
@@ -17146,7 +16282,7 @@
       "Mario": 1065,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1901,
@@ -17161,7 +16297,7 @@
       "Mario": 1057,
       "Kassai": 1455,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1902,
@@ -17176,7 +16312,7 @@
       "Mario": 1057,
       "Kassai": 1467,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1903,
@@ -17191,7 +16327,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1904,
@@ -17206,7 +16342,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1905,
@@ -17221,7 +16357,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1906,
@@ -17236,7 +16372,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1907,
@@ -17251,7 +16387,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1908,
@@ -17266,7 +16402,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1909,
@@ -17281,7 +16417,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1910,
@@ -17296,7 +16432,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1911,
@@ -17311,7 +16447,7 @@
       "Mario": 1057,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1912,
@@ -17326,7 +16462,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1913,
@@ -17341,7 +16477,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1914,
@@ -17356,7 +16492,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1915,
@@ -17371,7 +16507,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1916,
@@ -17386,7 +16522,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1917,
@@ -17401,7 +16537,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1918,
@@ -17416,7 +16552,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1919,
@@ -17431,7 +16567,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1920,
@@ -17446,7 +16582,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1921,
@@ -17461,7 +16597,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1922,
@@ -17476,7 +16612,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1923,
@@ -17491,7 +16627,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1924,
@@ -17506,7 +16642,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1925,
@@ -17521,7 +16657,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1926,
@@ -17536,7 +16672,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1927,
@@ -17551,7 +16687,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1928,
@@ -17566,7 +16702,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1929,
@@ -17581,7 +16717,7 @@
       "Mario": 1050,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1930,
@@ -17596,7 +16732,7 @@
       "Mario": 1043,
       "Kassai": 1478,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1931,
@@ -17611,7 +16747,7 @@
       "Mario": 1041,
       "Kassai": 1480,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1932,
@@ -17626,7 +16762,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1933,
@@ -17641,7 +16777,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1934,
@@ -17656,7 +16792,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1935,
@@ -17671,7 +16807,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1936,
@@ -17686,7 +16822,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1937,
@@ -17701,7 +16837,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1938,
@@ -17716,7 +16852,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1939,
@@ -17731,7 +16867,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1940,
@@ -17746,7 +16882,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1941,
@@ -17761,7 +16897,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1942,
@@ -17776,7 +16912,7 @@
       "Mario": 1039,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1943,
@@ -17791,7 +16927,7 @@
       "Mario": 1049,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1944,
@@ -17806,7 +16942,7 @@
       "Mario": 1049,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1945,
@@ -17821,7 +16957,7 @@
       "Mario": 1049,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1946,
@@ -17836,7 +16972,7 @@
       "Mario": 1058,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1947,
@@ -17851,7 +16987,7 @@
       "Mario": 1058,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1948,
@@ -17866,7 +17002,7 @@
       "Mario": 1058,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1949,
@@ -17881,7 +17017,7 @@
       "Mario": 1058,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1950,
@@ -17896,7 +17032,7 @@
       "Mario": 1058,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1951,
@@ -17911,7 +17047,7 @@
       "Mario": 1058,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1952,
@@ -17926,7 +17062,7 @@
       "Mario": 1058,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1953,
@@ -17941,7 +17077,7 @@
       "Mario": 1058,
       "Kassai": 1482,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1954,
@@ -17956,7 +17092,7 @@
       "Mario": 1058,
       "Kassai": 1460,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1955,
@@ -17971,7 +17107,7 @@
       "Mario": 1055,
       "Kassai": 1463,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1956,
@@ -17986,7 +17122,7 @@
       "Mario": 1055,
       "Kassai": 1463,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1957,
@@ -18001,7 +17137,7 @@
       "Mario": 1055,
       "Kassai": 1463,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1958,
@@ -18016,7 +17152,7 @@
       "Mario": 1055,
       "Kassai": 1463,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1959,
@@ -18031,7 +17167,7 @@
       "Mario": 1055,
       "Kassai": 1443,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1960,
@@ -18046,7 +17182,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1961,
@@ -18061,7 +17197,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1962,
@@ -18076,7 +17212,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1963,
@@ -18091,7 +17227,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1964,
@@ -18106,7 +17242,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1965,
@@ -18121,7 +17257,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1966,
@@ -18136,7 +17272,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1967,
@@ -18151,7 +17287,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1968,
@@ -18166,7 +17302,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1969,
@@ -18181,7 +17317,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1970,
@@ -18196,7 +17332,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1971,
@@ -18211,7 +17347,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1972,
@@ -18226,7 +17362,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1973,
@@ -18241,7 +17377,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1974,
@@ -18256,7 +17392,7 @@
       "Mario": 1052,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1975,
@@ -18271,7 +17407,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1976,
@@ -18286,7 +17422,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1977,
@@ -18301,7 +17437,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1978,
@@ -18316,7 +17452,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1979,
@@ -18331,7 +17467,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1980,
@@ -18346,7 +17482,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1981,
@@ -18361,7 +17497,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1982,
@@ -18376,7 +17512,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1983,
@@ -18391,7 +17527,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1984,
@@ -18406,7 +17542,7 @@
       "Mario": 1044,
       "Kassai": 1446,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1985,
@@ -18421,7 +17557,7 @@
       "Mario": 1044,
       "Kassai": 1459,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1986,
@@ -18436,7 +17572,7 @@
       "Mario": 1044,
       "Kassai": 1459,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1987,
@@ -18451,7 +17587,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1988,
@@ -18466,7 +17602,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1989,
@@ -18481,7 +17617,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1990,
@@ -18496,7 +17632,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1991,
@@ -18511,7 +17647,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1992,
@@ -18526,7 +17662,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1993,
@@ -18541,7 +17677,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1994,
@@ -18556,7 +17692,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1995,
@@ -18571,7 +17707,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1996,
@@ -18586,7 +17722,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1997,
@@ -18601,7 +17737,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1998,
@@ -18616,7 +17752,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 1999,
@@ -18631,7 +17767,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2000,
@@ -18646,7 +17782,7 @@
       "Mario": 1044,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2001,
@@ -18661,7 +17797,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2002,
@@ -18676,7 +17812,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2003,
@@ -18691,7 +17827,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2004,
@@ -18706,7 +17842,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2005,
@@ -18721,7 +17857,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2006,
@@ -18736,7 +17872,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2007,
@@ -18751,7 +17887,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2008,
@@ -18766,7 +17902,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2009,
@@ -18781,7 +17917,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2010,
@@ -18796,7 +17932,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2011,
@@ -18811,7 +17947,7 @@
       "Mario": 1037,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2012,
@@ -18826,7 +17962,7 @@
       "Mario": 1030,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2013,
@@ -18841,7 +17977,7 @@
       "Mario": 1030,
       "Kassai": 1469,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2014,
@@ -18856,7 +17992,7 @@
       "Mario": 1030,
       "Kassai": 1448,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2015,
@@ -18871,7 +18007,7 @@
       "Mario": 1030,
       "Kassai": 1448,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2016,
@@ -18886,7 +18022,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2017,
@@ -18901,7 +18037,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2018,
@@ -18916,7 +18052,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2019,
@@ -18931,7 +18067,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2020,
@@ -18946,7 +18082,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2021,
@@ -18961,7 +18097,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2022,
@@ -18976,7 +18112,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2023,
@@ -18991,7 +18127,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2024,
@@ -19006,7 +18142,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2025,
@@ -19021,7 +18157,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2026,
@@ -19036,7 +18172,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2027,
@@ -19051,7 +18187,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2028,
@@ -19066,7 +18202,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2029,
@@ -19081,7 +18217,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2030,
@@ -19096,7 +18232,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2031,
@@ -19111,7 +18247,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2032,
@@ -19126,7 +18262,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2033,
@@ -19141,7 +18277,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2034,
@@ -19156,7 +18292,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2035,
@@ -19171,7 +18307,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2036,
@@ -19186,7 +18322,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2037,
@@ -19201,7 +18337,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2038,
@@ -19216,7 +18352,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1207
+      "👤 Humano (Você)": 1207
     },
     {
       "match": 2039,
@@ -19231,7 +18367,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1223,
+      "👤 Humano (Você)": 1223,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19247,7 +18383,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1223,
+      "👤 Humano (Você)": 1223,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19263,7 +18399,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1223,
+      "👤 Humano (Você)": 1223,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19279,7 +18415,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1223,
+      "👤 Humano (Você)": 1223,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19295,7 +18431,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1181,
+      "👤 Humano (Você)": 1181,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19311,7 +18447,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1142,
+      "👤 Humano (Você)": 1142,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19327,7 +18463,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1142,
+      "👤 Humano (Você)": 1142,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19343,7 +18479,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1142,
+      "👤 Humano (Você)": 1142,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19359,7 +18495,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1142,
+      "👤 Humano (Você)": 1142,
       "Cindra Dracai Of Retribution": 1184
     },
     {
@@ -19375,7 +18511,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1142,
+      "👤 Humano (Você)": 1142,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19392,7 +18528,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1106,
+      "👤 Humano (Você)": 1106,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19409,7 +18545,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1106,
+      "👤 Humano (Você)": 1106,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19426,7 +18562,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1106,
+      "👤 Humano (Você)": 1106,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19443,7 +18579,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1106,
+      "👤 Humano (Você)": 1106,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19460,7 +18596,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1074,
+      "👤 Humano (Você)": 1074,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19477,7 +18613,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1074,
+      "👤 Humano (Você)": 1074,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19494,7 +18630,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1074,
+      "👤 Humano (Você)": 1074,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19511,7 +18647,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1074,
+      "👤 Humano (Você)": 1074,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19528,7 +18664,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1046,
+      "👤 Humano (Você)": 1046,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19545,7 +18681,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1046,
+      "👤 Humano (Você)": 1046,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19562,7 +18698,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1046,
+      "👤 Humano (Você)": 1046,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19579,7 +18715,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1046,
+      "👤 Humano (Você)": 1046,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1206
     },
@@ -19596,7 +18732,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1046,
+      "👤 Humano (Você)": 1046,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1215
     },
@@ -19613,7 +18749,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1184,
       "Marlynn Treasure Hunter": 1215
     },
@@ -19630,7 +18766,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1169,
       "Betsy Skin In The Game": 1215
     },
@@ -19647,7 +18783,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1169,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185
@@ -19665,7 +18801,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 991,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1169,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185
@@ -19683,7 +18819,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1169,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185
@@ -19701,7 +18837,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1169,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19721,7 +18857,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1169,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19743,7 +18879,7 @@
       "Mario": 1030,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19765,7 +18901,7 @@
       "Mario": 1029,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19787,7 +18923,7 @@
       "Mario": 1029,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19809,7 +18945,7 @@
       "Mario": 1029,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19831,7 +18967,7 @@
       "Mario": 1029,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1230,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19854,7 +18990,7 @@
       "Mario": 1029,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1245,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19877,7 +19013,7 @@
       "Mario": 1029,
       "Kassai": 1429,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19901,7 +19037,7 @@
       "Mario": 1029,
       "Kassai": 1448,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19925,7 +19061,7 @@
       "Mario": 1037,
       "Kassai": 1448,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19949,7 +19085,7 @@
       "Mario": 1035,
       "Kassai": 1448,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1187,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19973,7 +19109,7 @@
       "Mario": 1035,
       "Kassai": 1448,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1185,
@@ -19997,7 +19133,7 @@
       "Mario": 1035,
       "Kassai": 1448,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1185,
@@ -20021,7 +19157,7 @@
       "Mario": 1035,
       "Kassai": 1448,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1185,
@@ -20045,7 +19181,7 @@
       "Mario": 1035,
       "Kassai": 1448,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1188,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1185,
@@ -20069,7 +19205,7 @@
       "Mario": 1035,
       "Kassai": 1448,
       "Teklovossen": 989,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1188,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1171,
@@ -20093,7 +19229,7 @@
       "Mario": 1035,
       "Kassai": 1450,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1188,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1171,
@@ -20117,7 +19253,7 @@
       "Mario": 1035,
       "Kassai": 1474,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1188,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1171,
@@ -20141,7 +19277,7 @@
       "Mario": 1035,
       "Kassai": 1474,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1188,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1171,
@@ -20166,7 +19302,7 @@
       "Mario": 1035,
       "Kassai": 1474,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1156,
@@ -20191,7 +19327,7 @@
       "Mario": 1035,
       "Kassai": 1474,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1156,
@@ -20216,7 +19352,7 @@
       "Mario": 1035,
       "Kassai": 1474,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1156,
@@ -20241,7 +19377,7 @@
       "Mario": 1035,
       "Kassai": 1474,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1227,
       "Teklovossen Esteemed Magnate": 1142,
@@ -20266,7 +19402,7 @@
       "Mario": 1035,
       "Kassai": 1474,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1212,
       "Teklovossen Esteemed Magnate": 1142,
@@ -20291,7 +19427,7 @@
       "Mario": 1035,
       "Kassai": 1490,
       "Teklovossen": 987,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1212,
       "Teklovossen Esteemed Magnate": 1142,
@@ -20316,7 +19452,7 @@
       "Mario": 1035,
       "Kassai": 1490,
       "Teklovossen": 986,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1212,
       "Teklovossen Esteemed Magnate": 1142,
@@ -20341,7 +19477,7 @@
       "Mario": 1035,
       "Kassai": 1490,
       "Teklovossen": 986,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Cindra Dracai Of Retribution": 1203,
       "Betsy Skin In The Game": 1212,
       "Teklovossen Esteemed Magnate": 1142,
@@ -20366,7 +19502,7 @@
       "Mario": 1037,
       "Kassai": 1486,
       "Teklovossen": 995,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1162
     },
     {
@@ -20382,7 +19518,7 @@
       "Mario": 1037,
       "Kassai": 1486,
       "Teklovossen": 995,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1162
     },
     {
@@ -20398,7 +19534,7 @@
       "Mario": 1037,
       "Kassai": 1506,
       "Teklovossen": 995,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1162
     },
     {
@@ -20414,7 +19550,7 @@
       "Mario": 1037,
       "Kassai": 1506,
       "Teklovossen": 995,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1162
     },
     {
@@ -20430,7 +19566,7 @@
       "Mario": 1037,
       "Kassai": 1506,
       "Teklovossen": 995,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1176
     },
     {
@@ -20446,7 +19582,7 @@
       "Mario": 1051,
       "Kassai": 1506,
       "Teklovossen": 981,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1176
     },
     {
@@ -20462,7 +19598,7 @@
       "Mario": 1051,
       "Kassai": 1506,
       "Teklovossen": 981,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1176
     },
     {
@@ -20478,7 +19614,7 @@
       "Mario": 1051,
       "Kassai": 1516,
       "Teklovossen": 981,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1176
     },
     {
@@ -20494,7 +19630,7 @@
       "Mario": 1051,
       "Kassai": 1516,
       "Teklovossen": 973,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1184
     },
     {
@@ -20510,7 +19646,7 @@
       "Mario": 1051,
       "Kassai": 1516,
       "Teklovossen": 973,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1195
     },
     {
@@ -20526,7 +19662,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 973,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1195
     },
     {
@@ -20542,7 +19678,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 973,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1195
     },
     {
@@ -20558,7 +19694,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 973,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20574,7 +19710,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 973,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20590,7 +19726,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20606,7 +19742,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20622,7 +19758,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20638,7 +19774,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20654,7 +19790,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20670,7 +19806,7 @@
       "Mario": 1051,
       "Kassai": 1518,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20686,7 +19822,7 @@
       "Mario": 1051,
       "Kassai": 1535,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20702,7 +19838,7 @@
       "Mario": 1051,
       "Kassai": 1535,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20718,7 +19854,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20734,7 +19870,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 982,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20750,7 +19886,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 980,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20766,7 +19902,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 979,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20782,7 +19918,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 979,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20798,7 +19934,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 979,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20814,7 +19950,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20830,7 +19966,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20846,7 +19982,7 @@
       "Mario": 1040,
       "Kassai": 1535,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20862,7 +19998,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20878,7 +20014,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20894,7 +20030,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20910,7 +20046,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20926,7 +20062,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 956,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20942,7 +20078,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 943,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20958,7 +20094,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 943,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20974,7 +20110,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 943,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -20990,7 +20126,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 941,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -21006,7 +20142,7 @@
       "Mario": 1040,
       "Kassai": 1523,
       "Teklovossen": 941,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -21022,7 +20158,7 @@
       "Mario": 1040,
       "Kassai": 1506,
       "Teklovossen": 941,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -21038,7 +20174,7 @@
       "Mario": 1040,
       "Kassai": 1506,
       "Teklovossen": 941,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
     },
     {
@@ -21054,8 +20190,1544 @@
       "Mario": 1040,
       "Kassai": 1486,
       "Teklovossen": 941,
-      "\ud83d\udc64 Humano (Voc\u00ea)": 1021,
+      "👤 Humano (Você)": 1021,
       "Marlinn": 1175
+    },
+    {
+      "match": 1838,
+      "Vynsett": 813,
+      "Betsy": 1413,
+      "Cindra": 1538,
+      "Dash IO": 1038,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1509,
+      "Hala": 1184,
+      "Jarl": 1435,
+      "Mario": 1040,
+      "Kassai": 1486,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1175
+    },
+    {
+      "match": 1839,
+      "Vynsett": 813,
+      "Betsy": 1413,
+      "Cindra": 1538,
+      "Dash IO": 1038,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1509,
+      "Hala": 1179,
+      "Jarl": 1435,
+      "Mario": 1040,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1175
+    },
+    {
+      "match": 1840,
+      "Vynsett": 809,
+      "Betsy": 1413,
+      "Cindra": 1538,
+      "Dash IO": 1038,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1509,
+      "Hala": 1179,
+      "Jarl": 1435,
+      "Mario": 1040,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1179
+    },
+    {
+      "match": 1841,
+      "Vynsett": 809,
+      "Betsy": 1413,
+      "Cindra": 1538,
+      "Dash IO": 1022,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1509,
+      "Hala": 1179,
+      "Jarl": 1435,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1179
+    },
+    {
+      "match": 1842,
+      "Vynsett": 809,
+      "Betsy": 1420,
+      "Cindra": 1538,
+      "Dash IO": 1022,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1509,
+      "Hala": 1172,
+      "Jarl": 1435,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1179
+    },
+    {
+      "match": 1843,
+      "Vynsett": 806,
+      "Betsy": 1420,
+      "Cindra": 1538,
+      "Dash IO": 1022,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1509,
+      "Hala": 1172,
+      "Jarl": 1435,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1844,
+      "Vynsett": 806,
+      "Betsy": 1437,
+      "Cindra": 1538,
+      "Dash IO": 1022,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1509,
+      "Hala": 1172,
+      "Jarl": 1418,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1845,
+      "Vynsett": 806,
+      "Betsy": 1411,
+      "Cindra": 1538,
+      "Dash IO": 1022,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1509,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1846,
+      "Vynsett": 806,
+      "Betsy": 1411,
+      "Cindra": 1538,
+      "Dash IO": 1020,
+      "Gravy Bones": 1232,
+      "Oscilio GIAF": 1511,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1847,
+      "Vynsett": 806,
+      "Betsy": 1411,
+      "Cindra": 1538,
+      "Dash IO": 1013,
+      "Gravy Bones": 1239,
+      "Oscilio GIAF": 1511,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 941,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1848,
+      "Vynsett": 806,
+      "Betsy": 1411,
+      "Cindra": 1538,
+      "Dash IO": 1013,
+      "Gravy Bones": 1244,
+      "Oscilio GIAF": 1511,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 936,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1849,
+      "Vynsett": 805,
+      "Betsy": 1412,
+      "Cindra": 1538,
+      "Dash IO": 1013,
+      "Gravy Bones": 1244,
+      "Oscilio GIAF": 1511,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1056,
+      "Kassai": 1491,
+      "Teklovossen": 936,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1850,
+      "Vynsett": 805,
+      "Betsy": 1412,
+      "Cindra": 1540,
+      "Dash IO": 1013,
+      "Gravy Bones": 1244,
+      "Oscilio GIAF": 1511,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1054,
+      "Kassai": 1491,
+      "Teklovossen": 936,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1851,
+      "Vynsett": 803,
+      "Betsy": 1412,
+      "Cindra": 1540,
+      "Dash IO": 1013,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1511,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1054,
+      "Kassai": 1491,
+      "Teklovossen": 936,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1852,
+      "Vynsett": 803,
+      "Betsy": 1412,
+      "Cindra": 1541,
+      "Dash IO": 1013,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1511,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1054,
+      "Kassai": 1491,
+      "Teklovossen": 935,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1853,
+      "Vynsett": 802,
+      "Betsy": 1413,
+      "Cindra": 1541,
+      "Dash IO": 1013,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1511,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1054,
+      "Kassai": 1491,
+      "Teklovossen": 935,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1854,
+      "Vynsett": 802,
+      "Betsy": 1413,
+      "Cindra": 1541,
+      "Dash IO": 1013,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1512,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1054,
+      "Kassai": 1491,
+      "Teklovossen": 934,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1855,
+      "Vynsett": 802,
+      "Betsy": 1435,
+      "Cindra": 1519,
+      "Dash IO": 1013,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1512,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1054,
+      "Kassai": 1491,
+      "Teklovossen": 934,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1182
+    },
+    {
+      "match": 1856,
+      "Vynsett": 802,
+      "Betsy": 1435,
+      "Cindra": 1519,
+      "Dash IO": 1013,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1512,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1076,
+      "Kassai": 1491,
+      "Teklovossen": 934,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1160
+    },
+    {
+      "match": 1857,
+      "Vynsett": 802,
+      "Betsy": 1435,
+      "Cindra": 1491,
+      "Dash IO": 1013,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1512,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1076,
+      "Kassai": 1491,
+      "Teklovossen": 934,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1188
+    },
+    {
+      "match": 1858,
+      "Vynsett": 802,
+      "Betsy": 1438,
+      "Cindra": 1491,
+      "Dash IO": 1010,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1512,
+      "Hala": 1198,
+      "Jarl": 1418,
+      "Mario": 1076,
+      "Kassai": 1491,
+      "Teklovossen": 934,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1188
+    },
+    {
+      "match": 1859,
+      "Vynsett": 802,
+      "Betsy": 1438,
+      "Cindra": 1480,
+      "Dash IO": 1010,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1512,
+      "Hala": 1209,
+      "Jarl": 1418,
+      "Mario": 1076,
+      "Kassai": 1491,
+      "Teklovossen": 934,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1188
+    },
+    {
+      "match": 1860,
+      "Vynsett": 802,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 1010,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1512,
+      "Hala": 1209,
+      "Jarl": 1418,
+      "Mario": 1076,
+      "Kassai": 1491,
+      "Teklovossen": 934,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1861,
+      "Vynsett": 802,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 1010,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1209,
+      "Jarl": 1418,
+      "Mario": 1076,
+      "Kassai": 1508,
+      "Teklovossen": 934,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1862,
+      "Vynsett": 802,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 1010,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1209,
+      "Jarl": 1418,
+      "Mario": 1076,
+      "Kassai": 1509,
+      "Teklovossen": 933,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1863,
+      "Vynsett": 802,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 1002,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1217,
+      "Jarl": 1418,
+      "Mario": 1076,
+      "Kassai": 1509,
+      "Teklovossen": 933,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1864,
+      "Vynsett": 802,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 989,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1217,
+      "Jarl": 1418,
+      "Mario": 1089,
+      "Kassai": 1509,
+      "Teklovossen": 933,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1865,
+      "Vynsett": 794,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 997,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1217,
+      "Jarl": 1418,
+      "Mario": 1089,
+      "Kassai": 1509,
+      "Teklovossen": 933,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1866,
+      "Vynsett": 794,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 997,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1217,
+      "Jarl": 1422,
+      "Mario": 1085,
+      "Kassai": 1509,
+      "Teklovossen": 933,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1867,
+      "Vynsett": 794,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 997,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1209,
+      "Jarl": 1430,
+      "Mario": 1085,
+      "Kassai": 1509,
+      "Teklovossen": 933,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1868,
+      "Vynsett": 794,
+      "Betsy": 1438,
+      "Cindra": 1453,
+      "Dash IO": 997,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1209,
+      "Jarl": 1430,
+      "Mario": 1085,
+      "Kassai": 1510,
+      "Teklovossen": 932,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1869,
+      "Vynsett": 794,
+      "Betsy": 1438,
+      "Cindra": 1456,
+      "Dash IO": 997,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1495,
+      "Hala": 1209,
+      "Jarl": 1430,
+      "Mario": 1082,
+      "Kassai": 1510,
+      "Teklovossen": 932,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1870,
+      "Vynsett": 794,
+      "Betsy": 1425,
+      "Cindra": 1456,
+      "Dash IO": 997,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1508,
+      "Hala": 1209,
+      "Jarl": 1430,
+      "Mario": 1082,
+      "Kassai": 1510,
+      "Teklovossen": 932,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1871,
+      "Vynsett": 793,
+      "Betsy": 1425,
+      "Cindra": 1456,
+      "Dash IO": 997,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1508,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1082,
+      "Kassai": 1510,
+      "Teklovossen": 932,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1872,
+      "Vynsett": 793,
+      "Betsy": 1425,
+      "Cindra": 1456,
+      "Dash IO": 1010,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1508,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1082,
+      "Kassai": 1510,
+      "Teklovossen": 919,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1873,
+      "Vynsett": 792,
+      "Betsy": 1425,
+      "Cindra": 1457,
+      "Dash IO": 1010,
+      "Gravy Bones": 1246,
+      "Oscilio GIAF": 1508,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1082,
+      "Kassai": 1510,
+      "Teklovossen": 919,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1874,
+      "Vynsett": 792,
+      "Betsy": 1425,
+      "Cindra": 1457,
+      "Dash IO": 1010,
+      "Gravy Bones": 1250,
+      "Oscilio GIAF": 1508,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1082,
+      "Kassai": 1510,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1875,
+      "Vynsett": 792,
+      "Betsy": 1425,
+      "Cindra": 1475,
+      "Dash IO": 1010,
+      "Gravy Bones": 1250,
+      "Oscilio GIAF": 1490,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1082,
+      "Kassai": 1510,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1876,
+      "Vynsett": 792,
+      "Betsy": 1425,
+      "Cindra": 1475,
+      "Dash IO": 1008,
+      "Gravy Bones": 1250,
+      "Oscilio GIAF": 1490,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1082,
+      "Kassai": 1512,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1877,
+      "Vynsett": 792,
+      "Betsy": 1425,
+      "Cindra": 1475,
+      "Dash IO": 1008,
+      "Gravy Bones": 1250,
+      "Oscilio GIAF": 1493,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1079,
+      "Kassai": 1512,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1878,
+      "Vynsett": 792,
+      "Betsy": 1425,
+      "Cindra": 1475,
+      "Dash IO": 1008,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1079,
+      "Kassai": 1512,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1879,
+      "Vynsett": 792,
+      "Betsy": 1425,
+      "Cindra": 1475,
+      "Dash IO": 1008,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1077,
+      "Kassai": 1514,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1880,
+      "Vynsett": 792,
+      "Betsy": 1413,
+      "Cindra": 1475,
+      "Dash IO": 1008,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1077,
+      "Kassai": 1526,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1881,
+      "Vynsett": 792,
+      "Betsy": 1413,
+      "Cindra": 1475,
+      "Dash IO": 1008,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1209,
+      "Jarl": 1431,
+      "Mario": 1077,
+      "Kassai": 1526,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1215
+    },
+    {
+      "match": 1882,
+      "Vynsett": 792,
+      "Betsy": 1413,
+      "Cindra": 1475,
+      "Dash IO": 1008,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1209,
+      "Jarl": 1438,
+      "Mario": 1077,
+      "Kassai": 1526,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1883,
+      "Vynsett": 792,
+      "Betsy": 1413,
+      "Cindra": 1475,
+      "Dash IO": 1008,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1205,
+      "Jarl": 1438,
+      "Mario": 1077,
+      "Kassai": 1530,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1884,
+      "Vynsett": 792,
+      "Betsy": 1413,
+      "Cindra": 1475,
+      "Dash IO": 995,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1205,
+      "Jarl": 1438,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 915,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1885,
+      "Vynsett": 792,
+      "Betsy": 1413,
+      "Cindra": 1476,
+      "Dash IO": 995,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1205,
+      "Jarl": 1438,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 914,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1886,
+      "Vynsett": 784,
+      "Betsy": 1413,
+      "Cindra": 1476,
+      "Dash IO": 1003,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1205,
+      "Jarl": 1438,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 914,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1887,
+      "Vynsett": 784,
+      "Betsy": 1416,
+      "Cindra": 1476,
+      "Dash IO": 1000,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1205,
+      "Jarl": 1438,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 914,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1888,
+      "Vynsett": 777,
+      "Betsy": 1416,
+      "Cindra": 1476,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1205,
+      "Jarl": 1438,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 914,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1889,
+      "Vynsett": 777,
+      "Betsy": 1416,
+      "Cindra": 1477,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1205,
+      "Jarl": 1438,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1890,
+      "Vynsett": 776,
+      "Betsy": 1416,
+      "Cindra": 1477,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1205,
+      "Jarl": 1439,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1208
+    },
+    {
+      "match": 1891,
+      "Vynsett": 776,
+      "Betsy": 1416,
+      "Cindra": 1477,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1221,
+      "Jarl": 1439,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1192
+    },
+    {
+      "match": 1892,
+      "Vynsett": 776,
+      "Betsy": 1416,
+      "Cindra": 1477,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1467,
+      "Hala": 1236,
+      "Jarl": 1439,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1177
+    },
+    {
+      "match": 1893,
+      "Vynsett": 776,
+      "Betsy": 1416,
+      "Cindra": 1477,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1442,
+      "Hala": 1261,
+      "Jarl": 1439,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1177
+    },
+    {
+      "match": 1894,
+      "Vynsett": 776,
+      "Betsy": 1435,
+      "Cindra": 1458,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1442,
+      "Hala": 1261,
+      "Jarl": 1439,
+      "Mario": 1090,
+      "Kassai": 1530,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1177
+    },
+    {
+      "match": 1895,
+      "Vynsett": 776,
+      "Betsy": 1435,
+      "Cindra": 1458,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1442,
+      "Hala": 1261,
+      "Jarl": 1427,
+      "Mario": 1090,
+      "Kassai": 1542,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1177
+    },
+    {
+      "match": 1896,
+      "Vynsett": 775,
+      "Betsy": 1436,
+      "Cindra": 1458,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1442,
+      "Hala": 1261,
+      "Jarl": 1427,
+      "Mario": 1090,
+      "Kassai": 1542,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1177
+    },
+    {
+      "match": 1897,
+      "Vynsett": 775,
+      "Betsy": 1420,
+      "Cindra": 1458,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1442,
+      "Hala": 1261,
+      "Jarl": 1443,
+      "Mario": 1090,
+      "Kassai": 1542,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1177
+    },
+    {
+      "match": 1898,
+      "Vynsett": 775,
+      "Betsy": 1420,
+      "Cindra": 1458,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1261,
+      "Jarl": 1443,
+      "Mario": 1090,
+      "Kassai": 1542,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1171
+    },
+    {
+      "match": 1899,
+      "Vynsett": 775,
+      "Betsy": 1420,
+      "Cindra": 1463,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1261,
+      "Jarl": 1443,
+      "Mario": 1090,
+      "Kassai": 1542,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1166
+    },
+    {
+      "match": 1900,
+      "Vynsett": 775,
+      "Betsy": 1420,
+      "Cindra": 1446,
+      "Dash IO": 1007,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1261,
+      "Jarl": 1460,
+      "Mario": 1090,
+      "Kassai": 1542,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1166
+    },
+    {
+      "match": 1901,
+      "Vynsett": 775,
+      "Betsy": 1420,
+      "Cindra": 1446,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1261,
+      "Jarl": 1460,
+      "Mario": 1090,
+      "Kassai": 1542,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1175
+    },
+    {
+      "match": 1902,
+      "Vynsett": 775,
+      "Betsy": 1420,
+      "Cindra": 1446,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1261,
+      "Jarl": 1465,
+      "Mario": 1090,
+      "Kassai": 1542,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1170
+    },
+    {
+      "match": 1903,
+      "Vynsett": 775,
+      "Betsy": 1420,
+      "Cindra": 1446,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1261,
+      "Jarl": 1465,
+      "Mario": 1090,
+      "Kassai": 1513,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1199
+    },
+    {
+      "match": 1904,
+      "Vynsett": 775,
+      "Betsy": 1395,
+      "Cindra": 1446,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1261,
+      "Jarl": 1465,
+      "Mario": 1090,
+      "Kassai": 1513,
+      "Teklovossen": 913,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1224
+    },
+    {
+      "match": 1905,
+      "Vynsett": 775,
+      "Betsy": 1395,
+      "Cindra": 1446,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1265,
+      "Jarl": 1465,
+      "Mario": 1090,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1224
+    },
+    {
+      "match": 1906,
+      "Vynsett": 775,
+      "Betsy": 1395,
+      "Cindra": 1446,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1448,
+      "Hala": 1265,
+      "Jarl": 1465,
+      "Mario": 1112,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1907,
+      "Vynsett": 775,
+      "Betsy": 1395,
+      "Cindra": 1430,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1464,
+      "Hala": 1265,
+      "Jarl": 1465,
+      "Mario": 1112,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1908,
+      "Vynsett": 773,
+      "Betsy": 1395,
+      "Cindra": 1430,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1464,
+      "Hala": 1267,
+      "Jarl": 1465,
+      "Mario": 1112,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1909,
+      "Vynsett": 773,
+      "Betsy": 1395,
+      "Cindra": 1430,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1464,
+      "Hala": 1267,
+      "Jarl": 1469,
+      "Mario": 1108,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1910,
+      "Vynsett": 772,
+      "Betsy": 1395,
+      "Cindra": 1431,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1464,
+      "Hala": 1267,
+      "Jarl": 1469,
+      "Mario": 1108,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1911,
+      "Vynsett": 771,
+      "Betsy": 1395,
+      "Cindra": 1431,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1465,
+      "Hala": 1267,
+      "Jarl": 1469,
+      "Mario": 1108,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1912,
+      "Vynsett": 771,
+      "Betsy": 1395,
+      "Cindra": 1431,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1437,
+      "Hala": 1267,
+      "Jarl": 1469,
+      "Mario": 1136,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1913,
+      "Vynsett": 771,
+      "Betsy": 1395,
+      "Cindra": 1424,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1437,
+      "Hala": 1274,
+      "Jarl": 1469,
+      "Mario": 1136,
+      "Kassai": 1513,
+      "Teklovossen": 909,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1914,
+      "Vynsett": 771,
+      "Betsy": 1395,
+      "Cindra": 1424,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1437,
+      "Hala": 1274,
+      "Jarl": 1469,
+      "Mario": 1143,
+      "Kassai": 1513,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1915,
+      "Vynsett": 771,
+      "Betsy": 1384,
+      "Cindra": 1424,
+      "Dash IO": 998,
+      "Gravy Bones": 1276,
+      "Oscilio GIAF": 1437,
+      "Hala": 1274,
+      "Jarl": 1469,
+      "Mario": 1143,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1916,
+      "Vynsett": 769,
+      "Betsy": 1384,
+      "Cindra": 1424,
+      "Dash IO": 998,
+      "Gravy Bones": 1278,
+      "Oscilio GIAF": 1437,
+      "Hala": 1274,
+      "Jarl": 1469,
+      "Mario": 1143,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1917,
+      "Vynsett": 769,
+      "Betsy": 1384,
+      "Cindra": 1424,
+      "Dash IO": 998,
+      "Gravy Bones": 1278,
+      "Oscilio GIAF": 1437,
+      "Hala": 1274,
+      "Jarl": 1473,
+      "Mario": 1139,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1918,
+      "Vynsett": 769,
+      "Betsy": 1384,
+      "Cindra": 1424,
+      "Dash IO": 998,
+      "Gravy Bones": 1278,
+      "Oscilio GIAF": 1437,
+      "Hala": 1274,
+      "Jarl": 1473,
+      "Mario": 1139,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1919,
+      "Vynsett": 769,
+      "Betsy": 1384,
+      "Cindra": 1402,
+      "Dash IO": 998,
+      "Gravy Bones": 1300,
+      "Oscilio GIAF": 1437,
+      "Hala": 1274,
+      "Jarl": 1473,
+      "Mario": 1139,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1202
+    },
+    {
+      "match": 1920,
+      "Vynsett": 769,
+      "Betsy": 1392,
+      "Cindra": 1402,
+      "Dash IO": 998,
+      "Gravy Bones": 1300,
+      "Oscilio GIAF": 1437,
+      "Hala": 1274,
+      "Jarl": 1473,
+      "Mario": 1139,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1194
+    },
+    {
+      "match": 1921,
+      "Vynsett": 769,
+      "Betsy": 1392,
+      "Cindra": 1402,
+      "Dash IO": 998,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1415,
+      "Hala": 1274,
+      "Jarl": 1473,
+      "Mario": 1139,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1194
+    },
+    {
+      "match": 1922,
+      "Vynsett": 769,
+      "Betsy": 1392,
+      "Cindra": 1402,
+      "Dash IO": 988,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1415,
+      "Hala": 1274,
+      "Jarl": 1473,
+      "Mario": 1149,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1194
+    },
+    {
+      "match": 1923,
+      "Vynsett": 769,
+      "Betsy": 1392,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1415,
+      "Hala": 1274,
+      "Jarl": 1475,
+      "Mario": 1149,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1194
+    },
+    {
+      "match": 1924,
+      "Vynsett": 769,
+      "Betsy": 1371,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1415,
+      "Hala": 1295,
+      "Jarl": 1475,
+      "Mario": 1149,
+      "Kassai": 1524,
+      "Teklovossen": 902,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1194
+    },
+    {
+      "match": 1925,
+      "Vynsett": 769,
+      "Betsy": 1371,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1415,
+      "Hala": 1295,
+      "Jarl": 1476,
+      "Mario": 1149,
+      "Kassai": 1524,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1194
+    },
+    {
+      "match": 1926,
+      "Vynsett": 769,
+      "Betsy": 1357,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1429,
+      "Hala": 1295,
+      "Jarl": 1476,
+      "Mario": 1149,
+      "Kassai": 1524,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1194
+    },
+    {
+      "match": 1927,
+      "Vynsett": 768,
+      "Betsy": 1357,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1430,
+      "Hala": 1295,
+      "Jarl": 1476,
+      "Mario": 1149,
+      "Kassai": 1524,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1194
+    },
+    {
+      "match": 1928,
+      "Vynsett": 768,
+      "Betsy": 1357,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1430,
+      "Hala": 1295,
+      "Jarl": 1449,
+      "Mario": 1149,
+      "Kassai": 1524,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1221
+    },
+    {
+      "match": 1929,
+      "Vynsett": 765,
+      "Betsy": 1357,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1430,
+      "Hala": 1295,
+      "Jarl": 1449,
+      "Mario": 1152,
+      "Kassai": 1524,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1221
+    },
+    {
+      "match": 1930,
+      "Vynsett": 765,
+      "Betsy": 1357,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1430,
+      "Hala": 1295,
+      "Jarl": 1436,
+      "Mario": 1152,
+      "Kassai": 1537,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1221
+    },
+    {
+      "match": 1931,
+      "Vynsett": 764,
+      "Betsy": 1358,
+      "Cindra": 1402,
+      "Dash IO": 986,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1430,
+      "Hala": 1295,
+      "Jarl": 1436,
+      "Mario": 1152,
+      "Kassai": 1537,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1221
+    },
+    {
+      "match": 1932,
+      "Vynsett": 764,
+      "Betsy": 1361,
+      "Cindra": 1402,
+      "Dash IO": 983,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1430,
+      "Hala": 1295,
+      "Jarl": 1436,
+      "Mario": 1152,
+      "Kassai": 1537,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1221
+    },
+    {
+      "match": 1933,
+      "Vynsett": 764,
+      "Betsy": 1380,
+      "Cindra": 1402,
+      "Dash IO": 983,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1411,
+      "Hala": 1295,
+      "Jarl": 1436,
+      "Mario": 1152,
+      "Kassai": 1537,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1021,
+      "Marlinn": 1221
     }
   ]
 }
