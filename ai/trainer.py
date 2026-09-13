@@ -20,6 +20,7 @@ import threading
 import subprocess
 import uuid
 import random
+import math
 from collections import defaultdict
 import numpy as np
 import torch
@@ -113,6 +114,8 @@ class GPUTrainingOrchestrator:
         self.matchup_engine = RoundRobinMatchupEngine()
         self._extra: Dict[str, Any] = {}
         self.model: Optional[FaBPolicyValueNetwork] = None
+        self._active_procs: List[tuple] = []
+        self._proc_lock = threading.Lock()
 
         # Stats expostos ao dashboard (via polling)
         self.stats: Dict[str, Any] = {
@@ -168,14 +171,28 @@ class GPUTrainingOrchestrator:
             except Exception:
                 pass
 
+    @staticmethod
+    def _sanitize_for_json(obj: Any) -> Any:
+        """Substitui NaN e inf por 0.0 recursivamente para garantir conformidade JSON."""
+        if isinstance(obj, dict):
+            return {k: GPUTrainingOrchestrator._sanitize_for_json(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [GPUTrainingOrchestrator._sanitize_for_json(v) for v in obj]
+        elif isinstance(obj, float):
+            if math.isnan(obj) or math.isinf(obj):
+                return 0.0
+            return obj
+        return obj
+
     def save_metrics(self):
         """Salva métricas e checkpoints em disco."""
         os.makedirs(DATA_DIR, exist_ok=True)
         try:
+            clean_stats = self._sanitize_for_json(self.stats)
             with open(METRICS_FILE, "w", encoding="utf-8") as f:
-                json.dump(self.stats, f, indent=2, ensure_ascii=False)
-        except Exception:
-            pass
+                json.dump(clean_stats, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"[Treinador] Erro ao salvar métricas: {e}")
 
         # Salva o modelo e o buffer se existirem
         if self.model is not None:
@@ -188,6 +205,33 @@ class GPUTrainingOrchestrator:
     # Aliases privados para compatibilidade interna
     _load_metrics = load_metrics
     _save_metrics = save_metrics
+
+    # ── Controle de Processos e Encerramento ───────────────────────
+
+    def _kill_active_processes(self):
+        """Encerra imediatamente todos os subprocessos ativos de bots."""
+        with self._proc_lock:
+            for pair in self._active_procs:
+                for p in pair:
+                    try:
+                        if p.poll() is None:
+                            p.kill()
+                    except Exception:
+                        pass
+            self._active_procs.clear()
+
+    @staticmethod
+    def _kill_orphan_bots():
+        """Varre e finaliza quaisquer processos órfãos de bot_client.py."""
+        try:
+            subprocess.run(
+                ["pkill", "-9", "-f", "bot_client.py"],
+                timeout=2,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+        except Exception:
+            pass
 
     # ── Controle externo ──────────────────────────────────────────
 
@@ -203,11 +247,13 @@ class GPUTrainingOrchestrator:
         print(f"[Treinador] ▶ Iniciado | Dispositivo: {cfg['device']} | Batch: {cfg['batch_size']} | Workers: {cfg['num_workers']}")
 
     def stop(self):
-        """Sinaliza parada e aguarda a thread terminar (até 3s)."""
+        """Sinaliza parada e encerra imediatamente todos os subprocessos ativos."""
         self.is_running = False
+        self._kill_active_processes()
+        self._kill_orphan_bots()
         if self.thread and self.thread.is_alive():
-            self.thread.join(timeout=3.0)
-        print("[Treinador] ⏸ Treinamento pausado.")
+            self.thread.join(timeout=1.5)
+        print("[Treinador] ⏸ Treinamento pausado e processos limpos.")
 
     # ── Loop principal ────────────────────────────────────────────
 
@@ -252,7 +298,8 @@ class GPUTrainingOrchestrator:
             decks_pool = training_decks or self._get_all_decks()
 
             batch_rooms: List[tuple] = []
-            active_procs: List[tuple] = []
+            with self._proc_lock:
+                self._active_procs = []
 
             mcts_sims_val = self.config.get("mcts_sims", 25)
             dev_val = self.config.get("device", "cuda:0")
@@ -287,10 +334,15 @@ class GPUTrainingOrchestrator:
                     stderr=subprocess.DEVNULL,
                     preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
                 )
-                active_procs.append((p1, p2))
+                with self._proc_lock:
+                    self._active_procs.append((p1, p2))
                 batch_rooms.append((room_id, d1, d2))
                 # Espaçamento suave para não sobrecarregar o Apache/PHP
                 time.sleep(0.3)
+
+            if not self.is_running:
+                self._kill_active_processes()
+                break
 
             if batch_rooms:
                 r0 = batch_rooms[0]
@@ -301,17 +353,23 @@ class GPUTrainingOrchestrator:
             timeout = SETTINGS.game_timeout_seconds
             deadline = time.time() + timeout
             while time.time() < deadline and self.is_running:
-                if all(p1.poll() is not None and p2.poll() is not None
-                       for p1, p2 in active_procs):
+                with self._proc_lock:
+                    procs_snapshot = list(self._active_procs)
+                if procs_snapshot and all(p1.poll() is not None and p2.poll() is not None
+                                          for p1, p2 in procs_snapshot):
                     break
                 time.sleep(0.3)
 
-            for p1, p2 in active_procs:
-                if p1.poll() is None: p1.terminate()
-                if p2.poll() is None: p2.terminate()
+            if not self.is_running:
+                self._kill_active_processes()
+                break
 
-            self.stats["total_games"] += len(active_procs)
-            games_since_save += len(active_procs)
+            # Garante que nenhum processo deste lote continue vivo
+            num_finished = len(self._active_procs)
+            self._kill_active_processes()
+
+            self.stats["total_games"] += num_finished
+            games_since_save += num_finished
 
             # ── 3. Atualizar ELO com resultados das partidas ────────
             for room_id, d1_slug, d2_slug in batch_rooms:
@@ -410,16 +468,25 @@ class GPUTrainingOrchestrator:
         scaler.update()
 
         with torch.no_grad():
-            probs   = F.softmax(policy_logits, dim=-1)
-            entropy = -(probs * (probs + 1e-9).log()).sum(dim=-1).mean().item() / np.log(2)
-            val_mean = value_preds.mean().item()
+            probs = F.softmax(policy_logits, dim=-1)
+            log_p = F.log_softmax(policy_logits, dim=-1)
+            entropy_elem = torch.where(probs > 0, -probs * log_p, torch.zeros_like(probs))
+            raw_entropy = entropy_elem.sum(dim=-1).mean().item() / float(np.log(2))
+            raw_val_mean = value_preds.mean().item()
+
+        def _safe_float(v: Any, default: float = 0.0) -> float:
+            try:
+                val = float(v)
+                return default if (math.isnan(val) or math.isinf(val)) else val
+            except Exception:
+                return default
 
         return (
-            float(loss_policy.item()),
-            float(loss_value.item()),
-            float(total_loss.item()),
-            entropy,
-            val_mean,
+            _safe_float(loss_policy.item()),
+            _safe_float(loss_value.item()),
+            _safe_float(total_loss.item()),
+            _safe_float(raw_entropy),
+            _safe_float(raw_val_mean),
         )
 
     def _next_deck_pair(self, pool: List[str]):

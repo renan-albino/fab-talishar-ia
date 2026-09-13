@@ -962,8 +962,9 @@ elif active_tab == MENU_OPTIONS[2]:
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
         else:
             if st.button("🛑 Parar Treinamento com GPU", type="secondary", use_container_width=True):
-                orchestrator.stop()
-                st.toast("Treinamento finalizado.", icon="🛑")
+                with st.spinner("Finalizando partidas ativas e liberando GPU/CPU..."):
+                    orchestrator.stop()
+                st.toast("Treinamento pausado com sucesso.", icon="🛑")
                 st.warning("Treinador pausado com sucesso!")
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
@@ -1007,9 +1008,27 @@ elif active_tab == MENU_OPTIONS[2]:
         # Histórico de Loss
         history = orchestrator.stats.get("history", [])
         if len(history) > 1:
-            df_hist = pd.DataFrame(history)[["epoch", "policy_loss", "value_loss", "total_loss"]].set_index("epoch")
-            df_hist.columns = ["Policy Loss", "Value MSE Loss", "Total Loss"]
-            st.line_chart(df_hist)
+            try:
+                df_raw = pd.DataFrame(history)
+                chart_cols = [c for c in ["epoch", "policy_loss", "value_loss", "total_loss"] if c in df_raw.columns]
+                if len(chart_cols) >= 2 and "epoch" in chart_cols:
+                    df_hist = df_raw[chart_cols].dropna(subset=["epoch"])
+                    df_hist = df_hist.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+                    df_hist = df_hist.drop_duplicates(subset=["epoch"]).sort_values("epoch")
+                    if len(df_hist) > 100:
+                        step = max(1, len(df_hist) // 100)
+                        df_hist = pd.concat([df_hist.iloc[::step], df_hist.iloc[[-1]]]).drop_duplicates(subset=["epoch"])
+                    df_hist = df_hist.set_index("epoch")
+                    col_map = {
+                        "policy_loss": "Policy Loss",
+                        "value_loss": "Value MSE Loss",
+                        "total_loss": "Total Loss",
+                    }
+                    df_hist = df_hist.rename(columns=col_map)
+                    if not df_hist.empty and df_hist.shape[0] > 1:
+                        st.line_chart(df_hist)
+            except Exception as e:
+                st.caption(f"Aguardando dados numéricos para o gráfico de perda ({e}).")
 
         # Resumo da Última Partida Concluída
         st.markdown("#### 📜 Resumo da Última Partida de Treino")
