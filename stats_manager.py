@@ -19,6 +19,10 @@ CANONICAL_DECK_NAMES = {
     "gravy bones": "Gravy Bones",
     "marlynn": "Marlinn",
     "marlinn": "Marlinn",
+    "marlynn_treasure_hunter": "Marlinn",
+    "marlynn treasure hunter": "Marlinn",
+    "marlinn_treasure_hunter": "Marlinn",
+    "marlinn treasure hunter": "Marlinn",
 }
 
 def canonicalize_deck_name(name: str) -> str:
