@@ -16,16 +16,18 @@ FRONTEND_URL = "http://localhost:3000"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PYTHON_BIN = os.path.join(BASE_DIR, "venv", "bin", "python")
 
-def _is_port_open(port: int, host: str = "127.0.0.1", timeout: float = 0.15) -> bool:
+def _is_port_open(port: int, host: str = "127.0.0.1", timeout: float = 0.05) -> bool:
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True
     except OSError:
         return False
 
-def is_backend_running() -> bool:
+def is_backend_running(deep: bool = False) -> bool:
     if not _is_port_open(8080):
         return False
+    if not deep:
+        return True
     try:
         r = requests.get(f"{BACKEND_URL}/APIs/GetGameList.php", timeout=0.5)
         return r.status_code == 200
@@ -33,9 +35,11 @@ def is_backend_running() -> bool:
         logger.warning(f"Falha ao verificar backend: {e}")
         return False
 
-def is_frontend_running() -> bool:
+def is_frontend_running(deep: bool = False) -> bool:
     if not _is_port_open(3000):
         return False
+    if not deep:
+        return True
     try:
         r = requests.get(FRONTEND_URL, timeout=0.5)
         return r.status_code == 200
@@ -49,7 +53,7 @@ def start_backend() -> bool:
         cmd = "docker compose" if subprocess.run(["which", "docker-compose"], capture_output=True).returncode != 0 else "docker-compose"
         subprocess.run(["bash", "-c", f"cd {talishar_dir} && ln -sfn ../decks decks && {cmd} up -d"], check=True)
         time.sleep(3)
-        return is_backend_running()
+        return is_backend_running(deep=True)
     except Exception as e:
         print(f"Erro ao iniciar backend: {e}")
         return False
@@ -70,9 +74,9 @@ def start_frontend() -> bool:
         )
         for _ in range(12):
             time.sleep(1)
-            if is_frontend_running():
+            if is_frontend_running(deep=True):
                 return True
-        return is_frontend_running()
+        return is_frontend_running(deep=True)
     except Exception as e:
         print(f"Erro ao iniciar frontend: {e}")
 import threading

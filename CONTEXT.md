@@ -39,6 +39,8 @@ Glossary of domain terms used in this project. AI agents and contributors must u
 - **Void Equipment Pruning**: Poda estrita em `bot_client.py` que impede que equipamentos de prevenção ou reação (*Boots of Omniward*, *Ward*, *Barrier*, *Prevent*, *Spellvoid*) sejam ativados ou sacrificados no vazio quando não há dano físico ou arcano ativo na cadeia de combate.
 - **Flexible Block Conversion**: Mecanismo em `ai/policy_engine.py` que avalia se a mão possui baixa eficiência defensiva (média de bloco $\le 2.0$) e se o plano de turno permite absorver dano (`can_absorb_damage`), evitando queimar 2 ou mais cartas da mão em bloqueios ineficientes quando é vantajoso pivotar ofensivamente.
 - **Human ELO Feedback System**: Sistema de telemetria e pontuação ponderada em `stats_manager.py` e `dashboard.py` que identifica partidas de treino contra jogadores humanos, atribuindo peso diferenciado para aprendizado e exibindo métricas dedicadas para pós-análise e pruning de estratégias de heróis.
+- **Invalid Match Filtering**: Mecanismo em `bot_client.py` e `stats_manager.py` que detecta e descarta partidas inválidas (empates sem dano trocado $< 4$ HP e bots inertes / *Punching Bag* onde o perdedor não desferiu dano em $\ge 6$ turnos), impedindo contaminação do `ReplayBuffer` e distorções no rating ELO e taxas de vitória dos decks.
+- **Punching Bag / Inert Stall**: Cenário de anomalia ou falha técnica onde um bot perdedor não desfere ataques ou dano ao longo de múltiplos turnos enquanto o vencedor permanece intacto (100% HP). Essas partidas são marcadas como anuladas para manter a integridade dos dados de treinamento e do leaderboard.
 
 ## Domain: Architecture
 

@@ -5,25 +5,66 @@ import json
 import os
 import time
 import pandas as pd
-import torch
 from deck_parser import parse_deck_text, save_deck_to_workspace, list_saved_decks, set_active_deck, delete_saved_deck, update_saved_deck, validate_deck_against_db
 from stats_manager import get_stats_data, reset_stats, delete_deck_stat, sync_training_matches
 from tournament_manager import TournamentManager
-from ai.trainer import GPUTrainingOrchestrator
 from config.settings import SETTINGS
 import frontend_manager
 
 st.set_page_config(page_title="FaB AI Master - GPU Deep RL", layout="wide", initial_sidebar_state="expanded")
-orchestrator = GPUTrainingOrchestrator()
+
+@st.cache_resource
+def get_gpu_info():
+    """Detecta GPU via nvidia-smi em ~50ms sem importar torch. Fallback para torch se necessário."""
+    import shutil
+    if shutil.which("nvidia-smi"):
+        try:
+            res = subprocess.run(
+                ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=0.8
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                line = res.stdout.strip().splitlines()[0]
+                parts = [p.strip() for p in line.split(",")]
+                name = parts[0]
+                vram_mb = float(parts[1]) if len(parts) > 1 else 0.0
+                return True, name, round(vram_mb / 1024.0, 1)
+        except Exception:
+            pass
+    try:
+        import torch
+        if torch.cuda.is_available():
+            vram = round(torch.cuda.get_device_properties(0).total_memory / (1024**3), 1)
+            return True, torch.cuda.get_device_name(0), vram
+    except Exception:
+        pass
+    return False, "CPU", 0.0
+
+@st.cache_resource
+def get_orchestrator():
+    """Carrega o GPUTrainingOrchestrator de forma lazy apenas quando a aba de treino for acessada."""
+    from ai.trainer import GPUTrainingOrchestrator
+    return GPUTrainingOrchestrator()
+
+@st.cache_data(ttl=2)
+def get_total_training_games() -> int:
+    """Lê rapidamente o total de partidas do arquivo de métricas sem instanciar o orquestrador."""
+    metrics_file = os.path.join("data", "training_metrics.json")
+    if os.path.exists(metrics_file):
+        try:
+            with open(metrics_file, "r") as mf:
+                return json.load(mf).get("total_games", 0)
+        except Exception:
+            pass
+    return 0
 
 # Título Principal com Badge de GPU e Status do Frontend
-gpu_available = torch.cuda.is_available()
-gpu_name = torch.cuda.get_device_name(0) if gpu_available else "CPU"
+gpu_available, gpu_name, gpu_vram = get_gpu_info()
 
 # Helpers de Cache de Alta Performance (Eliminam gargalos de I/O em reruns)
 @st.cache_data(ttl=4)
 def get_cached_services_status():
-    return frontend_manager.is_frontend_running(), frontend_manager.is_backend_running()
+    return frontend_manager.is_frontend_running(deep=False), frontend_manager.is_backend_running(deep=False)
 
 @st.cache_data(ttl=5)
 def get_cached_saved_decks():
@@ -114,6 +155,163 @@ def get_fast_line_count(filepath: str) -> int:
     except Exception:
         return 0
 
+def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> dict:
+    """
+    Calcula parâmetros de treinamento sugeridos:
+      - mode='balanced': ~75-80% de carga segura (permite uso normal do PC, navegador, vídeos, sem engasgos).
+      - mode='turbo': ~95% de carga máxima (ideal para treino noturno, ausente ou remoto, extraindo todo o potencial do hardware).
+    """
+    is_gpu = "cuda" in device_str.lower() and gpu_available
+    try:
+        from config.settings import SETTINGS
+        vram_gb = gpu_vram if gpu_vram > 0 else getattr(SETTINGS, "vram_gb", 0.0)
+        cpu_cores = getattr(SETTINGS, "cpu_logical", 4)
+        gpu_name_str = gpu_name
+    except Exception:
+        vram_gb = gpu_vram if gpu_available else 0.0
+        cpu_cores = os.cpu_count() or 4
+        gpu_name_str = gpu_name
+
+    is_turbo = (mode == "turbo")
+
+    if not is_gpu:
+        if is_turbo:
+            turbo_workers = max(2, min(5, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"CPU ({cpu_cores} threads)",
+                "mode_name": "🔥 Modo Turbo CPU (~90% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 256,
+                "mcts_sims": 25,
+                "save_interval": 25,
+                "use_fp16": False,
+                "buffer_capacity": 100000,
+                "description": f"🔥 Modo Turbo CPU (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • MCTS 25 • Rendimento máximo sem travar o sistema."
+            }
+        else:
+            safe_workers = max(1, min(2, (cpu_cores - 2) // 4))
+            return {
+                "device_label": f"CPU ({cpu_cores} threads)",
+                "mode_name": "⚖️ Modo Equilibrado CPU (~50% Carga)",
+                "workers": safe_workers,
+                "batch_size": 128,
+                "mcts_sims": 15,
+                "save_interval": 15,
+                "use_fp16": False,
+                "buffer_capacity": 50000,
+                "description": f"⚖️ Modo CPU Seguro (~50% carga) • {safe_workers} workers ({safe_workers*2} bots) • MCTS 15 • Sistema 100% livre para uso normal do PC."
+            }
+
+    # Perfil para GPU calibrado por faixa de VRAM:
+    if vram_gb <= 6.5:
+        if is_turbo:
+            turbo_workers = max(2, min(5, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~90% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 512,
+                "mcts_sims": 45,
+                "save_interval": 30,
+                "use_fp16": True,
+                "buffer_capacity": 250000,
+                "description": f"🔥 Turbo Máximo (~90% GPU/CPU) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 512 (~5.0 GB VRAM) • MCTS 45 • Máxima velocidade para treino noturno ou remoto sem travar o webserver."
+            }
+        else:
+            safe_workers = max(1, min(3, (cpu_cores - 2) // 3))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~65% Carga)",
+                "workers": safe_workers,
+                "batch_size": 256,
+                "mcts_sims": 25,
+                "save_interval": 20,
+                "use_fp16": True,
+                "buffer_capacity": 100000,
+                "description": f"⚖️ {gpu_name} (~65% carga) • {safe_workers} workers ({safe_workers*2} bots) • Batch 256 • ~4 GB VRAM e 6+ threads livres para uso geral do PC."
+            }
+    elif vram_gb <= 12.5:
+        if is_turbo:
+            turbo_workers = max(3, min(7, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~90% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 1024,
+                "mcts_sims": 60,
+                "save_interval": 35,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"🔥 Turbo Máximo (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 1024 • MCTS 60 • Treinamento de alta densidade sem travas."
+            }
+        else:
+            safe_workers = max(2, min(4, (cpu_cores - 2) // 3))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~70% Carga)",
+                "workers": safe_workers,
+                "batch_size": 512,
+                "mcts_sims": 35,
+                "save_interval": 25,
+                "use_fp16": True,
+                "buffer_capacity": 250000,
+                "description": f"⚖️ {gpu_name} (~70% carga) • {safe_workers} workers ({safe_workers*2} bots) • Batch 512 • Excelente velocidade com folga de sistema."
+            }
+    elif vram_gb <= 20.0:
+        if is_turbo:
+            turbo_workers = max(6, min(18, cpu_cores - 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 2048,
+                "mcts_sims": 100,
+                "save_interval": 40,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 2048 • MCTS 100 • Rendimento industrial para 16 GB de VRAM."
+            }
+        else:
+            safe_workers = max(2, min(8, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
+                "workers": safe_workers,
+                "batch_size": 1024,
+                "mcts_sims": 60,
+                "save_interval": 30,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"⚖️ {gpu_name} (~80% carga) • {safe_workers} workers • Batch 1024 • Alto rendimento com folga para multitarefa."
+            }
+    else:
+        if is_turbo:
+            turbo_workers = max(8, min(24, cpu_cores - 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
+                "workers": turbo_workers,
+                "batch_size": 4096,
+                "mcts_sims": 150,
+                "save_interval": 50,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 4096 • MCTS 150 • Supercomputação para Alpha-Level AI."
+            }
+        else:
+            safe_workers = max(4, min(12, (cpu_cores - 2) // 2))
+            return {
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
+                "workers": safe_workers,
+                "batch_size": 2048,
+                "mcts_sims": 100,
+                "save_interval": 40,
+                "use_fp16": True,
+                "buffer_capacity": 500000,
+                "description": f"⚖️ {gpu_name} (~80% carga) • {safe_workers} workers • Batch 2048 • Capacidade extrema sem travar o desktop."
+            }
+
 fe_running, be_running = get_cached_services_status()
 
 col_title1, col_title2, col_title3 = st.columns([3, 1, 1])
@@ -136,8 +334,8 @@ with col_title3:
 saved_decks = get_cached_saved_decks()
 deck_options = {f"{d.get('name', d.get('slug'))} ({str(d.get('format', 'blitz')).upper()} - {d.get('total_cards', 0)} cartas)": d.get('slug') for d in saved_decks}
 
-# Abas Principais da Aplicação
-tab_play, tab_arena, tab_gpu, tab_tourney, tab_decks, tab_stats, tab_ismcts = st.tabs([
+# Menu Principal de Navegação (Carregamento Lazy Instantâneo)
+MENU_OPTIONS = [
     "🎮 Jogar no Talishar (Humano vs Bot)",
     "⚔️ Arena de Bots & Simulação",
     "⚡ Treinamento com GPU (Deep RL)",
@@ -145,12 +343,21 @@ tab_play, tab_arena, tab_gpu, tab_tourney, tab_decks, tab_stats, tab_ismcts = st
     "📦 Gerenciador & Editor de Decks",
     "📈 Analytics & ELO por Deck",
     "🌐 Telemetria ISMCTS"
-])
+]
+
+active_tab = st.segmented_control(
+    "Navegação Principal",
+    MENU_OPTIONS,
+    default=MENU_OPTIONS[0],
+    label_visibility="collapsed",
+    width="stretch",
+    key="dashboard_active_tab"
+) or MENU_OPTIONS[0]
 
 # ==============================================================================
 # ABA 1: JOGAR NO TALISHAR (HUMANO VS BOT AI)
 # ==============================================================================
-with tab_play:
+if active_tab == MENU_OPTIONS[0]:
     st.subheader("🎮 Duelo Humano vs Bot AI Master no Talishar")
     st.caption("Jogue diretamente no navegador contra a Rede Neural Treinada (MCTS + PyTorch). Seus decks do workspace são automaticamente listados como favoritos no Talishar!")
 
@@ -320,9 +527,9 @@ with tab_play:
         st.info("Nenhum deck salvo no workspace.")
 
 # ==============================================================================
-# ABA 1: ARENA DE COMBATE & TABULEIRO VISUAL
+# ABA 2: ARENA DE COMBATE & TABULEIRO VISUAL
 # ==============================================================================
-with tab_arena:
+elif active_tab == MENU_OPTIONS[1]:
     st.subheader("⚔️ Lançador de Partidas de Alta Velocidade")
     st.caption("A Arena utiliza a IA com Rede Neural PyTorch / MCTS para guiar as decisões táticas de combate.")
     col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 2, 1])
@@ -612,170 +819,10 @@ with tab_arena:
     render_arena_board()
 
 # ==============================================================================
-# ABA 2: TREINAMENTO COM GPU (DEEP RL + ROTAÇÃO DE DECKS)
+# ABA 3: TREINAMENTO COM GPU (DEEP RL + ROTAÇÃO DE DECKS)
 # ==============================================================================
-def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> dict:
-    """
-    Calcula parâmetros de treinamento sugeridos:
-      - mode='balanced': ~75-80% de carga segura (permite uso normal do PC, navegador, vídeos, sem engasgos).
-      - mode='turbo': ~95% de carga máxima (ideal para treino noturno, ausente ou remoto, extraindo todo o potencial do hardware).
-    """
-    is_gpu = "cuda" in device_str.lower() and torch.cuda.is_available()
-    try:
-        from config.settings import SETTINGS
-        vram_gb = getattr(SETTINGS, "vram_gb", 0.0)
-        cpu_cores = getattr(SETTINGS, "cpu_logical", 4)
-        gpu_name = getattr(SETTINGS, "gpu_name", "GPU")
-    except Exception:
-        vram_gb = 6.0 if torch.cuda.is_available() else 0.0
-        cpu_cores = os.cpu_count() or 4
-        gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "GPU"
-
-    is_turbo = (mode == "turbo")
-
-    if not is_gpu:
-        if is_turbo:
-            turbo_workers = max(2, min(5, (cpu_cores - 2) // 2))
-            return {
-                "device_label": f"CPU ({cpu_cores} threads)",
-                "mode_name": "🔥 Modo Turbo CPU (~90% Carga)",
-                "workers": turbo_workers,
-                "batch_size": 256,
-                "mcts_sims": 25,
-                "save_interval": 25,
-                "use_fp16": False,
-                "buffer_capacity": 100000,
-                "description": f"🔥 Modo Turbo CPU (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • MCTS 25 • Rendimento máximo sem travar o sistema."
-            }
-        else:
-            safe_workers = max(1, min(2, (cpu_cores - 2) // 4))
-            return {
-                "device_label": f"CPU ({cpu_cores} threads)",
-                "mode_name": "⚖️ Modo Equilibrado CPU (~50% Carga)",
-                "workers": safe_workers,
-                "batch_size": 128,
-                "mcts_sims": 15,
-                "save_interval": 15,
-                "use_fp16": False,
-                "buffer_capacity": 50000,
-                "description": f"⚖️ Modo CPU Seguro (~50% carga) • {safe_workers} workers ({safe_workers*2} bots) • MCTS 15 • Sistema 100% livre para uso normal do PC."
-            }
-
-    # Perfil para GPU calibrado por faixa de VRAM:
-    if vram_gb <= 6.5:
-        # Ex: GTX 1660 Super (6.4 GB VRAM)
-        if is_turbo:
-            turbo_workers = max(2, min(5, (cpu_cores - 2) // 2))
-            return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "🔥 Modo Turbo GPU (~90% Carga)",
-                "workers": turbo_workers,
-                "batch_size": 512,
-                "mcts_sims": 45,
-                "save_interval": 30,
-                "use_fp16": True,
-                "buffer_capacity": 250000,
-                "description": f"🔥 Turbo Máximo (~90% GPU/CPU) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 512 (~5.0 GB VRAM) • MCTS 45 • Máxima velocidade para treino noturno ou remoto sem travar o webserver."
-            }
-        else:
-            safe_workers = max(1, min(3, (cpu_cores - 2) // 3))
-            return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "⚖️ Modo Equilibrado GPU (~65% Carga)",
-                "workers": safe_workers,
-                "batch_size": 256,
-                "mcts_sims": 25,
-                "save_interval": 20,
-                "use_fp16": True,
-                "buffer_capacity": 100000,
-                "description": f"⚖️ {gpu_name} (~65% carga) • {safe_workers} workers ({safe_workers*2} bots) • Batch 256 • ~4 GB VRAM e 6+ threads livres para uso geral do PC."
-            }
-    elif vram_gb <= 12.5:
-        # Ex: RTX 3060, RTX 4060 Ti, RTX 4070
-        if is_turbo:
-            turbo_workers = max(3, min(7, (cpu_cores - 2) // 2))
-            return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "🔥 Modo Turbo GPU (~90% Carga)",
-                "workers": turbo_workers,
-                "batch_size": 1024,
-                "mcts_sims": 60,
-                "save_interval": 35,
-                "use_fp16": True,
-                "buffer_capacity": 500000,
-                "description": f"🔥 Turbo Máximo (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 1024 • MCTS 60 • Treinamento de alta densidade sem travas."
-            }
-        else:
-            safe_workers = max(2, min(4, (cpu_cores - 2) // 3))
-            return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "⚖️ Modo Equilibrado GPU (~70% Carga)",
-                "workers": safe_workers,
-                "batch_size": 512,
-                "mcts_sims": 35,
-                "save_interval": 25,
-                "use_fp16": True,
-                "buffer_capacity": 250000,
-                "description": f"⚖️ {gpu_name} (~70% carga) • {safe_workers} workers ({safe_workers*2} bots) • Batch 512 • Excelente velocidade com folga de sistema."
-            }
-    elif vram_gb <= 20.0:
-        # Ex: RX 9070 XT 16GB, RTX 4080 16GB
-        if is_turbo:
-            turbo_workers = max(6, min(18, cpu_cores - 2))
-            return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
-                "workers": turbo_workers,
-                "batch_size": 2048,
-                "mcts_sims": 100,
-                "save_interval": 40,
-                "use_fp16": True,
-                "buffer_capacity": 500000,
-                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 2048 • MCTS 100 • Rendimento industrial para 16 GB de VRAM."
-            }
-        else:
-            safe_workers = max(2, min(8, (cpu_cores - 2) // 2))
-            return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
-                "workers": safe_workers,
-                "batch_size": 1024,
-                "mcts_sims": 60,
-                "save_interval": 30,
-                "use_fp16": True,
-                "buffer_capacity": 500000,
-                "description": f"⚖️ {gpu_name} (~80% carga) • {safe_workers} workers • Batch 1024 • Alto rendimento com folga para multitarefa."
-            }
-    else:
-        # Ex: RTX 5090 32GB, RTX 4090 24GB
-        if is_turbo:
-            turbo_workers = max(8, min(24, cpu_cores - 2))
-            return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
-                "workers": turbo_workers,
-                "batch_size": 4096,
-                "mcts_sims": 150,
-                "save_interval": 50,
-                "use_fp16": True,
-                "buffer_capacity": 500000,
-                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 4096 • MCTS 150 • Supercomputação para Alpha-Level AI."
-            }
-        else:
-            safe_workers = max(4, min(12, (cpu_cores - 2) // 2))
-            return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
-                "workers": safe_workers,
-                "batch_size": 2048,
-                "mcts_sims": 100,
-                "save_interval": 40,
-                "use_fp16": True,
-                "buffer_capacity": 500000,
-                "description": f"⚖️ {gpu_name} (~80% carga) • {safe_workers} workers • Batch 2048 • Capacidade extrema sem travar o desktop."
-            }
-
-with tab_gpu:
+elif active_tab == MENU_OPTIONS[2]:
+    orchestrator = get_orchestrator()
     st.subheader("⚡ Painel de Treinamento Autônomo com GPU")
     st.markdown("Acelere o aprendizado da rede neural com **Self-Play em lote**, rotação dinâmica de decks e amostragem na GPU.")
 
@@ -981,9 +1028,9 @@ with tab_gpu:
     render_gpu_live_telemetry()
 
 # ==============================================================================
-# ABA 3: TORNEIOS CUSTOMIZADOS
+# ABA 4: TORNEIOS CUSTOMIZADOS
 # ==============================================================================
-with tab_tourney:
+elif active_tab == MENU_OPTIONS[3]:
     st.subheader("🏆 Organizador de Torneios Customizados")
     st.markdown("Selecione os decks aprovados que você deseja incluir no torneio.")
 
@@ -1045,9 +1092,9 @@ with tab_tourney:
         except Exception: pass
 
 # ==============================================================================
-# ABA 4: GERENCIADOR & EDITOR DE DECKS
+# ABA 5: GERENCIADOR & EDITOR DE DECKS
 # ==============================================================================
-with tab_decks:
+elif active_tab == MENU_OPTIONS[4]:
     st.subheader("📦 Gerenciador & Editor de Decks (FaBrary / Workspace)")
     tab_list, tab_edit_deck, tab_import = st.tabs(["📚 Decks Salvos & Exclusão", "✏️ Editor de Deck", "📥 Importar do FaBrary"])
 
@@ -1180,9 +1227,9 @@ with tab_decks:
                 st.info("""💡 **Validador Estrito do Talishar:**\n- Validação automática de 10.000+ cartas suportadas no motor\n- Reconhecimento de Hero e slots de equipamentos (Head, Chest, Arms, Legs, Weapons)\n- Trava de importação se houver cartas não suportadas\n- Preservação do texto para correção imediata""")
 
 # ==============================================================================
-# ABA 5: ANALYTICS & ELO POR DECK
+# ABA 6: ANALYTICS & ELO POR DECK
 # ==============================================================================
-with tab_stats:
+elif active_tab == MENU_OPTIONS[5]:
     col_st_hdr1, col_st_hdr2 = st.columns([3, 1])
     with col_st_hdr1:
         st.subheader("📈 Leaderboard de ELO & Desempenho por Deck")
@@ -1198,15 +1245,7 @@ with tab_stats:
         tot_m = stats_data.get("total_matches", 0)
 
         # Obtém o total de partidas globais do motor (ex: 1.217)
-        total_training_games = orchestrator.stats.get("total_games", 0)
-        if not total_training_games:
-            metrics_file = os.path.join("data", "training_metrics.json")
-            if os.path.exists(metrics_file):
-                try:
-                    with open(metrics_file, "r") as mf:
-                        total_training_games = json.load(mf).get("total_games", 0)
-                except Exception:
-                    pass
+        total_training_games = get_total_training_games()
         total_training_games = max(total_training_games, tot_m)
 
         if deck_stats:
@@ -1300,12 +1339,26 @@ with tab_stats:
         st.markdown("#### 📉 Evolução do Rating ELO por Deck")
         deck_elo_hist = stats_data.get("deck_elo_history", [])
         if len(deck_elo_hist) > 1:
-            df_deck_elo = pd.DataFrame(deck_elo_hist).set_index("match")
+            if len(deck_elo_hist) > 150:
+                step = len(deck_elo_hist) // 150
+                sampled_deck_elo = deck_elo_hist[::step]
+                if deck_elo_hist[-1] != sampled_deck_elo[-1]:
+                    sampled_deck_elo.append(deck_elo_hist[-1])
+            else:
+                sampled_deck_elo = deck_elo_hist
+            df_deck_elo = pd.DataFrame(sampled_deck_elo).set_index("match")
             st.line_chart(df_deck_elo)
         else:
             elo_hist = stats_data.get("elo_history", [])
             if len(elo_hist) > 1:
-                df_elo = pd.DataFrame(elo_hist)[["match", "bot1_elo", "bot2_elo"]].set_index("match")
+                if len(elo_hist) > 150:
+                    step = len(elo_hist) // 150
+                    sampled_elo = elo_hist[::step]
+                    if elo_hist[-1] != sampled_elo[-1]:
+                        sampled_elo.append(elo_hist[-1])
+                else:
+                    sampled_elo = elo_hist
+                df_elo = pd.DataFrame(sampled_elo)[["match", "bot1_elo", "bot2_elo"]].set_index("match")
                 df_elo.columns = ["Bot 1 (Host)", "Bot 2 (Join)"]
                 st.line_chart(df_elo)
 
@@ -1315,15 +1368,7 @@ with tab_stats:
     with col_btn1:
         stats_data = get_cached_stats_data()
         tot_m = stats_data.get("total_matches", 0)
-        total_training_games = orchestrator.stats.get("total_games", 0)
-        if not total_training_games:
-            metrics_file = os.path.join("data", "training_metrics.json")
-            if os.path.exists(metrics_file):
-                try:
-                    with open(metrics_file, "r") as mf:
-                        total_training_games = json.load(mf).get("total_games", 0)
-                except Exception:
-                    pass
+        total_training_games = get_total_training_games()
         if total_training_games > tot_m:
             if st.button(f"⚡ Sincronizar Base ELO com Todas as Partidas do Treino ({total_training_games:,})", use_container_width=True):
                 sync_training_matches(total_training_games)
@@ -1340,7 +1385,7 @@ with tab_stats:
 # ==============================================================================
 # ABA 7: TELEMETRIA ISMCTS EM TEMPO REAL
 # ==============================================================================
-with tab_ismcts:
+elif active_tab == MENU_OPTIONS[6]:
     st.subheader("🌐 Telemetria e Diagnóstico ISMCTS (Information Set MCTS)")
     st.caption("Acompanhe em tempo real os mundos determinizados amostrados pela IA, distribuição de confiança e votos de visitas por fase.")
 

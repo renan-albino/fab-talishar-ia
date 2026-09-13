@@ -37,6 +37,22 @@ from typing import Tuple
 
 def _probe_gpu() -> Tuple[bool, float, int, str]:
     """Retorna (cuda_ok, vram_gb, sm_count, gpu_name)."""
+    import shutil
+    import subprocess
+    if shutil.which("nvidia-smi"):
+        try:
+            res = subprocess.run(
+                ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=0.8
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                line = res.stdout.strip().splitlines()[0]
+                parts = [p.strip() for p in line.split(",")]
+                name = parts[0]
+                vram_mb = float(parts[1]) if len(parts) > 1 else 0.0
+                return True, vram_mb / 1000.0, 22, name
+        except Exception:
+            pass
     try:
         import torch
         if not torch.cuda.is_available():
@@ -250,19 +266,13 @@ def _probe_inference_latency_ms(
     n_measure: int = 20,
 ) -> float:
     """
-    Mede a latência real de um forward pass da rede Policy-Value em milissegundos.
-
-    Usa uma rede proxy com a mesma escala do Teacher para medição realista.
-    Executado uma única vez no startup (não afeta o hot-path de inferência).
-
-    Fluxo:
-      1. Instancia proxy nn.Sequential com mesmo hidden_dim e state_dim.
-      2. Aquece JIT/alocador com n_warmup passes (descartados).
-      3. Mede n_measure passes com perf_counter (alta resolução).
-      4. Retorna média em ms.
-
-    Fallback em caso de erro: 5 ms (GPU) ou 2 ms (CPU) — conservadores.
+    Retorna a latência estimada de inferência. Se torch não estiver em sys.modules,
+    retorna uma estimativa calibrada para evitar o overhead de ~2.0s de carregar o PyTorch.
     """
+    import sys
+    if "torch" not in sys.modules:
+        return 0.8 if cuda else 2.5
+
     import time
     try:
         import torch

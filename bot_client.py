@@ -37,6 +37,12 @@ class FabBotClient:
         )
         self.metrics = {"health": 20, "opp_health": 20, "card_advantage": 0, "status": "Iniciando", "phase": "pre-game"}
         self.trajectory = []
+        self.attacks_made = 0
+        self.damage_dealt = 0
+        self.damage_taken = 0
+        self.initial_my_health = None
+        self.initial_opp_health = None
+        self.execution_exceptions_count = 0
         self.clean_deck = os.path.basename(self.deck_url).replace(".json", "") if self.deck_url else "default_deck"
         
         # Identificar nome do Herói ou Deck
@@ -323,6 +329,7 @@ class FabBotClient:
                     self.log(f"[ALERTA] Servidor retornou HTTP {res_state.status_code}")
                 
             except Exception as e:
+                self.execution_exceptions_count += 1
                 self.log(f"[ERRO DE CONEXÃO] {e}")
 
             time.sleep(0.005)
@@ -825,6 +832,22 @@ class FabBotClient:
         except (ValueError, TypeError):
             opp_h = 40
             
+        if self.initial_my_health is None:
+            self.initial_my_health = my_h
+        if self.initial_opp_health is None:
+            self.initial_opp_health = opp_h
+
+        if not hasattr(self, "_prev_tracked_opp_h"):
+            self._prev_tracked_opp_h = opp_h
+            self._prev_tracked_my_h = my_h
+        else:
+            if opp_h < self._prev_tracked_opp_h:
+                self.damage_dealt += (self._prev_tracked_opp_h - opp_h)
+            if my_h < self._prev_tracked_my_h:
+                self.damage_taken += (self._prev_tracked_my_h - my_h)
+            self._prev_tracked_opp_h = opp_h
+            self._prev_tracked_my_h = my_h
+
         turn = int(state.get("turnNo", state.get("currentTurn", 1))) if str(state.get("turnNo", state.get("currentTurn", 1))).isdigit() else 1
         
         # Disparar banner de avaliação de turno no chat (estilo Chess Engine)
@@ -922,10 +945,62 @@ class FabBotClient:
                 elif opp_h > my_h:
                     winner_id = 3 - self.player_id
 
+                p1_hp = my_h if self.player_id == 1 else opp_h
+                p2_hp = opp_h if self.player_id == 1 else my_h
+                p1_lbl = self.get_player_label(1)
+                p2_lbl = self.get_player_label(2)
+
+                # ── Avaliação de Partida Inválida (Empate 0 Dano ou Bot Inerte / Punching Bag) ──
+                p1_init_hp = self.initial_my_health if self.player_id == 1 else (self.initial_opp_health or 20)
+                p2_init_hp = self.initial_opp_health if self.player_id == 1 else (self.initial_my_health or 20)
+                p1_dmg_dealt = max(0, p2_init_hp - p2_hp)
+                p2_dmg_dealt = max(0, p1_init_hp - p1_hp)
+                total_dmg_exchanged = p1_dmg_dealt + p2_dmg_dealt
+
+                is_invalid_match = False
+                invalid_reason = ""
+
+                # 1. Empate com zero ou desprezível dano trocado (< 4 de dano trocado no total)
+                if winner_id == 0:
+                    if total_dmg_exchanged < 4:
+                        is_invalid_match = True
+                        invalid_reason = "Empate 0 Dano (Mutual Stall)"
+                # 2. Bot travou só apanhando (Punching Bag / Bot Inerte)
+                elif winner_id in (1, 2):
+                    winner_hp = p1_hp if winner_id == 1 else p2_hp
+                    winner_init_hp = p1_init_hp if winner_id == 1 else p2_init_hp
+                    loser_hp = p2_hp if winner_id == 1 else p1_hp
+                    loser_id = 3 - winner_id
+
+                    # Vencedor terminou com vida intacta (sofreu zero de dano)
+                    winner_undamaged = (winner_hp >= winner_init_hp)
+
+                    if winner_undamaged and loser_hp <= 0:
+                        # Se este bot é o perdedor:
+                        if self.player_id == loser_id:
+                            if self.attacks_made == 0 or self.damage_dealt == 0 or self.execution_exceptions_count >= 2:
+                                if turn >= 5 or self.execution_exceptions_count >= 2:
+                                    is_invalid_match = True
+                                    invalid_reason = "Bot Inerte (Travou sem atacar / Punching Bag)"
+                        # Se este bot é o vencedor:
+                        else:
+                            # Partida durou múltiplos turnos (>= 6) com oponente sem desferir dano
+                            if turn >= 6:
+                                is_invalid_match = True
+                                invalid_reason = "Bot Oponente Inerte (Punching Bag)"
+
+                if is_invalid_match:
+                    self.log(f"⚠️ [PARTIDA ANULADA] {invalid_reason}! Trajetória descartada do ReplayBuffer e ELO protegido.")
+                    self.send_chat_log(
+                        f"⚠️ <b>[PARTIDA ANULADA]</b> {invalid_reason}. "
+                        f"Partida descartada do ReplayBuffer e sem alteração de ELO.",
+                        highlight=True, bg_color="#451a03", text_color="#fbbf24"
+                    )
+
                 is_vs_human = (getattr(self, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
                 is_human_victory = is_vs_human and (winner_id == self.player_id)
 
-                if hasattr(self, "trajectory") and self.trajectory:
+                if not is_invalid_match and hasattr(self, "trajectory") and self.trajectory:
                     try:
                         from ai.experience_collector import get_global_buffer
                         from ai.blunder_reviewer import review_trajectory_for_blunders
@@ -954,24 +1029,20 @@ class FabBotClient:
 
                 if hasattr(self, "equipment_tracker") and self.equipment_tracker.get_events():
                     try:
-                        won = (winner_id == self.player_id)
-                        get_equipment_learning_engine().record_match_result(
-                            hero_name=self.hero_name,
-                            events=self.equipment_tracker.get_events(),
-                            won=won,
-                        )
+                        if not is_invalid_match:
+                            won = (winner_id == self.player_id)
+                            get_equipment_learning_engine().record_match_result(
+                                hero_name=self.hero_name,
+                                events=self.equipment_tracker.get_events(),
+                                won=won,
+                            )
                         self.equipment_tracker.clear()
                     except Exception as e:
                         self.log(f"[ERRO EQ STATS] {e}")
 
-                p1_hp = my_h if self.player_id == 1 else opp_h
-                p2_hp = opp_h if self.player_id == 1 else my_h
-                p1_lbl = self.get_player_label(1)
-                p2_lbl = self.get_player_label(2)
-                
-                is_vs_human = (getattr(self, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
-                
-                if winner_id == 1:
+                if is_invalid_match:
+                    winner_str = f"Anulada ({invalid_reason})"
+                elif winner_id == 1:
                     winner_str = p1_lbl
                 elif winner_id == 2:
                     winner_str = p2_lbl
@@ -1000,7 +1071,9 @@ class FabBotClient:
                             p2_health=p2_hp,
                             total_turns=turn,
                             winner_id=winner_id,
-                            is_human_p1=is_vs_human
+                            is_human_p1=is_vs_human,
+                            is_invalid_match=is_invalid_match,
+                            invalid_reason=invalid_reason
                         )
                     except Exception as e:
                         self.log(f"[ERRO STATS] {e}")
@@ -1032,7 +1105,15 @@ class FabBotClient:
             json.dump({"metrics": self.metrics}, f)
             
         if state.get("havePriority") and self.metrics["status"] != "Finalizada":
-            self.decide_and_act(state)
+            try:
+                self.decide_and_act(state)
+            except Exception as e:
+                self.execution_exceptions_count += 1
+                self.log(f"[ERRO DECIDE_AND_ACT] {e}")
+                try:
+                    self.send_action(mode=99, button_input="")
+                except Exception:
+                    pass
 
     def send_action(self, mode=99, card_id="", button_input="", chk_count=0, chk_input=None, input_text=""):
         return self.api.process_input(
@@ -1802,10 +1883,10 @@ class FabBotClient:
                     atk_type = raw_type.replace("_", " ").title()
                     atk_name = best_attack["name"]
                     atk_power = best_attack.get("power", 0)
-                    atk_cost = best_attack.get("cost", 0)
-                    if raw_type in ("hero_ability", "weapon_buff", "equipment_ability"):
+                    if raw_type in ("hero_ability", "weapon_buff", "equipment_ability") and atk_power <= 0:
                         self.log(f"[AÇÃO JOGADOR {self.player_id}] Ativou -> {atk_name} (Tipo: {atk_type}, Custo: {atk_cost})")
                     else:
+                        self.attacks_made += 1
                         self.log(f"[AÇÃO JOGADOR {self.player_id}] Atacou com -> {atk_name} (Tipo: {atk_type}, Poder: {atk_power}, Custo: {atk_cost})")
 
                     self.send_action(mode=best_attack["mode"], card_id=best_attack["card_id"], button_input=best_attack["name"])

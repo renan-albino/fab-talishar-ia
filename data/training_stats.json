@@ -1,10 +1,10 @@
 {
-  "total_matches": 2061,
+  "total_matches": 1760,
   "bot1_wins": 672,
-  "bot2_wins": 1073,
-  "draws": 316,
-  "bot1_elo": 1174,
-  "bot2_elo": 1226,
+  "bot2_wins": 1074,
+  "draws": 14,
+  "bot1_elo": 1154,
+  "bot2_elo": 1246,
   "elo_history": [
     {
       "match": 1,
@@ -12371,6 +12371,12 @@
       "bot1_elo": 1174,
       "bot2_elo": 1226,
       "timestamp": 1789190104.5026052
+    },
+    {
+      "match": 2062,
+      "bot1_elo": 1154,
+      "bot2_elo": 1246,
+      "timestamp": 1789285701.2313485
     }
   ],
   "deck_stats": {
@@ -12381,63 +12387,63 @@
       "elo": 825
     },
     "Betsy": {
-      "matches": 540,
+      "matches": 538,
       "wins": 301,
       "losses": 237,
       "elo": 1469
     },
     "Cindra": {
-      "matches": 543,
+      "matches": 541,
       "wins": 472,
       "losses": 69,
       "elo": 1640
     },
     "Dash IO": {
-      "matches": 458,
-      "wins": 23,
+      "matches": 394,
+      "wins": 24,
       "losses": 370,
-      "elo": 1036,
-      "human_matches": 5,
-      "human_wins": 5
+      "elo": 1061,
+      "human_matches": 6,
+      "human_wins": 6
     },
     "Gravy Bones": {
-      "matches": 278,
+      "matches": 109,
       "wins": 109,
       "losses": 0,
       "elo": 1159
     },
     "Marlinn": {
-      "matches": 372,
+      "matches": 300,
       "wins": 0,
       "losses": 300,
       "elo": 883
     },
     "Oscilio GIAF": {
-      "matches": 228,
+      "matches": 226,
       "wins": 226,
       "losses": 0,
       "elo": 1562
     },
     "Hala": {
-      "matches": 365,
+      "matches": 252,
       "wins": 88,
       "losses": 164,
       "elo": 1125
     },
     "Jarl": {
-      "matches": 418,
+      "matches": 337,
       "wins": 184,
       "losses": 153,
       "elo": 1332
     },
     "Mario": {
-      "matches": 267,
+      "matches": 198,
       "wins": 100,
       "losses": 98,
       "elo": 1030
     },
     "Kassai": {
-      "matches": 199,
+      "matches": 198,
       "wins": 162,
       "losses": 36,
       "elo": 1429
@@ -12449,19 +12455,19 @@
       "elo": 991
     },
     "👤 Humano (Você)": {
-      "matches": 7,
+      "matches": 8,
       "wins": 2,
-      "losses": 5,
-      "elo": 1046
+      "losses": 6,
+      "elo": 1021
     },
     "Jarl Vetreidi": {
-      "matches": 14,
+      "matches": 0,
       "wins": 0,
       "losses": 0,
       "elo": 1274
     },
     "Ira Blitz": {
-      "matches": 14,
+      "matches": 0,
       "wins": 0,
       "losses": 0,
       "elo": 1200
@@ -12482,6 +12488,46 @@
     }
   },
   "recent_matches": [
+    {
+      "room": "test_blitz",
+      "date": "13/09/2026 04:48:22",
+      "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
+      "p1_deck": "Ira Blitz",
+      "p2_deck": "Ira Blitz",
+      "p1_health": 10,
+      "p2_health": 8,
+      "turns": 46
+    },
+    {
+      "room": "test_room",
+      "date": "13/09/2026 04:48:22",
+      "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
+      "p1_deck": "Jarl Vetreidi",
+      "p2_deck": "Jarl",
+      "p1_health": 14,
+      "p2_health": 12,
+      "turns": 28
+    },
+    {
+      "room": "test_deadlock",
+      "date": "13/09/2026 04:48:21",
+      "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
+      "p1_deck": "Jarl Vetreidi",
+      "p2_deck": "Jarl",
+      "p1_health": 8,
+      "p2_health": 10,
+      "turns": 20
+    },
+    {
+      "room": "test_human_match_123",
+      "date": "13/09/2026 04:48:21",
+      "winner": "🤖 Bot 2 (Dash IO)",
+      "p1_deck": "👤 Humano (Kassai)",
+      "p2_deck": "🤖 Bot (Dash IO)",
+      "p1_health": 0,
+      "p2_health": 14,
+      "turns": 12
+    },
     {
       "room": "Treino_5e9c_0",
       "date": "12/09/2026 02:15:04",
@@ -12615,7 +12661,7 @@
     {
       "room": "Treino_09a1_0",
       "date": "11/09/2026 21:07:33",
-      "winner": "Bot 1 (Marlynn Treasure Hunter)",
+      "winner": "Anulada (Bot Inerte / Travado)",
       "p1_deck": "Marlynn Treasure Hunter",
       "p2_deck": "Dash IO",
       "p1_health": 40,
@@ -12741,65 +12787,9 @@
       "p1_health": 8,
       "p2_health": 10,
       "turns": 20
-    },
-    {
-      "room": "test_blitz",
-      "date": "11/09/2026 19:21:38",
-      "winner": "Empate",
-      "p1_deck": "Ira Blitz",
-      "p2_deck": "Ira Blitz",
-      "p1_health": 10,
-      "p2_health": 8,
-      "turns": 46
-    },
-    {
-      "room": "test_room",
-      "date": "11/09/2026 19:21:37",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 14,
-      "p2_health": 12,
-      "turns": 28
-    },
-    {
-      "room": "test_deadlock",
-      "date": "11/09/2026 19:21:37",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 8,
-      "p2_health": 10,
-      "turns": 20
-    },
-    {
-      "room": "Train_b34d699a",
-      "date": "11/09/2026 11:11:08",
-      "winner": "🤖 Bot 2 (Betsy)",
-      "p1_deck": "Vynsett",
-      "p2_deck": "Betsy",
-      "p1_health": 0,
-      "p2_health": 29,
-      "turns": 15
     }
   ],
   "deck_elo_history": [
-    {
-      "match": 1562,
-      "Vynsett": 860,
-      "Betsy": 1362,
-      "Cindra": 1656,
-      "Dash IO": 930,
-      "Gravy Bones": 1135,
-      "Marlinn": 926,
-      "Oscilio GIAF": 1507,
-      "Hala": 1083,
-      "Jarl": 1409,
-      "Mario": 1036,
-      "Kassai": 1459,
-      "Teklovossen": 1030,
-      "👤 Humano (Você)": 1207
-    },
     {
       "match": 1563,
       "Vynsett": 860,
@@ -20872,6 +20862,26 @@
       "Kassai": 1429,
       "Teklovossen": 991,
       "👤 Humano (Você)": 1046,
+      "Jarl Vetreidi": 1274,
+      "Ira Blitz": 1200,
+      "Cindra Dracai Of Retribution": 1184,
+      "Marlynn Treasure Hunter": 1215
+    },
+    {
+      "match": 2062,
+      "Vynsett": 825,
+      "Betsy": 1469,
+      "Cindra": 1640,
+      "Dash IO": 1061,
+      "Gravy Bones": 1159,
+      "Marlinn": 883,
+      "Oscilio GIAF": 1562,
+      "Hala": 1125,
+      "Jarl": 1332,
+      "Mario": 1030,
+      "Kassai": 1429,
+      "Teklovossen": 991,
+      "👤 Humano (Você)": 1021,
       "Jarl Vetreidi": 1274,
       "Ira Blitz": 1200,
       "Cindra Dracai Of Retribution": 1184,

@@ -113,14 +113,52 @@ def get_stats_data():
             "bot1_elo": 1200, "bot2_elo": 1200, "elo_history": [], "deck_stats": {}, "recent_matches": []
         }
 
-def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_turns, winner_id, is_human_p1=False):
+def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_turns, winner_id, is_human_p1=False, is_invalid_match=False, invalid_reason=""):
     stats = get_stats_data()
-    stats["total_matches"] += 1
     
     p1_deck_clean = canonicalize_deck_name(p1_deck)
     p2_deck_clean = canonicalize_deck_name(p2_deck)
     tracked_p1 = "👤 Humano (Você)" if is_human_p1 else p1_deck_clean
     tracked_p2 = p2_deck_clean
+
+    # Verificação de segurança adicional para anulação automática caso não tenha sido sinalizada
+    if not is_invalid_match:
+        # Caso 1: Empate com 0 dano ou vida quase intacta (<= 3 dano total trocado)
+        if winner_id == 0 and (
+            (p1_health >= 18 and p2_health >= 18) or
+            (p1_health >= 38 and p2_health >= 38)
+        ):
+            is_invalid_match = True
+            invalid_reason = "Empate 0 Dano (Mutual Stall)"
+        # Caso 2: Bot travou só apanhando (Punching Bag): vencedor com vida intacta e perdedor <= 0 em >= 6 turnos
+        elif winner_id == 1 and p1_health in (20, 40) and p2_health <= 0 and total_turns >= 6:
+            is_invalid_match = True
+            invalid_reason = "Bot Inerte (Punching Bag)"
+        elif winner_id == 2 and p2_health in (20, 40) and p1_health <= 0 and total_turns >= 6:
+            is_invalid_match = True
+            invalid_reason = "Bot Inerte (Punching Bag)"
+
+    if is_invalid_match:
+        logger.warning(
+            f"⚠️ [PARTIDA ANULADA] {room_id} descartada ({invalid_reason}). "
+            f"Sem impacto no ELO, histórico de vitórias ou contagem de partidas."
+        )
+        match_entry = {
+            "room": room_id,
+            "date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "winner": f"Anulada ({invalid_reason or 'Travamento'})",
+            "p1_deck": f"👤 Humano ({p1_deck_clean})" if is_human_p1 else p1_deck_clean,
+            "p2_deck": f"🤖 Bot ({p2_deck_clean})" if is_human_p1 else p2_deck_clean,
+            "p1_health": p1_health,
+            "p2_health": p2_health,
+            "turns": total_turns
+        }
+        stats["recent_matches"].insert(0, match_entry)
+        stats["recent_matches"] = stats["recent_matches"][:30]
+        atomic_json_save(stats, STATS_FILE)
+        return stats
+
+    stats["total_matches"] += 1
 
     # Calculate Global Elo
     r1 = stats.get("bot1_elo", 1200)
@@ -292,3 +330,61 @@ def sync_training_matches(target_total_matches: int = None):
     with open(STATS_FILE, "w") as f:
         json.dump(stats, f, indent=2)
     return True
+
+def clean_stalled_matches(stats_file: str = None) -> dict:
+    """
+    Expurga partidas de empate sem dano e bots inertes acumulados historicamente em training_stats.json.
+    Corrige contadores de partidas, vitórias, derrotas e empates, normalizando as taxas de vitória reais dos heróis.
+    """
+    target_file = stats_file or STATS_FILE
+    if not os.path.exists(target_file):
+        return {}
+
+    with open(target_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    # Backup de segurança antes da higienização
+    backup_file = target_file + ".bak"
+    try:
+        atomic_json_save(data, backup_file)
+        logger.info(f"Backup de segurança salvo em: {backup_file}")
+    except Exception as e:
+        logger.warning(f"Não foi possível salvar backup: {e}")
+
+    # 1. Higienização de recent_matches
+    cleaned_recent = []
+    for m in data.get("recent_matches", []):
+        p1_h = m.get("p1_health", 0)
+        p2_h = m.get("p2_health", 0)
+        t = m.get("turns", 0)
+        w = m.get("winner", "")
+        if w == "Empate" and ((p1_h >= 18 and p2_h >= 18) or (p1_h >= 38 and p2_h >= 38)):
+            m["winner"] = "Anulada (Empate 0 Dano)"
+        elif (p1_h in (20, 40) and p2_h <= 0 and t >= 6) or (p2_h in (20, 40) and p1_h <= 0 and t >= 6):
+            if "Anulada" not in w:
+                m["winner"] = "Anulada (Bot Inerte / Travado)"
+        cleaned_recent.append(m)
+    data["recent_matches"] = cleaned_recent
+
+    # 2. Higienização de deck_stats
+    total_cleaned_draws = 0
+    deck_stats = data.get("deck_stats", {})
+    for deck_name, d_info in deck_stats.items():
+        wins = d_info.get("wins", 0)
+        losses = d_info.get("losses", 0)
+        matches = d_info.get("matches", 0)
+        legit_matches = wins + losses
+        if matches > legit_matches:
+            stalled_draws = matches - legit_matches
+            total_cleaned_draws += stalled_draws
+            d_info["matches"] = legit_matches
+
+    # 3. Atualizar totais globais
+    old_draws = data.get("draws", 0)
+    data["draws"] = max(0, old_draws - (total_cleaned_draws // 2))
+    data["total_matches"] = data.get("bot1_wins", 0) + data.get("bot2_wins", 0) + data.get("draws", 0)
+
+    atomic_json_save(data, target_file)
+    logger.info(f"Higienização concluída: {total_cleaned_draws} slots de empate/travamento expurgados de {len(deck_stats)} decks.")
+    return data
+
