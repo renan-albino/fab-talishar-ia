@@ -1285,12 +1285,15 @@ class FabBotClient:
             if hasattr(self, "last_attempted_play") and self.last_attempted_play:
                 unpayable_set.add(self.last_attempted_play)
 
+            # Acumula contador para evitar loop eterno de anti-loop
+            self._anti_loop_streak = getattr(self, "_anti_loop_streak", 0) + 1
+
             if turn_phase in ("DOCRANK", "YESNO"):
                 self.log(f"[AÇÃO JOGADOR {self.player_id}] Anti-Loop ({turn_phase}) -> Forçando NO (Mode 20)")
                 self.send_action(mode=20, button_input="NO")
                 self.recent_phases.clear()
                 self.consecutive_same_state = 0
-                time.sleep(0.005)
+                time.sleep(0.15)
                 return True
 
             if turn_phase in ("MAYCHOOSEMULTIZONE", "MAYMULTICHOOSETEXT"):
@@ -1298,15 +1301,21 @@ class FabBotClient:
                 self.send_action(mode=99, button_input="PASS")
                 self.recent_phases.clear()
                 self.consecutive_same_state = 0
-                time.sleep(0.005)
+                time.sleep(0.15)
                 return True
 
             if turn_phase in ("CHOOSEMULTIZONE", "MULTICHOOSE", "MULTICHOOSEHAND"):
-                self.log(f"[AÇÃO JOGADOR {self.player_id}] Anti-Loop ({turn_phase}) -> Submetendo vazio (Mode 19)")
-                self.send_action(mode=19, chk_count=0, chk_input=[])
+                # Se já falhou submeter vazio consecutivamente, força seleção do índice 0
+                if self._anti_loop_streak >= 3:
+                    self.log(f"[AÇÃO JOGADOR {self.player_id}] Anti-Loop ({turn_phase}) -> Forçando índice 0 (Mode 19)")
+                    self.send_action(mode=19, chk_count=1, chk_input=["0"])
+                    self._anti_loop_streak = 0
+                else:
+                    self.log(f"[AÇÃO JOGADOR {self.player_id}] Anti-Loop ({turn_phase}) -> Submetendo vazio (Mode 19)")
+                    self.send_action(mode=19, chk_count=0, chk_input=[])
                 self.recent_phases.clear()
                 self.consecutive_same_state = 0
-                time.sleep(0.005)
+                time.sleep(0.15)
                 return True
 
             # MULTICHOOSETEXT: fase de seleção de texto obrigatória (ex: Fabricate do Teklovossen).
@@ -1316,7 +1325,7 @@ class FabBotClient:
                 self.send_action(mode=19, chk_count=1, chk_input=["0"])
                 self.recent_phases.clear()
                 self.consecutive_same_state = 0
-                time.sleep(0.005)
+                time.sleep(0.15)
                 return True
 
             fallback_mode = 10000 if turn_phase in ("P", "PAYGOLDORPITCH") else 99
@@ -1341,7 +1350,7 @@ class FabBotClient:
                 self.send_action(mode=fallback_mode, button_input="")
             self.recent_phases.clear()
             self.consecutive_same_state = 0
-            time.sleep(0.005)
+            time.sleep(0.15)
             return True
 
         # 0. Tratar INPUTCARDNAME

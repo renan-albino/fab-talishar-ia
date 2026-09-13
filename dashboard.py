@@ -172,26 +172,37 @@ def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> d
         cpu_cores = os.cpu_count() or 4
         gpu_name_str = gpu_name
 
+    try:
+        import psutil
+        ram_gb = psutil.virtual_memory().total / (1024**3)
+    except Exception:
+        ram_gb = 8.0
+
+    # Cada worker = 2 bots simultâneos. Cada bot em Python com PyTorch consome ~0.65 GB de RAM.
+    # Reservamos pelo menos 3.2 GB de RAM para o SO Linux, Docker (Apache, MySQL, Redis) e Dashboard Streamlit.
+    avail_ram_for_bots = max(1.0, ram_gb - 3.2)
+    safe_workers_by_ram = max(1, int((avail_ram_for_bots / 0.65) // 2))
+
     is_turbo = (mode == "turbo")
 
     if not is_gpu:
         if is_turbo:
-            turbo_workers = max(2, min(5, (cpu_cores - 2) // 2))
+            turbo_workers = max(1, min(3, safe_workers_by_ram, (cpu_cores - 2) // 2))
             return {
-                "device_label": f"CPU ({cpu_cores} threads)",
-                "mode_name": "🔥 Modo Turbo CPU (~90% Carga)",
+                "device_label": f"CPU ({cpu_cores} threads, {ram_gb:.1f} GB RAM)",
+                "mode_name": "🔥 Modo Turbo CPU (~85% Carga)",
                 "workers": turbo_workers,
                 "batch_size": 256,
                 "mcts_sims": 25,
                 "save_interval": 25,
                 "use_fp16": False,
                 "buffer_capacity": 100000,
-                "description": f"🔥 Modo Turbo CPU (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • MCTS 25 • Rendimento máximo sem travar o sistema."
+                "description": f"🔥 Modo Turbo CPU (~85% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • MCTS 25 • Rendimento máximo estável sem travar o sistema."
             }
         else:
-            safe_workers = max(1, min(2, (cpu_cores - 2) // 4))
+            safe_workers = max(1, min(2, safe_workers_by_ram, (cpu_cores - 2) // 4))
             return {
-                "device_label": f"CPU ({cpu_cores} threads)",
+                "device_label": f"CPU ({cpu_cores} threads, {ram_gb:.1f} GB RAM)",
                 "mode_name": "⚖️ Modo Equilibrado CPU (~50% Carga)",
                 "workers": safe_workers,
                 "batch_size": 128,
@@ -202,25 +213,25 @@ def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> d
                 "description": f"⚖️ Modo CPU Seguro (~50% carga) • {safe_workers} workers ({safe_workers*2} bots) • MCTS 15 • Sistema 100% livre para uso normal do PC."
             }
 
-    # Perfil para GPU calibrado por faixa de VRAM:
+    # Perfil para GPU calibrado por faixa de VRAM e RAM real:
     if vram_gb <= 6.5:
         if is_turbo:
-            turbo_workers = max(2, min(5, (cpu_cores - 2) // 2))
+            turbo_workers = max(1, min(3, safe_workers_by_ram, (cpu_cores - 2) // 2))
             return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
-                "mode_name": "🔥 Modo Turbo GPU (~90% Carga)",
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM, {ram_gb:.1f} GB RAM)",
+                "mode_name": "🔥 Modo Turbo GPU (~85% Carga)",
                 "workers": turbo_workers,
                 "batch_size": 512,
-                "mcts_sims": 45,
+                "mcts_sims": 35,
                 "save_interval": 30,
                 "use_fp16": True,
                 "buffer_capacity": 250000,
-                "description": f"🔥 Turbo Máximo (~90% GPU/CPU) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 512 (~5.0 GB VRAM) • MCTS 45 • Máxima velocidade para treino noturno ou remoto sem travar o webserver."
+                "description": f"🔥 Turbo Máximo Seguro (~85% GPU/CPU) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 512 • MCTS 35 • Máxima velocidade para treino noturno ou remoto sem risco de OOM."
             }
         else:
-            safe_workers = max(1, min(3, (cpu_cores - 2) // 3))
+            safe_workers = max(1, min(2, safe_workers_by_ram, (cpu_cores - 2) // 3))
             return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM, {ram_gb:.1f} GB RAM)",
                 "mode_name": "⚖️ Modo Equilibrado GPU (~65% Carga)",
                 "workers": safe_workers,
                 "batch_size": 256,
@@ -228,26 +239,26 @@ def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> d
                 "save_interval": 20,
                 "use_fp16": True,
                 "buffer_capacity": 100000,
-                "description": f"⚖️ {gpu_name} (~65% carga) • {safe_workers} workers ({safe_workers*2} bots) • Batch 256 • ~4 GB VRAM e 6+ threads livres para uso geral do PC."
+                "description": f"⚖️ {gpu_name} (~65% carga) • {safe_workers} workers ({safe_workers*2} bots) • Batch 256 • Memória e threads livres para uso geral do PC."
             }
     elif vram_gb <= 12.5:
         if is_turbo:
-            turbo_workers = max(3, min(7, (cpu_cores - 2) // 2))
+            turbo_workers = max(2, min(5, safe_workers_by_ram, (cpu_cores - 2) // 2))
             return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM, {ram_gb:.1f} GB RAM)",
                 "mode_name": "🔥 Modo Turbo GPU (~90% Carga)",
                 "workers": turbo_workers,
                 "batch_size": 1024,
-                "mcts_sims": 60,
+                "mcts_sims": 50,
                 "save_interval": 35,
                 "use_fp16": True,
                 "buffer_capacity": 500000,
-                "description": f"🔥 Turbo Máximo (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 1024 • MCTS 60 • Treinamento de alta densidade sem travas."
+                "description": f"🔥 Turbo Máximo (~90% carga) • {turbo_workers} workers ({turbo_workers*2} bots) • Batch 1024 • MCTS 50 • Treinamento de alta densidade sem travas."
             }
         else:
-            safe_workers = max(2, min(4, (cpu_cores - 2) // 3))
+            safe_workers = max(1, min(3, safe_workers_by_ram, (cpu_cores - 2) // 3))
             return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM, {ram_gb:.1f} GB RAM)",
                 "mode_name": "⚖️ Modo Equilibrado GPU (~70% Carga)",
                 "workers": safe_workers,
                 "batch_size": 512,
@@ -259,26 +270,26 @@ def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> d
             }
     elif vram_gb <= 20.0:
         if is_turbo:
-            turbo_workers = max(6, min(18, cpu_cores - 2))
+            turbo_workers = max(3, min(8, safe_workers_by_ram, cpu_cores - 2))
             return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM, {ram_gb:.1f} GB RAM)",
                 "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
                 "workers": turbo_workers,
                 "batch_size": 2048,
-                "mcts_sims": 100,
+                "mcts_sims": 80,
                 "save_interval": 40,
                 "use_fp16": True,
                 "buffer_capacity": 500000,
-                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 2048 • MCTS 100 • Rendimento industrial para 16 GB de VRAM."
+                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 2048 • MCTS 80 • Rendimento industrial para 16 GB de VRAM."
             }
         else:
-            safe_workers = max(2, min(8, (cpu_cores - 2) // 2))
+            safe_workers = max(2, min(5, safe_workers_by_ram, (cpu_cores - 2) // 2))
             return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM, {ram_gb:.1f} GB RAM)",
                 "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
                 "workers": safe_workers,
                 "batch_size": 1024,
-                "mcts_sims": 60,
+                "mcts_sims": 50,
                 "save_interval": 30,
                 "use_fp16": True,
                 "buffer_capacity": 500000,
@@ -286,26 +297,26 @@ def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> d
             }
     else:
         if is_turbo:
-            turbo_workers = max(8, min(24, cpu_cores - 2))
+            turbo_workers = max(4, min(12, safe_workers_by_ram, cpu_cores - 2))
             return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM, {ram_gb:.1f} GB RAM)",
                 "mode_name": "🔥 Modo Turbo GPU (~95% Carga)",
                 "workers": turbo_workers,
                 "batch_size": 4096,
-                "mcts_sims": 150,
+                "mcts_sims": 120,
                 "save_interval": 50,
                 "use_fp16": True,
                 "buffer_capacity": 500000,
-                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 4096 • MCTS 150 • Supercomputação para Alpha-Level AI."
+                "description": f"🔥 Turbo Máximo (~95% carga) • {turbo_workers} workers • Batch 4096 • MCTS 120 • Supercomputação para Alpha-Level AI."
             }
         else:
-            safe_workers = max(4, min(12, (cpu_cores - 2) // 2))
+            safe_workers = max(2, min(6, safe_workers_by_ram, (cpu_cores - 2) // 2))
             return {
-                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM)",
+                "device_label": f"{gpu_name} ({vram_gb:.1f} GB VRAM, {ram_gb:.1f} GB RAM)",
                 "mode_name": "⚖️ Modo Equilibrado GPU (~80% Carga)",
                 "workers": safe_workers,
                 "batch_size": 2048,
-                "mcts_sims": 100,
+                "mcts_sims": 80,
                 "save_interval": 40,
                 "use_fp16": True,
                 "buffer_capacity": 500000,

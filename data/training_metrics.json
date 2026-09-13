@@ -1,68 +1,13 @@
 {
-  "total_games": 1978,
+  "total_games": 1990,
   "samples_collected": 250000,
-  "epochs_completed": 673,
-  "policy_loss": 0.2568,
-  "value_loss": 0.2827,
-  "total_loss": 0.5395,
-  "active_matchup": "dash_io vs betsy (+4 partidas)",
-  "last_summary": "═══════════════════════════════════════════════\n🏆 RESULTADO DA PARTIDA: Train_b06e3278\n═══════════════════════════════════════════════\n• Vencedor: Anulada (Empate 0 Dano (Mutual Stall)) (Jogador 0)\n• Jogador 1 (hala_bladesaint_of_the_vow): 40 HP\n• Jogador 2 (arakni_marionette): 40 HP\n• Duração: 55 turnos\n• Decisões Coletadas para Treino: 94 amostras\n═══════════════════════════════════════════════\n",
+  "epochs_completed": 678,
+  "policy_loss": 0.1407,
+  "value_loss": 0.2776,
+  "total_loss": 0.4183,
+  "active_matchup": "kassai vs teklovossen (+2 partidas)",
+  "last_summary": "═══════════════════════════════════════════════\n🏆 RESULTADO DA PARTIDA: Train_879efff9\n═══════════════════════════════════════════════\n• Vencedor: Jogador 2 (kassai_of_the_golden_sand) (Jogador 2)\n• Jogador 1 (cindra_dracai_of_retribution): 0 HP\n• Jogador 2 (kassai_of_the_golden_sand): 21 HP\n• Duração: 20 turnos\n• Decisões Coletadas para Treino: 528 amostras\n═══════════════════════════════════════════════\n",
   "history": [
-    {
-      "epoch": 474,
-      "policy_loss": 0.1283,
-      "value_loss": 0.3886,
-      "total_loss": 0.5169,
-      "entropy": 0.1895,
-      "value_mean": -0.0662,
-      "games": 1597,
-      "samples": 161515,
-      "lr": 0.000291
-    },
-    {
-      "epoch": 475,
-      "policy_loss": 0.1396,
-      "value_loss": 0.4325,
-      "total_loss": 0.5721,
-      "entropy": 0.1944,
-      "value_mean": -0.0642,
-      "games": 1602,
-      "samples": 161922,
-      "lr": 0.000291
-    },
-    {
-      "epoch": 476,
-      "policy_loss": 0.1354,
-      "value_loss": 0.3704,
-      "total_loss": 0.5057,
-      "entropy": 0.1978,
-      "value_mean": -0.0173,
-      "games": 1602,
-      "samples": 163040,
-      "lr": 0.000291
-    },
-    {
-      "epoch": 477,
-      "policy_loss": 0.13,
-      "value_loss": 0.3408,
-      "total_loss": 0.4709,
-      "entropy": 0.2113,
-      "value_mean": -0.0265,
-      "games": 1602,
-      "samples": 163802,
-      "lr": 0.000291
-    },
-    {
-      "epoch": 478,
-      "policy_loss": 0.1235,
-      "value_loss": 0.3762,
-      "total_loss": 0.4997,
-      "entropy": 0.2069,
-      "value_mean": 0.0206,
-      "games": 1607,
-      "samples": 165514,
-      "lr": 0.000291
-    },
     {
       "epoch": 479,
       "policy_loss": 0.1253,
@@ -2207,15 +2152,70 @@
       "games": 1978,
       "samples": 250000,
       "lr": 0.0003
+    },
+    {
+      "epoch": 674,
+      "policy_loss": 0.1593,
+      "value_loss": 0.3351,
+      "total_loss": 0.4943,
+      "entropy": 0.3022,
+      "value_mean": -0.1816,
+      "games": 1978,
+      "samples": 250000,
+      "lr": 0.0003
+    },
+    {
+      "epoch": 675,
+      "policy_loss": 0.0993,
+      "value_loss": 0.3225,
+      "total_loss": 0.4218,
+      "entropy": 0.1716,
+      "value_mean": 0.1986,
+      "games": 1981,
+      "samples": 250000,
+      "lr": 0.0003
+    },
+    {
+      "epoch": 676,
+      "policy_loss": 0.1975,
+      "value_loss": 0.2628,
+      "total_loss": 0.4602,
+      "entropy": 0.1876,
+      "value_mean": 0.2188,
+      "games": 1984,
+      "samples": 250000,
+      "lr": 0.0003
+    },
+    {
+      "epoch": 677,
+      "policy_loss": 0.1335,
+      "value_loss": 0.2389,
+      "total_loss": 0.3724,
+      "entropy": 0.1629,
+      "value_mean": 0.0102,
+      "games": 1987,
+      "samples": 250000,
+      "lr": 0.0003
+    },
+    {
+      "epoch": 678,
+      "policy_loss": 0.1407,
+      "value_loss": 0.2776,
+      "total_loss": 0.4183,
+      "entropy": 0.1566,
+      "value_mean": -0.1227,
+      "games": 1990,
+      "samples": 250000,
+      "lr": 0.0003
     }
   ],
-  "policy_entropy": 0.0,
-  "value_mean": 0.1018,
+  "policy_entropy": 0.1566,
+  "value_mean": -0.1227,
   "current_phase": "teacher",
   "device": "cuda:0",
-  "batch_size": 32768,
-  "num_workers": 5,
-  "mcts_sims": 1600,
+  "batch_size": 512,
+  "num_workers": 3,
+  "mcts_sims": 35,
   "max_resources": false,
-  "buffer_capacity": 250000
+  "buffer_capacity": 100000
 }

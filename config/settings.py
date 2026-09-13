@@ -160,7 +160,7 @@ def _compute_batch_size(
     raw = available_bytes / max(bytes_per_sample, 1)
     batch = _nearest_power_of_2(raw * fraction)
 
-    upper_limit = 65_536 if max_resources else 32_768
+    upper_limit = 2048 if max_resources else 1024
     return max(64, min(batch, upper_limit))
 
 
@@ -197,7 +197,7 @@ def _compute_mcts_sims(
     sims_raw = target_time_s / max(latency_batched_s, 1e-9)
 
     sims = _nearest_power_of_2(sims_raw)
-    max_sims = 3_200 if max_resources else 1_600
+    max_sims = 100 if max_resources else 50
     return max(10, min(sims, max_sims))
 
 
@@ -209,18 +209,20 @@ def _compute_workers(
 ) -> int:
     """
     Calcula o número de partidas de self-play em paralelo.
+    Cada worker executa 2 bots (~1.3 GB RAM combinados).
+    Reserva 3.0 GB para SO, Docker (Apache, MySQL) e Dashboard Streamlit.
     """
     if max_resources:
         max_cpu = max(1, (cpu_logical - 1) // 2)
-        max_ram = max(1, int((ram_gb - 1.0) / 0.20))
-        max_talishar = 24
+        max_ram = max(1, int((ram_gb - 3.0) / 1.3))
+        max_talishar = 8
     else:
-        max_cpu = max(1, (cpu_logical - 2) // 2)
-        max_ram = max(1, int((ram_gb - 2.0) / 0.25))
-        max_talishar = 12
+        max_cpu = max(1, (cpu_logical - 2) // 3)
+        max_ram = max(1, int((ram_gb - 3.2) / 1.5))
+        max_talishar = 4
 
     workers = min(max_cpu, max_ram, max_talishar)
-    upper_bound = 32 if max_resources else 16
+    upper_bound = 8 if max_resources else 4
     return max(1, min(workers, upper_bound))
 
 

@@ -304,6 +304,11 @@ class GPUTrainingOrchestrator:
             mcts_sims_val = self.config.get("mcts_sims", 25)
             dev_val = self.config.get("device", "cuda:0")
 
+            # Em configurações com 3 ou mais workers paralelos (6+ bots) ou dispositivos sem CUDA,
+            # os bots de self-play executam inferência MCTS na CPU para economizar VRAM e evitar
+            # saturação de múltiplos contextos CUDA. O orquestrador mantém o treino de gradientes na GPU.
+            bot_device = "cpu" if (num_workers >= 3 or "cuda" not in str(dev_val)) else dev_val
+
             for _ in range(num_workers):
                 if not self.is_running:
                     break
@@ -314,7 +319,7 @@ class GPUTrainingOrchestrator:
                      "--room", room_id, "--deck", f"decks/{d1}.json",
                      "--role", "host",  "--name", "Bot1",
                      "--mcts-sims", str(mcts_sims_val),
-                     "--device", str(dev_val),
+                     "--device", str(bot_device),
                      "--buffer-capacity", str(buffer_cap)],
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
@@ -327,7 +332,7 @@ class GPUTrainingOrchestrator:
                      "--room", room_id, "--deck", f"decks/{d2}.json",
                      "--role", "join",  "--name", "Bot2",
                      "--mcts-sims", str(mcts_sims_val),
-                     "--device", str(dev_val),
+                     "--device", str(bot_device),
                      "--buffer-capacity", str(buffer_cap)],
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
