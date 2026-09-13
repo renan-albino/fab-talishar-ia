@@ -101,10 +101,12 @@ def test_strict_survival_on_fatal_or_critical_hp():
 # 2. Teste de Recompensas e ELO em Vitórias Contra Humanos
 # =====================================================================
 
-def test_human_elo_bonus_and_stats():
+def test_human_elo_bonus_and_stats(monkeypatch, tmp_path):
     """
     Testa o cálculo de ELO acelerado (K=48) e registro de vitórias contra humanos no stats_manager.
     """
+    test_file = str(tmp_path / "test_stats.json")
+    monkeypatch.setattr("stats_manager.STATS_FILE", test_file)
     room_id = "test_human_match_123"
     p1_deck = "kassai"  # Humano
     p2_deck = "dash_io" # Bot

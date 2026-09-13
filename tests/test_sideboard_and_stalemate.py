@@ -4,11 +4,16 @@ import unittest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import tempfile
+import stats_manager
 from bot_client import FabBotClient
 
 
 class TestSideboardAndStalemate(unittest.TestCase):
     def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self._orig_stats_file = stats_manager.STATS_FILE
+        stats_manager.STATS_FILE = os.path.join(self.temp_dir.name, "test_stats.json")
         self.client = FabBotClient(
             room_id="test_room",
             deck_url="decks/jarl.json",
@@ -18,6 +23,10 @@ class TestSideboardAndStalemate(unittest.TestCase):
         self.client.game_id = "test_game"
         self.client.player_id = 1
         self.client.auth_key = "test_auth"
+
+    def tearDown(self):
+        stats_manager.STATS_FILE = self._orig_stats_file
+        self.temp_dir.cleanup()
 
     def test_jarl_legal_weapons_sideboard(self):
         """Valida que Jarl NUNCA equipa uma arma 2H junto com um escudo (CR 2.8.2 e CR 3.0)."""

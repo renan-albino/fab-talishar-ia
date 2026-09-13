@@ -120,6 +120,13 @@ def get_stats_data():
 def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_turns, winner_id, is_human_p1=False, is_invalid_match=False, invalid_reason=""):
     stats = get_stats_data()
     
+    # Bloqueio de partidas de teste automatizado na base oficial de produção
+    is_test_room = any(prefix in str(room_id).lower() for prefix in ("test_", "test_room", "test_deadlock", "test_blitz", "test_human"))
+    is_prod_file = os.path.abspath(STATS_FILE) == os.path.abspath(os.path.join(BASE_DIR, "data", "training_stats.json"))
+    if is_test_room and is_prod_file:
+        logger.debug(f"Ignorando partida de teste '{room_id}' no arquivo de produção STATS_FILE.")
+        return stats
+
     p1_deck_clean = canonicalize_deck_name(p1_deck)
     p2_deck_clean = canonicalize_deck_name(p2_deck)
     tracked_p1 = "👤 Humano (Você)" if is_human_p1 else p1_deck_clean
@@ -355,9 +362,12 @@ def clean_stalled_matches(stats_file: str = None) -> dict:
     except Exception as e:
         logger.warning(f"Não foi possível salvar backup: {e}")
 
-    # 1. Higienização de recent_matches
+    # 1. Higienização de recent_matches (remover testes e marcar empates/inertes)
     cleaned_recent = []
     for m in data.get("recent_matches", []):
+        r_id = str(m.get("room", "")).lower()
+        if "test" in r_id or "deadlock" in r_id:
+            continue
         p1_h = m.get("p1_health", 0)
         p2_h = m.get("p2_health", 0)
         t = m.get("turns", 0)
@@ -382,6 +392,11 @@ def clean_stalled_matches(stats_file: str = None) -> dict:
             stalled_draws = matches - legit_matches
             total_cleaned_draws += stalled_draws
             d_info["matches"] = legit_matches
+
+    # Remove decks residuais de teste com 0 partidas
+    for d_k in list(deck_stats.keys()):
+        if deck_stats[d_k].get("matches", 0) == 0:
+            del deck_stats[d_k]
 
     # 3. Atualizar totais globais
     old_draws = data.get("draws", 0)

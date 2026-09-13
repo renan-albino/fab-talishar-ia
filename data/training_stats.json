@@ -12461,44 +12461,34 @@
   },
   "recent_matches": [
     {
-      "room": "test_blitz",
-      "date": "13/09/2026 04:48:22",
-      "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
-      "p1_deck": "Ira Blitz",
-      "p2_deck": "Ira Blitz",
-      "p1_health": 10,
-      "p2_health": 8,
-      "turns": 46
+      "room": "Train_5c20b34e",
+      "date": "13/09/2026 05:00:51",
+      "winner": "Anulada (Bot Inerte (Punching Bag))",
+      "p1_deck": "Hala",
+      "p2_deck": "Vynsett",
+      "p1_health": 40,
+      "p2_health": 0,
+      "turns": 15
     },
     {
-      "room": "test_room",
-      "date": "13/09/2026 04:48:22",
-      "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 14,
-      "p2_health": 12,
-      "turns": 28
+      "room": "Train_5c20b34e",
+      "date": "13/09/2026 05:00:46",
+      "winner": "Anulada (Bot Oponente Inerte (Punching Bag))",
+      "p1_deck": "Hala Bladesaint Of The Vow",
+      "p2_deck": "Vynnset Iron Maiden",
+      "p1_health": 40,
+      "p2_health": 0,
+      "turns": 39
     },
     {
-      "room": "test_deadlock",
-      "date": "13/09/2026 04:48:21",
+      "room": "Train_b06e3278",
+      "date": "13/09/2026 05:00:42",
       "winner": "Anulada (Empate 0 Dano (Mutual Stall))",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 8,
-      "p2_health": 10,
-      "turns": 20
-    },
-    {
-      "room": "test_human_match_123",
-      "date": "13/09/2026 04:48:21",
-      "winner": "🤖 Bot 2 (Dash IO)",
-      "p1_deck": "👤 Humano (Kassai)",
-      "p2_deck": "🤖 Bot (Dash IO)",
-      "p1_health": 0,
-      "p2_health": 14,
-      "turns": 12
+      "p1_deck": "Hala Bladesaint Of The Vow",
+      "p2_deck": "Arakni Marionette",
+      "p1_health": 40,
+      "p2_health": 40,
+      "turns": 55
     },
     {
       "room": "Treino_5e9c_0",
@@ -12508,126 +12498,6 @@
       "p2_deck": "Dash IO",
       "p1_health": 8,
       "p2_health": -7,
-      "turns": 12
-    },
-    {
-      "room": "test_blitz",
-      "date": "12/09/2026 01:04:35",
-      "winner": "Empate",
-      "p1_deck": "Ira Blitz",
-      "p2_deck": "Ira Blitz",
-      "p1_health": 10,
-      "p2_health": 8,
-      "turns": 46
-    },
-    {
-      "room": "test_room",
-      "date": "12/09/2026 01:04:34",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 14,
-      "p2_health": 12,
-      "turns": 28
-    },
-    {
-      "room": "test_deadlock",
-      "date": "12/09/2026 01:04:34",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 8,
-      "p2_health": 10,
-      "turns": 20
-    },
-    {
-      "room": "test_human_match_123",
-      "date": "12/09/2026 01:04:34",
-      "winner": "🤖 Bot 2 (Dash IO)",
-      "p1_deck": "👤 Humano (Kassai)",
-      "p2_deck": "🤖 Bot (Dash IO)",
-      "p1_health": 0,
-      "p2_health": 14,
-      "turns": 12
-    },
-    {
-      "room": "test_blitz",
-      "date": "12/09/2026 00:44:52",
-      "winner": "Empate",
-      "p1_deck": "Ira Blitz",
-      "p2_deck": "Ira Blitz",
-      "p1_health": 10,
-      "p2_health": 8,
-      "turns": 46
-    },
-    {
-      "room": "test_room",
-      "date": "12/09/2026 00:44:52",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 14,
-      "p2_health": 12,
-      "turns": 28
-    },
-    {
-      "room": "test_deadlock",
-      "date": "12/09/2026 00:44:51",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 8,
-      "p2_health": 10,
-      "turns": 20
-    },
-    {
-      "room": "test_human_match_123",
-      "date": "12/09/2026 00:44:51",
-      "winner": "🤖 Bot 2 (Dash IO)",
-      "p1_deck": "👤 Humano (Kassai)",
-      "p2_deck": "🤖 Bot (Dash IO)",
-      "p1_health": 0,
-      "p2_health": 14,
-      "turns": 12
-    },
-    {
-      "room": "test_blitz",
-      "date": "12/09/2026 00:38:05",
-      "winner": "Empate",
-      "p1_deck": "Ira Blitz",
-      "p2_deck": "Ira Blitz",
-      "p1_health": 10,
-      "p2_health": 8,
-      "turns": 46
-    },
-    {
-      "room": "test_room",
-      "date": "12/09/2026 00:38:05",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 14,
-      "p2_health": 12,
-      "turns": 28
-    },
-    {
-      "room": "test_deadlock",
-      "date": "12/09/2026 00:38:04",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 8,
-      "p2_health": 10,
-      "turns": 20
-    },
-    {
-      "room": "test_human_match_123",
-      "date": "12/09/2026 00:38:04",
-      "winner": "🤖 Bot 2 (Dash IO)",
-      "p1_deck": "👤 Humano (Kassai)",
-      "p2_deck": "🤖 Bot (Dash IO)",
-      "p1_health": 0,
-      "p2_health": 14,
       "turns": 12
     },
     {
@@ -12641,86 +12511,6 @@
       "turns": 6
     },
     {
-      "room": "test_blitz",
-      "date": "11/09/2026 20:58:07",
-      "winner": "Empate",
-      "p1_deck": "Ira Blitz",
-      "p2_deck": "Ira Blitz",
-      "p1_health": 10,
-      "p2_health": 8,
-      "turns": 46
-    },
-    {
-      "room": "test_room",
-      "date": "11/09/2026 20:58:07",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 14,
-      "p2_health": 12,
-      "turns": 28
-    },
-    {
-      "room": "test_deadlock",
-      "date": "11/09/2026 20:58:07",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 8,
-      "p2_health": 10,
-      "turns": 20
-    },
-    {
-      "room": "test_human_match_123",
-      "date": "11/09/2026 20:58:06",
-      "winner": "🤖 Bot 2 (Dash IO)",
-      "p1_deck": "👤 Humano (Kassai)",
-      "p2_deck": "🤖 Bot (Dash IO)",
-      "p1_health": 0,
-      "p2_health": 14,
-      "turns": 12
-    },
-    {
-      "room": "test_human_match_123",
-      "date": "11/09/2026 20:57:58",
-      "winner": "🤖 Bot 2 (Dash IO)",
-      "p1_deck": "👤 Humano (Kassai)",
-      "p2_deck": "🤖 Bot (Dash IO)",
-      "p1_health": 0,
-      "p2_health": 14,
-      "turns": 12
-    },
-    {
-      "room": "test_blitz",
-      "date": "11/09/2026 20:37:03",
-      "winner": "Empate",
-      "p1_deck": "Ira Blitz",
-      "p2_deck": "Ira Blitz",
-      "p1_health": 10,
-      "p2_health": 8,
-      "turns": 46
-    },
-    {
-      "room": "test_room",
-      "date": "11/09/2026 20:37:02",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 14,
-      "p2_health": 12,
-      "turns": 28
-    },
-    {
-      "room": "test_deadlock",
-      "date": "11/09/2026 20:37:02",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 8,
-      "p2_health": 10,
-      "turns": 20
-    },
-    {
       "room": "3463",
       "date": "11/09/2026 19:41:56",
       "winner": "👤 Humano (Humano (Você))",
@@ -12729,36 +12519,6 @@
       "p1_health": 17,
       "p2_health": -5,
       "turns": 4
-    },
-    {
-      "room": "test_blitz",
-      "date": "11/09/2026 19:22:28",
-      "winner": "Empate",
-      "p1_deck": "Ira Blitz",
-      "p2_deck": "Ira Blitz",
-      "p1_health": 10,
-      "p2_health": 8,
-      "turns": 46
-    },
-    {
-      "room": "test_room",
-      "date": "11/09/2026 19:22:28",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 14,
-      "p2_health": 12,
-      "turns": 28
-    },
-    {
-      "room": "test_deadlock",
-      "date": "11/09/2026 19:22:28",
-      "winner": "Empate",
-      "p1_deck": "Jarl Vetreidi",
-      "p2_deck": "Jarl",
-      "p1_health": 8,
-      "p2_health": 10,
-      "turns": 20
     }
   ],
   "deck_elo_history": [

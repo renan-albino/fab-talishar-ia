@@ -116,8 +116,9 @@ def test_clean_stalled_matches_routine():
             "Dash IO": {"matches": 50, "wins": 10, "losses": 30, "elo": 1150}
         },
         "recent_matches": [
-            {"room": "test_1", "winner": "Empate", "p1_health": 20, "p2_health": 20, "turns": 45},
-            {"room": "test_2", "winner": "Bot 1", "p1_health": 40, "p2_health": 0, "turns": 8}
+            {"room": "Train_match_1", "winner": "Empate", "p1_health": 20, "p2_health": 20, "turns": 45},
+            {"room": "Train_match_2", "winner": "Bot 1", "p1_health": 40, "p2_health": 0, "turns": 8},
+            {"room": "test_room_discard", "winner": "Empate", "p1_health": 20, "p2_health": 20, "turns": 45}
         ]
     }
     with open(TEST_STATS_FILE, "w", encoding="utf-8") as f:
@@ -135,6 +136,8 @@ def test_clean_stalled_matches_routine():
     # Após limpeza: matches deve ser 40
     assert cleaned["deck_stats"]["Dash IO"]["matches"] == 40
 
-    # Recent matches devem ser marcadas como anuladas
+    # Salas de teste são descartadas e salas reais são marcadas como anuladas
+    assert len(cleaned["recent_matches"]) == 2
     assert "Anulada" in cleaned["recent_matches"][0]["winner"]
     assert "Anulada" in cleaned["recent_matches"][1]["winner"]
+    assert all("test" not in m["room"].lower() for m in cleaned["recent_matches"])

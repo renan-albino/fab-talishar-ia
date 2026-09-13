@@ -1883,6 +1883,7 @@ class FabBotClient:
                     atk_type = raw_type.replace("_", " ").title()
                     atk_name = best_attack["name"]
                     atk_power = best_attack.get("power", 0)
+                    atk_cost = best_attack.get("cost", 0)
                     if raw_type in ("hero_ability", "weapon_buff", "equipment_ability") and atk_power <= 0:
                         self.log(f"[AÇÃO JOGADOR {self.player_id}] Ativou -> {atk_name} (Tipo: {atk_type}, Custo: {atk_cost})")
                     else:

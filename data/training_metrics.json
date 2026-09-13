@@ -1,35 +1,13 @@
 {
-  "total_games": 1967,
+  "total_games": 1973,
   "samples_collected": 250000,
-  "epochs_completed": 670,
-  "policy_loss": 0.1734,
-  "value_loss": 0.2754,
-  "total_loss": 0.4488,
-  "active_matchup": "betsy vs cindra (+4 partidas)",
-  "last_summary": "═══════════════════════════════════════════════\n🏆 RESULTADO DA PARTIDA: Train_b34d699a\n═══════════════════════════════════════════════\n• Vencedor: Jogador 2 (Betsy) (Jogador 2)\n• Jogador 1 (Vynsett): 0 HP\n• Jogador 2 (Betsy): 29 HP\n• Duração: 9 turnos\n• Decisões Coletadas para Treino: 125 amostras\n═══════════════════════════════════════════════\n",
+  "epochs_completed": 672,
+  "policy_loss": 0.1692,
+  "value_loss": 0.3401,
+  "total_loss": 0.5093,
+  "active_matchup": "jarl vs hala",
+  "last_summary": "═══════════════════════════════════════════════\n🏆 RESULTADO DA PARTIDA: Train_b06e3278\n═══════════════════════════════════════════════\n• Vencedor: Anulada (Empate 0 Dano (Mutual Stall)) (Jogador 0)\n• Jogador 1 (hala_bladesaint_of_the_vow): 40 HP\n• Jogador 2 (arakni_marionette): 40 HP\n• Duração: 55 turnos\n• Decisões Coletadas para Treino: 94 amostras\n═══════════════════════════════════════════════\n",
   "history": [
-    {
-      "epoch": 471,
-      "policy_loss": 0.1762,
-      "value_loss": 0.3941,
-      "total_loss": 0.5703,
-      "entropy": 0.2189,
-      "value_mean": -0.0162,
-      "games": 1592,
-      "samples": 159445,
-      "lr": 0.000291
-    },
-    {
-      "epoch": 472,
-      "policy_loss": 0.1156,
-      "value_loss": 0.3691,
-      "total_loss": 0.4847,
-      "entropy": 0.1881,
-      "value_mean": -0.009,
-      "games": 1592,
-      "samples": 159594,
-      "lr": 0.000291
-    },
     {
       "epoch": 473,
       "policy_loss": 0.1435,
@@ -2207,10 +2185,32 @@
       "games": 1967,
       "samples": 250000,
       "lr": 0.000258
+    },
+    {
+      "epoch": 671,
+      "policy_loss": 0.154,
+      "value_loss": 0.3253,
+      "total_loss": 0.4792,
+      "entropy": NaN,
+      "value_mean": -0.0264,
+      "games": 1972,
+      "samples": 250000,
+      "lr": 0.0003
+    },
+    {
+      "epoch": 672,
+      "policy_loss": 0.1692,
+      "value_loss": 0.3401,
+      "total_loss": 0.5093,
+      "entropy": NaN,
+      "value_mean": 0.0864,
+      "games": 1973,
+      "samples": 250000,
+      "lr": 0.0003
     }
   ],
   "policy_entropy": NaN,
-  "value_mean": 0.03,
+  "value_mean": 0.0864,
   "current_phase": "teacher",
   "device": "cuda:0",
   "batch_size": 32768,
