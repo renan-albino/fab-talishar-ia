@@ -392,16 +392,28 @@ Para desligar com segurança todos os containers Docker, processos do Dashboard 
 
 ---
 
-### 7. Automação Pré-Commit & Sincronização (`./scripts/sync_and_clean.sh`)
-Para nunca se preocupar em esquecer de sincronizar templates com `setup_templates/` ou limpar logs de partidas antes de enviar commits para o repositório:
+### 7. Automação Pré-Commit & Higienização (`./scripts/sync_and_clean.sh`)
+
+Os Git Hooks (`pre-commit` e `post-commit`) são **instalados automaticamente** durante a execução do `./scripts/prepare_environment.sh`.
+
+#### Qual o papel do `sync_and_clean.sh`?
+O `sync_and_clean.sh` é o motor de auditoria e higienização invocado automaticamente pelo Git antes de cada `git commit`:
+1. **Encerra bots residuais** para não travar arquivos de log.
+2. **Higieniza `logs/`**, limpando logs temporários de partidas e testes para manter o repositório leve.
+3. **Exporta templates modificados** (`prepare_environment.py --export-templates`), garantindo que alterações no frontend ou backend sejam salvas em `setup_templates/`.
+4. **Valida sintaxe Python** de todos os módulos (`py_compile`).
+5. **Valida a compilação do Frontend Vite** (`npx vite build`) para garantir que o TypeScript não quebre no CI do GitHub Actions.
+6. **Audita privacidade contra vazamentos**, bloqueando commits se caminhos pessoais/absolutos (`/home/<user>`) forem adicionados.
+7. **Adiciona automaticamente os templates ao commit** (`git add setup_templates/`).
+
+Você também pode executar o script manualmente a qualquer momento quando quiser limpar o ambiente ou testar a integridade antes de commitar:
 ```bash
-# Executa limpeza de logs, exportação de templates e teste de sintaxe:
+# Executa limpeza de logs, exportação de templates e auditoria manualmente:
 ./scripts/sync_and_clean.sh
 
-# (Recomendado) Instalar como Git Pre-Commit Hook automático (1 vez só):
-./scripts/sync_and_clean.sh --install-hook
+# Apenas verificar integridade sem modificar arquivos:
+./scripts/sync_and_clean.sh --check-only
 ```
-> **O que o hook pré-commit faz:** A cada `git commit`, encerra processos de teste, higieniza `logs/`, exporta automaticamente alterações em `Talishar/` e `Talishar-FE/` para `setup_templates/`, adiciona-os ao commit (`git add setup_templates/`) e valida a sintaxe do código Python.
 
 ---
 

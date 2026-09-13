@@ -380,8 +380,55 @@ def ensure_frontend_dependencies():
             log_success("Compilação inicial do Frontend concluída.")
         except Exception as e:
             log_warn(f"Aviso durante validação do build do frontend: {e}")
-    else:
-        log_success("Frontend validado e pronto para execução.")
+def ensure_git_hooks():
+    log("Configurando hooks automáticos do Git (pre-commit e post-commit)...")
+    git_dir = os.path.join(BASE_DIR, ".git")
+    if not os.path.exists(git_dir):
+        log_warn("Diretório .git não encontrado. Ignorando configuração de hooks.")
+        return
+
+    hooks_dir = os.path.join(git_dir, "hooks")
+    os.makedirs(hooks_dir, exist_ok=True)
+
+    # 1. Pre-commit hook -> scripts/sync_and_clean.sh
+    pre_commit_file = os.path.join(hooks_dir, "pre-commit")
+    pre_commit_content = """#!/usr/bin/env bash
+# Git pre-commit hook gerado por scripts/prepare_environment.py
+set -e
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+if [ -f "$ROOT_DIR/scripts/sync_and_clean.sh" ]; then
+    bash "$ROOT_DIR/scripts/sync_and_clean.sh"
+fi
+"""
+    with open(pre_commit_file, "w", encoding="utf-8") as f:
+        f.write(pre_commit_content)
+    try:
+        os.chmod(pre_commit_file, 0o755)
+    except Exception:
+        pass
+
+    # 2. Post-commit hook -> scripts/manage_state.py --auto-release
+    post_commit_file = os.path.join(hooks_dir, "post-commit")
+    post_commit_content = """#!/usr/bin/env bash
+# Git post-commit hook gerado por scripts/prepare_environment.py
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+PY_BIN="$ROOT_DIR/venv/bin/python"
+if [ ! -f "$PY_BIN" ]; then
+    PY_BIN="python3"
+fi
+
+if [ -f "$ROOT_DIR/scripts/manage_state.py" ]; then
+    "$PY_BIN" "$ROOT_DIR/scripts/manage_state.py" --auto-release
+fi
+"""
+    with open(post_commit_file, "w", encoding="utf-8") as f:
+        f.write(post_commit_content)
+    try:
+        os.chmod(post_commit_file, 0o755)
+    except Exception:
+        pass
+
+    log_success("Git hooks configurados com sucesso (pre-commit e post-commit).")
 
 def sync_agents_environment_rules():
     """
@@ -569,7 +616,10 @@ def main():
     # 9. Verificação dos decks no diretório central
     verify_decks()
 
-    # 10. Regras de agente dinâmicas para o runtime
+    # 10. Configurar Git Hooks automáticos (pre-commit e post-commit)
+    ensure_git_hooks()
+
+    # 11. Regras de agente dinâmicas para o runtime
     sync_agents_environment_rules()
     print("==================================================")
     log_success("Ambiente preparado com sucesso!")
