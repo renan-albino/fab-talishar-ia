@@ -159,6 +159,44 @@ class MarlynnStrategy(RangerStrategy):
 
         return 18.0
 
+    def evaluate_equipment_ability(self, state_or_name, eq_info_or_floating: Any = None, hand_attacks: list = None, **kwargs) -> float:
+        if isinstance(state_or_name, dict):
+            state = state_or_name
+            eq_info = eq_info_or_floating if isinstance(eq_info_or_floating, dict) else kwargs.get("eq_info", {})
+            eq_name = str(eq_info.get("cardNumber") or eq_info.get("name", "")).lower()
+        else:
+            state = kwargs.get("state", {})
+            eq_name = str(state_or_name or "").lower()
+
+        # Quivers (Quiver of Abyssal Depths / Enchanted Quiver):
+        # Recarrega uma flecha no Arsenal vazio com Go Again por 1 recurso!
+        if "quiver" in eq_name:
+            arsenal = state.get("playerArsenal") or state.get("playerArse") or []
+            if not arsenal:
+                hand = state.get("playerHand", [])
+                cards_db = _get_cards_db()
+                def _is_arrow(c):
+                    c_num = str(c.get("cardNumber") or c.get("name", "")).lower()
+                    db_c = cards_db.get(c_num, {})
+                    subtype = str(db_c.get("subtype", "")).lower()
+                    return "arrow" in subtype or any(k in c_num for k in ["arrow", "shot", "harpoon", "bolt", "cast", "goldfin", "king_kraken", "king_shark"])
+
+                has_arrow_in_hand = any(_is_arrow(c) for c in hand)
+                if has_arrow_in_hand:
+                    return 24.0  # Prioridade altíssima: recarrega a flecha para armar o canhão e disparar!
+            return 0.0
+
+        if "bulls_eye_bracers" in eq_name:
+            # Concede +1 power e Go Again na próxima flecha
+            arsenal = state.get("playerArsenal") or state.get("playerArse") or []
+            if arsenal:
+                return 16.0
+
+        if "trench_of_sunken_treasure" in eq_name:
+            return 8.0
+
+        return super().evaluate_equipment_ability(state_or_name, eq_info_or_floating, hand_attacks=hand_attacks, **kwargs)
+
     def evaluate_arsenal_card(self, card_info: dict, db_entry: dict = None) -> float:
         score = super().evaluate_arsenal_card(card_info, db_entry)
         if score <= -1000:

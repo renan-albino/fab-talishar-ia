@@ -92,30 +92,43 @@ class DashIOStrategy(MechanologistStrategy):
         score = float(power)
         c_low = card_name.lower()
 
-        # Itens com Crank geram Action Points e buffs cumulativos gigantescos
+        # Itens com Crank geram Action Points, contadores na Symbiosis Shot e buffs cumulativos gigantescos
         if "boom_grenade" in c_low:
-            score += 10.0  # +4 de dano no próximo ataque de arma ou boost
+            score += 15.0  # +4 de dano no próximo ataque de arma ou boost
         elif "convection_amplifier" in c_low:
-            score += 9.0   # Concede Dominate
+            score += 14.0   # Concede Dominate
         elif "penetration_script" in c_low:
-            score += 8.5   # Concede Piercing 1
-        elif any(k in c_low for k in ["heatsink", "prismatic_lens", "backup_protocol"]):
-            score += 8.0
+            score += 13.0   # Concede Piercing 1
+        elif "teklo_core" in c_low:
+            score += 14.0   # Gera 2 recursos por 2 turnos
+        elif "cerebellum_processor" in c_low:
+            score += 13.0   # Compra cartas
+        elif any(k in c_low for k in ["heatsink", "prismatic_lens", "backup_protocol", "plasma_mainline"]):
+            score += 12.0
         elif "pulsewave_harpoon" in c_low:
             score += 11.0  # Disrupt de mão / bloqueio
         elif "zero_to_sixty" in c_low or "zipper" in c_low:
-            score += 6.0
-        elif any(k in c_low for k in ["t_bone", "expedite", "sparks_of_strength"]):
             score += 7.0
+        elif any(k in c_low for k in ["t_bone", "expedite", "sparks_of_strength", "maximum_velocity"]):
+            score += 8.0
 
         if has_go_again:
             score += 4.0
         score -= cost * 0.5
         return score
 
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        """Habilidade de Dash IO: olhar o topo do deck para jogar itens como Instant."""
+        hand = state.get("playerHand", [])
+        floating = int(state.get("playerPitchCount", 0))
+        # Se tiver recursos ou cartas na mão para pitch, olhar o topo abre jogadas extras
+        if len(hand) >= 1 or floating >= 1:
+            return 15.0
+        return 0.0
+
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
         # Symbiosis Shot: arma barata que acumula steam counters com cada item jogado
-        score = 8.0 + (3.0 if floating_res >= 1 else 0.0)
+        score = 9.0 + (3.0 if floating_res >= 1 else 0.0)
         return score
 
     def evaluate_equipment_ability(self, state_or_name, eq_info_or_floating: Any = None, hand_attacks: list = None, **kwargs) -> float:
@@ -151,8 +164,8 @@ class DashIOStrategy(MechanologistStrategy):
             )
 
         # Buscar itens com Crank e ataques com boost na mão
-        crank_items = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["boom_grenade", "convection_amplifier", "penetration_script", "heatsink", "prismatic_lens", "backup_protocol"])]
-        boost_atks = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["zero_to_sixty", "zipper", "pulsewave", "t_bone", "expedite"])]
+        crank_items = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["boom_grenade", "convection_amplifier", "penetration_script", "teklo_core", "cerebellum", "heatsink", "prismatic_lens", "backup_protocol"])]
+        boost_atks = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["zero_to_sixty", "zipper", "pulsewave", "t_bone", "expedite", "maximum_velocity"])]
 
         if (crank_items or boost_atks) and my_hp >= 4:
             primary = crank_items[0] if crank_items else boost_atks[0]
@@ -165,7 +178,7 @@ class DashIOStrategy(MechanologistStrategy):
                 reserved_card_names=reserved,
                 can_absorb_damage=(my_hp >= 8),
                 max_block_cards=max_blocks,
-                priority_action_types=["crank_item", "weapon", "boost_attack"],
+                priority_action_types=["crank_item", "hero_ability", "weapon", "boost_attack"],
                 offensive_potential=float(boost_atks[0].get("power", 4) if boost_atks else 5.0) + 4.0,
                 reason=f"Dash IO plan: sequencing Crank item {p_name} into weapon/boost attacks"
             )
@@ -246,13 +259,27 @@ class VynnsetStrategy(RunebladeStrategy):
     def evaluate_attack_card(self, card_name: str, power: int, cost: int, has_go_again: bool, pitch: int) -> float:
         score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
         c_low = card_name.lower()
-        if "flail_of_agony" in c_low:
+        if any(k in c_low for k in [
+            "cull", "deathly_delight", "deathly_wail", "fasting_carcass",
+            "widespread_ruin", "widespread_destruction", "widespread_annihilation",
+            "oblivion", "beseech_the_demigon", "runegate"
+        ]):
             score += 10.0
-        elif "grimoire_of_haunt" in c_low or "grimoire_of_fellingsong" in c_low:
-            score += 9.0
-        elif any(k in c_low for k in ["runegate", "funeral_moon", "shadow_puppetry", "dimenxxional"]):
+        elif any(k in c_low for k in ["funeral_moon", "shadow_puppetry", "dimenxxional", "revel_in_runeblood", "malefic_incantation", "tear_through_the_portal", "reduce_to_runechant"]):
             score += 8.0
+        elif "flail_of_agony" in c_low:
+            score += 6.0
         return score
+
+    @lru_cache(maxsize=1024)
+    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool) -> float:
+        if block_val <= 0:
+            return -999.0
+        c_low = card_name.lower()
+        # Preserva cartas vermelhas de Runegate e geradores de Runechant na mão para atacar
+        if pitch == 1 and (power >= 4 or any(k in c_low for k in ["cull", "deathly", "widespread", "fasting", "shadow_puppetry", "revel_in_runeblood"])):
+            return -12.0
+        return float(block_val) * 2.0 - (power * 0.5)
 
     def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
         """Habilidade de início de turno de Vynnset: banir carta da mão para criar Runechant."""
@@ -284,7 +311,13 @@ class VynnsetStrategy(RunebladeStrategy):
                 reason="Vynnset survival mode: blocking critical or fatal damage"
             )
 
-        runegate_cards = [c for c in list(banish) + list(hand) if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["flail", "grimoire", "runegate", "shadow"])]
+        runegate_cards = [
+            c for c in list(banish) + list(hand)
+            if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in [
+                "cull", "deathly", "fasting", "widespread", "oblivion",
+                "beseech", "runegate", "shadow", "flail"
+            ])
+        ]
         if runegate_cards and my_hp >= 10:
             rg_name = str(runegate_cards[0].get("cardNumber") or runegate_cards[0].get("name", ""))
             reserved: Set[str] = {rg_name}

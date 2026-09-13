@@ -108,13 +108,24 @@ class TeklovossenStrategy(HeroStrategy):
 
         return float(block_val) * 2.0 - (power * 0.4)
 
+    def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
+        """
+        Habilidade ativada de Teklovossen:
+        {r}{r}: Bane um card Evo da mão. Se o fizer, compra um card e ganha Go Again.
+        """
+        hand = state.get("playerHand", [])
+        has_evo_in_hand = any("evo" in str(c.get("cardNumber") or c.get("name", "")).lower() for c in hand)
+        if has_evo_in_hand:
+            return 18.0
+        return 0.0
+
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
         c_low = str(card_name).lower()
         if "teklo_leveler" in c_low:
             # Teklo Leveler bate por 3+ dependendo dos Evos equipados
-            score = 7.5 + (3.0 if floating_res >= 2 else 0.0)
+            score = 10.0 + (3.0 if floating_res >= 2 else 0.0)
             if not has_hand_attacks:
-                score += 5.0
+                score += 8.0  # Pressão ofensiva contínua: nunca passa turno sem bater com a arma!
             return score
         return super().evaluate_weapon_attack(card_name, floating_res, total_res, has_hand_attacks)
 
@@ -126,10 +137,9 @@ class TeklovossenStrategy(HeroStrategy):
             eq_name = str(state_or_name or "").lower()
 
         if "teklovossen" in eq_name:
-            # Habilidade do herói Teklovossen: banir/equipar Evo e comprar
-            return 14.0
+            return 18.0
         if "evo" in eq_name and "equip" in eq_name:
-            return 10.0
+            return 12.0
         return super().evaluate_equipment_ability(state_or_name, eq_info_or_floating, hand_attacks=hand_attacks, **kwargs)
 
     def analyze_turn_plan(self, state: dict) -> TurnPlan:

@@ -383,7 +383,23 @@ class PolicyEngine:
                 power = 6 if pitch == 1 else 4
 
         # Inferência de bloqueio padrão (FaB: maioria das cartas de ação defende 2 ou 3)
-        if block == 0:
+        # Regra Oficial FaB: Itens (Item), Flechas (Arrow), Aliados (Ally) e certas Auras NÃO possuem defesa (defense: None)
+        # e NUNCA podem ser usados para defender.
+        subtype_str = str((db_entry.get("subtype") if db_entry else "") or card.get("subtype", "")).lower()
+        is_non_blocking_type = (
+            any(nb in subtype_str for nb in ["item", "arrow", "ally", "landmark"])
+            or any(k in card_number for k in [
+                "boom_grenade", "convection_amplifier", "penetration_script",
+                "teklo_core", "cerebellum_processor", "null_time_zone",
+                "teklo_pounder", "teklo_trebuchet", "plasma_mainline",
+                "dissolving_shield", "hyper_driver", "payload", "quiver"
+            ])
+        )
+        if is_non_blocking_type:
+            block = 0
+        elif block == 0 and not is_equip_or_weapon:
+            # Para cartas de ação convencionais (AA ou A) onde a defesa não veio catalogada no banco,
+            # infere a defesa padrão do Flesh and Blood (3 para azul, 2 para amarelo/vermelho)
             if any(k in card_number for k in ["_red", "_yellow", "_blue"]) and not any(k in card_number for k in ["heart", "accelerator", "providence", "tunic"]):
                 block = 3 if pitch == 3 else (2 if pitch == 2 else 2)
 
@@ -531,7 +547,7 @@ class PolicyEngine:
                     eq_slot == "hero"
                     or eq_type == "C"
                     or str(eq.get("actionDataOverride", "")) == "0"
-                    or any(h in eq_name for h in ["marlynn", "kassai", "bravo", "dash", "dorinthea", "rhinar", "kayo", "jarl", "azalea", "riptide"])
+                    or any(h in eq_name for h in ["marlynn", "kassai", "bravo", "dash", "dorinthea", "rhinar", "kayo", "jarl", "azalea", "riptide", "teklovossen", "vynnset", "hala", "mario", "arakni"])
                 )
                 if is_hero:
                     hero_score = self.strategy.evaluate_hero_ability(state, eq)
@@ -577,6 +593,12 @@ class PolicyEngine:
                             candidates.append(weapon_ability_candidate)
                         continue
 
+                    # Poda de Symbiosis Shot: requer 1+ steam counters para poder atacar
+                    if "symbiosis" in eq_name:
+                        steam_counters = int(eq.get("counters", eq.get("steam_counters", 0)))
+                        if steam_counters <= 0:
+                            continue
+
                     # Armas convencionais de ataque
                     if total_res >= weapon_cost:
                         eq_info = self.extract_card_info(eq)
@@ -621,6 +643,20 @@ class PolicyEngine:
                             })
 
         # ── 1.4 Arsenal e Banish ────────────────────────────────────
+        # Contagem de tokens/auras de Runechant para o desconto oficial de Runegate
+        runechant_count = 0
+        for aura in (state.get("playerAuras") or []):
+            if isinstance(aura, dict) and "runechant" in str(aura.get("cardNumber") or aura.get("name", "")).lower():
+                runechant_count += max(1, int(aura.get("counters", aura.get("count", 1))))
+        for token in (state.get("playerTokens") or []):
+            if isinstance(token, dict) and "runechant" in str(token.get("cardNumber") or token.get("name", "")).lower():
+                runechant_count += max(1, int(token.get("counters", token.get("count", 1))))
+        if "playerRunechants" in state:
+            try:
+                runechant_count = max(runechant_count, int(state.get("playerRunechants", 0)))
+            except Exception:
+                pass
+
         for zone_name, key in [("Arsenal", "playerArsenal"), ("Banish", "playerBanish")]:
             zone = state.get(key) or (state.get("playerArse", []) if key == "playerArsenal" else [])
             for c in zone:
@@ -630,28 +666,51 @@ class PolicyEngine:
                     c_id = c.get("actionDataOverride", c_name)
                     c_info = self.extract_card_info(c)
                     card_cost = max(0, int(c_info.get("cost", 0)))
-                    # Cartas de Arsenal/Banish usam total_res da mão inteira
-                    if total_res >= card_cost:
-                        base_score = self.strategy.evaluate_attack_card(
-                            c_name, c_info["power"], card_cost, c_info["has_go_again"], c_info["pitch"]
+                    effective_cost = card_cost
+
+                    # No FaB oficial, Runegate permite jogar do Banish destruindo Runechants em vez de pagar recursos
+                    if zone_name == "Banish":
+                        db_c = _load_cards_db().get(c_name, {})
+                        is_runegate = (
+                            any(k in c_name for k in [
+                                "cull", "deathly", "fasting", "widespread",
+                                "oblivion", "beseech", "runegate"
+                            ])
+                            or "runegate" in str(db_c.get("text", "")).lower()
+                            or "runegate" in str(c.get("text", "")).lower()
                         )
-                        # Jogar do Arsenal executa a ofensiva e libera o slot para o canhão carregar nova flecha
-                        arsenal_score = base_score + 4.0
-                        # Se a carta no Arsenal for uma Non-Attack Action (ex: Portside Exchange, Codex of Frailty):
-                        # Jogar do Arsenal PRIMEIRO libera o slot e concede bônus antes do disparo!
-                        c_type = str(_load_cards_db().get(c_name, {}).get("type", "")).upper()
-                        is_naa = ("AA" not in c_type and "ATTACK" not in c_type) or any(k in c_name for k in ["portside", "codex", "salvage", "three_of_a_kind", "tip_the_barkeep"])
-                        if is_naa:
-                            arsenal_score += 15.0  # Prioridade máxima: jogue a NAA do arsenal para liberar o slot!
-                            if turn_plan.plan_type == "OVERPITCH_RECOVERY":
-                                arsenal_score += 15.0
-                        elif any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]) or isinstance(self.strategy, RangerStrategy):
-                            arsenal_score += 10.0  # Flecha carregada no arsenal pronta para disparo!
-                            if turn_plan.plan_type == "HARPOON_CHAIN":
-                                arsenal_score += 15.0
+                        if is_runegate:
+                            effective_cost = max(0, card_cost - runechant_count)
+
+                    # Cartas de Arsenal/Banish usam total_res da mão inteira (ou effective_cost de Runegate)
+                    if total_res >= effective_cost:
+                        base_score = self.strategy.evaluate_attack_card(
+                            c_name, c_info["power"], effective_cost, c_info["has_go_again"], c_info["pitch"]
+                        )
+                        if zone_name == "Banish":
+                            # Jogar do Banish alivia Blood Debt e projeta dano alto
+                            play_score = base_score + 10.0
+                            if isinstance(self.strategy, RunebladeStrategy) or "vynnset" in str(self.hero_name).lower():
+                                play_score += 15.0  # Vynnset quer esvaziar o Banish para não morrer de Blood Debt
+                        else:
+                            # Jogar do Arsenal executa a ofensiva e libera o slot para o canhão carregar nova flecha
+                            play_score = base_score + 4.0
+                            # Se a carta no Arsenal for uma Non-Attack Action (ex: Portside Exchange, Codex of Frailty):
+                            # Jogar do Arsenal PRIMEIRO libera o slot e concede bônus antes do disparo!
+                            c_type = str(_load_cards_db().get(c_name, {}).get("type", "")).upper()
+                            is_naa = ("AA" not in c_type and "ATTACK" not in c_type) or any(k in c_name for k in ["portside", "codex", "salvage", "three_of_a_kind", "tip_the_barkeep"])
+                            if is_naa:
+                                play_score += 15.0  # Prioridade máxima: jogue a NAA do arsenal para liberar o slot!
+                                if turn_plan.plan_type == "OVERPITCH_RECOVERY":
+                                    play_score += 15.0
+                            elif any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]) or isinstance(self.strategy, RangerStrategy):
+                                play_score += 10.0  # Flecha carregada no arsenal pronta para disparo!
+                                if turn_plan.plan_type == "HARPOON_CHAIN":
+                                    play_score += 15.0
+
                         candidates.append({
                             "type": zone_name.lower(), "idx": 0, "card_id": str(c_id), "mode": action,
-                            "name": c_name, "score": arsenal_score, "cost": card_cost,
+                            "name": c_name, "score": play_score, "cost": effective_cost,
                             "power": c_info["power"], "has_go_again": c_info["has_go_again"]
                         })
 
@@ -840,66 +899,76 @@ class PolicyEngine:
         # ── 3.1 Detecção Holística de Plano de Turno e Pivot ────────
         turn_plan = self.strategy.analyze_turn_plan(state)
         is_heavy_hero = getattr(self.strategy, "is_heavy_hero", False)
+        current_turn = int(state.get("turnNo", state.get("currentTurn", 1)))
 
         block_candidates = []
         for idx, c in enumerate(hand):
             info = self.extract_card_info(c)
-            if info["action"] > 0 or info["borderColor"] > 0 or info["block"] > 0:
-                c_id = info["actionDataOverride"] or str(idx)
-                c_action = info["action"] if info["action"] > 0 else 27
-                score = self.strategy.evaluate_block_card(
-                    info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"]
-                )
+            if info["block"] <= 0:
+                continue
 
-                # ── Poda Estrita de Peças Reservadas pelo TurnPlan ────────
-                c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
-                is_reserved = (
-                    info["name"] in turn_plan.reserved_card_names
-                    or c_clean_name in turn_plan.reserved_card_names
-                    or any(r.lower() == c_clean_name for r in turn_plan.reserved_card_names)
-                )
-                if is_reserved and turn_plan.can_absorb_damage:
-                    # Se o plano determinou absorver dano para pivotar, peças reservadas
-                    # NUNCA bloqueiam a menos que estejamos sob risco letal iminente
-                    if my_hp > 6 and not (has_dangerous_on_hit and opp_power >= my_hp):
-                        score -= 150.0
+            c_id = info["actionDataOverride"] or str(idx)
+            c_action = info["action"] if info["action"] > 0 else 27
+            score = self.strategy.evaluate_block_card(
+                info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"]
+            )
 
-                # ── Poda de Preservação de Mão Ofensiva:
-                # Se temos vida alta (> 20) e o ataque inimigo é fraco (<= 2 sem on-hit),
-                # penaliza queimar cartas vermelhas de ataque chave (power >= 4 e pitch == 1)
-                if my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2:
-                    if info["power"] >= 4 and info["pitch"] == 1:
-                        score -= 5.0
+            # ── Poda Estrita de Peças Reservadas pelo TurnPlan ────────
+            c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
+            is_reserved = (
+                info["name"] in turn_plan.reserved_card_names
+                or c_clean_name in turn_plan.reserved_card_names
+                or any(r.lower() == c_clean_name for r in turn_plan.reserved_card_names)
+            )
+            if is_reserved and turn_plan.can_absorb_damage:
+                # Se o plano determinou absorver dano para pivotar, peças reservadas
+                # NUNCA bloqueiam a menos que estejamos sob risco letal iminente
+                if my_hp > 6 and not (has_dangerous_on_hit and opp_power >= my_hp):
+                    score -= 150.0
 
-                # ── Poda de Tempo Pivot e Reserva Estrita de Azul (Guardião / Jarl):
-                if (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
-                    if info["pitch"] == 1 and info["power"] >= 6:
-                        score -= 25.0  # Nunca bloqueia com a bomba de ataque de Pivot
-                    elif info["pitch"] == 3:
-                        blue_count = len([x for x in hand if self.extract_card_info(x)["pitch"] == 3])
-                        # Se Jarl/Guardião só tem 1 azul na mão: PRESERVAÇÃO ABSOLUTA para o turno de ataque!
-                        if blue_count <= 1:
-                            score -= 30.0  # Bloquear com a única azul deixaria o herói desativado no contra-ataque
-                        elif blue_count == 2 and is_heavy_hero:
-                            score -= 15.0  # Preserva a 2ª azul para fusão elemental / pagar ataque de custo 3 + Titan's Fist
+            # ── Poda de Preservação de Mão Ofensiva:
+            # Se temos vida alta (> 20) e o ataque inimigo é fraco (<= 2 sem on-hit),
+            # penaliza queimar cartas vermelhas de ataque chave (power >= 4 e pitch == 1)
+            if my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2:
+                if info["power"] >= 4 and info["pitch"] == 1:
+                    score -= 5.0
 
-                # Bônus para reações de defesa dedicadas (Sink, Fate, Staunch)
-                if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
-                    score += 3.0
+            # ── Poda de Tempo Pivot e Reserva Estrita de Azul (Guardião / Jarl):
+            if (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
+                if info["pitch"] == 1 and info["power"] >= 6:
+                    score -= 25.0  # Nunca bloqueia com a bomba de ataque de Pivot
+                elif info["pitch"] == 3:
+                    blue_count = len([x for x in hand if self.extract_card_info(x)["pitch"] == 3])
+                    # Se Jarl/Guardião só tem 1 azul na mão: PRESERVAÇÃO ABSOLUTA para o turno de ataque!
+                    if blue_count <= 1:
+                        score -= 30.0  # Bloquear com a única azul deixaria o herói desativado no contra-ataque
+                    elif blue_count == 2 and is_heavy_hero:
+                        score -= 15.0  # Preserva a 2ª azul para fusão elemental / pagar ataque de custo 3 + Titan's Fist
 
-                hand_cost = 3.5
-                if is_reserved:
-                    hand_cost = 25.0
-                elif info["power"] >= 5 or (info["pitch"] == 1 and info["power"] >= 4):
-                    hand_cost = 5.0
+            # ── Poda Anti-Stalemate (Decaimento Temporal de Bloqueio):
+            # A partir do turno 18 (e escalando até turnos 30-50), penaliza o overblocking
+            # sistemático para forçar trocas de dano e quebrar empates de tartaruga (mutual stall)
+            if current_turn >= 18 and not has_dangerous_on_hit and not (is_reserved and my_hp <= 6):
+                turn_decay = min(20.0, (current_turn - 17) * 1.0)
+                score -= turn_decay
 
-                if score > -100.0 and info["block"] > 0:
-                    block_candidates.append({
-                        "type": "block", "score": score, "idx": idx, "card_id": c_id,
-                        "name": info["name"], "mode": c_action, "block": info["block"],
-                        "pitch": info["pitch"], "power": info["power"],
-                        "is_equipment": False, "is_hand": True, "cost": hand_cost
-                    })
+            # Bônus para reações de defesa dedicadas (Sink, Fate, Staunch)
+            if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
+                score += 3.0
+
+            hand_cost = 3.5
+            if is_reserved:
+                hand_cost = 25.0
+            elif info["power"] >= 5 or (info["pitch"] == 1 and info["power"] >= 4):
+                hand_cost = 5.0
+
+            if score > -100.0 and info["block"] > 0:
+                block_candidates.append({
+                    "type": "block", "score": score, "idx": idx, "card_id": c_id,
+                    "name": info["name"], "mode": c_action, "block": info["block"],
+                    "pitch": info["pitch"], "power": info["power"],
+                    "is_equipment": False, "is_hand": True, "cost": hand_cost
+                })
 
         # ── 3.1b Cartas no Arsenal que podem defender (Ambush e Down and Dirty) ──
         arsenal = state.get("playerArsenal") or state.get("playerArse") or []
@@ -1123,6 +1192,11 @@ class PolicyEngine:
             max_hand_blocks = min(3, len(block_candidates))
         else:
             max_hand_blocks = min(2, len(block_candidates))
+
+        # Poda Anti-Stalemate no Endgame: se a partida se prolongar (turno >= 20),
+        # impede gastar 3+ cartas da mão em bloqueios para garantir que sobre recurso de contra-ataque!
+        if current_turn >= 20 and my_hp > 6 and not (has_dangerous_on_hit and opp_power >= my_hp):
+            max_hand_blocks = min(max_hand_blocks, 2)
 
         hand_blocks_count = 0
         for item in block_candidates:

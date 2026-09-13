@@ -156,6 +156,10 @@ class HalaStrategy(WarriorStrategy):
             score += 8.0
         elif "command_and_conquer" in c_low:
             score += 8.0
+        elif any(k in c_low for k in ["swordmasters_path", "swordmasters_shine", "toe_the_line"]):
+            score += 9.0  # Ataques fundamentais com espada e Go Again
+        elif any(k in c_low for k in ["beckon_steel", "display_of_craftsmanship", "sirens_of_safe_harbor"]):
+            score += 7.0
         elif "sigil_of_solace" in c_low:
             # Não prioriza cura passiva se estiver em condição de atacar
             score -= 4.0
@@ -163,7 +167,9 @@ class HalaStrategy(WarriorStrategy):
 
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
         # Zenith Blade é o motor de dano de Hala: valoriza swing em qualquer oportunidade
-        score = 12.0 + (3.0 if floating_res >= 2 else 1.0)
+        score = 14.0 + (3.0 if floating_res >= 2 else 1.0)
+        if not has_hand_attacks:
+            score += 4.0
         return score
 
     def analyze_turn_plan(self, state: dict) -> TurnPlan:
@@ -187,6 +193,7 @@ class HalaStrategy(WarriorStrategy):
         # Buscar buffs de arma na mão para sequenciar com a Zenith Blade
         buffs = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "ironsong"])]
         pitch_cards = [c for c in hand if int(c.get("pitch", 1)) >= 2]
+        hand_attacks = [c for c in hand if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in ["swordmasters", "toe_the_line", "command_and_conquer"])]
 
         if buffs and pitch_cards and my_hp >= 10:
             b_name = str(buffs[0].get("cardNumber") or buffs[0].get("name", ""))
@@ -202,6 +209,23 @@ class HalaStrategy(WarriorStrategy):
                 priority_action_types=["weapon_buff", "weapon"],
                 offensive_potential=8.0,
                 reason=f"Hala Zenith Blade plan: reserving {b_name} and pitch for boosted weapon strike"
+            )
+
+        # Se tiver ataque com espada ou pelo menos 1 pitch azul/amarelo para Zenith Blade:
+        # NUNCA gasta a mão inteira bloqueando! Preserva o recurso para bater com a Zenith Blade!
+        if (hand_attacks or pitch_cards) and my_hp >= 8:
+            primary = hand_attacks[0] if hand_attacks else pitch_cards[0]
+            p_name = str(primary.get("cardNumber") or primary.get("name", ""))
+            reserved = {p_name}
+            max_blocks = max(0, len(hand) - len(reserved))
+            return TurnPlan(
+                plan_type="HALA_SWORD_TEMPO",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 10),
+                max_block_cards=max_blocks,
+                priority_action_types=["attack_card", "weapon"],
+                offensive_potential=6.0,
+                reason=f"Hala tempo plan: reserving {p_name} for sword strike, preventing passive overblocking"
             )
 
         return super().analyze_turn_plan(state)
