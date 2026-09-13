@@ -116,12 +116,18 @@ class TeklovossenStrategy(HeroStrategy):
     def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
         """
         Habilidade ativada de Teklovossen:
-        {r}{r}: Bane um card Evo da mão. Se o fizer, compra um card e ganha Go Again.
+        {r}{r}: Bane um card Evo da mão. Se o fizer, compra um card.
+        Até o fim do turno, você pode jogar cards Evo da sua zona banida como se fossem Instant.
         """
         hand = state.get("playerHand", [])
+        banish = state.get("playerBanish", [])
         has_evo_in_hand = any("evo" in str(c.get("cardNumber") or c.get("name", "")).lower() for c in hand)
+        has_evo_in_banish = any("evo" in str(c.get("cardNumber") or c.get("name", "")).lower() for c in banish)
         if has_evo_in_hand:
-            return 18.0
+            score = 18.0
+            if has_evo_in_banish:
+                score += 8.0  # Ativar a habilidade desbloqueia os Evos do banish para serem jogados como Instant!
+            return score
         return 0.0
 
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:

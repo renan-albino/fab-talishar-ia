@@ -455,9 +455,32 @@ class PolicyEngine:
         total_potential_pitch = sum(self.extract_card_info(c)["pitch"] for c in hand)
         return current_floating, current_floating + total_potential_pitch
 
-    # ══════════════════════════════════════════════════════════════
-    # 1. PODA DE ATAQUE E SEQUENCIAMENTO DE CADEIA
-    # ══════════════════════════════════════════════════════════════
+    def is_teklovossen_ability_active(self, state: dict) -> bool:
+        """
+        Regra oficial FaB: Evos do Banish só ganham a opção de serem jogados como Instant
+        se a habilidade de Teklovossen ({r}{r}: Bane Evo da mão, compra carta) tiver sido ativada no turno.
+        Caso contrário, permanecem banidos e indisponíveis para jogo ("fica lá banido").
+        """
+        if state.get("teklovossen_ability_active") is not None:
+            return bool(state.get("teklovossen_ability_active"))
+        if state.get("teklo_ability_active") is not None:
+            return bool(state.get("teklo_ability_active"))
+        if state.get("hero_ability_active") is not None:
+            return bool(state.get("hero_ability_active"))
+
+        # No Talishar, o herói fica em playerEquipment:
+        # numUses inicia em 1 e se torna 0 quando a habilidade do herói é ativada no turno.
+        for eq in state.get("playerEquipment", []):
+            if not isinstance(eq, dict):
+                continue
+            eq_name = str(eq.get("cardNumber") or eq.get("name", "")).lower()
+            eq_slot = str(eq.get("slot", "")).lower()
+            if "teklo" in eq_name or eq_slot in ("hero", "character"):
+                num_uses = eq.get("numUses")
+                if num_uses is not None:
+                    return int(num_uses) == 0
+
+        return False
 
     def select_best_attack(self, state: dict, unpayable_set: Optional[set] = None) -> Optional[Dict[str, Any]]:
         if unpayable_set is None:
@@ -713,7 +736,12 @@ class PolicyEngine:
                             if isinstance(self.strategy, RunebladeStrategy) or "vynnset" in str(self.hero_name).lower():
                                 play_score += 15.0  # Vynnset quer esvaziar o Banish para não morrer de Blood Debt
                             # Regra oficial Teklovossen: equipar Evo da zona banida é jogado como Instant (custo 0 de Action Point)
+                            # MAS APENAS se a habilidade de Teklovossen tiver sido ativada neste turno!
+                            # Se a habilidade NÃO foi ativada, o Evo permanece banido e NÃO ganha opção de ser jogado ("fica lá banido").
                             if ("teklo" in str(self.hero_name).lower() or isinstance(self.strategy, TeklovossenStrategy)) and "evo" in c_name:
+                                if "singularity" not in c_name:
+                                    if not self.is_teklovossen_ability_active(state):
+                                        continue  # Não ativou a habilidade: Evo permanece banido e inerte!
                                 is_instant = True
                                 has_ga = True  # Instant resolve sem consumir Action Point
                                 play_score += 12.0
@@ -767,6 +795,10 @@ class PolicyEngine:
                             "name": a_name, "score": base_score, "cost": ability_cost,
                             "power": ally_power, "has_go_again": False
                         })
+
+        if player_ap <= 0:
+            # Se não possui Action Points disponíveis, apenas ações Instantâneas (custo 0 de AP) podem ser jogadas
+            candidates = [c for c in candidates if c.get("is_instant") is True or c.get("ap_cost") == 0]
 
         if not candidates:
             return None

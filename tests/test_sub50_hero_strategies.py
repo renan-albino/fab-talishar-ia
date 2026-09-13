@@ -184,22 +184,59 @@ def test_teklovossen_evo_assembly_and_singularity():
 
 
 def test_teklovossen_banish_evo_instant_speed():
-    """Garante que equipar Evo do Banish seja jogado na velocidade Instant (custo 0 de AP, sem ganho de AP)."""
+    """
+    Garante que equipar Evo do Banish só seja possível se a habilidade do Teklovossen foi ativada.
+    Sem a ativação prévia da habilidade no turno, o Evo permanece banido e inerte.
+    Com a habilidade ativada, ele ganha velocidade Instant (custo 0 de AP, sem ganho de AP).
+    """
     engine = PolicyEngine(hero_name="teklovossen")
-    state = {
+
+    # 1. Sem ativar a habilidade de herói: o Evo fica lá banido e NÃO é selecionado
+    state_without_ability = {
         "playerHealth": 30,
         "playerPitchCount": 4,
         "playerHand": [],
         "playerBanish": [
             {"cardNumber": "evo_steel_soul_memory_blue", "name": "Evo Steel Soul Memory", "action": 1, "cost": 4, "power": 0}
+        ],
+        "teklo_ability_active": False
+    }
+    attack_inactive = engine.select_best_attack(state_without_ability)
+    assert attack_inactive is None, "Evo no Banish não pode ser jogado se a habilidade do Teklovossen não foi ativada!"
+
+    # 2. Com a habilidade de herói ativada no turno: joga na velocidade Instant (ap_cost = 0)
+    state_with_ability = {
+        "playerHealth": 30,
+        "playerPitchCount": 4,
+        "playerHand": [],
+        "playerBanish": [
+            {"cardNumber": "evo_steel_soul_memory_blue", "name": "Evo Steel Soul Memory", "action": 1, "cost": 4, "power": 0}
+        ],
+        "teklo_ability_active": True
+    }
+    attack_active = engine.select_best_attack(state_with_ability)
+    assert attack_active is not None
+    assert "evo" in attack_active["name"]
+    assert attack_active.get("is_instant") is True
+    assert attack_active.get("ap_cost") == 0
+    assert attack_active.get("gains_ap") is not True
+
+    # 3. Também valida detecção nativa via playerEquipment com numUses == 0
+    state_via_equipment = {
+        "playerHealth": 30,
+        "playerPitchCount": 4,
+        "playerHand": [],
+        "playerEquipment": [
+            {"cardNumber": "teklovossen_esteemed_magnate", "slot": "hero", "numUses": 0}
+        ],
+        "playerBanish": [
+            {"cardNumber": "evo_steel_soul_memory_blue", "name": "Evo Steel Soul Memory", "action": 1, "cost": 4, "power": 0}
         ]
     }
-    attack = engine.select_best_attack(state)
-    assert attack is not None
-    assert "evo" in attack["name"]
-    assert attack.get("is_instant") is True
-    assert attack.get("ap_cost") == 0
-    assert attack.get("gains_ap") is not True
+    attack_eq = engine.select_best_attack(state_via_equipment)
+    assert attack_eq is not None
+    assert attack_eq.get("is_instant") is True
+    assert attack_eq.get("ap_cost") == 0
 
 
 def test_warrior_hala_and_kassai_sequence_naa_buff_before_weapon():

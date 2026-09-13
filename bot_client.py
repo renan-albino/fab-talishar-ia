@@ -1870,8 +1870,12 @@ class FabBotClient:
         except Exception:
             player_ap = 1
 
+        has_active_teklo = (getattr(self, "teklo_ability_active_turn", -1) == turn_num)
+        if has_active_teklo:
+            state["teklo_ability_active"] = True
+
         if is_my_turn and turn_phase in ("M", "STARTTURN", "RESOLUTIONSTEP"):
-            if player_ap > 0:
+            if player_ap > 0 or has_active_teklo:
                 # ── Telemetria de Plano de Turno e Ataque ──────────────
                 current_plan = self.policy_engine.strategy.analyze_turn_plan(state)
                 if getattr(self, "last_logged_atk_plan", None) != (turn_num, current_plan.plan_type):
@@ -1938,6 +1942,8 @@ class FabBotClient:
                     atk_power = best_attack.get("power", 0)
                     atk_cost = best_attack.get("cost", 0)
                     if raw_type in ("hero_ability", "weapon_buff", "equipment_ability") and atk_power <= 0:
+                        if raw_type == "hero_ability" and "teklo" in str(self.hero_name).lower():
+                            self.teklo_ability_active_turn = turn_num
                         self.log(f"[AÇÃO JOGADOR {self.player_id}] Ativou -> {atk_name} (Tipo: {atk_type}, Custo: {atk_cost})")
                     else:
                         self.attacks_made += 1
