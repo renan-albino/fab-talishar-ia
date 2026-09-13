@@ -1115,13 +1115,45 @@ class PolicyEngine:
             else:
                 effective_block = base_block
 
-            # Se o equipamento já perdeu toda a defesa ou não bloqueia, descarta imediatamente!
-            if effective_block <= 0:
-                continue
-            # Se a engine do Talishar enviou explicitamente action == 0, o equipamento não pode defender agora
+            # Se a engine do Talishar enviou explicitamente action <= 0, o equipamento não pode defender agora
             if eq_action <= 0 and "action" in eq:
                 continue
+
             is_crown = "crown_of_providence" in eq_name
+            is_ironhide = "ironhide" in eq_name
+            is_rampart = "rampart" in eq_name
+
+            # Equipamentos com ativações defensivas que pagam recursos (Ironhide +2d, Rampart +1d)
+            # No FaB oficial, mesmo com base 0 no banco, Ironhide defende 2 pagando 1 recurso,
+            # e Rampart defende 1 pagando 1 recurso.
+            avail_floating, avail_pitch = self.calculate_available_resources(state)
+            has_defense_resource = (avail_floating + avail_pitch) >= 1
+
+            if is_ironhide and has_defense_resource:
+                effective_block = max(effective_block, max(0, 2 + def_val))
+            elif is_rampart and has_defense_resource:
+                effective_block = max(effective_block, max(0, 1 + def_val))
+
+            is_teklo = "teklo" in str(self.hero_name).lower() or isinstance(self.strategy, TeklovossenStrategy)
+            is_evo = "evo" in eq_name or "cogwerx_base" in eq_name or "evo" in str(db_entry.get("subtype", "")).lower()
+
+            has_bw = bool(db_entry.get("has_battleworn") or "battleworn" in str(db_entry.get("subtype", "")).lower())
+            has_bb = bool(db_entry.get("has_blade_break") or "blade break" in str(db_entry.get("subtype", "")).lower() or "ironrot" in eq_name or eq.get("has_blade_break"))
+            has_temp = bool(db_entry.get("has_temper") or "temper" in str(db_entry.get("subtype", "")).lower() or is_evo or eq.get("has_temper"))
+
+            has_defend_trigger = (
+                is_crown
+                or (is_ironhide and has_defense_resource)
+                or (is_rampart and has_defense_resource)
+                or "defend" in str(db_entry.get("text", "")).lower()
+                or any(k in eq_name for k in ["providence", "ironhide", "rampart", "constellas", "carrion_husk"])
+            )
+
+            # Equipamentos cuja defesa foi zerada (ou base 0):
+            # Se NÃO possui efeito ao defender, descarta para não bloquear inutilmente por 0 de dano!
+            if effective_block <= 0 and not has_defend_trigger:
+                continue
+
             arsenal = state.get("playerArsenal") or state.get("playerArse") or []
             has_arsenal = len(arsenal) > 0
             is_arsenal_threat = has_arsenal and (
@@ -1135,25 +1167,29 @@ class PolicyEngine:
             num_pitches = sum(1 for c in hand_info if c["pitch"] >= 2)
             is_awkward_hand = (len(hand_cards) >= 3 and (num_pitches == 0 or num_attacks == 0))
 
-            # ── REGRA DE OURO: Poda Estrita de Armadura em Ataques Vanilla ──
+            will_break = has_bb or (has_temp and effective_block <= 1)
+
+            # ── Poda Estrita de Armadura em Ataques Vanilla ──
             # Se o ataque NÃO possui efeito On-Hit e nossa vida está saudável (HP > 12),
-            # armaduras NUNCA devem ser queimadas para mitigar dano comum!
-            # Exceção: Crown of Providence quando a mão está disfuncional e precisa de ciclo
+            # armaduras em geral não devem ser gastas para mitigar dano comum!
+            # Exceções:
+            # 1. Crown of Providence quando a mão está disfuncional e precisa de ciclo
+            # 2. Teklovossen com Evos que possuem Temper e effective_block > 1 (primeiro bloco seguro de 2 def)
+            is_safe_evo_temper = is_teklo and is_evo and has_temp and effective_block > 1
             if on_hit_threat == 0.0 and my_hp > 12:
-                if not (is_crown and is_awkward_hand):
+                if not ((is_crown and is_awkward_hand) or is_safe_evo_temper):
                     continue
 
-            has_bw = bool(db_entry.get("has_battleworn") or "battleworn" in str(db_entry.get("subtype", "")).lower())
-            has_bb = bool(db_entry.get("has_blade_break") or "blade break" in str(db_entry.get("subtype", "")).lower() or "ironrot" in eq_name)
-            has_temp = bool(db_entry.get("has_temper") or "temper" in str(db_entry.get("subtype", "")).lower())
-
-            # ── REGRA ESPECIAL TEKLOVOSSEN: Preservação Sagrada dos Evos ──
-            is_teklo = "teklo" in str(self.hero_name).lower() or isinstance(self.strategy, TeklovossenStrategy)
-            is_evo = "evo" in eq_name or "cogwerx_base" in eq_name or "evo" in str(db_entry.get("subtype", "")).lower()
-
+            # ── REGRA ESPECIAL TEKLOVOSSEN: Preservação Sagrada dos Evos com TEMPER ──
             if is_teklo and is_evo:
                 # Evos são a condição de vitória do Teklovossen (4 Evos montados para Singularity / Mechropotent).
-                # NUNCA quebrar ou degradar Evos aleatoriamente!
+                # No Flesh and Blood oficial, Evos possuem TEMPER:
+                # - Enquanto effective_block > 1: O Evo bloqueia, recebe um marcador de -1 de defesa quando
+                #   a cadeia de combate fecha, mas permanece com >= 1 de defesa e NÃO É DESTRUÍDO!
+                #   Ele continua equipado no herói, mantendo o slot ativo para a Singularity.
+                #   Esse primeiro bloqueio é seguro e deve ser aproveitado livremente para mitigar dano!
+                # - Quando effective_block <= 1 (ou Blade Break): O próximo bloqueio reduzirá a defesa a 0,
+                #   fazendo o Temper DESTRUIR o Evo! Esse é o ÚLTIMO bloqueio, de altíssimo risco.
                 is_fatal = (my_hp - opp_power) <= 0
                 opp_hero_str = str(state.get("opponentHero", "")).lower()
                 is_aggro_opp = opp_power >= 6 or any(h in opp_hero_str for h in [
@@ -1161,19 +1197,15 @@ class PolicyEngine:
                 ])
                 is_late_game = my_hp <= 8 or current_turn >= 8
 
-                # Se o Evo for quebrar (Blade Break ou Temper no último bloco):
-                # Teklovossen NUNCA quebra um Evo a menos que seja 100% fatal!
-                will_break = has_bb or (has_temp and effective_block <= 1)
-                if will_break and not is_fatal:
-                    continue
-
-                if not is_fatal:
-                    # Contra decks lentos: só bloqueia com Evo se for MORRER!
-                    if not is_aggro_opp:
+                if will_break:
+                    # Este é o ÚLTIMO bloqueio que destruirá o Evo e deixará Teklovossen sem a peça!
+                    # Só é permitido se for dano estritamente fatal, ou perigo extremo no late game contra aggro.
+                    if not is_fatal and not (is_aggro_opp and is_late_game and my_hp <= 6):
                         continue
-                    # Contra decks agressivos: só usa Evos bem pro final do jogo!
-                    elif not is_late_game:
-                        continue
+                else:
+                    # O Evo possui Temper com 2+ de defesa e sobreviverá com 1 de defesa restante.
+                    # PODE BLOQUEAR normalmente para mitigar dano!
+                    pass
 
             has_active_ability = bool(db_entry.get("ability_cost") is not None or any(k in eq_name for k in [
                 "goliath_gauntlet", "heartened_cross_strap", "snapdragon_scalers",
@@ -1199,6 +1231,20 @@ class PolicyEngine:
                 else:
                     eq_score -= 25.0  # Poupar Crown (Blade Break valioso)
                     eq_cost = 25.0
+            elif is_ironhide and has_defense_resource:
+                eq_score += 6.0
+                eq_cost = 2.0
+            elif is_rampart and has_defense_resource:
+                eq_score += 4.0
+                eq_cost = 2.0
+            elif has_defend_trigger:
+                eq_score += 8.0
+                eq_cost = 2.0
+            elif effective_block <= 0:
+                # Equipamento de defesa zero sem gatilho ativo explícito:
+                # A rede neural / ISMCTS avaliará o valor da ação no rollout
+                eq_score = 0.0
+                eq_cost = 5.0
             elif has_bw:
                 eq_score += 8.0  # Battleworn é prioridade máxima: bloqueia de graça e sobrevive
                 eq_cost = 1.5
@@ -1267,7 +1313,18 @@ class PolicyEngine:
                 best_subset = valid_subsets[0][1]
                 return [(item["idx"], item["card_id"], item["name"], item["mode"]) for item in best_subset]
 
-        # ── 3.3 Refinamento ISMCTS para Bloqueio ────────────────────
+        # ── 3.3 Avaliação da Rede Neural Policy-Value e Refinamento ISMCTS ──
+        if self.model is not None and block_candidates:
+            try:
+                state_vec = FaBPolicyValueNetwork.extract_state_vector(state, getattr(self, "player_id", 1))
+                probs, _ = self.model.predict_state(state_vec, str(self.device))
+                for item in block_candidates:
+                    action_id = int(item.get("mode", 3)) % 32
+                    prior_prob = float(probs[action_id]) if action_id < len(probs) else 0.0
+                    item["score"] += prior_prob * 10.0
+            except Exception:
+                pass
+
         if len(block_candidates) > 1 and self.num_mcts_sims > 0:
             opp_hand = state.get("opponentHand", [])
             opp_hand_count = len(opp_hand) if isinstance(opp_hand, list) and len(opp_hand) > 0 else int(

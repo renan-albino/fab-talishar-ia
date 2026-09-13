@@ -355,16 +355,18 @@ def test_talishar_native_negative_def_counters_reduces_block_and_excludes_zero_b
     assert len(blocks_str) == 0, f"Equipamento com defCounters='-1' NÃO deve ser selecionado! Bloqueou: {blocks_str}"
 
 
-def test_teklovossen_evo_preservation_against_slow_and_aggro_decks():
+def test_teklovossen_evo_temper_safe_block_and_preserve_last_block():
     """
-    Garante que Teklovossen NUNCA quebre ou degrade seus Evos aleatoriamente:
-    - Contra decks lentos: só bloqueia com Evo se for estritamente fatal.
-    - Contra decks agressivos: só usa Evos bem para o final do jogo (late game) ou se for fatal.
+    Garante a regra oficial de TEMPER para os Evos do Teklovossen:
+    1. Enquanto effective_block > 1 (ex: base 2 def): O Evo PODE bloquear com segurança,
+       pois absorve 2 de dano e sobrevive equipado com 1 de defesa após o fechamento da cadeia.
+    2. Quando effective_block <= 1: Este é o ÚLTIMO bloqueio que destruiria o Evo pelo Temper.
+       Ele deve ser estritamente preservado contra dano comum e só bloqueia sob ameaça fatal.
     """
     pe = PolicyEngine(hero_name="teklovossen")
 
-    # 1. Contra deck lento com ataque comum (não-fatal, HP 20, opp_power 4): Evo NÃO DEVE BLOQUEAR!
-    state_slow_non_fatal = {
+    # 1. Evo com 2 de defesa (primeiro bloqueio seguro com Temper): PODE BLOQUEAR!
+    state_safe_temper = {
         "playerHealth": 20,
         "currentTurn": 3,
         "opponentHero": "victor_goldmane",
@@ -374,36 +376,73 @@ def test_teklovossen_evo_preservation_against_slow_and_aggro_decks():
             {"cardNumber": "cogwerx_base_chest", "slot": "chest", "defense": 2, "action": 3}
         ]
     }
-    blocks_slow = pe.select_defense_blocks(state_slow_non_fatal)
-    assert len(blocks_slow) == 0, "Teklovossen NUNCA deve gastar Evo contra deck lento se não for dano fatal!"
+    blocks_safe = pe.select_defense_blocks(state_safe_temper)
+    assert len(blocks_safe) == 1, "Evo com 2 de defesa deve bloquear normalmente com Temper (sobrevive com 1 def)!"
 
-    # 2. Contra deck lento MAS dano fatal (HP 4, opp_power 6): Evo DEVE BLOQUEAR para sobreviver!
-    state_slow_fatal = {
+    # 2. Evo já desgastado para 1 de defesa (último bloco, destruiria o Evo se bloqueasse): NÃO BLOQUEIA em dano comum!
+    state_last_block_non_fatal = {
+        "playerHealth": 20,
+        "currentTurn": 4,
+        "opponentHero": "victor_goldmane",
+        "activeChainLink": {"cardNumber": "machismo_red", "totalPower": 4},
+        "playerHand": [],
+        "playerEquipment": [
+            {"cardNumber": "cogwerx_base_chest", "slot": "chest", "defense": 2, "defCounters": -1, "action": 3}
+        ]
+    }
+    blocks_last_non_fatal = pe.select_defense_blocks(state_last_block_non_fatal)
+    assert len(blocks_last_non_fatal) == 0, "Teklovossen NÃO deve fazer o último bloqueio com Evo (evita destruição por Temper)!"
+
+    # 3. Evo com 1 de defesa MAS dano fatal (HP 4, opp_power 6): DEVE BLOQUEAR para não morrer!
+    state_last_block_fatal = {
         "playerHealth": 4,
         "currentTurn": 5,
         "opponentHero": "victor_goldmane",
         "activeChainLink": {"cardNumber": "spinal_crush_red", "totalPower": 6},
         "playerHand": [],
         "playerEquipment": [
-            {"cardNumber": "cogwerx_base_chest", "slot": "chest", "defense": 2, "action": 3}
+            {"cardNumber": "cogwerx_base_chest", "slot": "chest", "defense": 2, "defCounters": -1, "action": 3}
         ]
     }
-    blocks_fatal = pe.select_defense_blocks(state_slow_fatal)
-    assert len(blocks_fatal) == 1, "Teklovossen DEVE bloquear com Evo em situação fatal para não morrer!"
+    blocks_fatal = pe.select_defense_blocks(state_last_block_fatal)
+    assert len(blocks_fatal) == 1, "Teklovossen DEVE fazer o último bloqueio com Evo em situação fatal para sobreviver!"
 
-    # 3. Contra deck agressivo no início/meio de jogo (Turno 2, HP 18, opp_power 6): Evo NÃO BLOQUEIA!
-    state_aggro_early = {
-        "playerHealth": 18,
-        "currentTurn": 2,
-        "opponentHero": "fai_rising_rebellion",
-        "activeChainLink": {"cardNumber": "snatch_red", "totalPower": 6},
+
+def test_equipment_with_effects_or_resources_evaluated_at_zero_def():
+    """
+    Garante que equipamentos com efeitos ao defender ou ativações com recursos
+    sejam devidamente avaliados e possam bloquear:
+    1. Crown of Providence cicla a mão ou salva o arsenal de destruição mesmo com foco no efeito.
+    2. Ironhide Gauntlet paga 1 recurso para defender 2 mesmo com base 0 de defesa.
+    """
+    pe = PolicyEngine(hero_name="oscilio")
+
+    # 1. Ironhide Gauntlet (base def 0) com 1 recurso flutuante disponível: ganha +2 de defesa e bloqueia!
+    state_ironhide = {
+        "playerHealth": 10,
+        "playerPitchCount": 1,
         "playerHand": [],
+        "activeChainLink": {"cardNumber": "generic_attack_red", "totalPower": 4},
         "playerEquipment": [
-            {"cardNumber": "cogwerx_base_chest", "slot": "chest", "defense": 2, "action": 3}
+            {"cardNumber": "ironhide_gauntlet", "slot": "arms", "defense": 0, "action": 3}
         ]
     }
-    blocks_early = pe.select_defense_blocks(state_aggro_early)
-    assert len(blocks_early) == 0, "Teklovossen NÃO deve queimar Evo no início de jogo contra aggro!"
+    blocks_ih = pe.select_defense_blocks(state_ironhide)
+    assert len(blocks_ih) == 1, "Ironhide com 1 recurso disponível deve defender 2 de dano!"
+    assert blocks_ih[0][2] == "ironhide_gauntlet"
+
+    # 2. Crown of Providence bloqueia para proteger o arsenal sob ataque de Command and Conquer
+    state_crown_arsenal = {
+        "playerHealth": 20,
+        "playerArsenal": [{"cardNumber": "red_card", "action": 0}],
+        "playerHand": [],
+        "activeChainLink": {"cardNumber": "command_and_conquer", "totalPower": 6},
+        "playerEquipment": [
+            {"cardNumber": "crown_of_providence", "slot": "head", "defense": 2, "action": 3}
+        ]
+    }
+    blocks_crown = pe.select_defense_blocks(state_crown_arsenal)
+    assert len(blocks_crown) == 1, "Crown of Providence deve bloquear prioritariamente sob ameaça de CnC ao arsenal!"
 
 
 def test_oscilio_strategy_giaf_and_lightning():
