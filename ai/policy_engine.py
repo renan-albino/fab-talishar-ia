@@ -580,6 +580,15 @@ class PolicyEngine:
                         base_score += 25.0  # Buffs de Guerreiro DEVEM ser jogados antes do ataque da espada!
                     elif (isinstance(self.strategy, WarriorStrategy) or "warrior" in str(self.hero_name).lower() or "hala" in str(self.hero_name).lower() or "kassai" in str(self.hero_name).lower()) and any(k in c_clean for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "blood_on_her_hands", "spoils_of_war", "hit_and_run"]):
                         base_score += 20.0  # Sequenciar NAA buffs sempre antes do swing da arma
+                    elif "avast_ye" in c_clean:
+                        # Avast Ye! concede Go Again ao aliado/ataque e gera Gold no hit!
+                        allies = state.get("playerAllies", [])
+                        has_ready_allies = any(isinstance(a, dict) and a.get("action", 0) > 0 for a in (allies or []))
+                        has_other_attacks = any(
+                            self.extract_card_info(x)["power"] > 0 for x in hand if x != c
+                        )
+                        if has_ready_allies or has_other_attacks:
+                            base_score += 30.0  # Prioridade máxima: jogar Avast Ye! antes do aliado/ataque!
                     elif c_name in turn_plan.reserved_card_names or c_clean in turn_plan.reserved_card_names:
                         base_score += 15.0  # Peça chave do plano ofensivo reservada
 
@@ -854,13 +863,18 @@ class PolicyEngine:
                         base_score = float(ally_power) * 2.0
                         if getattr(self.strategy, "is_ally_hero", False) or "gravy" in str(self.hero_name).lower():
                             base_score += 15.0  # Gravy Bones valoriza ataques de aliados agressivamente
-                            # Se o oponente está na zona crítica (<= 6 HP), priorizar aliados pesados para perfurar o bloco
-                            opp_h = int(state.get("opponentHealth", state.get("oppHealth", 40)))
-                            if opp_h <= 6:
-                                if ally_power >= opp_h:
-                                    base_score += 15.0  # Golpe de misericórdia letal direto
-                                elif ally_power >= 4:
-                                    base_score += 10.0  # Quebrador de defesa que força múltiplos bloqueios
+                            # Se temos Avast Ye! na mão e AP <= 1, jogue Avast Ye! PRIMEIRO para conceder Go Again ao aliado!
+                            has_avast = any("avast_ye" in str(h.get("cardNumber") or h.get("name", "")).lower() for h in state.get("playerHand", []))
+                            if player_ap <= 1 and has_avast:
+                                base_score -= 20.0  # Dá prioridade a Avast Ye! para conceder Go Again e continuar a cadeia
+                            else:
+                                # Se o oponente está na zona crítica (<= 6 HP), priorizar aliados pesados para perfurar o bloco
+                                opp_h = int(state.get("opponentHealth", state.get("oppHealth", 40)))
+                                if opp_h <= 6:
+                                    if ally_power >= opp_h:
+                                        base_score += 15.0  # Golpe de misericórdia letal direto
+                                    elif ally_power >= 4:
+                                        base_score += 10.0  # Quebrador de defesa que força múltiplos bloqueios
                         candidates.append({
                             "type": "ally", "idx": idx, "card_id": str(a_id), "mode": action,
                             "name": a_name, "score": base_score, "cost": ability_cost,

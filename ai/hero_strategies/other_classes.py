@@ -801,8 +801,8 @@ class GravyBonesStrategy(MerchantStrategy):
             score += 16.0  # Finalizador massivo com alto poder que supera blocos de 3
         elif "riggermortis" in c_low:
             score += 14.0  # Aliado com poder 6 massivo
-        elif "blood_in_the_water" in c_low:
-            score += 12.0  # Pressiona dano com buffs de pirata
+        elif "avast_ye" in c_low:
+            score += 14.0  # Concede Go Again essencial e gera Gold no hit
         elif "saltwater_swell" in c_low:
             score += 10.0  # Go Again essencial para sobrecarregar defesas
         elif "swiftwater_sloop" in c_low:
@@ -811,14 +811,17 @@ class GravyBonesStrategy(MerchantStrategy):
             score += 7.0
         elif any(k in c_low for k in ["anka", "chum", "scooba", "scoundrel"]):
             score += 7.0
-        elif any(k in c_low for k in ["fearless_confrontation", "avast_ye"]):
+        elif "fearless_confrontation" in c_low:
             score += 6.0
         return score
 
     def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool, **kwargs) -> float:
         c_low = card_name.lower()
-        # Evita queimar cartas finalizadoras no bloqueio para não perder poder de letalidade
-        if any(k in c_low for k in ["conqueror_of_the_high_seas", "blood_in_the_water", "riggermortis", "swiftwater_sloop"]):
+        # Blood in the Water é uma Defense Reaction excelente de 4 de defesa a custo 0
+        if "blood_in_the_water" in c_low:
+            return 14.0
+        # Evita queimar cartas finalizadoras de ataque no bloqueio para não perder poder de letalidade
+        if any(k in c_low for k in ["conqueror_of_the_high_seas", "riggermortis", "swiftwater_sloop"]):
             return -8.0
         return super().evaluate_block_card(card_name, block_val, pitch, power, has_go_again, **kwargs)
 
@@ -850,72 +853,113 @@ class GravyBonesStrategy(MerchantStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
+        # 1. Modo Sobrevivência / Proteção contra On-Hits Críticos:
+        # On-hits perigosos (ex: Command and Conquer, Spinal Crush) ou dano fatal DEVEM ser bloqueados!
+        if is_fatal or (has_dangerous_on_hit and opp_power >= 4) or self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
-                reason="Gravy Bones survival mode: blocking critical or fatal damage"
+                reason="Gravy Bones survival mode: blocking critical on-hit or fatal damage"
             )
 
-        # 0. MODO EXECUÇÃO LETAL (FINISHER KILL TURN):
-        # Quando o oponente está na zona de letalidade (HP <= 8) e Gravy tem vida confortável (HP >= 10),
-        # JAMAIS bloquear com cartas da mão! Preservar mão cheia de 4 cartas para sobrecarregar as defesas do oponente.
-        if opp_hp <= 8 and my_hp >= 10 and not is_fatal:
-            return TurnPlan(
-                plan_type="GRAVY_LETHAL_EXECUTION",
-                can_absorb_damage=True,
-                max_block_cards=0,
-                priority_action_types=["heavy_pirate_attack", "ally_attack", "pirate_attack"],
-                offensive_potential=14.0,
-                reason=f"Gravy Bones LETHAL EXECUTION: opponent at {opp_hp} HP! Zero blocking to overwhelm turtle defenses!"
-            )
+        # 2. Cálculo da Conversão da Mão (Hand Conversion Calculus):
+        # Em FaB, só bloqueia se o cálculo for da NÃO conversão da mão: apenas cartas que convertem na linha ofensiva são reservadas.
+        # Cartas não-convertíveis (pitch excedente, Blood in the Water como reação, etc.) ficam 100% liberadas para bloquear.
+        reserved: Set[str] = set()
+        offensive_potential = 0.0
 
-        # 1. Aliados Ativos na Mesa (playerAllies): se houver aliados prontos, ativar ataque do enxame
-        allies = state.get("playerAllies", [])
-        if isinstance(allies, list) and allies and my_hp >= 8:
-            active_allies = [a for a in allies if isinstance(a, dict) and a.get("action", 0) > 0]
-            if active_allies:
-                ally_target = active_allies[0]
-                al_name = str(ally_target.get("cardNumber") or ally_target.get("name", "ally"))
-                max_blocks = max(0, len(hand) - 1) if hand else 0
-                return TurnPlan(
-                    plan_type="GRAVY_ALLY_SWARM",
-                    can_absorb_damage=(my_hp >= 10),
-                    max_block_cards=max_blocks,
-                    priority_action_types=["ally_attack", "pirate_attack"],
-                    offensive_potential=float(ally_target.get("power", 5)),
-                    reason=f"Gravy Bones plan: commanding arena ally {al_name} for swarm pressure"
-                )
+        # Identifica se há Avast Ye! para conceder Go Again ao ataque/aliado
+        avast_cards = [c for c in hand if "avast_ye" in str(c.get("cardNumber") or c.get("name", "")).lower()]
+        if avast_cards:
+            avast_name = str(avast_cards[0].get("cardNumber") or avast_cards[0].get("name", ""))
+            reserved.add(avast_name)
+            offensive_potential += 4.0
 
-        # 2. Buscar ataques de pirata e aliados na mão para ofensiva agressiva
+        # Identifica ataques de pirata na mão
         pirate_keywords = [
             "conqueror_of_the_high_seas", "riggermortis", "sawbones", "saltwater_swell",
-            "blood_in_the_water", "anka", "chum", "scooba", "swiftwater_sloop", "cheating_scoundrel"
+            "swiftwater_sloop", "anka", "chum", "scooba", "cheating_scoundrel"
         ]
-        heavy_atks = [
+        hand_attacks = [
             c for c in hand
             if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in pirate_keywords)
         ]
-        pitch_cards = [c for c in hand if int(c.get("pitch", 1)) >= 2]
+        hand_attacks.sort(key=lambda c: int(c.get("power", 0)), reverse=True)
 
-        if heavy_atks and my_hp >= 10:
-            atk_card = heavy_atks[0]
-            a_name = str(atk_card.get("cardNumber") or atk_card.get("name", ""))
-            reserved: Set[str] = {a_name}
-            if pitch_cards and pitch_cards[0] is not atk_card:
-                reserved.add(str(pitch_cards[0].get("cardNumber") or pitch_cards[0].get("name", "")))
+        allies = state.get("playerAllies", [])
+        active_allies = [a for a in allies if isinstance(a, dict) and a.get("action", 0) > 0] if isinstance(allies, list) else []
 
-            reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
-            max_blocks = max(0, len(hand) - len(reserved_in_hand))
+        needed_cost = 0
+        if active_allies:
+            needed_cost += len(active_allies)
+            offensive_potential += sum(float(a.get("power", 2)) for a in active_allies)
+
+        if hand_attacks:
+            primary_atk = hand_attacks[0]
+            p_name = str(primary_atk.get("cardNumber") or primary_atk.get("name", ""))
+            reserved.add(p_name)
+            needed_cost += int(primary_atk.get("cost", 0))
+            offensive_potential += float(primary_atk.get("power", 4))
+
+            # Se temos Go Again nativo ou Avast Ye!, um segundo ataque converte
+            if ("saltwater_swell" in p_name.lower() or avast_cards) and len(hand_attacks) > 1:
+                sec_atk = hand_attacks[1]
+                s_name = str(sec_atk.get("cardNumber") or sec_atk.get("name", ""))
+                reserved.add(s_name)
+                needed_cost += int(sec_atk.get("cost", 0))
+                offensive_potential += float(sec_atk.get("power", 3))
+
+        # Reservar os pitches estritamente necessários para cobrir needed_cost
+        pitch_cards = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) not in reserved and int(c.get("pitch", 0)) > 0]
+        pitch_cards.sort(key=lambda c: int(c.get("pitch", 1)), reverse=True)
+        res_gathered = 0
+        for pc in pitch_cards:
+            if res_gathered < needed_cost:
+                res_gathered += int(pc.get("pitch", 1))
+                reserved.add(str(pc.get("cardNumber") or pc.get("name", "")))
+
+        # As cartas da mão que NÃO convertem ficam disponíveis para bloquear
+        reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+        non_converting_cards = len(hand) - len(reserved_in_hand)
+        max_blocks = max(0, non_converting_cards)
+
+        # 0. MODO EXECUÇÃO LETAL (FINISHER KILL TURN):
+        # Quando o oponente está na zona de letalidade (HP <= 8), foco total em conversão ofensiva,
+        # mas preservando bloqueio com cartas excedentes que não convertem e respeitando on-hits.
+        if opp_hp <= 8 and not is_fatal:
+            return TurnPlan(
+                plan_type="GRAVY_LETHAL_EXECUTION",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 8 and not has_dangerous_on_hit),
+                max_block_cards=max_blocks,
+                priority_action_types=["avast_ye", "ally_attack", "pirate_attack"],
+                offensive_potential=max(offensive_potential, 14.0),
+                reason=f"Gravy Bones LETHAL EXECUTION: opponent at {opp_hp} HP! Converting {len(reserved_in_hand)} hand cards ({max_blocks} non-converting to block)."
+            )
+
+        # 1. Aliados Ativos na Mesa:
+        if active_allies:
+            return TurnPlan(
+                plan_type="GRAVY_ALLY_SWARM",
+                reserved_card_names=reserved,
+                can_absorb_damage=(my_hp >= 10 and not has_dangerous_on_hit),
+                max_block_cards=max_blocks,
+                priority_action_types=["avast_ye", "ally_attack", "pirate_attack"],
+                offensive_potential=offensive_potential,
+                reason=f"Gravy Bones swarm: commanding allies ({max_blocks} non-converting cards available to block)"
+            )
+
+        # 2. Ataques de Pirata da Mão:
+        if hand_attacks:
             return TurnPlan(
                 plan_type="GRAVY_PIRATE_ASSAULT",
                 reserved_card_names=reserved,
-                can_absorb_damage=(my_hp >= 12),
+                can_absorb_damage=(my_hp >= 12 and not has_dangerous_on_hit),
                 max_block_cards=max_blocks,
-                priority_action_types=["compass_ability", "pirate_attack", "ally_play"],
-                offensive_potential=float(atk_card.get("power", 6)),
-                reason=f"Gravy Bones plan: reserving {a_name} for pirate assault and treasure pressure"
+                priority_action_types=["avast_ye", "compass_ability", "pirate_attack"],
+                offensive_potential=offensive_potential,
+                reason=f"Gravy Bones pirate assault: hand conversion reserved {len(reserved_in_hand)} cards ({max_blocks} non-converting to block)"
             )
 
         return super().analyze_turn_plan(state)

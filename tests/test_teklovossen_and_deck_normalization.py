@@ -172,7 +172,7 @@ def test_player_allies_attack_candidate():
         "playerHealth": 35,
         "opponentHealth": 30,
         "playerHand": [
-            {"cardNumber": "avast_ye_blue", "pitch": 3, "cost": 0, "action": 27}
+            {"cardNumber": "blue_pitch_card", "pitch": 3, "cost": 0, "action": 27}
         ],
         "playerArsenal": [],
         "playerEquipment": [
@@ -417,28 +417,69 @@ def test_all_known_zone_cards_and_state_vector():
 
 
 def test_gravy_bones_lethal_execution_and_finisher_boost():
-    """Valida o modo de Execução Letal, proteção de finalizadores e escolha agressiva de aliados pesados."""
+    """Valida o modo de Execução Letal, cálculo por não-conversão da mão, Blood in the Water e sequenciamento de Avast Ye!."""
     from ai.hero_strategies.other_classes import GravyBonesStrategy
     strat = GravyBonesStrategy(hero_name="gravy_bones_shipwrecked_looter")
 
-    # 1. Modo de Execução Letal: Quando oponente <= 8 HP e Gravy >= 10 HP, proíbe bloqueio (max_block_cards = 0)
-    state_kill = {
+    # 1. Conversão total da mão: se todas as cartas convertem no plano ofensivo, não queima carta no bloqueio (max_block_cards = 0)
+    state_kill_converting = {
         "playerHealth": 38,
         "opponentHealth": 4,
-        "playerHand": [{"cardNumber": "conqueror_of_the_high_seas_red", "power": 7, "block": 3}],
+        "playerHand": [{"cardNumber": "conqueror_of_the_high_seas_red", "power": 7, "cost": 4, "block": 3}],
         "activeChainLink": {"totalPower": 3, "cardNumber": "generic_attack"}
     }
-    plan = strat.analyze_turn_plan(state_kill)
+    plan = strat.analyze_turn_plan(state_kill_converting)
     assert plan.plan_type == "GRAVY_LETHAL_EXECUTION"
     assert plan.max_block_cards == 0
     assert plan.can_absorb_damage is True
 
-    # 2. Proteção de cartas finalizadoras contra descarte em bloqueio
+    # 2. Bloqueio por NÃO-conversão da mão: se a mão possui carta não-convertível (Blood in the Water), ela fica livre para bloquear
+    state_with_non_converting = {
+        "playerHealth": 38,
+        "opponentHealth": 4,
+        "playerHand": [
+            {"cardNumber": "conqueror_of_the_high_seas_red", "power": 7, "cost": 4, "block": 3},
+            {"cardNumber": "blood_in_the_water_red", "power": 0, "cost": 0, "block": 4}
+        ],
+        "activeChainLink": {"totalPower": 3, "cardNumber": "generic_attack"}
+    }
+    plan2 = strat.analyze_turn_plan(state_with_non_converting)
+    assert plan2.plan_type == "GRAVY_LETHAL_EXECUTION"
+    assert plan2.max_block_cards == 1, "Carta não-convertível (Blood in the Water) deve estar livre para bloquear!"
+
+    # 3. Respeito estrito a On-Hits Perigosos (ex: Command and Conquer): força SURVIVAL_BLOCK mesmo com HP alto
+    state_on_hit = {
+        "playerHealth": 38,
+        "opponentHealth": 4,
+        "playerHand": [{"cardNumber": "conqueror_of_the_high_seas_red", "power": 7, "cost": 4, "block": 3}],
+        "activeChainLink": {"totalPower": 6, "cardNumber": "command_and_conquer_red"}
+    }
+    plan_on_hit = strat.analyze_turn_plan(state_on_hit)
+    assert plan_on_hit.plan_type == "SURVIVAL_BLOCK"
+    assert plan_on_hit.max_block_cards == 1
+
+    # 4. Blood in the Water é uma Defense Reaction (+14.0) e NÃO deve ser penalizada no bloqueio
+    assert strat.evaluate_block_card("blood_in_the_water_red", 4, 1, 0, False) >= 10.0
+    # Finalizadores de ataque são protegidos contra queima leviana
     assert strat.evaluate_block_card("conqueror_of_the_high_seas_red", 3, 1, 7, False) <= -8.0
     assert strat.evaluate_block_card("riggermortis_yellow", 2, 2, 6, False) <= -8.0
 
-    # 3. PolicyEngine com oponente na zona crítica prioriza aliado com poder letal
+    # 5. Sequenciamento de Avast Ye! antes de ataque de aliado para conceder Go Again
     pe = PolicyEngine(hero_name="gravy_bones_shipwrecked_looter", num_mcts_sims=5, use_gpu=False)
+    state_avast_seq = {
+        "turnPlayer": 1, "playerID": 1, "amIActivePlayer": True,
+        "playerHealth": 38, "opponentHealth": 6,
+        "playerHand": [{"cardNumber": "avast_ye_blue", "name": "Avast Ye!", "pitch": 3, "cost": 0, "action": 27}],
+        "playerAllies": [
+            {"cardNumber": "riggermortis_yellow", "name": "Riggermortis", "action": 27, "power": 6, "actionDataOverride": "ally_2"}
+        ],
+        "playerResources": [3, 3], "actionPoints": 1
+    }
+    action_avast = pe.select_best_attack(state_avast_seq)
+    assert action_avast is not None
+    assert "avast_ye" in action_avast["name"], "Avast Ye! deve ser jogado antes do ataque do aliado para dar Go Again!"
+
+    # 6. PolicyEngine com oponente na zona crítica prioriza aliado com poder letal quando Avast Ye! não está na mão
     state_allies_kill = {
         "turnPlayer": 1, "playerID": 1, "amIActivePlayer": True,
         "playerHealth": 38, "opponentHealth": 4,
