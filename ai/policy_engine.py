@@ -854,6 +854,13 @@ class PolicyEngine:
                         base_score = float(ally_power) * 2.0
                         if getattr(self.strategy, "is_ally_hero", False) or "gravy" in str(self.hero_name).lower():
                             base_score += 15.0  # Gravy Bones valoriza ataques de aliados agressivamente
+                            # Se o oponente está na zona crítica (<= 6 HP), priorizar aliados pesados para perfurar o bloco
+                            opp_h = int(state.get("opponentHealth", state.get("oppHealth", 40)))
+                            if opp_h <= 6:
+                                if ally_power >= opp_h:
+                                    base_score += 15.0  # Golpe de misericórdia letal direto
+                                elif ally_power >= 4:
+                                    base_score += 10.0  # Quebrador de defesa que força múltiplos bloqueios
                         candidates.append({
                             "type": "ally", "idx": idx, "card_id": str(a_id), "mode": action,
                             "name": a_name, "score": base_score, "cost": ability_cost,

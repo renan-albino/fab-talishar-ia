@@ -415,3 +415,42 @@ def test_all_known_zone_cards_and_state_vector():
     # 2 Evos equipados (183 = 0.5)
     assert vec[183] == 0.5
 
+
+def test_gravy_bones_lethal_execution_and_finisher_boost():
+    """Valida o modo de Execução Letal, proteção de finalizadores e escolha agressiva de aliados pesados."""
+    from ai.hero_strategies.other_classes import GravyBonesStrategy
+    strat = GravyBonesStrategy(hero_name="gravy_bones_shipwrecked_looter")
+
+    # 1. Modo de Execução Letal: Quando oponente <= 8 HP e Gravy >= 10 HP, proíbe bloqueio (max_block_cards = 0)
+    state_kill = {
+        "playerHealth": 38,
+        "opponentHealth": 4,
+        "playerHand": [{"cardNumber": "conqueror_of_the_high_seas_red", "power": 7, "block": 3}],
+        "activeChainLink": {"totalPower": 3, "cardNumber": "generic_attack"}
+    }
+    plan = strat.analyze_turn_plan(state_kill)
+    assert plan.plan_type == "GRAVY_LETHAL_EXECUTION"
+    assert plan.max_block_cards == 0
+    assert plan.can_absorb_damage is True
+
+    # 2. Proteção de cartas finalizadoras contra descarte em bloqueio
+    assert strat.evaluate_block_card("conqueror_of_the_high_seas_red", 3, 1, 7, False) <= -8.0
+    assert strat.evaluate_block_card("riggermortis_yellow", 2, 2, 6, False) <= -8.0
+
+    # 3. PolicyEngine com oponente na zona crítica prioriza aliado com poder letal
+    pe = PolicyEngine(hero_name="gravy_bones_shipwrecked_looter", num_mcts_sims=5, use_gpu=False)
+    state_allies_kill = {
+        "turnPlayer": 1, "playerID": 1, "amIActivePlayer": True,
+        "playerHealth": 38, "opponentHealth": 4,
+        "playerHand": [{"cardNumber": "blue_card", "pitch": 3, "cost": 0, "action": 27}],
+        "playerAllies": [
+            {"cardNumber": "scooba_salty_sea_dog_yellow", "name": "Scooba", "action": 27, "power": 1, "actionDataOverride": "ally_1"},
+            {"cardNumber": "riggermortis_yellow", "name": "Riggermortis", "action": 27, "power": 6, "actionDataOverride": "ally_2"}
+        ],
+        "playerResources": [3, 3], "actionPoints": 1
+    }
+    action = pe.select_best_attack(state_allies_kill)
+    assert action is not None
+    assert action["name"] == "riggermortis_yellow"  # Poder 6 perfura o oponente de 4 HP
+
+

@@ -213,6 +213,23 @@ class FaBPolicyValueNetwork(nn.Module):
         vec[151] = min(grave_acts / 4.0, 1.0)
         vec[152] = min(banish_acts / 4.0, 1.0)
 
+        # 5.1 Aliados na Arena e Fichas de Ouro (Índices 153-157)
+        allies = state.get("playerAllies", [])
+        if isinstance(allies, list):
+            vec[153] = min(len(allies) / 5.0, 1.0)
+            active_allies = sum(1 for a in allies if isinstance(a, dict) and a.get("action", 0) > 0)
+            vec[154] = min(float(active_allies) / 3.0, 1.0)
+
+        auras_or_tokens = (state.get("playerAuras") or []) + (state.get("playerTokens") or [])
+        gold_count = sum(1 for t in auras_or_tokens if isinstance(t, dict) and "gold" in str(t.get("cardNumber") or t.get("name", "")).lower())
+        vec[155] = min(float(gold_count) / 4.0, 1.0)
+
+        # Janela de Letalidade Crítica (Opponent HP <= 6) e Diferencial de Vida
+        my_hp_val = float(state.get("playerHealth", 40))
+        opp_hp_val = float(state.get("opponentHealth", 40))
+        vec[156] = 1.0 if opp_hp_val <= 6.0 else 0.0
+        vec[157] = max(-1.0, min(1.0, (my_hp_val - opp_hp_val) / 40.0))
+
         # 6. Hero Classes, Archetypes & Specific Heroes (Índices 161-191)
         hero = str(state.get("playerHero", state.get("character", ""))).lower()
         opp_hero = str(state.get("opponentHero", state.get("opponentCharacter", ""))).lower()

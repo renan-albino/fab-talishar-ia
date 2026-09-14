@@ -798,20 +798,29 @@ class GravyBonesStrategy(MerchantStrategy):
         score = super().evaluate_attack_card(card_name, power, cost, has_go_again, pitch)
         c_low = card_name.lower()
         if "conqueror_of_the_high_seas" in c_low:
-            score += 12.0  # Finalizador massivo com alto poder
+            score += 16.0  # Finalizador massivo com alto poder que supera blocos de 3
         elif "riggermortis" in c_low:
-            score += 10.0
+            score += 14.0  # Aliado com poder 6 massivo
+        elif "blood_in_the_water" in c_low:
+            score += 12.0  # Pressiona dano com buffs de pirata
         elif "saltwater_swell" in c_low:
-            score += 7.0
+            score += 10.0  # Go Again essencial para sobrecarregar defesas
+        elif "swiftwater_sloop" in c_low:
+            score += 9.0
         elif "sawbones_dock_hand" in c_low:
             score += 7.0
-        elif "blood_in_the_water" in c_low:
-            score += 8.0
-        elif any(k in c_low for k in ["anka", "chum", "scooba", "swiftwater", "scoundrel"]):
+        elif any(k in c_low for k in ["anka", "chum", "scooba", "scoundrel"]):
             score += 7.0
         elif any(k in c_low for k in ["fearless_confrontation", "avast_ye"]):
             score += 6.0
         return score
+
+    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool, **kwargs) -> float:
+        c_low = card_name.lower()
+        # Evita queimar cartas finalizadoras no bloqueio para não perder poder de letalidade
+        if any(k in c_low for k in ["conqueror_of_the_high_seas", "blood_in_the_water", "riggermortis", "swiftwater_sloop"]):
+            return -8.0
+        return super().evaluate_block_card(card_name, block_val, pitch, power, has_go_again, **kwargs)
 
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
         # Compass of Sunken Depths / Armas de Pirata
@@ -832,6 +841,7 @@ class GravyBonesStrategy(MerchantStrategy):
 
     def analyze_turn_plan(self, state: dict) -> TurnPlan:
         my_hp = int(state.get("playerHealth", 40))
+        opp_hp = int(state.get("opponentHealth", 40))
         hand = state.get("playerHand", [])
         active_chain = state.get("activeChainLink") or {}
         opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
@@ -846,6 +856,19 @@ class GravyBonesStrategy(MerchantStrategy):
                 can_absorb_damage=False,
                 max_block_cards=len(hand),
                 reason="Gravy Bones survival mode: blocking critical or fatal damage"
+            )
+
+        # 0. MODO EXECUÇÃO LETAL (FINISHER KILL TURN):
+        # Quando o oponente está na zona de letalidade (HP <= 8) e Gravy tem vida confortável (HP >= 10),
+        # JAMAIS bloquear com cartas da mão! Preservar mão cheia de 4 cartas para sobrecarregar as defesas do oponente.
+        if opp_hp <= 8 and my_hp >= 10 and not is_fatal:
+            return TurnPlan(
+                plan_type="GRAVY_LETHAL_EXECUTION",
+                can_absorb_damage=True,
+                max_block_cards=0,
+                priority_action_types=["heavy_pirate_attack", "ally_attack", "pirate_attack"],
+                offensive_potential=14.0,
+                reason=f"Gravy Bones LETHAL EXECUTION: opponent at {opp_hp} HP! Zero blocking to overwhelm turtle defenses!"
             )
 
         # 1. Aliados Ativos na Mesa (playerAllies): se houver aliados prontos, ativar ataque do enxame
