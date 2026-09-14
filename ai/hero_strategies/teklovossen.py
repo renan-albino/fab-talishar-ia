@@ -163,14 +163,11 @@ class TeklovossenStrategy(HeroStrategy):
                 evos_equipped = sum(1 for eq in equip if isinstance(eq, dict) and ("evo" in str(eq.get("cardNumber", "")).lower() or "evo" in str(eq.get("subtype", "")).lower()))
 
             # Regra Oficial Teklo Leveler (EVO009):
-            # • 0 Evos: Não pode atacar (não possui a ação)
-            # • 1 Evo: Custo 3 ({r}{r}{r}), Poder 2
+            # • 0 ou 1 Evo: Custo 3 ({r}{r}{r}), Poder 2, sem Go Again (arma é igual com 0 e 1 Evos)
             # • 2 Evos: Custo {r}{r} a menos -> Custo 1 ({r}), Poder 2
             # • 3 Evos: Custo 1 ({r}), Poder 2, GANHA GO AGAIN!
             # • 4 Evos: Custo 1 ({r}), Poder 3 (+1{p}), GANHA GO AGAIN!
-            if evos_equipped < 1:
-                return -999.0
-            elif evos_equipped == 1:
+            if evos_equipped <= 1:
                 score = 4.0 + (2.0 if floating_res >= 3 else 0.0)
             elif evos_equipped == 2:
                 score = 12.0 + (3.0 if floating_res >= 1 else 0.0)

@@ -309,15 +309,12 @@ class PolicyEngine:
         clean = str(weapon_name).lower()
 
         # Regra Oficial Teklo Leveler (Joseph Qiu - EVO009):
-        # • Se 0 Evos equipados: NÃO POSSUI AÇÃO DE ATAQUE (Custo 999 / Inativo).
-        # • Se 1 Evo equipado: Ação de Ataque custa {r}{r}{r} (3 recursos).
-        # • Se 2+ Evos equipados: Custa {r}{r} a menos -> Custa apenas {r} (1 recurso)!
+        # • Com 0 ou 1 Evo equipado: Custo {r}{r}{r} (3 recursos), Poder 2, sem Go Again (arma é igual com 0 e 1 Evos).
+        # • Com 2+ Evos equipados: Custa {r}{r} a menos -> Custa apenas {r} (1 recurso)!
         if "leveler" in clean or "teklo_leveler" in clean:
             equip_list = state.get("playerEquipment", []) if state else []
             evos_equipped = sum(1 for eq in equip_list if isinstance(eq, dict) and ("evo" in str(eq.get("cardNumber", "")).lower() or "evo" in str(eq.get("subtype", "")).lower()))
-            if evos_equipped < 1:
-                return 999
-            elif evos_equipped == 1:
+            if evos_equipped <= 1:
                 return 3
             else:
                 return 1
@@ -675,13 +672,11 @@ class PolicyEngine:
                         if steam_counters <= 0:
                             continue
 
-                    # Poda de Teklo Leveler: requer 1+ Evos equipados para poder atacar
+                    # Teklo Leveler: igual com 0 e 1 Evos (custo 3), escala com 2+ Evos
                     evos_equipped = 0
                     if "leveler" in eq_name or "teklo_leveler" in eq_name:
                         equip_list = state.get("playerEquipment", []) if state else []
                         evos_equipped = sum(1 for e in equip_list if isinstance(e, dict) and ("evo" in str(e.get("cardNumber", "")).lower() or "evo" in str(e.get("subtype", "")).lower()))
-                        if evos_equipped < 1:
-                            continue
 
                     # Armas convencionais de ataque
                     if total_res >= weapon_cost:

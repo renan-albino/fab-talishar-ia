@@ -230,7 +230,7 @@ def test_teklo_leveler_dynamic_scaling_and_evos():
     """Valida a regra oficial de Teklo Leveler (EVO009) para 0, 1, 2, 3 e 4 Evos equipados."""
     pe = PolicyEngine(hero_name="teklovossen", use_gpu=False, num_mcts_sims=5)
 
-    # Caso 1: 0 Evos equipados -> Custo 999 e NÃO deve ser incluído nos candidatos de ataque
+    # Caso 1: 0 Evos equipados -> A arma é IGUAL com 0 e 1 Evos: Custo 3, Poder 2, sem Go Again
     state_0_evos = {
         "playerEquipment": [
             {"cardNumber": "teklo_leveler", "slot": "weapon", "action": 27, "type": "W"}
@@ -240,9 +240,11 @@ def test_teklo_leveler_dynamic_scaling_and_evos():
         "actionPoints": 1
     }
     cost_0 = pe.get_weapon_cost("teklo_leveler", state=state_0_evos)
-    assert cost_0 >= 99
+    assert cost_0 == 3
     candidate_0 = pe.select_best_attack(state_0_evos)
-    assert candidate_0 is None or candidate_0.get("name") != "teklo_leveler"
+    assert candidate_0 is not None and candidate_0.get("name") == "teklo_leveler"
+    assert candidate_0.get("power") == 2
+    assert not candidate_0.get("has_go_again")
 
     # Caso 2: 1 Evo equipado -> Custo 3, Poder 2, sem Go Again
     state_1_evo = {
