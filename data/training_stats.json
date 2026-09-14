@@ -1,10 +1,10 @@
 {
-  "total_matches": 1934,
-  "bot1_wins": 761,
+  "total_matches": 1935,
+  "bot1_wins": 762,
   "bot2_wins": 1153,
   "draws": 20,
-  "bot1_elo": 1236,
-  "bot2_elo": 1164,
+  "bot1_elo": 1249,
+  "bot2_elo": 1151,
   "elo_history": [
     {
       "match": 1,
@@ -13415,6 +13415,12 @@
       "bot1_elo": 1236,
       "bot2_elo": 1164,
       "timestamp": 1789339026.2501957
+    },
+    {
+      "match": 1935,
+      "bot1_elo": 1249,
+      "bot2_elo": 1151,
+      "timestamp": 1789356903.0204575
     }
   ],
   "deck_stats": {
@@ -13449,11 +13455,11 @@
       "elo": 1322
     },
     "Oscilio GIAF": {
-      "matches": 260,
+      "matches": 261,
       "wins": 245,
-      "losses": 14,
-      "elo": 1382,
-      "human_matches": 1
+      "losses": 15,
+      "elo": 1354,
+      "human_matches": 2
     },
     "Hala": {
       "matches": 275,
@@ -13486,10 +13492,10 @@
       "elo": 901
     },
     "👤 Humano (Você)": {
-      "matches": 9,
-      "wins": 3,
+      "matches": 10,
+      "wins": 4,
       "losses": 6,
-      "elo": 1050
+      "elo": 1078
     },
     "Marlinn": {
       "matches": 25,
@@ -13502,8 +13508,8 @@
     {
       "room": "3702",
       "date": "13/09/2026 20:54:24",
-      "winner": "Anulada (Bot Inerte (Punching Bag))",
-      "p1_deck": "👤 Humano (Humano (Você))",
+      "winner": "👤 Humano (Teklovossen)",
+      "p1_deck": "👤 Humano (Teklovossen)",
       "p2_deck": "🤖 Bot (Oscilio Giaf)",
       "p1_health": 40,
       "p2_health": -4,
@@ -13801,21 +13807,6 @@
     }
   ],
   "deck_elo_history": [
-    {
-      "match": 1736,
-      "Vynsett": 878,
-      "Betsy": 1465,
-      "Cindra": 1597,
-      "Dash IO": 938,
-      "Gravy Bones": 1116,
-      "Oscilio GIAF": 1527,
-      "Hala": 1140,
-      "Jarl": 1293,
-      "Mario": 1093,
-      "Kassai": 1469,
-      "Teklovossen": 984,
-      "👤 Humano (Você)": 1207
-    },
     {
       "match": 1737,
       "Vynsett": 878,
@@ -21735,6 +21726,22 @@
       "Kassai": 1537,
       "Teklovossen": 901,
       "👤 Humano (Você)": 1050,
+      "Marlinn": 1221
+    },
+    {
+      "match": 1935,
+      "Vynsett": 764,
+      "Betsy": 1380,
+      "Cindra": 1402,
+      "Dash IO": 983,
+      "Gravy Bones": 1322,
+      "Oscilio GIAF": 1354,
+      "Hala": 1295,
+      "Jarl": 1436,
+      "Mario": 1152,
+      "Kassai": 1537,
+      "Teklovossen": 901,
+      "👤 Humano (Você)": 1078,
       "Marlinn": 1221
     }
   ]

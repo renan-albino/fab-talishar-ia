@@ -5,7 +5,7 @@
   "policy_loss": 0.1234,
   "value_loss": 0.2826,
   "total_loss": 0.406,
-  "active_matchup": "hala vs mario (+2 partidas)",
+  "active_matchup": "oscilio_giaf vs kassai (+3 partidas)",
   "last_summary": "═══════════════════════════════════════════════\n🏆 RESULTADO DA PARTIDA: Train_77787de4\n═══════════════════════════════════════════════\n• Vencedor: Jogador 1 (Betsy) (Jogador 1)\n• Jogador 1 (Betsy): 8 HP\n• Jogador 2 (Dash IO): -6 HP\n• Duração: 21 turnos\n• Decisões Coletadas para Treino: 320 amostras\n═══════════════════════════════════════════════\n",
   "history": [
     {

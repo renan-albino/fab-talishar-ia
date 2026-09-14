@@ -246,12 +246,13 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
             is_invalid_match = True
             invalid_reason = "Empate 0 Dano (Mutual Stall)"
         # Caso 2: Bot travou só apanhando (Punching Bag): vencedor com vida intacta (>= vida inicial) e perdedor <= 0 em >= 6 turnos
-        elif winner_id == 1:
+        # IMPORTANTE: Nunca anular partidas contra humanos (o jogador humano pode bloquear com sucesso ou recuperar vida de forma legítima)
+        elif not is_human_p1 and winner_id == 1:
             p1_init_expected = get_expected_starting_health(p1_deck_clean)
             if p1_health >= p1_init_expected and p2_health <= 0 and total_turns >= 6:
                 is_invalid_match = True
                 invalid_reason = "Bot Inerte (Punching Bag)"
-        elif winner_id == 2:
+        elif not is_human_p1 and winner_id == 2:
             p2_init_expected = get_expected_starting_health(p2_deck_clean)
             if p2_health >= p2_init_expected and p1_health <= 0 and total_turns >= 6:
                 is_invalid_match = True

@@ -121,6 +121,26 @@ def test_cc_winner_with_20_hp_is_not_punching_bag():
     assert stats["deck_stats"]["Kassai"]["wins"] == 1
     assert stats["deck_stats"]["Vynsett"]["losses"] == 1
 
+def test_human_victory_with_full_health_is_not_annulled():
+    """Valida que vitória de jogador humano terminando com 40 HP (defendendo ou curando) JAMAIS é anulada como Punching Bag."""
+    stats = update_match_result(
+        room_id="room_human_40_hp_legit",
+        p1_deck="Teklovossen",
+        p2_deck="Oscilio GIAF",
+        p1_health=40,
+        p2_health=-4,
+        total_turns=16,
+        winner_id=1,
+        is_human_p1=True
+    )
+
+    assert stats["total_matches"] == 1
+    assert stats["bot1_wins"] == 1
+    assert "👤 Humano" in stats["recent_matches"][0]["winner"]
+    assert "Anulada" not in stats["recent_matches"][0]["winner"]
+    assert "👤 Humano (Você)" in stats["deck_stats"]
+    assert stats["deck_stats"]["👤 Humano (Você)"]["wins"] == 1
+
 def test_clean_stalled_matches_routine():
     """Valida que clean_stalled_matches remove empates residuais dos decks e ajusta contagens."""
     initial_data = {

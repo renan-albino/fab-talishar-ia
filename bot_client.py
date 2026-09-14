@@ -991,6 +991,10 @@ class FabBotClient:
                 p1_lbl = self.get_player_label(1)
                 p2_lbl = self.get_player_label(2)
 
+                # ── Identificação do tipo de partida (Humano vs Bot ou Bot vs Bot) ──
+                is_vs_human = (getattr(self, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
+                is_human_victory = is_vs_human and (winner_id == self.player_id)
+
                 # ── Avaliação de Partida Inválida (Empate 0 Dano ou Bot Inerte / Punching Bag) ──
                 p1_init_hp = self.initial_my_health if self.player_id == 1 else (self.initial_opp_health or 40)
                 p2_init_hp = self.initial_opp_health if self.player_id == 1 else (self.initial_my_health or 40)
@@ -1007,25 +1011,28 @@ class FabBotClient:
                         is_invalid_match = True
                         invalid_reason = "Empate 0 Dano (Mutual Stall)"
                 # 2. Bot travou só apanhando (Punching Bag / Bot Inerte)
-                elif winner_id in (1, 2):
+                # IMPORTANTE: Partidas contra jogadores humanos NUNCA são consideradas Punching Bag!
+                # O jogador humano pode defender perfeitamente, curar com cartas como Sigil of Solace ou manter 40 HP legitimamente.
+                elif not is_vs_human and winner_id in (1, 2):
                     winner_hp = p1_hp if winner_id == 1 else p2_hp
                     winner_init_hp = p1_init_hp if winner_id == 1 else p2_init_hp
                     loser_hp = p2_hp if winner_id == 1 else p1_hp
                     loser_id = 3 - winner_id
 
-                    # Vencedor terminou com vida intacta (sofreu zero de dano)
+                    # Vencedor terminou com vida intacta (sofreu zero de dano líquido)
                     winner_undamaged = (winner_hp >= winner_init_hp)
 
                     if winner_undamaged and loser_hp <= 0:
                         # Se este bot é o perdedor:
                         if self.player_id == loser_id:
-                            if self.attacks_made == 0 or self.damage_dealt == 0 or self.execution_exceptions_count >= 2:
+                            # Só é considerado inerte se NÃO desferiu ataques E não causou dano, ou se sofreu exceções técnicas
+                            if (self.attacks_made == 0 and self.damage_dealt == 0) or self.execution_exceptions_count >= 2:
                                 if turn >= 5 or self.execution_exceptions_count >= 2:
                                     is_invalid_match = True
                                     invalid_reason = "Bot Inerte (Travou sem atacar / Punching Bag)"
                         # Se este bot é o vencedor:
                         else:
-                            # Partida durou múltiplos turnos (>= 6) com oponente sem desferir dano
+                            # Partida de treino autônomo entre bots onde oponente não desferiu dano em >= 6 turnos
                             if turn >= 6:
                                 is_invalid_match = True
                                 invalid_reason = "Bot Oponente Inerte (Punching Bag)"
@@ -1037,9 +1044,6 @@ class FabBotClient:
                         f"Partida descartada do ReplayBuffer e sem alteração de ELO.",
                         highlight=True, bg_color="#451a03", text_color="#fbbf24"
                     )
-
-                is_vs_human = (getattr(self, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
-                is_human_victory = is_vs_human and (winner_id == self.player_id)
 
                 if not is_invalid_match and hasattr(self, "trajectory") and self.trajectory:
                     try:
