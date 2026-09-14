@@ -180,19 +180,33 @@ class GameSimulator:
 
         atk_power = int(action.get("power", 4))
         opp_hp = int(sim_state.get("opponentHealth", sim_state.get("theirHealth", 40)))
-        opp_hand_count = int(sim_state.get("opponentHandCount", sim_state.get("theirHandCount", 3)))
-
-        # Estimativa de Bloqueio do Oponente baseada na contagem de mão dele
-        # Cada carta na mão do oponente bloqueia em média 2.5 de dano se ele estiver defendendo
-        if opp_hp <= 8:
-            expected_block = min(atk_power, int(opp_hand_count * 2.8))  # Oponente bloqueia pesado com vida baixa
-            cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
-        elif opp_hp <= 18:
-            expected_block = min(atk_power, int(opp_hand_count * 1.8))
-            cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
+        opp_hand = sim_state.get("opponentHand", [])
+        if isinstance(opp_hand, list) and len(opp_hand) > 0 and isinstance(opp_hand[0], dict):
+            # Mundo determinizado com cartas concretas amostradas (Cowling 2012 / ReBel 2020)
+            cards_def = [int(c.get("defense", c.get("block", 3))) for c in opp_hand]
+            cards_def.sort(reverse=True)
+            if opp_hp <= 8:
+                expected_block = min(atk_power, sum(cards_def))
+                cards_used_to_block = min(len(opp_hand), (expected_block + 2) // 3)
+            elif opp_hp <= 18:
+                expected_block = min(atk_power, sum(cards_def[:max(1, len(cards_def) // 2)]))
+                cards_used_to_block = min(len(opp_hand), (expected_block + 2) // 3)
+            else:
+                expected_block = min(atk_power, cards_def[0] if cards_def else 0)
+                cards_used_to_block = 1 if expected_block > 0 else 0
+            opp_hand_count = len(opp_hand)
         else:
-            expected_block = min(atk_power, int(opp_hand_count * 1.0))
-            cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
+            opp_hand_count = int(sim_state.get("opponentHandCount", sim_state.get("theirHandCount", 3)))
+            # Estimativa de Bloqueio do Oponente baseada na contagem de mão dele
+            if opp_hp <= 8:
+                expected_block = min(atk_power, int(opp_hand_count * 2.8))  # Oponente bloqueia pesado com vida baixa
+                cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
+            elif opp_hp <= 18:
+                expected_block = min(atk_power, int(opp_hand_count * 1.8))
+                cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
+            else:
+                expected_block = min(atk_power, int(opp_hand_count * 1.0))
+                cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
 
         unblocked_damage = max(0, atk_power - expected_block)
         sim_state["opponentHealth"] = max(0, opp_hp - unblocked_damage)

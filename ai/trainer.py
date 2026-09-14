@@ -452,19 +452,30 @@ class GPUTrainingOrchestrator:
     ):
         model.train()
         eff_batch = min(batch_size, len(buffer))
-        states_b, policies_b, values_b = buffer.sample_batch(
-            batch_size=eff_batch, device=device, prioritized=True
+        states_b, policies_b, values_b, is_weights_b, aux_targets = buffer.sample_batch(
+            batch_size=eff_batch, device=device, prioritized=True, return_is_weights=True, return_aux=True
         )
 
         optimizer.zero_grad()
 
         with torch.cuda.amp.autocast(enabled=use_amp):
-            policy_logits, value_preds = model(states_b)
+            policy_logits, value_preds, aux_preds = model(states_b, return_aux=True)
 
             log_probs  = F.log_softmax(policy_logits, dim=-1)
-            loss_policy = -(policies_b * log_probs).sum(dim=-1).mean()
-            loss_value  = F.mse_loss(value_preds.squeeze(-1), values_b.squeeze(-1))
-            total_loss  = loss_policy + loss_value
+            # Perdas individuais por amostra
+            sample_loss_policy = -(policies_b * log_probs).sum(dim=-1)
+            sample_loss_value  = (value_preds.squeeze(-1) - values_b.squeeze(-1)) ** 2
+
+            # Ponderação por Importance Sampling (Schaul et al. 2016)
+            loss_policy = (is_weights_b * sample_loss_policy).mean()
+            loss_value  = (is_weights_b * sample_loss_value).mean()
+
+            # Alvos Auxiliares KataGo (David J. Wu, 2019)
+            loss_aux_delta = F.mse_loss(aux_preds["delta_hp"].squeeze(-1), aux_targets["delta_hp"].squeeze(-1))
+            loss_aux_dmg   = F.mse_loss(aux_preds["turn_dmg"].squeeze(-1), aux_targets["turn_dmg"].squeeze(-1))
+            aux_loss = 0.2 * (loss_aux_delta + loss_aux_dmg)
+
+            total_loss  = loss_policy + loss_value + aux_loss
 
         scaler.scale(total_loss).backward()
         scaler.unscale_(optimizer)

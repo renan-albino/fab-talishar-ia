@@ -588,7 +588,7 @@ class ISMCTSEngine:
         if num_legal == 0:
             return 0, np.zeros(32, dtype=np.float32), {}
 
-        # Vetor raiz: calculado uma vez, compartilhado entre mundos
+        # Vetor raiz base: para telemetria de diagnóstico
         state_vec = FaBPolicyValueNetwork.extract_state_vector(state)
 
         vote_counts: Dict[int, int] = {i: 0 for i in range(num_legal)}
@@ -597,12 +597,15 @@ class ISMCTSEngine:
 
         for world_state in worlds:
             try:
+                # Condicionamento de Mundo Determinizado (Cowling 2012 & ReBel 2020)
+                # Extrai o vetor de estado do mundo determinizado para que o MCTS avalie a perspectiva concreta daquele mundo
+                world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
                 _, world_children = self._run_world_mcts(
                     world_state=world_state,
                     legal_actions=legal_actions,
                     num_simulations=num_simulations,
                     training_mode=training_mode,
-                    state_vec=state_vec,
+                    state_vec=world_vec,
                 )
                 for idx, child in world_children.items():
                     if 0 <= idx < num_legal:

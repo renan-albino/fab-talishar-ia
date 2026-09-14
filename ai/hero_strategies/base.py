@@ -6,6 +6,7 @@ Definição base de TurnPlan, utilitários globais de cartas e HeroStrategy.
 
 import os
 import json
+import itertools
 from functools import lru_cache
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, Set, List, Tuple
@@ -393,71 +394,176 @@ class HeroStrategy:
 
         return score
 
-    def calculate_hand_conversion_potential(self, hand: list, floating_res: int = 0) -> Tuple[float, Set[str]]:
+    def solve_knapsack_turn(
+        self,
+        hand: list,
+        floating_res: int = 0,
+        base_ap: int = 1,
+        arsenal: Optional[list] = None
+    ) -> Tuple[float, List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
         """
-        Calcula o potencial ofensivo de dano e sinergia que a mão atual consegue converter.
-        Retorna (potencial_total, conjunto_de_cartas_chave_reservadas).
+        Solucionador Combinatório Exato da Mochila 0-1 para Turno de Flesh and Blood (arXiv:2501.11683).
+        Avalia o espaço de partição (Ataque, Pitch, Excedente) sobre mão + arsenal (<= 5 cartas).
+        Garante que restrições de custo, pitch e Action Points sejam rigorosamente satisfeitas,
+        encontrando a sequência ótima global de dano e valor tático V*(H).
+
+        Retorna:
+          (max_value, best_attacks, best_pitches, surplus_cards)
         """
-        if not hand:
-            return 0.0, set()
+        all_cards = list(hand or [])
+        if arsenal:
+            for ac in arsenal:
+                if isinstance(ac, dict):
+                    all_cards.append({**ac, "from_arsenal": True})
+
+        if not all_cards:
+            return 0.0, [], [], []
 
         cards_db = _get_cards_db()
-        attacks = []
-        pitches = []
-
-        for c in hand:
+        parsed_cards = []
+        for idx, c in enumerate(all_cards):
             c_name = str(c.get("cardNumber") or c.get("name", "")).lower()
             c_meta = cards_db.get(c_name, {})
             c_power = int(c.get("power", c_meta.get("power", 0) or 0))
             c_cost = int(c.get("cost", c_meta.get("cost", 0) or 0))
             c_pitch = int(c.get("pitch", c_meta.get("pitch", 1) or 1))
             has_ga = bool(c.get("has_go_again", c_meta.get("has_go_again", False)))
+            is_from_ars = bool(c.get("from_arsenal", False))
+            has_on_hit = any(oh in c_name for oh in DANGEROUS_ON_HITS)
 
-            if c_power > 0 or has_ga:
-                attacks.append({
-                    "card": c,
-                    "name": c_name,
-                    "power": c_power,
-                    "cost": c_cost,
-                    "pitch": c_pitch,
-                    "has_ga": has_ga,
-                    "value": float(c_power) + (3.0 if has_ga else 0.0)
-                })
+            # Regra CR 3.1.5: Cartas no Arsenal não podem dar pitch
+            can_pitch = not is_from_ars and c_pitch > 0
+
+            # Valor ofensivo intrínseco
+            atk_val = float(c_power) + (2.5 if has_ga else 0.0) + (1.5 if has_on_hit else 0.0)
+
+            parsed_cards.append({
+                "raw": c,
+                "name": c_name,
+                "power": c_power,
+                "cost": c_cost,
+                "pitch": c_pitch,
+                "has_ga": has_ga,
+                "can_pitch": can_pitch,
+                "can_attack": (c_power > 0 or has_ga),
+                "is_from_arsenal": is_from_ars,
+                "value": atk_val,
+                "idx": idx
+            })
+
+        n = len(parsed_cards)
+        max_comb_value = 0.0
+        best_attacks: List[Dict[str, Any]] = []
+        best_pitches: List[Dict[str, Any]] = []
+        best_surplus: List[Dict[str, Any]] = []
+
+        # Para cada subconjunto de cartas atacantes (2^n combinações)
+        for r_atk in range(1, n + 1):
+            for atk_combo in itertools.combinations(range(n), r_atk):
+                atks = [parsed_cards[i] for i in atk_combo]
+
+                # 1. Validação de capacidade de ataque
+                if any(not a["can_attack"] for a in atks):
+                    continue
+
+                # 2. Validação de Action Points (AP):
+                # Ataques sem Go Again consomem 1 AP cada.
+                # O número de ataques sem Go Again não pode exceder base_ap.
+                non_ga_count = sum(1 for a in atks if not a["has_ga"])
+                if non_ga_count > base_ap:
+                    continue
+
+                # Se houver múltiplos ataques, pelo menos (len - 1) devem ter Go Again
+                if len(atks) > base_ap and non_ga_count > base_ap:
+                    continue
+
+                total_cost = sum(a["cost"] for a in atks)
+                cost_needed = max(0, total_cost - floating_res)
+
+                # Cartas restantes candidatas a pitch
+                rem_indices = [i for i in range(n) if i not in atk_combo]
+                pitch_candidates = [parsed_cards[i] for i in rem_indices if parsed_cards[i]["can_pitch"]]
+
+                # Encontrar subconjunto de pitch viável de menor custo (poupando cartas para surplus)
+                viable_pitch_found = False
+                chosen_pitches: List[Dict[str, Any]] = []
+
+                if cost_needed == 0:
+                    viable_pitch_found = True
+                    chosen_pitches = []
+                else:
+                    # Ordena do maior pitch para o menor para minimizar consumo de cartas
+                    pitch_candidates.sort(key=lambda x: x["pitch"], reverse=True)
+                    acc_pitch = 0
+                    cur_p = []
+                    for pc in pitch_candidates:
+                        acc_pitch += pc["pitch"]
+                        cur_p.append(pc)
+                        if acc_pitch >= cost_needed:
+                            viable_pitch_found = True
+                            chosen_pitches = cur_p
+                            break
+
+                if not viable_pitch_found:
+                    continue
+
+                comb_val = sum(a["value"] for a in atks)
+                # Bônus para cadeias completas e conservação de cartas
+                used_indices = set(atk_combo) | {p["idx"] for p in chosen_pitches}
+                surplus = [parsed_cards[i] for i in range(n) if i not in used_indices]
+
+                # Desempate favorece: maior valor de dano, mais cartas excedentes poupadas
+                score_metric = comb_val + (len(surplus) * 0.1)
+                if score_metric > max_comb_value or (max_comb_value == 0.0 and comb_val > 0.0):
+                    max_comb_value = score_metric
+                    best_attacks = atks
+                    best_pitches = chosen_pitches
+                    best_surplus = surplus
+
+        real_val = sum(a["value"] for a in best_attacks)
+        return real_val, best_attacks, best_pitches, best_surplus
+
+    def calculate_card_opportunity_cost(self, hand: list, card_candidate: dict, floating_res: int = 0) -> float:
+        """
+        Calcula o Custo de Oportunidade Tático de uma carta (Felt Table & AI Unsheathed).
+        Mede a perda de conversão ofensiva V*(H) - V*(H \\ {c}) se a carta for gasta em defesa.
+        """
+        if not hand or not card_candidate:
+            return 0.0
+
+        v_full, _, _, _ = self.solve_knapsack_turn(hand, floating_res=floating_res)
+        if v_full <= 0.0:
+            return 0.0
+
+        # Remove apenas a primeira ocorrência da carta candidata
+        c_target_id = str(card_candidate.get("cardNumber") or card_candidate.get("name", "")).lower()
+        sub_hand = []
+        removed = False
+        for c in hand:
+            c_name = str(c.get("cardNumber") or c.get("name", "")).lower()
+            if not removed and c_name == c_target_id:
+                removed = True
             else:
-                pitches.append({
-                    "card": c,
-                    "name": c_name,
-                    "pitch": c_pitch,
-                })
+                sub_hand.append(c)
 
-        if not attacks:
+        v_sub, _, _, _ = self.solve_knapsack_turn(sub_hand, floating_res=floating_res)
+        return max(0.0, float(v_full - v_sub))
+
+    def calculate_hand_conversion_potential(self, hand: list, floating_res: int = 0) -> Tuple[float, Set[str]]:
+        """
+        Calcula o potencial ofensivo de dano e sinergia que a mão atual consegue converter
+        utilizando o Solucionador Combinatório Exato Knapsack (arXiv:2501.11683).
+        Retorna (potencial_total, conjunto_de_cartas_chave_reservadas).
+        """
+        if not hand:
             return 0.0, set()
 
-        attacks.sort(key=lambda x: x["value"], reverse=True)
-        primary = attacks[0]
-        reserved = {primary["name"]}
-        total_potential = primary["value"]
+        max_val, attacks, pitches, _ = self.solve_knapsack_turn(hand, floating_res=floating_res)
+        if max_val <= 0.0:
+            return 0.0, set()
 
-        cost_needed = max(0, primary["cost"] - floating_res)
-        if cost_needed > 0:
-            all_other = [p for p in pitches if p["name"] not in reserved] + [
-                {"name": a["name"], "pitch": a["pitch"]} for a in attacks[1:]
-            ]
-            all_other.sort(key=lambda x: x["pitch"], reverse=True)
-            res_gathered = 0
-            for item in all_other:
-                if res_gathered < cost_needed:
-                    res_gathered += item["pitch"]
-                    reserved.add(item["name"])
-
-        if primary["has_ga"] and len(attacks) > 1:
-            secondary = [a for a in attacks[1:] if a["name"] not in reserved]
-            if secondary:
-                sec = secondary[0]
-                total_potential += sec["value"]
-                reserved.add(sec["name"])
-
-        return total_potential, reserved
+        reserved = {str(a["name"]) for a in attacks} | {str(p["name"]) for p in pitches}
+        return max_val, reserved
 
     def should_trigger_survival_block(
         self,

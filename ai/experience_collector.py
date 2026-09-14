@@ -17,15 +17,28 @@ class ReplayBuffer:
         self.policies = np.zeros((max_capacity, 32), dtype=np.float32)
         self.values = np.zeros((max_capacity, 1), dtype=np.float32)
         self.weights = np.ones(max_capacity, dtype=np.float32)
+        # Alvos Auxiliares (Metodologia KataGo - David J. Wu, 2019)
+        self.aux_delta_hp = np.zeros((max_capacity, 1), dtype=np.float32)
+        self.aux_turn_dmg = np.zeros((max_capacity, 1), dtype=np.float32)
         self.current_size = 0
         self.pointer = 0
 
-    def add(self, state: np.ndarray, policy: np.ndarray, value: float, weight: float = 1.0):
+    def add(
+        self,
+        state: np.ndarray,
+        policy: np.ndarray,
+        value: float,
+        weight: float = 1.0,
+        aux_delta_hp: float = 0.0,
+        aux_turn_dmg: float = 0.0,
+    ):
         idx = self.pointer
         self.states[idx] = state
         self.policies[idx] = policy
         self.values[idx] = float(value)
         self.weights[idx] = max(float(weight), 0.01)
+        self.aux_delta_hp[idx] = float(aux_delta_hp)
+        self.aux_turn_dmg[idx] = float(aux_turn_dmg)
         self.pointer = (self.pointer + 1) % self.max_capacity
         self.current_size = min(self.current_size + 1, self.max_capacity)
 
@@ -36,8 +49,8 @@ class ReplayBuffer:
         weights: Optional[List[float]] = None
     ):
         """
-        Adiciona trajetória completa ao buffer calculando Recompensa Densa (Reward Shaping)
-        e aplicando pesos de Prioritized Experience Replay (PER).
+        Adiciona trajetória completa ao buffer calculando Recompensa Densa (Reward Shaping),
+        alvos auxiliares (KataGo) e aplicando pesos de Prioritized Experience Replay (PER).
         
         Suporta tuplas:
           - (state, policy, p_id)
@@ -63,20 +76,33 @@ class ReplayBuffer:
                     # Combinação convexa: 60% ancorado no resultado final, 40% na vantagem posicional do turno
                     reward = 0.6 * r_term + 0.4 * norm_eval
                     reward = float(np.clip(reward, -1.0, 1.0))
+                    aux_delta = norm_eval
+                    aux_dmg = max(0.0, float(board_eval) / 5.0)
                 except Exception:
                     reward = r_term
+                    aux_delta = 0.0
+                    aux_dmg = 0.0
             else:
                 reward = r_term
+                aux_delta = 0.0
+                aux_dmg = 0.0
 
             w = weights[i] if weights and i < len(weights) else 1.0
-            self.add(state, policy, reward, weight=w)
+            self.add(state, policy, reward, weight=w, aux_delta_hp=aux_delta, aux_turn_dmg=aux_dmg)
 
     def sample_batch(
         self,
         batch_size: int = 256,
         device: torch.device = None,
-        prioritized: bool = True
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        prioritized: bool = True,
+        beta: float = 0.6,
+        return_is_weights: bool = False,
+        return_aux: bool = False,
+    ):
+        """
+        Amostra um batch balanceado com suporte opcional a Importance Sampling (Schaul et al. 2016)
+        e alvos auxiliares KataGo (David J. Wu, 2019).
+        """
         if self.current_size == 0:
             raise ValueError("Buffer vazio, não é possível amostrar batch.")
 
@@ -86,22 +112,45 @@ class ReplayBuffer:
             if sum_w > 0:
                 probs = active_weights / sum_w
                 indices = np.random.choice(self.current_size, batch_size, replace=True, p=probs)
+                # Cálculo de Importance Sampling Weights: w_i = (N * P(i))^(-beta)
+                sampled_probs = np.maximum(probs[indices], 1e-8)
+                is_weights = (float(self.current_size) * sampled_probs) ** (-beta)
+                is_weights = is_weights / np.max(is_weights)  # Normalização para estabilidade de gradiente
             else:
                 indices = np.random.choice(self.current_size, batch_size, replace=True)
+                is_weights = np.ones(batch_size, dtype=np.float32)
         else:
             if self.current_size < batch_size:
                 indices = np.random.choice(self.current_size, self.current_size, replace=True)
             else:
                 indices = np.random.choice(self.current_size, batch_size, replace=False)
+            is_weights = np.ones(len(indices), dtype=np.float32)
 
         b_states = torch.from_numpy(self.states[indices]).float()
         b_policies = torch.from_numpy(self.policies[indices]).float()
         b_values = torch.from_numpy(self.values[indices]).float()
+        b_is = torch.from_numpy(is_weights.astype(np.float32)).float()
 
         if device:
             b_states = b_states.to(device)
             b_policies = b_policies.to(device)
             b_values = b_values.to(device)
+            b_is = b_is.to(device)
+
+        if return_aux:
+            b_aux_delta = torch.from_numpy(self.aux_delta_hp[indices]).float()
+            b_aux_dmg = torch.from_numpy(self.aux_turn_dmg[indices]).float()
+            if device:
+                b_aux_delta = b_aux_delta.to(device)
+                b_aux_dmg = b_aux_dmg.to(device)
+            aux_dict = {"delta_hp": b_aux_delta, "turn_dmg": b_aux_dmg}
+
+            if return_is_weights:
+                return b_states, b_policies, b_values, b_is, aux_dict
+            return b_states, b_policies, b_values, aux_dict
+
+        if return_is_weights:
+            return b_states, b_policies, b_values, b_is
 
         return b_states, b_policies, b_values
 
@@ -118,6 +167,9 @@ class ReplayBuffer:
                 policies=self.policies[:self.current_size],
                 values=self.values[:self.current_size],
                 weights=self.weights[:self.current_size],
+                aux_delta_hp=self.aux_delta_hp[:self.current_size],
+                aux_turn_dmg=self.aux_turn_dmg[:self.current_size],
+                schema_version=np.int32(2),
             )
             os.replace(tmp_path, filepath)
         except Exception:
@@ -135,6 +187,8 @@ class ReplayBuffer:
         new_policies = np.zeros((new_capacity, 32), dtype=np.float32)
         new_values = np.zeros((new_capacity, 1), dtype=np.float32)
         new_weights = np.ones(new_capacity, dtype=np.float32)
+        new_aux_delta = np.zeros((new_capacity, 1), dtype=np.float32)
+        new_aux_dmg = np.zeros((new_capacity, 1), dtype=np.float32)
 
         copy_n = min(self.current_size, new_capacity)
         if copy_n > 0:
@@ -142,11 +196,15 @@ class ReplayBuffer:
             new_policies[:copy_n] = self.policies[:copy_n]
             new_values[:copy_n] = self.values[:copy_n]
             new_weights[:copy_n] = self.weights[:copy_n]
+            new_aux_delta[:copy_n] = self.aux_delta_hp[:copy_n]
+            new_aux_dmg[:copy_n] = self.aux_turn_dmg[:copy_n]
 
         self.states = new_states
         self.policies = new_policies
         self.values = new_values
         self.weights = new_weights
+        self.aux_delta_hp = new_aux_delta
+        self.aux_turn_dmg = new_aux_dmg
         self.max_capacity = new_capacity
         self.current_size = copy_n
         self.pointer = copy_n % new_capacity
@@ -157,9 +215,17 @@ class ReplayBuffer:
         try:
             data = np.load(filepath)
             loaded_states = data["states"]
+            # Prevenção de Distribution Shift (Kumagai et al. 2021)
+            if loaded_states.ndim != 2 or loaded_states.shape[1] != 192:
+                print(f"[ReplayBuffer] ⚠ Shape incompatível detectado ({loaded_states.shape}). Reiniciando buffer.")
+                return False
+
             loaded_policies = data["policies"]
             loaded_values = data["values"]
             loaded_weights = data["weights"] if "weights" in data.files else None
+            loaded_aux_delta = data["aux_delta_hp"] if "aux_delta_hp" in data.files else None
+            loaded_aux_dmg = data["aux_turn_dmg"] if "aux_turn_dmg" in data.files else None
+
             n_loaded = len(loaded_states)
             if n_loaded > self.max_capacity:
                 self.resize(n_loaded)
@@ -171,6 +237,17 @@ class ReplayBuffer:
                 self.weights[:n] = loaded_weights[:n]
             else:
                 self.weights[:n] = 1.0
+
+            if loaded_aux_delta is not None and len(loaded_aux_delta) >= n:
+                self.aux_delta_hp[:n] = loaded_aux_delta[:n]
+            else:
+                self.aux_delta_hp[:n] = 0.0
+
+            if loaded_aux_dmg is not None and len(loaded_aux_dmg) >= n:
+                self.aux_turn_dmg[:n] = loaded_aux_dmg[:n]
+            else:
+                self.aux_turn_dmg[:n] = 0.0
+
             self.current_size = n
             self.pointer = n % self.max_capacity
             return True

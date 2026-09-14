@@ -93,13 +93,41 @@ class FaBPolicyValueNetwork(nn.Module):
             nn.Tanh()
         )
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        # Auxiliary Heads (KataGo Methodology - David J. Wu, 2019)
+        # Previsões intermediárias para aceleração da representação latente
+        aux_mid = max(32, hidden_dim // 4)
+        self.aux_delta_hp = nn.Sequential(
+            nn.Linear(hidden_dim, aux_mid),
+            nn.LeakyReLU(0.1),
+            nn.Linear(aux_mid, 1),
+            nn.Tanh()
+        )
+        self.aux_turn_dmg = nn.Sequential(
+            nn.Linear(hidden_dim, aux_mid),
+            nn.LeakyReLU(0.1),
+            nn.Linear(aux_mid, 1),
+            nn.ReLU()
+        )
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        return_aux: bool = False
+    ) -> Tuple[torch.Tensor, torch.Tensor] | Tuple[torch.Tensor, torch.Tensor, Dict[str, torch.Tensor]]:
         h = self.input_layer(x)
         for block in self.res_blocks:
             h = block(h)
 
         policy_logits = self.policy_head(h)
         value = self.value_head(h)
+
+        if return_aux:
+            aux_dict = {
+                "delta_hp": self.aux_delta_hp(h),
+                "turn_dmg": self.aux_turn_dmg(h),
+            }
+            return policy_logits, value, aux_dict
+
         return policy_logits, value
 
     def count_parameters(self) -> int:
@@ -229,6 +257,20 @@ class FaBPolicyValueNetwork(nn.Module):
         opp_hp_val = float(state.get("opponentHealth", 40))
         vec[156] = 1.0 if opp_hp_val <= 6.0 else 0.0
         vec[157] = max(-1.0, min(1.0, (my_hp_val - opp_hp_val) / 40.0))
+
+        # 5.2 Pitch Cycle & Deck Resource Density (Índices 158-160) — DouZero & GDC Talk
+        seen_cards = list(grave_cards or []) + list(pitch_cards or [])
+        total_seen = len(seen_cards)
+        if total_seen > 0:
+            blue_seen = sum(1 for c in seen_cards if "blue" in str(c.get("cardNumber", "") if isinstance(c, dict) else "").lower())
+            red_seen = sum(1 for c in seen_cards if "red" in str(c.get("cardNumber", "") if isinstance(c, dict) else "").lower())
+            vec[158] = min(float(blue_seen) / float(total_seen), 1.0)
+            vec[159] = min(float(red_seen) / float(total_seen), 1.0)
+        else:
+            vec[158] = 0.33
+            vec[159] = 0.33
+        rem_deck_len = len(deck_cards) if isinstance(deck_cards, list) else 30
+        vec[160] = min(float(rem_deck_len) / 60.0, 1.0)
 
         # 6. Hero Classes, Archetypes & Specific Heroes (Índices 161-191)
         hero = str(state.get("playerHero", state.get("character", ""))).lower()

@@ -1092,6 +1092,19 @@ class PolicyEngine:
                 if my_hp > 6 and not (has_dangerous_on_hit and opp_power >= my_hp):
                     score -= 150.0
 
+            # ── Custo de Oportunidade Dinâmico de Bloqueio (Felt Table & AI Unsheathed)
+            opp_cost = 0.0
+            if hasattr(self.strategy, "calculate_card_opportunity_cost"):
+                avail_fl, _ = self.calculate_available_resources(state)
+                opp_cost = self.strategy.calculate_card_opportunity_cost(hand, c, floating_res=avail_fl)
+
+            if opp_cost > 0:
+                absorb_mult = self.strategy.get_dynamic_multiplier("absorb_tempo_bonus", 1.0)
+                score -= opp_cost * 1.5 * absorb_mult
+                is_catastrophic = on_hit_threat >= 8.0 or (my_hp - opp_power) <= 0
+                if not is_catastrophic and my_hp > 8 and info["block"] < opp_cost:
+                    score -= 25.0
+
             # ── Poda de Preservação de Mão Ofensiva:
             # Se temos vida alta (> 20) e o ataque inimigo é fraco (<= 2 sem on-hit),
             # penaliza queimar cartas vermelhas de ataque chave (power >= 4 e pitch == 1)
@@ -1115,18 +1128,19 @@ class PolicyEngine:
             if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
                 score += 3.0
 
-            hand_cost = 3.5
+            hand_cost = 3.5 + opp_cost
             if is_reserved:
                 hand_cost = 25.0
             elif info["power"] >= 5 or (info["pitch"] == 1 and info["power"] >= 4):
-                hand_cost = 5.0
+                hand_cost = 5.0 + opp_cost
 
             if score > -100.0 and info["block"] > 0:
                 block_candidates.append({
                     "type": "block", "score": score, "idx": idx, "card_id": c_id,
                     "name": info["name"], "mode": c_action, "block": info["block"],
                     "pitch": info["pitch"], "power": info["power"],
-                    "is_equipment": False, "is_hand": True, "cost": hand_cost
+                    "is_equipment": False, "is_hand": True, "cost": hand_cost,
+                    "opp_cost": opp_cost
                 })
 
         # ── 3.1b Cartas no Arsenal que podem defender (Ambush e Down and Dirty) ──
