@@ -215,7 +215,7 @@ KNOWN_WEAPON_COSTS = {
     "hell_hammer": 3, "hammer_of_havenhold": 3, "redwood_hammer": 3, "ball_breaker": 3,
     "romping_club": 2, "flail_of_agony": 2, "dread_scythe": 2, "reaping_blade": 2,
     "zenith_blade": 2, "harmonious_pipe": 2, "claw_of_vynserakai": 2, "hunters_klaive": 2,
-    "hunters_klaive_r": 2, "volzar_meteor_storm": 2, "symbiosis_shot": 2, "teklo_leveler": 2,
+    "hunters_klaive_r": 2, "volzar_meteor_storm": 2, "symbiosis_shot": 2,
     "plasma_barrel_shot": 2, "hanabi_blaster": 2, "waning_moon": 2, "krakens_aethervein": 2,
     "cintari_saber": 1, "cintari_saber_r": 1, "hot_streak": 1, "dawnblade": 1, "dawnblade_resplendent": 1,
     "kunai_of_retribution": 1, "kunai_of_retribution_r": 1, "harmonized_kodachi": 1,
@@ -308,6 +308,20 @@ class PolicyEngine:
         """Retorna o custo em recursos para ativar a arma ou habilidade de equipamento."""
         clean = str(weapon_name).lower()
 
+        # Regra Oficial Teklo Leveler (Joseph Qiu - EVO009):
+        # • Se 0 Evos equipados: NÃO POSSUI AÇÃO DE ATAQUE (Custo 999 / Inativo).
+        # • Se 1 Evo equipado: Ação de Ataque custa {r}{r}{r} (3 recursos).
+        # • Se 2+ Evos equipados: Custa {r}{r} a menos -> Custa apenas {r} (1 recurso)!
+        if "leveler" in clean or "teklo_leveler" in clean:
+            equip_list = state.get("playerEquipment", []) if state else []
+            evos_equipped = sum(1 for eq in equip_list if isinstance(eq, dict) and ("evo" in str(eq.get("cardNumber", "")).lower() or "evo" in str(eq.get("subtype", "")).lower()))
+            if evos_equipped < 1:
+                return 999
+            elif evos_equipped == 1:
+                return 3
+            else:
+                return 1
+
         # 1. Consulta banco dinâmico de custos de habilidades extraídos do Talishar
         ability_costs = _load_ability_costs()
         cost = None
@@ -320,7 +334,7 @@ class PolicyEngine:
         else:
             for kw, kw_cost in [
                 ("hammer", 3), ("anvilheim", 3), ("titans_fist", 3), ("pile_driver", 3), ("anothos", 3), ("rok", 3), ("club", 2),
-                ("flail", 2), ("scythe", 2), ("staff", 2), ("meteor", 2), ("leveler", 2), ("symbiosis", 2), ("zenith", 2),
+                ("flail", 2), ("scythe", 2), ("staff", 2), ("meteor", 2), ("symbiosis", 2), ("zenith", 2),
                 ("saber", 1), ("sword", 1), ("dagger", 1), ("blade", 1), ("claw", 1), ("kodachi", 1), ("pistol", 1), ("bow", 1)
             ]:
                 if kw in clean:
@@ -339,6 +353,29 @@ class PolicyEngine:
                     cost = max(0, cost - 1)
 
         return cost
+
+    @staticmethod
+    def get_all_known_zone_cards(state: dict) -> Dict[str, List[dict]]:
+        """
+        Retorna um mapa consolidado de todas as cartas em todas as zonas do jogo:
+        Mão, Equipamentos, Arsenal, Banish, Cemitério (Discard), Alma (Soul), Pitch e Combat Chain.
+        Permite que qualquer herói ou módulo de IA faça contagem de cartas (card counting),
+        verificação de recursão e rastreamento de peças do deck em todas as zonas.
+        """
+        if not isinstance(state, dict):
+            return {}
+        return {
+            "hand": [c for c in state.get("playerHand", []) if isinstance(c, dict)],
+            "equipment": [c for c in state.get("playerEquipment", []) if isinstance(c, dict)],
+            "arsenal": [c for c in (state.get("playerArsenal") or state.get("playerArse") or []) if isinstance(c, dict)],
+            "banish": [c for c in state.get("playerBanish", []) if isinstance(c, dict)],
+            "graveyard": [c for c in (state.get("playerGraveyard") or state.get("playerDiscard") or []) if isinstance(c, dict)],
+            "soul": [c for c in state.get("playerSoul", []) if isinstance(c, dict)],
+            "pitch": [c for c in state.get("playerPitch", []) if isinstance(c, dict)],
+            "combat_chain": [c for c in state.get("combatChain", []) if isinstance(c, dict)],
+            "opponent_graveyard": [c for c in (state.get("opponentGraveyard") or state.get("opponentDiscard") or []) if isinstance(c, dict)],
+            "opponent_banish": [c for c in state.get("opponentBanish", []) if isinstance(c, dict)],
+        }
 
     # ── Extração e Normalização de Atributos de Cartas ─────────────
 
@@ -638,15 +675,39 @@ class PolicyEngine:
                         if steam_counters <= 0:
                             continue
 
+                    # Poda de Teklo Leveler: requer 1+ Evos equipados para poder atacar
+                    evos_equipped = 0
+                    if "leveler" in eq_name or "teklo_leveler" in eq_name:
+                        equip_list = state.get("playerEquipment", []) if state else []
+                        evos_equipped = sum(1 for e in equip_list if isinstance(e, dict) and ("evo" in str(e.get("cardNumber", "")).lower() or "evo" in str(e.get("subtype", "")).lower()))
+                        if evos_equipped < 1:
+                            continue
+
                     # Armas convencionais de ataque
                     if total_res >= weapon_cost:
                         eq_info = self.extract_card_info(eq)
                         weapon_power = eq_info.get("power", 0) or int(eq.get("power", 0))
                         if weapon_power == 0:
                             weapon_power = int(_load_cards_db().get(eq_name, {}).get("power", 0))
-                        weapon_score = self.strategy.evaluate_weapon_attack(
-                            eq_name, floating_res, total_res, len(hand_attacks) > 0
-                        )
+
+                        weapon_has_ga = False
+                        if "leveler" in eq_name or "teklo_leveler" in eq_name:
+                            if evos_equipped >= 3:
+                                weapon_has_ga = True
+                            if evos_equipped >= 4:
+                                weapon_power = 3
+                            else:
+                                weapon_power = 2
+
+                        try:
+                            weapon_score = self.strategy.evaluate_weapon_attack(
+                                eq_name, floating_res, total_res, len(hand_attacks) > 0,
+                                state=state, evos_equipped=evos_equipped
+                            )
+                        except TypeError:
+                            weapon_score = self.strategy.evaluate_weapon_attack(
+                                eq_name, floating_res, total_res, len(hand_attacks) > 0
+                            )
                         if not has_any_go_again and len(hand_attacks) == 0:
                             weapon_score += 2.0
                         if is_traditional_bow:
@@ -654,7 +715,7 @@ class PolicyEngine:
                         candidates.append({
                             "type": "weapon", "idx": 0, "card_id": str(eq_id), "mode": action,
                             "name": eq_name, "score": weapon_score, "cost": weapon_cost,
-                            "power": weapon_power
+                            "power": weapon_power, "has_go_again": weapon_has_ga
                         })
                     continue
 
@@ -696,8 +757,8 @@ class PolicyEngine:
             except Exception:
                 pass
 
-        for zone_name, key in [("Arsenal", "playerArsenal"), ("Banish", "playerBanish")]:
-            zone = state.get(key) or (state.get("playerArse", []) if key == "playerArsenal" else [])
+        for zone_name, key in [("Arsenal", "playerArsenal"), ("Banish", "playerBanish"), ("Graveyard", "playerGraveyard")]:
+            zone = state.get(key) or (state.get("playerArse", []) if key == "playerArsenal" else (state.get("playerDiscard", []) if key == "playerGraveyard" else []))
             for c in zone:
                 action = c.get("action", 0)
                 c_name = str(c.get("cardNumber", "Card")).lower()
@@ -722,7 +783,7 @@ class PolicyEngine:
                         if is_runegate:
                             effective_cost = max(0, card_cost - runechant_count)
 
-                    # Cartas de Arsenal/Banish usam total_res da mão inteira (ou effective_cost de Runegate)
+                    # Cartas de Arsenal/Banish/Graveyard usam total_res da mão inteira (ou effective_cost de Runegate)
                     if total_res >= effective_cost:
                         base_score = self.strategy.evaluate_attack_card(
                             c_name, c_info["power"], effective_cost, c_info["has_go_again"], c_info["pitch"]
@@ -747,6 +808,14 @@ class PolicyEngine:
                                 play_score += 12.0
                             if "singularity" in c_name:
                                 play_score += 35.0  # Mechropotent Singularity é o finalizador absoluto
+                        elif zone_name == "Graveyard":
+                            # Cartas jogáveis do cemitério (ex: Instant liberada por Astral Bridge ou recursão de cartas)
+                            play_score = base_score + 18.0
+                            db_entry = _load_cards_db().get(c_name, {})
+                            c_type = str(c_info.get("type") or db_entry.get("type", "")).upper()
+                            if c_type == "I" or "instant" in c_type.lower() or action == 27:
+                                is_instant = True
+                                has_ga = True
                         else:
                             # Jogar do Arsenal executa a ofensiva e libera o slot para o canhão carregar nova flecha
                             play_score = base_score + 4.0

@@ -225,3 +225,191 @@ def test_marlynn_strategy_direct_weapon_ability():
     res_codex = strat.evaluate_weapon_ability("hammerhead_harpoon_cannon", 4, state_codex, 6)
     assert res_codex.get("type") == "weapon_buff"
     assert res_codex.get("score") >= 36.0
+
+def test_teklo_leveler_dynamic_scaling_and_evos():
+    """Valida a regra oficial de Teklo Leveler (EVO009) para 0, 1, 2, 3 e 4 Evos equipados."""
+    pe = PolicyEngine(hero_name="teklovossen", use_gpu=False, num_mcts_sims=5)
+
+    # Caso 1: 0 Evos equipados -> Custo 999 e NÃO deve ser incluído nos candidatos de ataque
+    state_0_evos = {
+        "playerEquipment": [
+            {"cardNumber": "teklo_leveler", "slot": "weapon", "action": 27, "type": "W"}
+        ],
+        "playerHand": [{"cardNumber": "blue_card", "pitch": 3}],
+        "playerResources": [3, 3],
+        "actionPoints": 1
+    }
+    cost_0 = pe.get_weapon_cost("teklo_leveler", state=state_0_evos)
+    assert cost_0 >= 99
+    candidate_0 = pe.select_best_attack(state_0_evos)
+    assert candidate_0 is None or candidate_0.get("name") != "teklo_leveler"
+
+    # Caso 2: 1 Evo equipado -> Custo 3, Poder 2, sem Go Again
+    state_1_evo = {
+        "playerEquipment": [
+            {"cardNumber": "teklo_leveler", "slot": "weapon", "action": 27, "type": "W"},
+            {"cardNumber": "evo_beta_base_chest_blue_equip", "slot": "chest", "type": "E"}
+        ],
+        "playerHand": [{"cardNumber": "blue_card", "pitch": 3}],
+        "playerResources": [3, 3],
+        "actionPoints": 1
+    }
+    cost_1 = pe.get_weapon_cost("teklo_leveler", state=state_1_evo)
+    assert cost_1 == 3
+    cand_1 = pe.select_best_attack(state_1_evo)
+    assert cand_1 is not None and cand_1.get("name") == "teklo_leveler"
+    assert cand_1.get("power") == 2
+    assert not cand_1.get("has_go_again")
+
+    # Caso 3: 2 Evos equipados -> Custo {r}{r} a menos -> Custo 1! Poder 2, sem Go Again
+    state_2_evos = {
+        "playerEquipment": [
+            {"cardNumber": "teklo_leveler", "slot": "weapon", "action": 27, "type": "W"},
+            {"cardNumber": "evo_beta_base_chest_blue_equip", "slot": "chest", "type": "E"},
+            {"cardNumber": "evo_beta_base_legs_blue_equip", "slot": "legs", "type": "E"}
+        ],
+        "playerHand": [{"cardNumber": "blue_card", "pitch": 3}],
+        "playerResources": [1, 1],
+        "actionPoints": 1
+    }
+    cost_2 = pe.get_weapon_cost("teklo_leveler", state=state_2_evos)
+    assert cost_2 == 1
+
+    # Caso 4: 3 Evos equipados -> Custo 1, Poder 2, GANHA GO AGAIN!
+    state_3_evos = {
+        "playerEquipment": [
+            {"cardNumber": "teklo_leveler", "slot": "weapon", "action": 27, "type": "W"},
+            {"cardNumber": "evo_beta_base_chest_blue_equip", "slot": "chest", "type": "E"},
+            {"cardNumber": "evo_beta_base_legs_blue_equip", "slot": "legs", "type": "E"},
+            {"cardNumber": "evo_beta_base_arms_blue_equip", "slot": "arms", "type": "E"}
+        ],
+        "playerHand": [{"cardNumber": "blue_card", "pitch": 3}],
+        "playerResources": [1, 1],
+        "actionPoints": 1
+    }
+    cost_3 = pe.get_weapon_cost("teklo_leveler", state=state_3_evos)
+    assert cost_3 == 1
+    cand_3 = pe.select_best_attack(state_3_evos)
+    assert cand_3 is not None and cand_3.get("name") == "teklo_leveler"
+    assert cand_3.get("power") == 2
+    assert cand_3.get("has_go_again") is True
+
+    # Caso 5: 4 Evos equipados -> Custo 1, Poder 3 (+1{p}), GANHA GO AGAIN!
+    state_4_evos = {
+        "playerEquipment": [
+            {"cardNumber": "teklo_leveler", "slot": "weapon", "action": 27, "type": "W"},
+            {"cardNumber": "evo_beta_base_chest_blue_equip", "slot": "chest", "type": "E"},
+            {"cardNumber": "evo_beta_base_legs_blue_equip", "slot": "legs", "type": "E"},
+            {"cardNumber": "evo_beta_base_arms_blue_equip", "slot": "arms", "type": "E"},
+            {"cardNumber": "evo_beta_base_head_blue_equip", "slot": "head", "type": "E"}
+        ],
+        "playerHand": [{"cardNumber": "blue_card", "pitch": 3}],
+        "playerResources": [1, 1],
+        "actionPoints": 1
+    }
+    cand_4 = pe.select_best_attack(state_4_evos)
+    assert cand_4 is not None and cand_4.get("name") == "teklo_leveler"
+    assert cand_4.get("power") == 3
+    assert cand_4.get("has_go_again") is True
+
+def test_teklovossen_evo_priorities_and_arsenal():
+    """Valida priorização de redutores de custo e avaliação especializada de Arsenal em Teklovossen."""
+    strat = TeklovossenStrategy(hero_name="teklovossen")
+
+    # Controller (+16.0) tem prioridade sobre Processor (+10.0)
+    score_ctrl = strat.evaluate_card("evo_steel_soul_controller_blue", {"cost": 1})
+    score_proc = strat.evaluate_card("evo_steel_soul_processor_blue", {"cost": 1})
+    assert score_ctrl > score_proc
+
+    # Avaliação de Arsenal: Singularity e Evos têm pontuação elevada
+    ars_sing = strat.evaluate_arsenal_card({"name": "singularity_red", "pitch": 1})
+    assert ars_sing >= 30.0
+
+    ars_evo = strat.evaluate_arsenal_card({"name": "evo_steel_soul_controller_blue", "pitch": 3, "block": 3})
+    assert ars_evo >= 14.0
+
+def test_oscilio_astral_bridge_and_overblocking():
+    """Valida que Oscilio prioriza Astral Bridge no ataque e não bloqueia com peças nobres."""
+    from ai.hero_strategies.other_classes import OscilioStrategy
+    strat = OscilioStrategy(hero_name="oscilio_constella_intelligence")
+
+    # Astral Bridge tem pontuação alta no ataque (+16.0)
+    score_astral = strat.evaluate_attack_card("astral_bridge_red", power=0, cost=0, has_go_again=False, pitch=1)
+    assert score_astral >= 16.0
+
+    # Bloquear com peças ofensivas de Lightning é fortemente desvalorizado (evitando overblocking)
+    blk_giaf = strat.evaluate_block_card("gone_in_a_flash_red", block_val=3, pitch=1, power=5, has_go_again=True)
+    assert blk_giaf <= -10.0
+
+    blk_astral = strat.evaluate_block_card("astral_bridge_red", block_val=2, pitch=1, power=0, has_go_again=False)
+    assert blk_astral <= -10.0
+
+def test_policy_engine_graveyard_zone_awareness():
+    """Valida que cartas jogáveis no cemitério (ex: Instant liberada por Astral Bridge) são reconhecidas pelo PolicyEngine."""
+    pe = PolicyEngine(hero_name="oscilio_constella_intelligence", use_gpu=False, num_mcts_sims=5)
+
+    # Estado onde Astral Bridge colocou Electrostatic Discharge no cemitério com permissão de jogar (action > 0)
+    state = {
+        "playerHand": [],
+        "playerArsenal": [],
+        "playerBanish": [],
+        "playerGraveyard": [
+            {
+                "cardNumber": "electrostatic_discharge_red",
+                "name": "Electrostatic Discharge",
+                "action": 27,
+                "power": 0,
+                "cost": 0,
+                "type": "I",
+                "actionDataOverride": "grave_0"
+            }
+        ],
+        "playerResources": [1, 1],
+        "actionPoints": 1
+    }
+    atk = pe.select_best_attack(state)
+    assert atk is not None
+    assert atk.get("type") == "graveyard"
+    assert atk.get("name") == "electrostatic_discharge_red"
+    assert atk.get("has_go_again") is True
+
+def test_all_known_zone_cards_and_state_vector():
+    """Valida que get_all_known_zone_cards consolida todas as zonas e extract_state_vector reconhece jovens e adultos."""
+    from ai.model import FaBPolicyValueNetwork
+
+    state = {
+        "playerHero": "teklovossen_esteemed_magnate",
+        "opponentHero": "oscilio_constellation_seeker",
+        "playerHealth": 40,
+        "opponentHealth": 20,
+        "playerHand": [{"cardNumber": "card1"}],
+        "playerArsenal": [{"cardNumber": "card2"}],
+        "playerBanish": [{"cardNumber": "card3"}],
+        "playerGraveyard": [{"cardNumber": "card4"}],
+        "playerSoul": [{"cardNumber": "card5"}],
+        "playerPitch": [{"cardNumber": "card6"}],
+        "playerEquipment": [
+            {"cardNumber": "evo_beta_base_chest_blue_equip", "slot": "chest", "type": "E"},
+            {"cardNumber": "evo_beta_base_legs_blue_equip", "slot": "legs", "type": "E"}
+        ],
+        "combatChain": []
+    }
+    zones = PolicyEngine.get_all_known_zone_cards(state)
+    assert len(zones["hand"]) == 1
+    assert len(zones["arsenal"]) == 1
+    assert len(zones["banish"]) == 1
+    assert len(zones["graveyard"]) == 1
+    assert len(zones["soul"]) == 1
+    assert len(zones["pitch"]) == 1
+
+    vec = FaBPolicyValueNetwork.extract_state_vector(state)
+    assert vec.shape[0] == 192
+    # Mechanologist class (161) e Teklovossen (173)
+    assert vec[161] == 1.0
+    assert vec[173] == 1.0
+    # Oponente é Wizard (188 = 0.5) e Jovem (189 = 1.0)
+    assert vec[188] == 0.5
+    assert vec[189] == 1.0
+    # 2 Evos equipados (183 = 0.5)
+    assert vec[183] == 0.5
+

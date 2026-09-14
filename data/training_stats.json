@@ -13500,6 +13500,16 @@
   },
   "recent_matches": [
     {
+      "room": "3702",
+      "date": "13/09/2026 20:54:24",
+      "winner": "Anulada (Bot Inerte (Punching Bag))",
+      "p1_deck": "👤 Humano (Humano (Você))",
+      "p2_deck": "🤖 Bot (Oscilio Giaf)",
+      "p1_health": 40,
+      "p2_health": -4,
+      "turns": 16
+    },
+    {
       "room": "3701",
       "date": "13/09/2026 19:37:06",
       "winner": "👤 Humano (Humano (Você))",
@@ -13788,16 +13798,6 @@
       "p1_health": 13,
       "p2_health": -1,
       "turns": 12
-    },
-    {
-      "room": "Train_45f8e923",
-      "date": "13/09/2026 17:15:52",
-      "winner": "🤖 Bot 2 (Oscilio GIAF)",
-      "p1_deck": "Cindra",
-      "p2_deck": "Oscilio GIAF",
-      "p1_health": 0,
-      "p2_health": 5,
-      "turns": 15
     }
   ],
   "deck_elo_history": [

@@ -436,7 +436,9 @@ class OscilioStrategy(WizardStrategy):
         c_low = card_name.lower()
 
         # Ataques centrais do arquétipo GIAF (Gone in a Flash) e Lightning
-        if "gone_in_a_flash" in c_low:
+        if "astral_bridge" in c_low:
+            score += 16.0  # Abre o topo, gera 1 dano arcano imediato e libera Instant para o ataque!
+        elif "gone_in_a_flash" in c_low:
             score += 15.0  # Pilar do deck GIAF: Go Again e dano arcano com Lightning
         elif "electrostatic_discharge" in c_low:
             score += 12.0
@@ -459,6 +461,23 @@ class OscilioStrategy(WizardStrategy):
             score += 5.0
         score -= cost * 0.4
         return score
+
+    @lru_cache(maxsize=1024)
+    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool, **kwargs) -> float:
+        if block_val <= 0:
+            return -999.0
+        c_low = card_name.lower()
+        # Oscilio extrai seu maior valor mantendo cartas na mão para turnos ofensivos com Go Again e dano arcano.
+        # Penalizar estritamente o bloqueio com peças centrais de ataque/combo para evitar overblocking:
+        if any(k in c_low for k in [
+            "gone_in_a_flash", "electrostatic_discharge", "enlightened_strike",
+            "comet_storm", "flittering_charge", "astral_bridge", "second_strike",
+            "entwine_lightning", "lightning_press"
+        ]):
+            return -18.0
+        if has_go_again:
+            return -12.0
+        return float(block_val) * 1.5 - (power * 0.6)
 
     @lru_cache(maxsize=1024)
     def evaluate_pitch_card(self, card_name: str, pitch: int, cost: int, power: int, has_go_again: bool) -> float:
@@ -503,7 +522,8 @@ class OscilioStrategy(WizardStrategy):
         is_fatal = (my_hp - opp_power) <= 0
         has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
-        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, survival_hp_threshold=3):
+        # Oscilio só deve acionar bloqueio de sobrevivência em risco iminente de morte
+        if self.should_trigger_survival_block(my_hp, opp_power, is_fatal, has_dangerous_on_hit, hand, survival_hp_threshold=2):
             return TurnPlan(
                 plan_type="SURVIVAL_BLOCK",
                 can_absorb_damage=False,
@@ -511,21 +531,31 @@ class OscilioStrategy(WizardStrategy):
                 reason="Oscilio survival mode: blocking critical or fatal damage"
             )
 
-        giaf_cards = [c for c in hand if "gone_in_a_flash" in str(c.get("cardNumber") or c.get("name", "")).lower()]
-        if giaf_cards and my_hp >= 6:
-            primary = giaf_cards[0]
+        lightning_attacks = [
+            c for c in hand
+            if any(k in str(c.get("cardNumber") or c.get("name", "")).lower() for k in [
+                "gone_in_a_flash", "astral_bridge", "electrostatic", "flittering",
+                "entwine", "enlightened", "comet", "scar_for_a_scar", "second_strike"
+            ])
+        ]
+        if lightning_attacks and my_hp >= 4:
+            primary = lightning_attacks[0]
             p_name = str(primary.get("cardNumber") or primary.get("name", ""))
             reserved: Set[str] = {p_name}
+            astral = [c for c in hand if "astral_bridge" in str(c.get("cardNumber") or c.get("name", "")).lower()]
+            if astral:
+                reserved.add(str(astral[0].get("cardNumber") or astral[0].get("name", "")))
             reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
-            max_blocks = max(0, len(hand) - len(reserved_in_hand) - 1)
+            # Permite absorver dano a partir de 6 HP e limita bloqueio a no máximo 1 carta para não drenar a mão ofensiva
+            max_blocks = min(1, max(0, len(hand) - len(reserved_in_hand)))
             return TurnPlan(
                 plan_type="OSCILIO_LIGHTNING_BURST",
                 reserved_card_names=reserved,
-                can_absorb_damage=(my_hp >= 10),
+                can_absorb_damage=(my_hp >= 6),
                 max_block_cards=max_blocks,
-                priority_action_types=["attack_card", "weapon", "hero_ability"],
-                offensive_potential=7.0,
-                reason=f"Oscilio burst plan: chaining {p_name} with lightning tempo"
+                priority_action_types=["astral_bridge", "attack_card", "weapon", "hero_ability"],
+                offensive_potential=8.0,
+                reason=f"Oscilio burst plan: holding {p_name} to chain lightning and arcane damage"
             )
 
         return super().analyze_turn_plan(state)

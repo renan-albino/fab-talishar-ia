@@ -194,19 +194,101 @@ class FaBPolicyValueNetwork(nn.Module):
             if isinstance(arsenal[0], dict) and arsenal[0].get("action", 0) > 0:
                 vec[127] = 1.0
 
-        # 5. Profundidade de Zonas (Índices 146-160)
-        vec[146] = min(len(state.get("playerDeck", [])) / 60.0, 1.0)
-        vec[147] = min(len(state.get("playerDiscard", [])) / 40.0, 1.0)
-        vec[148] = min(len(state.get("playerBanish", [])) / 20.0, 1.0)
-        vec[149] = min(len(state.get("playerPitch", [])) / 10.0, 1.0)
+        # 5. Profundidade e Consciência de Zonas (Índices 146-160)
+        deck_cards = state.get("playerDeck", [])
+        grave_cards = state.get("playerDiscard", state.get("playerGraveyard", []))
+        banish_cards = state.get("playerBanish", [])
+        pitch_cards = state.get("playerPitch", [])
+        soul_cards = state.get("playerSoul", [])
 
-        # 6. Hero Classes & Archetypes (Índices 161-191)
+        vec[146] = min(len(deck_cards) / 60.0, 1.0)
+        vec[147] = min(len(grave_cards) / 40.0, 1.0)
+        vec[148] = min(len(banish_cards) / 20.0, 1.0)
+        vec[149] = min(len(pitch_cards) / 10.0, 1.0)
+        vec[150] = min(len(soul_cards) / 10.0, 1.0)
+
+        # Ações jogáveis conhecidas fora da mão (Graveyard, Banish, Arsenal)
+        grave_acts = sum(1 for c in grave_cards if isinstance(c, dict) and c.get("action", 0) > 0)
+        banish_acts = sum(1 for c in banish_cards if isinstance(c, dict) and c.get("action", 0) > 0)
+        vec[151] = min(grave_acts / 4.0, 1.0)
+        vec[152] = min(banish_acts / 4.0, 1.0)
+
+        # 6. Hero Classes, Archetypes & Specific Heroes (Índices 161-191)
         hero = str(state.get("playerHero", state.get("character", ""))).lower()
-        if "dash" in hero: vec[161] = 1.0
-        if "bravo" in hero: vec[162] = 1.0
-        if "katsu" in hero or "ira" in hero or "fai" in hero: vec[163] = 1.0
-        if "dorinthea" in hero: vec[164] = 1.0
-        if "kano" in hero or "oscilio" in hero: vec[165] = 1.0
+        opp_hero = str(state.get("opponentHero", state.get("opponentCharacter", ""))).lower()
+        my_hp_val = float(state.get("playerHealth", 40))
+
+        # 6.1 Mapeamento Sistemático de Classes (Adultos e Jovens)
+        if any(k in hero for k in ["dash", "teklo", "maxx", "data", "puffin", "professor"]): vec[161] = 1.0
+        if any(k in hero for k in ["bravo", "victor", "betsy", "jarl", "oldhim", "valda", "brevant", "yoji", "tuffnut", "marlynn"]): vec[162] = 1.0
+        if any(k in hero for k in ["katsu", "ira", "fai", "zen", "benji", "cindra", "taipanis"]): vec[163] = 1.0
+        if any(k in hero for k in ["dorinthea", "kassai", "olympia", "boltyn", "hala", "ser"]): vec[164] = 1.0
+        if any(k in hero for k in ["kano", "oscilio", "verdance", "iyslander", "blaze", "emperor"]): vec[165] = 1.0
+        if any(k in hero for k in ["viserai", "chane", "briar", "vynnset", "vynsett", "florian", "aurora"]): vec[166] = 1.0
+        if any(k in hero for k in ["azalea", "riptide", "lexi"]): vec[167] = 1.0
+        if any(k in hero for k in ["rhinar", "kayo", "levia", "brutus", "kox", "bolfar"]): vec[168] = 1.0
+        if any(k in hero for k in ["arakni", "uzuri", "nuu", "killjoy"]): vec[169] = 1.0
+        if any(k in hero for k in ["prism", "dromai", "enigma", "pleiades", "zyggy"]): vec[170] = 1.0
+        if any(k in hero for k in ["kavdaen", "genis", "taylor", "shiyana", "melody", "gravy", "frankie", "ruudi", "mortimer", "scurv", "baalghor", "terra", "librarian", "theryon", "yorick", "fang", "squizzy", "dr", "groundbreaker", "malice", "lyath", "zane", "reya", "fightmaster"]): vec[171] = 1.0
+
+        # 6.2 Flag de Herói Jovem (Blitz / UPF) vs Adulto (Classic Constructed)
+        is_young = (my_hp_val <= 20) or any(y in hero for y in [
+            "young", "professor", "database", "seeker", "scion", "forked", "quicksilver",
+            "flattering", "cintari_sellsword", "berserker_runt", "underhanded", "strong_arm",
+            "legacy_of_tempest", "emissary", "new_moon", "match_fixer", "star_of_the_show"
+        ])
+        vec[172] = 1.0 if is_young else 0.0
+
+        # 6.3 Heróis Específicos Identificados
+        if "teklo" in hero or "professor" in hero: vec[173] = 1.0
+        if "oscilio" in hero: vec[174] = 1.0
+        if "dash" in hero: vec[175] = 1.0
+        if "vynnset" in hero or "vynsett" in hero: vec[176] = 1.0
+        if "kayo" in hero: vec[177] = 1.0
+        if "bravo" in hero: vec[178] = 1.0
+        if "dorinthea" in hero: vec[179] = 1.0
+        if "kano" in hero: vec[180] = 1.0
+        if any(k in hero for k in ["nuu", "zen", "enigma"]): vec[181] = 1.0
+        if any(k in hero for k in ["florian", "aurora", "verdance"]): vec[182] = 1.0
+
+        # 6.4 Mecânicas Dinâmicas por Herói
+        # Teklovossen: Contagem de Evos equipados (0 a 4)
+        evos_equipped = sum(1 for eq in equip if isinstance(eq, dict) and ("evo" in str(eq.get("cardNumber", "")).lower() or "evo" in str(eq.get("subtype", "")).lower()))
+        vec[183] = min(float(evos_equipped) / 4.0, 1.0)
+        vec[184] = 1.0 if state.get("teklo_ability_active") else 0.0
+
+        # Singularity presente
+        all_my_cards = [c for c in (hand + (arsenal or []) + banish_cards) if isinstance(c, dict)]
+        has_singularity = any("singularity" in str(c.get("cardNumber") or c.get("name", "")).lower() for c in all_my_cards)
+        vec[185] = 1.0 if has_singularity else 0.0
+
+        # Oscilio: Dano arcano acumulado no turno
+        arcane_dmg = float(state.get("arcaneDamageDealt", state.get("arcaneDamage", 0)) or 0)
+        vec[186] = min(arcane_dmg / 5.0, 1.0)
+
+        # Runeblade: Runechants ativos
+        runechants = float(state.get("playerRunechants", 0) or 0)
+        for a in (state.get("playerAuras") or []):
+            if isinstance(a, dict) and "runechant" in str(a.get("cardNumber", "")).lower():
+                runechants += max(1, int(a.get("counters", a.get("count", 1))))
+        vec[187] = min(runechants / 10.0, 1.0)
+
+        # Oponente: Classe e Formato
+        if any(k in opp_hero for k in ["dash", "teklo", "maxx"]): vec[188] = 0.1
+        elif any(k in opp_hero for k in ["bravo", "victor", "betsy", "jarl"]): vec[188] = 0.2
+        elif any(k in opp_hero for k in ["katsu", "ira", "fai", "zen"]): vec[188] = 0.3
+        elif any(k in opp_hero for k in ["dorinthea", "kassai"]): vec[188] = 0.4
+        elif any(k in opp_hero for k in ["kano", "oscilio", "verdance"]): vec[188] = 0.5
+        elif any(k in opp_hero for k in ["viserai", "chane", "vynnset", "aurora", "florian"]): vec[188] = 0.6
+        elif any(k in opp_hero for k in ["azalea", "riptide"]): vec[188] = 0.7
+        elif any(k in opp_hero for k in ["rhinar", "kayo", "levia"]): vec[188] = 0.8
+        elif any(k in opp_hero for k in ["arakni", "uzuri", "nuu"]): vec[188] = 0.9
+        elif any(k in opp_hero for k in ["prism", "dromai", "enigma"]): vec[188] = 1.0
+
+        opp_hp = float(state.get("opponentHealth", 40))
+        vec[189] = 1.0 if (opp_hp <= 20 or "young" in opp_hero) else 0.0
+        vec[190] = min(float(grave_acts) / 4.0, 1.0)
+        vec[191] = min(float(banish_acts) / 4.0, 1.0)
 
         return vec
 

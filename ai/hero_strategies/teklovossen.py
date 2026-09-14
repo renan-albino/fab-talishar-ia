@@ -26,19 +26,34 @@ class TeklovossenStrategy(HeroStrategy):
         c_low = str(card_info.get("cardNumber") or card_info.get("name", "")).lower()
         return power >= 6 or any(k in c_low for k in ["terminator_tank", "war_machine", "command_and_conquer"])
 
-    def evaluate_card(self, card_name: str, card_meta: dict, context: dict = None) -> float:
-        score = super().evaluate_card(card_name, card_meta, context)
+    def evaluate_card(self, card_name: str, card_meta: dict = None, context: dict = None) -> float:
+        if card_meta is None:
+            card_meta = {}
+        power = int(card_meta.get("power", 0)) if str(card_meta.get("power", 0)).isdigit() else 0
+        score = float(power)
         c_low = card_name.lower()
         cost = int(card_meta.get("cost", 0)) if str(card_meta.get("cost", 0)).isdigit() else 0
         subtype = str(card_meta.get("subtype", "")).lower()
 
-        # Priorização de cartas Evo (Upgrades e Transformações)
+        # Priorização e Hierarquia Oficial de Evos (Transformações e Upgrades)
         if "evo" in subtype or "evo" in c_low:
-            score += 8.0
-            if "steel_soul" in c_low:
-                score += 4.0  # Upgrades nobres com habilidades contínuas
+            # 1. Prioridade Máxima: Evos que reduzem custo
+            if "controller" in c_low:
+                score += 16.0  # Reduz custo de futuros upgrades por 2 recursos
+            elif "heartdrive" in c_low:
+                score += 14.0  # Reduz custo de ações Mechanologist por 1 recurso
             elif "base" in c_low:
-                score += 3.0
+                score += 12.0  # Evos Base preenchem slots vazios e reduzem custo de upgrade
+            # 2. Prioridade Secundária: Evo Steel Soul Memory (+1 intelecto permanente)
+            elif "memory" in c_low:
+                # Prioridade entre os outros Evos, condicionada a não esgotar as opções do turno
+                score += 15.0
+            elif "tower" in c_low:
+                score += 11.0  # Armadura e bloco maciço
+            elif "processor" in c_low:
+                score += 10.0  # Ciclo e filtragem
+            else:
+                score += 8.0
 
         # Ataques fundamentais de Teklovossen
         if "terminator_tank" in c_low:
@@ -72,6 +87,14 @@ class TeklovossenStrategy(HeroStrategy):
             score += 9.0
         elif "scrap_trader" in c_low:
             score += 6.0
+        elif "controller" in c_low:
+            score += 16.0
+        elif "heartdrive" in c_low:
+            score += 14.0
+        elif "memory" in c_low:
+            score += 15.0
+        elif "base" in c_low:
+            score += 12.0
 
         if has_go_again:
             score += 4.0
@@ -130,15 +153,69 @@ class TeklovossenStrategy(HeroStrategy):
             return score
         return 0.0
 
-    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool, **kwargs) -> float:
         c_low = str(card_name).lower()
-        if "teklo_leveler" in c_low:
-            # Teklo Leveler bate por 3+ dependendo dos Evos equipados
-            score = 10.0 + (3.0 if floating_res >= 2 else 0.0)
+        if "teklo_leveler" in c_low or "leveler" in c_low:
+            evos_equipped = kwargs.get("evos_equipped", None)
+            if evos_equipped is None:
+                state = kwargs.get("state", {})
+                equip = state.get("playerEquipment", []) if isinstance(state, dict) else []
+                evos_equipped = sum(1 for eq in equip if isinstance(eq, dict) and ("evo" in str(eq.get("cardNumber", "")).lower() or "evo" in str(eq.get("subtype", "")).lower()))
+
+            # Regra Oficial Teklo Leveler (EVO009):
+            # • 0 Evos: Não pode atacar (não possui a ação)
+            # • 1 Evo: Custo 3 ({r}{r}{r}), Poder 2
+            # • 2 Evos: Custo {r}{r} a menos -> Custo 1 ({r}), Poder 2
+            # • 3 Evos: Custo 1 ({r}), Poder 2, GANHA GO AGAIN!
+            # • 4 Evos: Custo 1 ({r}), Poder 3 (+1{p}), GANHA GO AGAIN!
+            if evos_equipped < 1:
+                return -999.0
+            elif evos_equipped == 1:
+                score = 4.0 + (2.0 if floating_res >= 3 else 0.0)
+            elif evos_equipped == 2:
+                score = 12.0 + (3.0 if floating_res >= 1 else 0.0)
+            elif evos_equipped == 3:
+                score = 18.0 + (3.0 if floating_res >= 1 else 0.0)
+            else: # 4 ou mais
+                score = 25.0 + (4.0 if floating_res >= 1 else 0.0)
+
             if not has_hand_attacks:
-                score += 8.0  # Pressão ofensiva contínua: nunca passa turno sem bater com a arma!
+                score += 7.0
             return score
-        return super().evaluate_weapon_attack(card_name, floating_res, total_res, has_hand_attacks)
+        return super().evaluate_weapon_attack(card_name, floating_res, total_res, has_hand_attacks, **kwargs)
+
+    def evaluate_arsenal_card(self, card_info: dict, db_entry: dict = None) -> float:
+        """
+        Avaliação de Arsenal especializada para Teklovossen:
+        Permite e prioriza cartas Evo no Arsenal para serem equipadas diretamente no próximo turno,
+        além de reações de defesa e The Singularity.
+        """
+        c_name = str(card_info.get("name", "")).lower()
+        subtype = (card_info.get("subtype") or (db_entry.get("subtype", "") if db_entry else "")).lower()
+        pitch = int(card_info.get("pitch", 1))
+
+        # 1. Singularity: proteção máxima no arsenal para finalização com Mechropotent
+        if "singularity" in c_name:
+            return 30.0
+
+        # 2. Reações de Defesa (Sink Below, Fate Foreseen, Shelter from the Storm)
+        if any(dr in c_name for dr in ["sink_below", "fate_foreseen", "shelter_from_the_storm", "oasis_respite"]):
+            return 16.0
+
+        # 3. Evos no Arsenal: jogada de altíssimo valor em Teklovossen!
+        # Equipar do arsenal libera a mão e transforma o herói
+        if "evo" in c_name or "evo" in subtype:
+            if "controller" in c_name or "heartdrive" in c_name:
+                return 15.0
+            elif "memory" in c_name:
+                return 14.5
+            return 13.0
+
+        # 4. Ataques pesados vermelhos de finalização
+        if pitch == 1 and any(atk in c_name for atk in ["terminator_tank", "war_machine", "command_and_conquer"]):
+            return 11.0
+
+        return super().evaluate_arsenal_card(card_info, db_entry)
 
     def evaluate_equipment_ability(self, state_or_name, eq_info_or_floating: Any = None, hand_attacks: list = None, **kwargs) -> float:
         if isinstance(state_or_name, dict):

@@ -156,7 +156,7 @@ class HeroStrategy:
         offensive_value = power + (3.0 if has_go_again else 0.0)
         return (float(block_val) * 2.0 * blk_mult) - offensive_value
 
-    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool, **kwargs) -> float:
         """Pontuação tática para atacar com a arma equipada."""
         score = 3.0 + (2.0 if floating_res >= 1 else 0.0)
         if not has_hand_attacks:

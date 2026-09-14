@@ -1736,6 +1736,10 @@ class FabBotClient:
                 self.reaction_attempts = {}
 
             # 6a. Reações / Instantâneos via Mão
+            turn_player = state.get("turnPlayer", 1)
+            is_defending = (turn_player != self.player_id)
+            is_attacking = (turn_player == self.player_id)
+
             for idx, c in enumerate(hand):
                 c_action = c.get("action", 0)
                 c_name = c.get("cardNumber", "")
@@ -1745,6 +1749,19 @@ class FabBotClient:
                     unpayable_set.add(c_name)
                     
                 if c_action > 0 and c_name not in unpayable_set:
+                    c_low = str(c_name).lower()
+                    # ── Poda Estrita de Instants Ofensivos na Defesa ──
+                    # Cartas de ataque puro, setup ou buffs ofensivos (ex: Astral Bridge, Thunderous Retort, Lightning Press)
+                    # NUNCA devem ser disparadas cegamente no turno do oponente enquanto ele ataca/ativa habilidades!
+                    if is_defending:
+                        is_offensive_instant = any(k in c_low for k in [
+                            "astral_bridge", "thunderous_retort", "lightning_press",
+                            "flowstate", "consign_to_cosmos", "comet_storm", "second_strike",
+                            "razor_reflex", "ironsong_response", "pummel", " ancestral"
+                        ])
+                        if is_offensive_instant:
+                            continue
+
                     info = self.policy_engine.extract_card_info(c)
                     floating_res, total_res = self.policy_engine.calculate_available_resources(state)
                     remaining_pitch = total_res - info["pitch"]
@@ -1763,9 +1780,6 @@ class FabBotClient:
 
             # 6b. Reações / Instantâneos via Equipamentos (Snapdragon Scalers, Boots of Omniward, etc.)
             equip = state.get("playerEquipment", [])
-            turn_player = state.get("turnPlayer", 1)
-            is_defending = (turn_player != self.player_id)
-            is_attacking = (turn_player == self.player_id)
             active_chain = state.get("activeChainLink") or {}
             opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
             arcane_dmg = int(state.get("arcaneDamage", 0) or 0)
