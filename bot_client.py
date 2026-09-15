@@ -41,6 +41,8 @@ class FabBotClient:
         self.attacks_made = 0
         self.damage_dealt = 0
         self.damage_taken = 0
+        self.opp_attacks_count = 0
+        self.blocks_declared_count = 0
         self.initial_my_health = None
         self.initial_opp_health = None
         self.execution_exceptions_count = 0
@@ -1032,8 +1034,9 @@ class FabBotClient:
                                     invalid_reason = "Bot Inerte (Travou sem atacar / Punching Bag)"
                         # Se este bot é o vencedor:
                         else:
-                            # Partida de treino autônomo entre bots onde oponente não desferiu dano em >= 6 turnos
-                            if turn >= 6:
+                            # Partida de treino autônomo entre bots onde oponente não atacou e não desferiu dano em 5 a 8 turnos
+                            # Partidas de 9+ turnos (ex: 14, 20, 22, 25 turnos) ou onde o oponente atacou NÃO são punching bags!
+                            if (5 <= turn <= 8) and getattr(self, "opp_attacks_count", 0) == 0:
                                 is_invalid_match = True
                                 invalid_reason = "Bot Oponente Inerte (Punching Bag)"
 
@@ -1677,6 +1680,7 @@ class FabBotClient:
             chain_desc = self.get_combat_chain_desc(state)
             if chain_desc and getattr(self, "last_logged_combat_attack", None) != (turn_num, chain_desc):
                 self.last_logged_combat_attack = (turn_num, chain_desc)
+                self.opp_attacks_count += 1
                 self.log(f"[COMBAT CHAIN] ⚔️ Ataque em Andamento: {chain_desc}")
 
             if not hasattr(self, "declared_blocks_link"):
@@ -1695,6 +1699,7 @@ class FabBotClient:
             if unblocked:
                 b_idx, b_id, b_name, b_action = unblocked[0]
                 self.declared_blocks_link.add((b_action, str(b_id)))
+                self.blocks_declared_count += 1
                 if hasattr(self, "equipment_tracker"):
                     equip_names = {str(eq.get("cardNumber", "")).lower() for eq in state.get("playerEquipment", []) if isinstance(eq, dict)}
                     if str(b_name).lower() in equip_names:

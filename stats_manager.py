@@ -245,16 +245,17 @@ def update_match_result(room_id, p1_deck, p2_deck, p1_health, p2_health, total_t
         ):
             is_invalid_match = True
             invalid_reason = "Empate 0 Dano (Mutual Stall)"
-        # Caso 2: Bot travou só apanhando (Punching Bag): vencedor com vida intacta (>= vida inicial) e perdedor <= 0 em >= 6 turnos
+        # Caso 2: Bot travou só apanhando (Punching Bag): vencedor com vida intacta (>= vida inicial) e perdedor <= 0 em 5 a 8 turnos
         # IMPORTANTE: Nunca anular partidas contra humanos (o jogador humano pode bloquear com sucesso ou recuperar vida de forma legítima)
+        # Além disso, partidas com >= 9 turnos NÃO são punching bags: um bot inerte sem bloquear morre em 3 a 5 turnos. Se durou 9+ turnos (ex: 14, 20, 22, 25 turnos), o perdedor estava bloqueando ativamente (vitória legítima com defesa perfeita / shutout).
         elif not is_human_p1 and winner_id == 1:
             p1_init_expected = get_expected_starting_health(p1_deck_clean)
-            if p1_health >= p1_init_expected and p2_health <= 0 and total_turns >= 6:
+            if p1_health >= p1_init_expected and p2_health <= 0 and (5 <= total_turns <= 8):
                 is_invalid_match = True
                 invalid_reason = "Bot Inerte (Punching Bag)"
         elif not is_human_p1 and winner_id == 2:
             p2_init_expected = get_expected_starting_health(p2_deck_clean)
-            if p2_health >= p2_init_expected and p1_health <= 0 and total_turns >= 6:
+            if p2_health >= p2_init_expected and p1_health <= 0 and (5 <= total_turns <= 8):
                 is_invalid_match = True
                 invalid_reason = "Bot Inerte (Punching Bag)"
 
@@ -498,7 +499,7 @@ def clean_stalled_matches(stats_file: str = None) -> dict:
         )
         if is_zero_dmg_draw:
             m["winner"] = "Anulada (Empate 0 Dano)"
-        elif (p1_h >= p1_init and p2_h <= 0 and t >= 6) or (p2_h >= p2_init and p1_h <= 0 and t >= 6):
+        elif (p1_h >= p1_init and p2_h <= 0 and 5 <= t <= 8) or (p2_h >= p2_init and p1_h <= 0 and 5 <= t <= 8):
             if "Anulada" not in w:
                 m["winner"] = "Anulada (Bot Inerte / Travado)"
         cleaned_recent.append(m)

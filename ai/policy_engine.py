@@ -587,8 +587,23 @@ class PolicyEngine:
                         has_other_attacks = any(
                             self.extract_card_info(x)["power"] > 0 for x in hand if x != c
                         )
-                        if has_ready_allies or has_other_attacks:
+                        discard = state.get("playerDiscard", []) or state.get("playerGraveyard", [])
+                        has_grave_allies = any(
+                            isinstance(x, dict) and x.get("overlay") != 1 and str(x.get("facing", "")).upper() != "DOWN" and
+                            any(k in str(x.get("cardNumber") or "").lower() for k in ["anka", "chum", "riggermortis", "sawbones", "scooba"])
+                            for x in discard
+                        )
+                        if has_ready_allies or has_other_attacks or has_grave_allies:
                             base_score += 30.0  # Prioridade máxima: jogar Avast Ye! antes do aliado/ataque!
+                    elif ("gravy" in str(self.hero_name).lower() or getattr(self.strategy, "is_ally_hero", False)) and any(k in c_clean for k in ["call_to_the_grave", "portside_exchange", "tip_the_barkeep", "loot_the_hold"]):
+                        discard = state.get("playerDiscard", []) or state.get("playerGraveyard", [])
+                        has_grave_allies = any(
+                            isinstance(x, dict) and x.get("overlay") != 1 and str(x.get("facing", "")).upper() != "DOWN" and
+                            any(k in str(x.get("cardNumber") or "").lower() for k in ["anka", "chum", "riggermortis", "sawbones", "scooba"])
+                            for x in discard
+                        )
+                        if has_grave_allies:
+                            base_score += 25.0  # Enabler azul para ativar Watery Grave no cemitério!
                     elif c_name in turn_plan.reserved_card_names or c_clean in turn_plan.reserved_card_names:
                         base_score += 15.0  # Peça chave do plano ofensivo reservada
 
@@ -763,11 +778,18 @@ class PolicyEngine:
 
         for zone_name, key in [("Arsenal", "playerArsenal"), ("Banish", "playerBanish"), ("Graveyard", "playerGraveyard")]:
             zone = state.get(key) or (state.get("playerArse", []) if key == "playerArsenal" else (state.get("playerDiscard", []) if key == "playerGraveyard" else []))
-            for c in zone:
+            for idx, c in enumerate(zone):
+                if not isinstance(c, dict):
+                    continue
                 action = c.get("action", 0)
                 c_name = str(c.get("cardNumber", "Card")).lower()
+                # Regra Oficial FaB / Talishar: Aliados mortos no cemitério virados para baixo (face-down / overlay: 1) NÃO podem ser jogados
+                if zone_name == "Graveyard":
+                    is_down = c.get("overlay") == 1 or str(c.get("facing", "")).upper() == "DOWN"
+                    if is_down:
+                        continue
                 if action > 0 and c_name not in unpayable_set:
-                    c_id = c.get("actionDataOverride", c_name)
+                    c_id = c.get("actionDataOverride") or str(c.get("uniqueID", idx))
                     c_info = self.extract_card_info(c)
                     card_cost = max(0, int(c_info.get("cost", 0)))
                     effective_cost = card_cost
@@ -815,6 +837,8 @@ class PolicyEngine:
                         elif zone_name == "Graveyard":
                             # Cartas jogáveis do cemitério (ex: Instant liberada por Astral Bridge ou recursão de cartas)
                             play_score = base_score + 18.0
+                            if getattr(self.strategy, "is_ally_hero", False) or "gravy" in str(self.hero_name).lower():
+                                play_score += 15.0  # Gravy Bones prioriza recursão de aliados face-up do cemitério
                             db_entry = _load_cards_db().get(c_name, {})
                             c_type = str(c_info.get("type") or db_entry.get("type", "")).upper()
                             if c_type == "I" or "instant" in c_type.lower() or action == 27:
@@ -837,7 +861,7 @@ class PolicyEngine:
                                     play_score += 15.0
 
                         candidate_item = {
-                            "type": zone_name.lower(), "idx": 0, "card_id": str(c_id), "mode": action,
+                            "type": zone_name.lower(), "idx": idx, "card_id": str(c_id), "mode": action,
                             "name": c_name, "score": play_score, "cost": effective_cost,
                             "power": c_info["power"], "has_go_again": has_ga
                         }
