@@ -119,14 +119,18 @@ $PY_BIN scripts/prepare_environment.py --export-templates
 
 # 4. Validar sintaxe Python de todos os scripts
 echo -e "${BLUE}[4/5] Validando sintaxe do código Python...${NC}"
-$PY_BIN -m py_compile *.py ai/*.py scripts/*.py tests/*.py
+$PY_BIN -m py_compile *.py ai/*.py ai/policy/*.py ai/mcts/*.py ai/training/*.py ai/hero_strategies/*.py ai/bot_runtime/*.py deck_manager/*.py stats/*.py ui/*.py ui/tabs/*.py scripts/*.py tests/*.py
 echo -e "${GREEN}[OK] Sintaxe de todos os módulos Python validada sem erros!${NC}"
 
 # 5. Validar compilação do Frontend Vite (Prevenção de quebras no CI)
 echo -e "${BLUE}[5/7] Validando compilação do Frontend Talishar-FE (Vite build)...${NC}"
 if [ -d "Talishar-FE" ] && [ -f "Talishar-FE/package.json" ]; then
-    (cd Talishar-FE && npx vite build)
-    echo -e "${GREEN}[OK] Frontend Talishar-FE compilado com sucesso!${NC}"
+    if command -v npx &>/dev/null; then
+        (cd Talishar-FE && npx vite build)
+        echo -e "${GREEN}[OK] Frontend Talishar-FE compilado com sucesso!${NC}"
+    else
+        echo -e "${YELLOW}[!] npx não encontrado no PATH do ambiente. Pulando build do frontend.${NC}"
+    fi
 else
     echo -e "${YELLOW}[!] Talishar-FE não encontrado. Pulando build do frontend.${NC}"
 fi

@@ -31,8 +31,17 @@ O script `scripts/prepare_environment.py` detecta automaticamente se seu ambient
 
 ### Architecture
 
-- O motor de IA vive em `ai/` (model, mcts, policy_engine, game_simulator, trainer, hero_strategies).
-- O agente autônomo é `bot_client.py` na raiz.
-- O dashboard Streamlit é `dashboard.py` na raiz.
+- O motor de IA é organizado em pacotes modulares em `ai/`:
+  - `ai/bot_runtime/`: Runtime do bot (lobby, match tracker, choices, fases de decisão). Fachada raiz: `bot_client.py`.
+  - `ai/policy/`: Poda tática (ataque, defesa, pitch, arsenal) e motor de decisão unificado. Fachada: `ai/policy_engine.py`.
+  - `ai/mcts/`: Motores MCTS e ISMCTS paralelo multithread (`ThreadPoolExecutor`). Fachada: `ai/mcts/`.
+  - `ai/training/`: Orquestrador de treino GPU FP16 e supervisor de processos. Fachada: `ai/trainer.py`.
+  - `ai/hero_strategies/`: 139 heróis oficiais, `knapsack_solver.py`, `turn_planner.py`, `equipment_evaluator.py` e submódulos por classe.
+  - `ai/model.py`, `ai/game_simulator.py`, `ai/experience_collector.py`, `ai/equipment_learning.py`.
+- O gerenciamento de decks vive no pacote `deck_manager/` (fachada raiz: `deck_parser.py`).
+- O sistema de ranking e estatísticas vive no pacote `stats/` (fachada raiz: `stats_manager.py`).
+- O dashboard Streamlit é orquestrado por `dashboard.py` delegando para `ui/helpers.py` e `ui/tabs/` (7 abas).
 - Patches do Talishar e Talishar-FE ficam em `setup_templates/` e são aplicados por `scripts/prepare_environment.py`.
 - Banco de cartas oficial fica em `data/fab_cards_db.json` (extraído por `extract_card_db.py`).
+- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini`.
+

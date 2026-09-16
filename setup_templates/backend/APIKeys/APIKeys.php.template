@@ -3,32 +3,32 @@
 $APP_ENV = getenv('APP_ENV') ?: 'local';
 
 // Fabrary
-$FaBraryKey = "local_key";
-$fabraryOutgoingKey = "local_key";
+$FaBraryKey = "op://$APP_ENV/Fabrary/credential";
+$fabraryOutgoingKey = "op://$APP_ENV/Fabrary/OutgoingKey";
 
 // Sendgrid
-$sendgridKey = "local_key";
+$sendgridKey = "op://$APP_ENV/Sendgrid/credential";
 
 // Adsense - Not used
-$adsenseClientId = "local_key";
+$adsenseClientId = "op://$APP_ENV/Adsense/credential";
 
 // FABDB
-$fabDBToken = "local_key";
-$fabDBSecret = "local_key";
+$fabDBToken = "op://$APP_ENV/FabDB/token";
+$fabDBSecret = "op://$APP_ENV/FabDB/secret";
 
 // Patreon
-$patreonClientID = "local_key";
-$patreonClientSecret = "local_key";
+$patreonClientID = "op://$APP_ENV/Patreon/username";
+$patreonClientSecret = "op://$APP_ENV/Patreon/credential";
 
 // SSH for loading bugged games
-$prodServerIP = "127.0.0.1";
-$prodServerUsername = "local";
-$prodServerPassword = "local";
+$prodServerIP = "op://$APP_ENV/Production Server/URL";
+$prodServerUsername = "op://$APP_ENV/Production Server/username";
+$prodServerPassword = "op://$APP_ENV/Production Server/password";
 
 // Metafy
-$metafyClientID = "local_key";
-$metafyClientSecret = "local_key";
+$metafyClientID = "op://$APP_ENV/Metafy/username";
+$metafyClientSecret = "op://$APP_ENV/Metafy/credential";
 
 // FaB Bazaar
-$FaBBazaarKey = "local_key";
-$FaBBazaarSalt = "local_key";
+$FaBBazaarKey = "op://$APP_ENV/FaBBazaar/credential";
+$FaBBazaarSalt = "op://$APP_ENV/FaBBazaarSalt/credential";

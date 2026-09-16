@@ -45,12 +45,31 @@ $SET_AlwaysShowCounters = 32; //Always show counters on zones
 $SET_HideHandFromFriends = 33; //Hide your hand content from friends
 $SET_GemsOffByDefault = 34; //Should gems start switched off instead of using each card's default
 $SET_HideGamesFromFriends = 35; //Hide your games from your friends in the open game and spectate lists
+$SET_AutoPassTurn = 36; //Pass button held down: auto-pass this player's windows for the rest of the turn
+$SET_DisableHoldToAutoPass = 37; //Accessibility: turn off the hold space/PASS gesture that arms auto-pass
+
+// Deliberately absent from SaveSettingInDatabase: this is an in-game state
+// StartTurnAbilities clears it, so it can never outlive the turn it was set in.
+function AutoPassTurnSetting($player)
+{
+  global $SET_AutoPassTurn;
+  if ($player != 1 && $player != 2) return 0;
+  $settings = GetSettings($player);
+  return ($settings[$SET_AutoPassTurn] ?? "0") == "1";
+}
+
+function HoldToAutoPassDisabled($player)
+{
+  global $SET_DisableHoldToAutoPass;
+  if ($player != 1 && $player != 2) return false;
+  $settings = GetSettings($player);
+  return ($settings[$SET_DisableHoldToAutoPass] ?? "1") == "1";
+}
 
 function HoldPrioritySetting($player)
 {
   global $SET_AlwaysHoldPriority;
   $settings = GetSettings($player);
-  if (!is_array($settings)) return 0;
   return $settings[$SET_AlwaysHoldPriority] ?? 0;
 }
 
@@ -59,7 +78,7 @@ function GemsOffByDefaultSetting($player)
   global $SET_GemsOffByDefault;
   if ($player != 1 && $player != 2) return 0;
   $settings = GetSettings($player);
-  if (!is_array($settings)) return 0;
+  if ($settings == null) return 0;
   return ($settings[$SET_GemsOffByDefault] ?? 0) == 1 ? 1 : 0;
 }
 
@@ -72,47 +91,14 @@ function ManualTunicSetting($player)
 {
   global $SET_ManualTunic;
   $settings = GetSettings($player);
-  if (!is_array($settings)) return 0;
   return $settings[$SET_ManualTunic] ?? 0;
-}
-
-function UseNewUI($player)
-{
-  global $SET_TryUI2;
-  $settings = GetSettings($player);
-  if (!is_array($settings)) return false;
-  return ($settings[$SET_TryUI2] ?? 0) == 1;
-}
-
-function IsDarkMode($player)
-{
-  global $SET_DarkMode;
-  $settings = GetSettings($player);
-  if (!is_array($settings)) return false;
-  return ($settings[$SET_DarkMode] ?? 0) == 1 || ($settings[$SET_DarkMode] ?? 0) == 3;
-}
-
-function IsPlainMode($player)
-{
-  global $SET_DarkMode;
-  $settings = GetSettings($player);
-  if (!is_array($settings)) return false;
-  return ($settings[$SET_DarkMode] ?? 0) == 2;
-}
-
-function IsDarkPlainMode($player)
-{
-  global $SET_DarkMode;
-  $settings = GetSettings($player);
-  if (!is_array($settings)) return false;
-  return ($settings[$SET_DarkMode] ?? 0) == 3;
 }
 
 function IsPatron($player)
 {
   global $SET_IsPatron;
   $settings = GetSettings($player);
-  if (!is_array($settings) || count($settings) <= $SET_IsPatron) return false;
+  if (!is_array($settings)) return false;
   return ($settings[$SET_IsPatron] ?? "0") == "1";
 }
 
@@ -489,13 +475,6 @@ function GetCardBack($player)
   return $cardBackMap[$cardBackId] ?? "CardBack";
 }
 
-function IsManualMode($player)
-{
-  global $SET_ManualMode;
-  $settings = GetSettings($player);
-  return $settings[$SET_ManualMode] ?? 0;
-}
-
 function ShouldSkipARs($player)
 {
   global $SET_SkipARs;
@@ -549,33 +528,8 @@ function ShortcutAttackThreshold($player)
 {
   global $SET_ShortcutAttackThreshold;
   $settings = GetSettings($player);
-  if (!is_array($settings) || count($settings) <= $SET_ShortcutAttackThreshold) return "0";
-  return $settings[$SET_ShortcutAttackThreshold] ?? "0";
-}
-
-function IsDynamicScalingEnabled($player)
-{
-  if (!function_exists("GetSettings")) return false;
-  global $SET_EnableDynamicScaling;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return ($settings[$SET_EnableDynamicScaling] ?? "0") == "1";
-}
-
-function IsMuted($player)
-{
-  global $SET_Mute;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return ($settings[$SET_Mute] ?? "0") == "1";
-}
-
-function IsChatMuted()
-{
-  global $SET_MuteChat;
-  $p1Settings = GetSettings(1);
-  $p2Settings = GetSettings(2);
-  return ($p1Settings[$SET_MuteChat] ?? "0") == "1" || ($p2Settings[$SET_MuteChat] ?? "0") == "1";
+  if (count($settings) < $SET_ShortcutAttackThreshold) return "0";
+  return $settings[$SET_ShortcutAttackThreshold];
 }
 
 function AreStatsDisabled($player)
@@ -596,14 +550,6 @@ function AreGlobalStatsDisabled($player)
   return ($settings[$SET_DisableFabInsights] ?? "0") == "1";
 }
 
-function IsHeroIntroDisabled($player)
-{
-  global $SET_DisableHeroIntro;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return ($settings[$SET_DisableHeroIntro] ?? "0") == "1";
-}
-
 function IsCasterMode()
 {
   global $SET_CasterMode;
@@ -619,14 +565,6 @@ function IsHideHandFromFriends($player)
   $settings = GetSettings($player);
   if ($settings == null) return false;
   return isset($settings[$SET_HideHandFromFriends]) && $settings[$SET_HideHandFromFriends] == "1";
-}
-
-function IsHideGamesFromFriends($player)
-{
-  global $SET_HideGamesFromFriends;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return isset($settings[$SET_HideGamesFromFriends]) && $settings[$SET_HideGamesFromFriends] == "1";
 }
 
 function IsStreamerMode($player)
@@ -699,13 +637,17 @@ function ParseSettingsStringValueToIdInt(string $value)
     "HideHandFromFriends" => 33,
     "GemsOffByDefault" => 34,
     "HideGamesFromFriends" => 35,
+    "AutoPassTurn" => 36,
+    "DisableHoldToAutoPass" => 37,
   ];
   return $settingsToId[$value];
 }
 
 function ChangeSetting($player, $setting, $value, $playerId = "")
 {
-  global $SET_MuteChat, $SET_AlwaysHoldPriority, $SET_CasterMode, $layerPriority, $gameName;
+  global $SET_MuteChat, $SET_AlwaysHoldPriority, $SET_AutoPassTurn, $SET_CasterMode, $layerPriority, $gameName;
+  global $SET_DisableHoldToAutoPass;
+  if ($setting == $SET_AutoPassTurn && $value == "1" && HoldToAutoPassDisabled($player)) return;
   // Only update game state if not in profile context
   if($player != "" && $player != 0) {
     $settings = &GetSettings($player);
@@ -725,7 +667,9 @@ function ChangeSetting($player, $setting, $value, $playerId = "")
         WriteLog("Chat enabled by player " . $player);
       }
     } else if($setting == $SET_AlwaysHoldPriority) {
-      $layerPriority[$player - 1] = "1";
+      $layerPriority[$player - 1] = ($value == 4 ? "0" : "1");
+    } else if($setting == $SET_AutoPassTurn) {
+      $layerPriority[$player - 1] = ($value == "1" ? "0" : "1");
     } else if($setting == $SET_CasterMode) {
       if(IsCasterMode()) SetCachePiece($gameName, 9, "1");
     }
@@ -744,14 +688,14 @@ function SaveSettingInDatabase($setting)
     global $SET_StreamerMode, $SET_AutotargetArcane, $SET_Playmat, $SET_AlwaysAllowUndo, $SET_DisableAltArts, $SET_AlwaysShowCounters;
     global $SET_ManualTunic, $SET_DisableFabInsights, $SET_DisableHeroIntro, $SET_MirroredBoardLayout, $SET_MirroredPlayerBoardLayout, $SET_HideHandFromFriends;
     global $SET_HideGamesFromFriends;
-    global $SET_GemsOffByDefault;
+    global $SET_GemsOffByDefault, $SET_DisableHoldToAutoPass;
     $persistable = array_fill_keys([
       $SET_DarkMode, $SET_ColorblindMode, $SET_Mute, $SET_Cardback, $SET_DisableStats,
       $SET_Language, $SET_Format, $SET_FavoriteDeckIndex, $SET_GameVisibility, $SET_AlwaysHoldPriority,
       $SET_ManualMode, $SET_StreamerMode, $SET_AutotargetArcane, $SET_Playmat, $SET_AlwaysAllowUndo,
       $SET_DisableAltArts, $SET_ManualTunic, $SET_DisableFabInsights, $SET_DisableHeroIntro,
       $SET_MirroredBoardLayout, $SET_MirroredPlayerBoardLayout, $SET_AlwaysShowCounters, $SET_HideHandFromFriends,
-      $SET_GemsOffByDefault, $SET_HideGamesFromFriends,
+      $SET_GemsOffByDefault, $SET_HideGamesFromFriends, $SET_DisableHoldToAutoPass,
     ], true);
   }
   return isset($persistable[$setting]);

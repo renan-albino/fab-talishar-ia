@@ -20,19 +20,12 @@ from .brute import BruteStrategy
 from .warrior import WarriorStrategy, KassaiStrategy, HalaStrategy
 from .ninja import NinjaStrategy
 from .ranger import RangerStrategy, MarlynnStrategy
-from .other_classes import (
-    MechanologistStrategy,
-    DashIOStrategy,
-    RunebladeStrategy,
-    VynnsetStrategy,
-    WizardStrategy,
-    OscilioStrategy,
-    IllusionistStrategy,
-    AssassinStrategy,
-    ArakniMarionetteStrategy,
-    MerchantStrategy,
-    GravyBonesStrategy,
-)
+from .mechanologist import MechanologistStrategy, DashIOStrategy
+from .runeblade import RunebladeStrategy, VynnsetStrategy
+from .wizard import WizardStrategy, OscilioStrategy
+from .illusionist import IllusionistStrategy
+from .assassin import AssassinStrategy, ArakniMarionetteStrategy
+from .merchant import MerchantStrategy, GravyBonesStrategy
 from .teklovossen import TeklovossenStrategy
 
 MarioStrategy = ArakniMarionetteStrategy

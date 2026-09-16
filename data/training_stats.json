@@ -1,10 +1,10 @@
 {
-  "total_matches": 3535,
-  "bot1_wins": 1551,
-  "bot2_wins": 1942,
+  "total_matches": 3538,
+  "bot1_wins": 1553,
+  "bot2_wins": 1943,
   "draws": 42,
-  "bot1_elo": 1177,
-  "bot2_elo": 1223,
+  "bot1_elo": 1197,
+  "bot2_elo": 1203,
   "elo_history": [
     {
       "match": 1,
@@ -23009,6 +23009,24 @@
       "bot1_elo": 1177,
       "bot2_elo": 1223,
       "timestamp": 1789471636.8284936
+    },
+    {
+      "match": 3536,
+      "bot1_elo": 1195,
+      "bot2_elo": 1205,
+      "timestamp": 1789488733.7730076
+    },
+    {
+      "match": 3537,
+      "bot1_elo": 1179,
+      "bot2_elo": 1221,
+      "timestamp": 1789489005.870145
+    },
+    {
+      "match": 3538,
+      "bot1_elo": 1197,
+      "bot2_elo": 1203,
+      "timestamp": 1789490160.8232543
     }
   ],
   "deck_stats": {
@@ -23019,16 +23037,16 @@
       "elo": 1062
     },
     "Betsy": {
-      "matches": 866,
+      "matches": 867,
       "wins": 508,
-      "losses": 352,
-      "elo": 1319
+      "losses": 353,
+      "elo": 1300
     },
     "Cindra": {
-      "matches": 877,
-      "wins": 654,
+      "matches": 878,
+      "wins": 655,
       "losses": 214,
-      "elo": 1244
+      "elo": 1263
     },
     "Dash IO": {
       "matches": 756,
@@ -23037,10 +23055,11 @@
       "elo": 979
     },
     "Gravy Bones": {
-      "matches": 344,
+      "matches": 346,
       "wins": 340,
-      "losses": 1,
-      "elo": 1848
+      "losses": 3,
+      "elo": 1785,
+      "human_matches": 2
     },
     "Oscilio GIAF": {
       "matches": 585,
@@ -23080,10 +23099,10 @@
       "elo": 743
     },
     "👤 Humano (Você)": {
-      "matches": 10,
-      "wins": 4,
+      "matches": 12,
+      "wins": 6,
       "losses": 6,
-      "elo": 1078
+      "elo": 1141
     },
     "Marlinn": {
       "matches": 254,
@@ -23093,6 +23112,36 @@
     }
   },
   "recent_matches": [
+    {
+      "room": "23",
+      "date": "15/09/2026 13:36:00",
+      "winner": "👤 Humano (Humano (Você))",
+      "p1_deck": "👤 Humano (Humano (Você))",
+      "p2_deck": "🤖 Bot (Gravy Bones)",
+      "p1_health": 38,
+      "p2_health": -2,
+      "turns": 6
+    },
+    {
+      "room": "Treino_51eb_0",
+      "date": "15/09/2026 13:16:45",
+      "winner": "🤖 Bot 2 (Cindra)",
+      "p1_deck": "Betsy",
+      "p2_deck": "Cindra",
+      "p1_health": 0,
+      "p2_health": 20,
+      "turns": 14
+    },
+    {
+      "room": "21",
+      "date": "15/09/2026 13:12:13",
+      "winner": "👤 Humano (Humano (Você))",
+      "p1_deck": "👤 Humano (Humano (Você))",
+      "p2_deck": "🤖 Bot (Gravy Bones)",
+      "p1_health": 28,
+      "p2_health": -3,
+      "turns": 3
+    },
     {
       "room": "Train_b138b9b9",
       "date": "15/09/2026 08:27:16",
@@ -23362,87 +23411,9 @@
       "p1_health": -5,
       "p2_health": 33,
       "turns": 31
-    },
-    {
-      "room": "Train_5c6bf8d7",
-      "date": "15/09/2026 08:14:16",
-      "winner": "🤖 Bot 2 (Hala)",
-      "p1_deck": "Betsy",
-      "p2_deck": "Hala",
-      "p1_health": 0,
-      "p2_health": 10,
-      "turns": 30
-    },
-    {
-      "room": "Train_f34a78d0",
-      "date": "15/09/2026 08:13:56",
-      "winner": "Bot 1 (Vynsett)",
-      "p1_deck": "Vynsett",
-      "p2_deck": "Dash IO",
-      "p1_health": 3,
-      "p2_health": 0,
-      "turns": 7
-    },
-    {
-      "room": "Train_8adba504",
-      "date": "15/09/2026 08:12:42",
-      "winner": "🤖 Bot 2 (Oscilio GIAF)",
-      "p1_deck": "Kassai",
-      "p2_deck": "Oscilio GIAF",
-      "p1_health": 0,
-      "p2_health": 6,
-      "turns": 19
     }
   ],
   "deck_elo_history": [
-    {
-      "match": 3036,
-      "Vynsett": 1031,
-      "Betsy": 1346,
-      "Cindra": 1220,
-      "Dash IO": 977,
-      "Gravy Bones": 1759,
-      "Oscilio GIAF": 1098,
-      "Hala": 1347,
-      "Jarl": 1539,
-      "Mario": 1195,
-      "Kassai": 1290,
-      "Teklovossen": 786,
-      "👤 Humano (Você)": 1078,
-      "Marlinn": 1159
-    },
-    {
-      "match": 3037,
-      "Vynsett": 1031,
-      "Betsy": 1346,
-      "Cindra": 1220,
-      "Dash IO": 977,
-      "Gravy Bones": 1759,
-      "Oscilio GIAF": 1098,
-      "Hala": 1348,
-      "Jarl": 1539,
-      "Mario": 1195,
-      "Kassai": 1290,
-      "Teklovossen": 785,
-      "👤 Humano (Você)": 1078,
-      "Marlinn": 1159
-    },
-    {
-      "match": 3038,
-      "Vynsett": 1031,
-      "Betsy": 1346,
-      "Cindra": 1219,
-      "Dash IO": 977,
-      "Gravy Bones": 1760,
-      "Oscilio GIAF": 1098,
-      "Hala": 1348,
-      "Jarl": 1539,
-      "Mario": 1195,
-      "Kassai": 1290,
-      "Teklovossen": 785,
-      "👤 Humano (Você)": 1078,
-      "Marlinn": 1159
-    },
     {
       "match": 3039,
       "Vynsett": 1031,
@@ -31393,6 +31364,54 @@
       "Kassai": 1300,
       "Teklovossen": 743,
       "👤 Humano (Você)": 1078,
+      "Marlinn": 1147
+    },
+    {
+      "match": 3536,
+      "Vynsett": 1062,
+      "Betsy": 1319,
+      "Cindra": 1244,
+      "Dash IO": 979,
+      "Gravy Bones": 1816,
+      "Oscilio GIAF": 1156,
+      "Hala": 1375,
+      "Jarl": 1434,
+      "Mario": 1140,
+      "Kassai": 1300,
+      "Teklovossen": 743,
+      "👤 Humano (Você)": 1110,
+      "Marlinn": 1147
+    },
+    {
+      "match": 3537,
+      "Vynsett": 1062,
+      "Betsy": 1300,
+      "Cindra": 1263,
+      "Dash IO": 979,
+      "Gravy Bones": 1816,
+      "Oscilio GIAF": 1156,
+      "Hala": 1375,
+      "Jarl": 1434,
+      "Mario": 1140,
+      "Kassai": 1300,
+      "Teklovossen": 743,
+      "👤 Humano (Você)": 1110,
+      "Marlinn": 1147
+    },
+    {
+      "match": 3538,
+      "Vynsett": 1062,
+      "Betsy": 1300,
+      "Cindra": 1263,
+      "Dash IO": 979,
+      "Gravy Bones": 1785,
+      "Oscilio GIAF": 1156,
+      "Hala": 1375,
+      "Jarl": 1434,
+      "Mario": 1140,
+      "Kassai": 1300,
+      "Teklovossen": 743,
+      "👤 Humano (Você)": 1141,
       "Marlinn": 1147
     }
   ]

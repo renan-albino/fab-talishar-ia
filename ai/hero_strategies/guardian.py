@@ -159,6 +159,30 @@ class GuardianStrategy(HeroStrategy):
                 return 16.0
         return 0.0
 
+    def is_critical_pitch_resource(self, card_info: dict, hand: list, state: dict) -> bool:
+        """Preservação de pitch azul para Guardião/Jarl quando há apenas 1 azul na mão."""
+        if card_info.get("pitch") == 3:
+            blue_count = sum(1 for c in hand if (c.get("pitch") == 3 or str(c.get("cardNumber", "")).lower().endswith("blue") or "blue" in str(c.get("name", "")).lower()))
+            if blue_count <= 1:
+                return True
+        return False
+
+    def modify_attack_candidate_score(self, card_name: str, card_info: dict, turn_plan: TurnPlan, base_score: float, state: dict) -> float:
+        score = base_score
+        c_clean = str(card_info.get("cardNumber") or card_name).lower()
+        if turn_plan.plan_type == "PIVOT_OAKEN_OLD_FUSED" and "oaken_old" in c_clean:
+            score += 35.0
+        card_cost = max(0, int(card_info.get("cost", 0)))
+        if card_cost >= 3:
+            hand = state.get("playerHand", [])
+            resources = state.get("playerResources", [0, 0])
+            floating_res = resources[0] if isinstance(resources, list) and resources else 0
+            has_blue_pitch = any(x != card_info and int(x.get("pitch", 0)) == 3 for x in hand if isinstance(x, dict))
+            if floating_res < card_cost and not has_blue_pitch:
+                score -= 25.0
+        return score
+
+
 
 class JarlStrategy(GuardianStrategy):
     """

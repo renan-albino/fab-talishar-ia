@@ -4,6 +4,7 @@ Mapeia o estado completo da partida para distribuição de ações ótimas (Poli
 """
 
 import os
+import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,6 +13,23 @@ from typing import Tuple, Dict, Any, List
 
 STATE_DIM = 192
 ACTION_DIM = 32
+
+_CARDS_DB_CACHE = None
+
+def _get_cards_db() -> dict:
+    global _CARDS_DB_CACHE
+    if _CARDS_DB_CACHE is None:
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "fab_cards_db.json")
+        if os.path.exists(db_path):
+            try:
+                with open(db_path, "r", encoding="utf-8") as f:
+                    _CARDS_DB_CACHE = json.load(f)
+            except Exception:
+                _CARDS_DB_CACHE = {}
+        else:
+            _CARDS_DB_CACHE = {}
+    return _CARDS_DB_CACHE
+
 
 class ResidualBlock(nn.Module):
     def __init__(self, hidden_dim: int = 256, dropout: float = 0.1):
@@ -191,19 +209,42 @@ class FaBPolicyValueNetwork(nn.Module):
         # 3. Embeddings das Cartas na Mão (Índices 26-105: até 8 cartas x 10 features cada)
         hand = state.get("playerHand", [])
         if isinstance(hand, list):
+            db = _get_cards_db()
             for i, c in enumerate(hand[:8]):
                 base_idx = 26 + (i * 10)
                 if isinstance(c, dict):
                     card_num = str(c.get("cardNumber", "")).lower()
+                    c_name = str(c.get("name", "")).lower()
+                    meta = db.get(c_name) or db.get(card_num) or {}
+
                     vec[base_idx + 0] = 1.0
-                    vec[base_idx + 1] = 1.0 if "red" in card_num else (0.5 if "yellow" in card_num else 0.0)
-                    vec[base_idx + 2] = 1.0 if "blue" in card_num else 0.0
+
+                    # Pitch (1=Red, 2=Yellow, 3=Blue)
+                    pitch = int(c.get("pitch", meta.get("pitch", 0) or 0))
+                    if pitch == 1:
+                        vec[base_idx + 1] = 1.0
+                    elif pitch == 2:
+                        vec[base_idx + 1] = 0.5
+                    elif pitch == 3:
+                        vec[base_idx + 2] = 1.0
+                    else:
+                        vec[base_idx + 1] = 1.0 if "red" in card_num else (0.5 if "yellow" in card_num else 0.0)
+                        vec[base_idx + 2] = 1.0 if "blue" in card_num else 0.0
+
+                    # Actionable / AP
                     vec[base_idx + 3] = 1.0 if c.get("action", 0) > 0 else 0.0
                     vec[base_idx + 4] = 0.5
-                    vec[base_idx + 5] = 1.0 if any(k in card_num for k in ["sixty", "out_pace", "furious", "surging", "leg_tap"]) else 0.0
-                    vec[base_idx + 6] = 1.0 if "reaction" in card_num else 0.0
-                    vec[base_idx + 7] = 1.0 if any(k in card_num for k in ["item", "grenade", "processor", "core"]) else 0.0
-                    vec[base_idx + 8] = 1.0 if any(k in card_num for k in ["crush", "crippling", "spinal"]) else 0.0
+
+                    # Keywords / Types estruturados
+                    sub = str(meta.get("subtype", "")).lower()
+                    kws = str(meta.get("keywords", "")).lower()
+                    typ = str(meta.get("type", "")).lower()
+                    combined_text = f"{card_num} {c_name} {sub} {kws} {typ}"
+
+                    vec[base_idx + 5] = 1.0 if any(k in combined_text for k in ["sixty", "out_pace", "furious", "surging", "leg_tap", "combo", "boost"]) else 0.0
+                    vec[base_idx + 6] = 1.0 if any(k in combined_text for k in ["reaction", "defense reaction", "attack reaction"]) else 0.0
+                    vec[base_idx + 7] = 1.0 if any(k in combined_text for k in ["item", "grenade", "processor", "core", "evo"]) else 0.0
+                    vec[base_idx + 8] = 1.0 if any(k in combined_text for k in ["crush", "crippling", "spinal", "overpower", "dominate"]) else 0.0
                     vec[base_idx + 9] = 1.0 if c.get("actionDataOverride") else 0.0
 
         # 4. Embeddings de Equipamentos e Arsenal (Índices 106-145)

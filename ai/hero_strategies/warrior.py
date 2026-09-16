@@ -105,6 +105,16 @@ class WarriorStrategy(HeroStrategy):
             return 17.0
         return 0.0
 
+    def modify_attack_candidate_score(self, card_name: str, card_info: dict, turn_plan: TurnPlan, base_score: float, state: dict) -> float:
+        score = base_score
+        c_clean = str(card_info.get("cardNumber") or card_name).lower()
+        if turn_plan.plan_type == "HALA_ZENITH_PRESSURE" and any(k in c_clean for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "ironsong"]):
+            score += 25.0
+        elif any(k in c_clean for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "blood_on_her_hands", "spoils_of_war", "hit_and_run"]):
+            score += 20.0
+        return score
+
+
 
 class KassaiStrategy(WarriorStrategy):
     """

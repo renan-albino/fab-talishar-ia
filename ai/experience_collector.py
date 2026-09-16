@@ -9,6 +9,7 @@ import random
 import numpy as np
 import torch
 from typing import List, Tuple, Dict, Any, Optional
+from ai.atomic_io import file_lock
 
 class ReplayBuffer:
     def __init__(self, max_capacity: int = 100000):
@@ -158,26 +159,28 @@ class ReplayBuffer:
         return self.current_size
 
     def save(self, filepath: str = "data/replay_buffer.npz"):
-        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else ".", exist_ok=True)
-        tmp_path = f"{filepath}.{os.getpid()}_{time.time_ns()}.tmp.npz"
-        try:
-            np.savez_compressed(
-                tmp_path,
-                states=self.states[:self.current_size],
-                policies=self.policies[:self.current_size],
-                values=self.values[:self.current_size],
-                weights=self.weights[:self.current_size],
-                aux_delta_hp=self.aux_delta_hp[:self.current_size],
-                aux_turn_dmg=self.aux_turn_dmg[:self.current_size],
-                schema_version=np.int32(2),
-            )
-            os.replace(tmp_path, filepath)
-        except Exception:
-            if os.path.exists(tmp_path):
-                try:
-                    os.remove(tmp_path)
-                except Exception:
-                    pass
+        with file_lock(filepath):
+            os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else ".", exist_ok=True)
+            tmp_path = f"{filepath}.{os.getpid()}_{time.time_ns()}.tmp.npz"
+            try:
+                np.savez_compressed(
+                    tmp_path,
+                    states=self.states[:self.current_size],
+                    policies=self.policies[:self.current_size],
+                    values=self.values[:self.current_size],
+                    weights=self.weights[:self.current_size],
+                    aux_delta_hp=self.aux_delta_hp[:self.current_size],
+                    aux_turn_dmg=self.aux_turn_dmg[:self.current_size],
+                    schema_version=np.int32(2),
+                )
+                os.replace(tmp_path, filepath)
+            except Exception:
+                if os.path.exists(tmp_path):
+                    try:
+                        os.remove(tmp_path)
+                    except Exception:
+                        pass
+
 
     def resize(self, new_capacity: int):
         """Redimensiona a capacidade máxima do buffer preservando os dados já coletados."""
@@ -255,6 +258,31 @@ class ReplayBuffer:
             print(f"Erro ao carregar buffer {filepath}: {e}")
             return False
 
+    def ingest_trajectories(self, trajectories_dir: str = "data/trajectories") -> int:
+        """Carrega e remove arquivos compactos de trajetória gerados concorrentemente por bots."""
+        if not os.path.exists(trajectories_dir):
+            return 0
+        ingested = 0
+        for fname in sorted(os.listdir(trajectories_dir)):
+            if fname.endswith(".npz") and not fname.endswith(".tmp.npz"):
+                fpath = os.path.join(trajectories_dir, fname)
+                try:
+                    data = np.load(fpath, allow_pickle=True)
+                    states = data["states"]
+                    policies = data["policies"]
+                    rewards = data["rewards"]
+                    weights = data["weights"]
+                    aux_delta = data["aux_delta_hp"]
+                    aux_dmg = data["aux_turn_dmg"]
+                    for s, p, r, w, ad, adm in zip(states, policies, rewards, weights, aux_delta, aux_dmg):
+                        self.add(s, p, r, w, ad, adm)
+                        ingested += 1
+                    os.remove(fpath)
+                except Exception:
+                    pass
+        return ingested
+
+
 _GLOBAL_BUFFER = None
 
 def get_global_buffer(capacity: int = None) -> ReplayBuffer:
@@ -269,3 +297,70 @@ def get_global_buffer(capacity: int = None) -> ReplayBuffer:
     elif target_cap > _GLOBAL_BUFFER.max_capacity:
         _GLOBAL_BUFFER.resize(target_cap)
     return _GLOBAL_BUFFER
+
+
+def save_trajectory_file(
+    trajectory: List[Any],
+    winner_player_id: int,
+    weights: Optional[List[float]] = None,
+    room_id: str = "",
+    player_id: int = 1,
+    out_dir: str = "data/trajectories"
+) -> str:
+    """Salva uma trajetória individual de forma atômica e ultrarrápida sem contenção de disco."""
+    os.makedirs(out_dir, exist_ok=True)
+    parsed_states = []
+    parsed_policies = []
+    parsed_rewards = []
+    parsed_weights = []
+    parsed_aux_delta = []
+    parsed_aux_dmg = []
+
+    for i, step in enumerate(trajectory):
+        state = step[0]
+        policy = step[1]
+        p_id = step[2]
+        board_eval = step[3] if len(step) > 3 else None
+
+        r_term = (1.0 if p_id == winner_player_id else -1.0) if winner_player_id in (1, 2) else 0.0
+        if board_eval is not None:
+            try:
+                norm_eval = float(np.tanh(float(board_eval) / 10.0))
+                reward = float(np.clip(0.6 * r_term + 0.4 * norm_eval, -1.0, 1.0))
+                aux_delta = norm_eval
+                aux_dmg = max(0.0, float(board_eval) / 5.0)
+            except Exception:
+                reward = r_term
+                aux_delta = 0.0
+                aux_dmg = 0.0
+        else:
+            reward = r_term
+            aux_delta = 0.0
+            aux_dmg = 0.0
+
+        w = weights[i] if weights and i < len(weights) else 1.0
+
+        parsed_states.append(state)
+        parsed_policies.append(policy)
+        parsed_rewards.append(reward)
+        parsed_weights.append(max(float(w), 0.01))
+        parsed_aux_delta.append(aux_delta)
+        parsed_aux_dmg.append(aux_dmg)
+
+    if not parsed_states:
+        return ""
+
+    filepath = os.path.join(out_dir, f"traj_{room_id}_{player_id}_{time.time_ns()}.npz")
+    tmp_path = f"{filepath}.tmp.npz"
+    np.savez_compressed(
+        tmp_path,
+        states=np.array(parsed_states, dtype=np.float32),
+        policies=np.array(parsed_policies, dtype=np.float32),
+        rewards=np.array(parsed_rewards, dtype=np.float32),
+        weights=np.array(parsed_weights, dtype=np.float32),
+        aux_delta_hp=np.array(parsed_aux_delta, dtype=np.float32),
+        aux_turn_dmg=np.array(parsed_aux_dmg, dtype=np.float32),
+    )
+    os.replace(tmp_path, filepath)
+    return filepath
+

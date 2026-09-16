@@ -330,3 +330,51 @@ class TeklovossenStrategy(HeroStrategy):
             )
 
         return super().analyze_turn_plan(state)
+
+    def is_hero_ability_active(self, state: dict) -> bool:
+        """Verifica se a habilidade de Teklovossen ({r}{r}: Bane Evo da mão, compra carta) foi ativada neste turno."""
+        if state.get("teklovossen_ability_active") is not None:
+            return bool(state.get("teklovossen_ability_active"))
+        if state.get("teklo_ability_active") is not None:
+            return bool(state.get("teklo_ability_active"))
+        if state.get("hero_ability_active") is not None:
+            return bool(state.get("hero_ability_active"))
+
+        # No Talishar, o herói fica em playerEquipment:
+        # numUses inicia em 1 e se torna 0 quando a habilidade do herói é ativada no turno.
+        for eq in state.get("playerEquipment", []):
+            if not isinstance(eq, dict):
+                continue
+            eq_name = str(eq.get("cardNumber") or eq.get("name", "")).lower()
+            eq_slot = str(eq.get("slot", "")).lower()
+            if "teklo" in eq_name or eq_slot in ("hero", "character"):
+                num_uses = eq.get("numUses")
+                if num_uses is not None:
+                    return int(num_uses) == 0
+
+        return False
+
+    def can_play_banished_card(self, card_name: str, card_info: dict, state: dict) -> bool:
+        """Regra oficial Teklovossen: equipar Evo da zona banida é jogado como Instant se habilidade do herói estiver ativa."""
+        c_low = card_name.lower()
+        if "evo" in c_low:
+            return self.is_hero_ability_active(state)
+        return False
+
+    def should_preserve_equipment_on_block(self, eq_name: str, eq_info: dict, state: dict, opp_power: int, is_lethal: bool) -> bool:
+        """Preservação Sagrada dos Evos com TEMPER: não queimar a última defesa de 1 que destruiria a peça do Mechropotent."""
+        eq_low = eq_name.lower()
+        if "evo" in eq_low:
+            eff_def = int(eq_info.get("defenseValue", eq_info.get("effective_block", 0)))
+            if eff_def == 1 and not is_lethal:
+                p_health = float(state.get("playerHealth", 20))
+                if p_health > 8 and opp_power < 6:
+                    return True
+        return False
+
+    def modify_attack_candidate_score(self, card_name: str, card_info: dict, turn_plan: TurnPlan, base_score: float, state: dict) -> float:
+        score = base_score
+        c_clean = str(card_info.get("cardNumber") or card_name).lower()
+        if "singularity" in c_clean:
+            score += 35.0
+        return score

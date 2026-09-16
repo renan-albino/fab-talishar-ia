@@ -41,11 +41,23 @@ Glossary of domain terms used in this project. AI agents and contributors must u
 - **Human ELO Feedback System**: Sistema de telemetria e pontuação ponderada em `stats_manager.py` e `dashboard.py` que identifica partidas de treino contra jogadores humanos, atribuindo peso diferenciado para aprendizado e exibindo métricas dedicadas para pós-análise e pruning de estratégias de heróis.
 - **Invalid Match Filtering**: Mecanismo em `bot_client.py` e `stats_manager.py` que detecta e descarta partidas inválidas (empates sem dano trocado $< 4$ HP e bots inertes / *Punching Bag* onde o perdedor não desferiu dano em $\ge 6$ turnos), impedindo contaminação do `ReplayBuffer` e distorções no rating ELO e taxas de vitória dos decks.
 - **Punching Bag / Inert Stall**: Cenário de anomalia ou falha técnica onde um bot perdedor não desfere ataques ou dano ao longo de múltiplos turnos enquanto o vencedor permanece intacto (100% HP). Essas partidas são marcadas como anuladas para manter a integridade dos dados de treinamento e do leaderboard.
+- **Multi-Threaded ISMCTS (`ai/mcts/ismcts.py`)**: Arquitetura de busca paralela com `concurrent.futures.ThreadPoolExecutor` que executa simulações MCTS em múltiplos mundos determinizados concorrentemente, com agregação thread-safe de contadores de visitas e estimativas de valor $V_{root}$.
+- **Knapsack Turn Solver (`ai/hero_strategies/knapsack_solver.py`)**: Resolvedor baseado em Programação Dinâmica (0-1 Knapsack) que calcula a sequência ótima de cartas de ataque e pitch para maximizar o valor de dano/recursos de um turno, computando o custo de oportunidade de cada carta.
+- **Turn Planner & Survival Trigger (`ai/hero_strategies/turn_planner.py`)**: Módulo tático que analisa o estado atual da mesa e define o `TurnPlan` (modo ofensivo, pivot, ou modo de sobrevivência estrito quando dano letal é iminente), reservando peças chave e finalizadores.
 
 ## Domain: Architecture
 
 - **Bot Client (`bot_client.py`)**: The autonomous agent that connects to the Talishar backend, reads game state, and submits actions.
 - **Dashboard (`dashboard.py`)**: The Streamlit web interface for training, analytics, arena combat, and ISMCTS telemetry. Otimizado com tailing dinâmico de logs para carregamento assíncrono e finalização limpa de subprocessos.
+- **Modular Subpackages**: A arquitetura decomposta em pacotes desacoplados e de responsabilidade única:
+  - `ai/bot_runtime/`: Gerenciamento de lobby, rastreamento de partidas, tratamento de modais/anti-loop e decisões de fase (`client.py`, `lobby_manager.py`, `match_tracker.py`, `choice_handler.py`, `phase_decider.py`).
+  - `ai/policy/`: Poda tática, avaliação e motor de decisão unificado (`constants.py`, `card_evaluator.py`, `attack_pruner.py`, `defense_pruner.py`, `pitch_pruner.py`, `arsenal_pruner.py`, `engine.py`).
+  - `ai/mcts/`: Motores de busca MCTS/ISMCTS multithread (`node.py`, `standard_mcts.py`, `world_generator.py`, `ismcts.py`).
+  - `ai/training/`: Supervisão de processos de treino e orquestrador de GPU com FP16/AMP (`matchup_engine.py`, `process_supervisor.py`, `orchestrator.py`).
+  - `deck_manager/`: Slugificação, parsing, validação de formatos e repositório atômico de baralhos (`slugifier.py`, `parser.py`, `validator.py`, `repository.py`).
+  - `stats/`: Cálculo de ELO com K-factor dinâmico, consolidação de nomes canônicos e persistência com file locking (`elo.py`, `deck_names.py`, `storage.py`, `sync.py`).
+  - `ui/`: Interface gráfica Streamlit decomposta (`helpers.py` e `tabs/tab_*.py` com 7 abas dedicadas).
+- **Retrocompatibility Facades**: Módulos raízes enxutos (`bot_client.py`, `dashboard.py`, `deck_parser.py`, `stats_manager.py`, `ai/trainer.py`, `ai/policy_engine.py`, `ai/mcts`) que re-exportam seus respectivos pacotes modulares, mantendo 100% de retrocompatibilidade para CLIs, scripts e testes legados.
 - **Setup Templates (`setup_templates/`)**: Patches and custom files that are injected into the cloned Talishar and Talishar-FE repositories to extend their functionality for AI integration. This is the only source of truth for project-specific modifications to the Talishar ecosystem.
 - **Decks Directory (`decks/`)**: The single source of truth for all deck JSON files. No deck is ever duplicated into Talishar's internal folders.
 - **Chess Advantage Tracker**: The frontend component (`ChessAdvantageTracker.tsx`) that displays a Stockfish/Chess.com-style advantage bar during games.
@@ -53,4 +65,5 @@ Glossary of domain terms used in this project. AI agents and contributors must u
 - **Environment Auto-Detection & Sanitizer (`scripts/prepare_environment.py`)**: Rotina de inspeção dinâmica de runtime (WSL2 vs Linux nativo) que atualiza o `AGENTS.md` local com instruções cirúrgicas de execução, prevenindo gasto de tokens de descoberta pelos agentes e garantindo que paths locais/privados nunca vazem para o Git.
 - **Pre-Commit Verification & Privacy Guard (`scripts/sync_and_clean.sh`)**: Hook pré-commit que valida sincronização de templates, compilação de produção do frontend Vite (`npx vite build`), sintaxe Python e bloqueia commits que contenham caminhos pessoais de sistema de arquivos.
 - **Frontend Ads Proxy / BannerUnit Mock (`setup_templates/frontend/bannerUnit`)**: Mock headless do módulo de anúncios do Talishar-FE para evitar dependências de terceiros e falhas de compilação em builds offline e de CI.
+
 

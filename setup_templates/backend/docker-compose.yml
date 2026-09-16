@@ -22,8 +22,6 @@ services:
     restart: always
     volumes:
       - "./:/var/www/html/game"
-      - "../decks:/var/www/html/game/decks"
-      - "../data:/var/www/html/game/data"
       - "../Talishar-FE:/opt/project/Talishar-FE" # Frontend project for ad-hoc running of zzCardCodeGenerator.php
       - "./docker/docker-php-ext-xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini" # Xdebug configuration
       - "./docker/docker-php-ext-opcache.ini:/usr/local/etc/php/conf.d/docker-php-ext-opcache.ini" # OPCache configuration
@@ -56,7 +54,6 @@ services:
     environment:
       PHP_FPM_CLEAR_ENV: "no"
       MYSQL_ROOT_PASSWORD: "secret"
-      MYSQL_ROOT_HOST: "%"
       MYSQL_SERVER_NAME: "mysql-server"
       MYSQL_SERVER_USER_NAME: "root"
       MYSQL_DATABASE: "fabonline"
