@@ -7,18 +7,18 @@ Ambiente completo de simulação autônoma em alta velocidade, treinamento de In
 ## 📋 Índice
 1. [Visão Geral da Arquitetura](#-visão-geral-da-arquitetura)
 2. [Principais Funcionalidades da Engine](#-principais-funcionalidades-da-engine)
-3. [Módulos da Inteligência Artificial (Deep RL, ISMCTS & Podas Táticas)](#-módulos-da-inteligência-artificial)
-4. [Gestão de Estado Essencial e Releases no GitHub (`manage_state.py`)](#-gestão-de-estado-essencial-e-releases-no-github)
-5. [Perfis de Treinamento Dinâmico (Modo Equilibrado vs Modo Turbo Máximo)](#-perfis-de-treinamento-dinâmico)
-6. [Resumo das Podas Táticas & Regras Oficiais FaB (CR)](#-resumo-das-podas-táticas--regras-oficiais-fab)
+3. [Módulos da Inteligência Artificial](#-módulos-da-inteligência-artificial-deep-rl-ismcts--podas-táticas)
+4. [Gestão de Estado Essencial e Releases no GitHub](#-gestão-de-estado-essencial-e-releases-no-github-manage_statepy)
+5. [Perfis de Treinamento Dinâmico](#-perfis-de-treinamento-dinâmico)
+6. [Resumo das Podas Táticas & Regras Oficiais FaB (CR)](#-resumo-das-podas-táticas--regras-oficiais-fab-cr) — *(Detalhado em [docs/tactical_rules.md](docs/tactical_rules.md))*
 7. [Como Funciona o Preparo Automatizado do Ambiente](#-como-funciona-o-preparo-automatizado-do-ambiente)
-8. [Instalação e Execução Rápida (1 Comando)](#-instalação-e-execução-rápida)
+8. [Instalação e Execução Rápida](#-instalação-e-execução-rápida)
 9. [Estrutura do Repositório](#-estrutura-do-repositório)
-10. [Gerenciamento Central de Baralhos & Leaderboard Compilado](#-gerenciamento-central-de-baralhos)
+10. [Gerenciamento Central de Baralhos & Leaderboard Compilado](#-gerenciamento-central-de-baralhos--leaderboard-compilado)
 11. [Protocolo e APIs do Talishar](#-protocolo-e-apis-do-talishar)
-12. [CI & Testes Automatizados no GitHub Actions (Node 24)](#-ci--testes-automatizados)
-13. [🚀 Roadmap e Próximos Passos](#-roadmap-e-próximos-passos)
-14. [💡 Orientações para a Próxima IA](#-orientações-para-a-próxima-ia)
+12. [CI & Testes Automatizados no GitHub Actions (Node 24)](#-ci--testes-automatizados-no-github-actions-node-24)
+13. [Roadmap e Próximos Passos](#-roadmap-e-próximos-passos)
+14. [Orientações para a Próxima IA](#-orientações-para-a-próxima-ia)
 
 ---
 
@@ -197,76 +197,26 @@ Na aba **"⚡ Treinamento com GPU (Deep RL)"** do Dashboard, a IA adapta automat
 
 ## ⚔️ Resumo das Podas Táticas & Regras Oficiais FaB (CR)
 
-Para navegar a complexidade de regras do Flesh and Blood e garantir jogadas de nível competitivo sem sobrecarregar a árvore MCTS, o motor [`ai/policy_engine.py`](ai/policy_engine.py) opera com uma arquitetura de podas táticas e heurísticas estruturada em 6 pilares:
+Para navegar a alta complexidade tática de Flesh and Blood e eliminar a explosão combinatória na busca MCTS/ISMCTS sem violar as regras oficiais (**Comprehensive Rules - CR** e **Tournament Rules - TR**), o motor [`ai/policy/`](ai/policy/) implementa **13 Podas Táticas e Regras Oficiais**.
 
-### 1. Poda de Ataque e Sequenciamento de Cadeia (Chain Sequencing)
-* **Go Again & Starter Priority**: O motor prioriza ataques com *Go Again* e cartas de custo 0 como iniciadores (*starters*) quando o jogador possui Action Points limitados, evitando quebrar a cadeia de combate prematuramente.
-* **Timing de Armas**: Armas de alto impacto e custo pesado de pitch (ex: martelos de Guardião) são pontuadas como finalizadores de turno ou pivots defensivos quando não há ataques jogáveis na mão; armas ágeis de 1 mão (Ninja Kodachis, adagas de Assassino) são ativadas no início da cadeia para aplicar pressão constante ou consumir recursos flutuantes residuais.
+> [!TIP]
+> 📖 **Documentação Técnica Completa**: Consulte o guia aprofundado em [**`docs/tactical_rules.md`**](docs/tactical_rules.md) para a formulação matemática rigorosa, regras oficiais CR/TR, algoritmos de breakpoint (knapsack) e exemplos práticos de cada poda.
 
-### 2. Poda de Pitch Eficiente (Pitch Hierarchy: Blue > Yellow > Red)
-* **Eficiência de Recursos**: Cartas azuis (pitch 3) recebem prioridade máxima de pitch para pagar custos pesados com o menor consumo possível de cartas da mão.
-* **Preservação de Linhas Ofensivas**: Ataques vermelhos de alto poder ofensivo sofrem penalidade severa de pitch (`score < 0`), garantindo que o bot não queime prematuramente suas principais cartas de dano na geração de recursos.
-
-### 3. Poda de Bloqueio Inteligente & Preservação de Pivot
-* **Anti-Overblocking**: O motor encerra imediatamente os bloqueios adicionais assim que o valor total de defesa acumulado iguala ou supera o ataque do oponente, preservando as cartas restantes da mão para o contra-ataque.
-* **Preservação de Mão para Pivot**: Quando a vida do herói está em patamar seguro ($\ge 10$ HP), arquétipos pesados (Guardiões e Brutes) evitam bloquear com cartas chave para absorver pequenos danos e devolver turnos esmagadores de 6+ poder (*Oaken Old*, *Boulder Drop*, *Pack Hunt*).
-* **Exceções Defensivas no Arsenal**: Detecção nativa de cartas com a keyword `Ambush` e a carta *Down and Dirty*, que possuem permissão de bloquear diretamente a partir da zona de Arsenal (*Down and Dirty* ganha bônus de $+1\{d\}$ se bloqueia do Arsenal).
-
-### 4. Poda Global de Arsenal & Modo Cavar (CR 3.1.5 & CR 4.3.2)
-* **Rejeição Universal de Recursos e Gemas (CR 3.1.5)**: Como cartas no Arsenal não podem ser dadas pitch e só saem dele se forem jogadas ou defenderem, cartas do tipo Recurso (`type: R`) ou Gemas (`subtype: Gem` como *Heart of Fyendal*, *Eye of Ophidia*, *Riches of Trōpal-Dhani*) são estritamente proibidas no Arsenal (`score: -9999.0`), prevenindo o travamento permanente do slot.
-* **Desvalorização de Bloco Comum**: Cartas de ação comuns com defesa 3 que não possuem *Ambush* nem são reações de defesa perdem a capacidade de defender a partir do Arsenal. O motor penaliza essas cartas para que fiquem na mão como bloqueadores.
-* **Priorização de Reações de Defesa e Ambush**: Cartas que extraem valor máximo ao serem acionadas do Arsenal (*Sink Below*, *Fate Foreseen*, cartas com *Ambush* e flechas de Ranger) recebem alta prioridade de carregamento.
-* **Modo Cavar (Digging Mode - CR 4.3.2)**: Se a mão contiver $\ge 3$ cartas e todas forem recursos ou cartas não ofensivas, o bot seleciona a melhor ação para colocar no Arsenal, permitindo ao herói comprar novas cartas até seu intelecto máximo no *End of Turn* e destravar o fluxo do baralho.
-
-### 5. Resolução Legal de Armas & Sideboard (CR 2.8.2 e CR 3.0)
-* **Capacidade Estrita de 2 Mãos**:
-  * **Armas de 2 Mãos (2H)** (*Sledge of Anvilheim*, *Anothos*, *Dawnblade*, *Raydn*): Ocupam ambas as mãos. É terminantemente proibido equipar qualquer escudo, off-hand ou segunda arma junto com elas.
-  * **Armas de 1 Mão (1H)** (*Titan's Fist*, *Harmonized Kodachi*, *Cintari Saber*, *Spider's Bite*): Ocupam 1 mão, podendo ser combinadas com outra arma 1H ou com um escudo/off-hand.
-  * **Off-Hands e Escudos** (*Stalagmite, Bastion of Isenloft*, *Rampart of the Ram's Head*): Ocupam 1 mão e só podem ser equipados com armas 1H ou desarmado.
-* **Sideboard Dinâmico**: Ao processar listas de baralhos que possuem armas mistas (como Jarl com *Titan's Fist*, *Stalagmite* e *Sledge of Anvilheim*), o bot equipa o par legal ideal (`Titan's Fist` + `Stalagmite`) e envia o martelo 2H e o escudo reserva para o inventário, mantendo 100% de conformidade de regras.
-
-### 6. Detecção de Stalemate / Empate Técnico & Anti-Loop (Tournament Rules)
-* **Fadiga Estagnada (Decks em 0)**: Se ambos os baralhos esgotam e por 3 turnos seguidos a vida de nenhum jogador se altera (ou se mãos e arsenais estão 100% vazios), a IA detecta o impasse de ações e declara **Empate Técnico por Fadiga / Stalemate**.
-* **Hard Cap Anti-Loop por Formato**: Limite estrito de 45 turnos (Blitz) e 55 turnos (CC) para interromper partidas em loop contínuo de prioridade.
-* **Finalização Limpa**: Registra `winner_id = 0` ("Empate") no [`stats_manager.py`](stats_manager.py) (distribuindo $S=0.5$ no ELO e incrementando o total de empates), encerra os processos dos bots instantaneamente e libera 100% da CPU.
-
-### 7. Avaliação Dinâmica de Equipamentos & Aprendizado Empírico (`ai/equipment_learning.py`)
-* **Eliminação de Hardcodes Nominais**: Nenhuma estratégia usa strings fixas como `"goliath"` ou `"tunic"`. A IA consome `data/equipment_metadata.json` (624 equipamentos mapeados) com atributos semânticos reais: `power_buff`, `cost_discount`, `grants_resource`, `min_attack_cost`, `req_counters`, `has_go_again` e `creates_token`.
-* **Aprendizado por Experiência em Partidas**: O `EquipmentTracker` e `EquipmentLearningEngine` monitoram em tempo de execução todas as ativações de habilidades e bloqueios de armadura por herói. Ao final dos jogos, calculam a taxa de vitória empírica e modulam o `learned_multiplier` $\in [0.5, 2.0]$ em `data/equipment_usage_stats.json`, reforçando dinamicamente equipamentos de alto rendimento para cada herói.
-
-### 8. Quantificação de Ameaça On-Hit & Defesa de Breakpoint Mínimo (Knapsack Breakpoint)
-* **Escala Hierárquica de Ameaça On-Hit (`ON_HIT_THREAT_VALUES`)**:
-  * **Catastrófico ($8.5$ a $10.0$)**: *Command and Conquer* (destrói arsenal sem DR), *Red in the Ledger* (trava a 1 ação), *Spinal Crush* (remove Go Again), *Crippling Crush* (descarta 2 cartas).
-  * **Alto ($5.0$ a $7.0$)**: *Snatch*, *Mask of Momentum*, *Herald of Erudition*, *Surgical Extraction*, *Leave no Witnesses*.
-  * **Médio ($3.5$ a $4.5$)**: Efeitos de aflição (*Bloodrot*, *Frailty*, *Inertia*, *Frostbite*, *Freeze*).
-  * **Vanilla ($0.0$)**: Ataques comuns sem On-Hit (*Raging Onslaught*, *Wounded Bull*, etc.).
-* **Poda Estrita de Armadura em Ataques Vanilla**: Se o ataque for comum (ameaça 0.0) e a vida estiver saudável ($HP > 12$), o bot é **terminantemente proibido** de queimar armaduras (`score: -999.0`), preservando Blade Break e Battleworn para turnos críticos de sobrevivência ou neutralização de On-Hits.
-* **Otimizador Knapsack de Breakpoint Mínimo**: Diante de ataques com On-Hit, o bot resolve o subconjunto de menor custo total: por exemplo, 1 carta de mão (def 3) + 1 armadura descartável (def 1) = 4 de defesa exata para neutralizar o On-Hit de *Snatch*, **poupando a 2ª carta da mão para desferir o Pivot de contra-ataque**.
-
-### 9. Prioritized Experience Replay (PER) & Auto-Tuning Dinâmico por Herói
-* **Amostragem Ponderada de Experiências (`ai/experience_collector.py`)**: Replay buffer com amostragem priorizada por importância (PER) e dense reward shaping.
-* **Blunder Reviewer Automático (`ai/blunder_reviewer.py`)**: Identifica e superamostra lances críticos de erro (-3.0) e viradas brilhantes (+3.0) para acelerar o treinamento da rede neural com partidas de alta densidade tática.
-* **Dynamic Rule Tuner (`ai/dynamic_rule_tuner.py`)**: Modula multiplicadores heurísticos de ataque, bloqueio, pivot e arsenal em `data/hero_rule_multipliers.json` com base na taxa de vitórias real de cada herói.
-
-### 10. Proteção Ativa de Arsenal & Otimização da Crown of Providence
-* **Detecção de Ameaças Críticas ao Arsenal**: Se o oponente ataca com cartas que destroem ou banem o Arsenal (*Command and Conquer*, *Leave No Witnesses*, *Eradicate*, *Wreck Havoc*, *Humble*) e o bot possui carta guardada no Arsenal, a `Crown of Providence` ganha prioridade defensiva máxima (`score +35.0`, custo `1.0`), entrando na cadeia de bloqueio para conceder 2 de defesa e ativar seu gatilho de *Blade Break*.
-* **Sinking / Tuck Tático Inteligente (`_score_choice_candidate`)**:
-  * **Sob Ameaça ao Arsenal**: O bot seleciona a própria carta do Arsenal para ser enviada ao fundo do deck (`score +150.0`), anulando a destruição do Arsenal pelo oponente e comprando uma nova carta para a mão.
-  * **Arsenal Seguro**: O bot protege o Arsenal (`score -200.0`) e inverte a pontuação das cartas da mão (`score = -raw_score`), afundando a **pior carta** da mão (com menor valor tático) para ciclar e buscar recursos ou cartas vermelhas de pressão.
-* **Ciclo de Mão Disfuncional**: Se a mão contiver $\ge 3$ cartas e nenhuma tiver pitch azul/amarelo (ou não houver cartas de ataque), a Crown bloqueia para destravar a mão e comprar uma peça útil para o turno seguinte.
-
-### 11. Poda de Equipamentos de Prevenção e Reação no Vazio
-* **Prevenção Sem Dano Ativo (`Boots of Omniward`, Ward, Arcane Barrier, Prevent)**: Proíbe terminantemente a ativação ou sacrifício de equipamentos de prevenção em janelas de reação/instante quando `opp_power <= 0` e `arcane_damage <= 0`, eliminando o desperdício de itens descartáveis sem valor extraído.
-* **Preservação Contra Dano Trivial em Vida Alta**: Se o herói está saudável ($HP > 15$) e o dano não é fatal nem possui efeito on-hit, itens de sacrifício único como *Boots of Omniward* são preservados para a fase de sobrevivência.
-* **Validação de Reações Ofensivas (`Snapdragon Scalers`, `Flick Knives`)**: Ativação restrita ao próprio turno de ataque, exigindo que o ataque não possua *Go Again* prévio e que haja cartas na mão para converter o Ponto de Ação ganho em novas ações de ataque.
-
-### 12. Bloqueio Flexível com Validação de Conversão de Mão
-* **Conversão de Mão vs Absorção de Dano**: Em vez de bloquear obrigatoriamente quando não há perigo letal, a IA avalia se as cartas da mão possuem baixa eficiência defensiva (média de bloco $\le 2.0$) e se o plano de turno permite absorver dano (`can_absorb_damage`). Nesses casos, o bot prefere sofrer o dano para manter 3 ou 4 cartas e converter um contra-ataque de alto valor ofensivo no seu próprio turno.
-* **Sobrevivência Estrita**: Quando a vida entra em risco crítico ($HP \le 6$) ou diante de dano letal iminente, o modo de sobrevivência sobrepõe o pivot e bloqueia com todas as peças necessárias para salvar a vida do herói.
-
-### 13. Treino Híbrido Humano vs Bot com Telemetria e Bônus ELO
-* **Registro de Salas Humanas**: Identificação de partidas jogadas na sala humana (`human_player_match`), exibindo no dashboard o log completo para pós-análise e pruning de estratégias de heróis.
-* **Bônus de Aprendizado contra Humanos**: Vitórias contra jogadores humanos atribuem maior pontuação de reforço e métricas calibradas para acelerar a especialização dos bots.
+| # | Poda Tática / Regra Oficial | Fundamento (CR / Heurística) | Impacto no Motor de IA |
+| :-: | :--- | :--- | :--- |
+| **1** | **Ataque e Sequenciamento de Cadeia** | CR 2.1.2 & CR 2.3 | Prioriza *starters* de custo 0 e *Go Again*; penaliza quebrar cadeia sem *Go Again*; proíbe flechas na mão. |
+| **2** | **Pitch Eficiente (Blue > Yellow > Red)** | CR 1.14 | Hierarquia de pitch (Azul $+4.0$, Vermelha $-3.0$); protege finalizadores reservados do plano ofensivo. |
+| **3** | **Bloqueio Inteligente & Tempo Pivot** | CR 2.4 | Anti-overblocking imediato; preserva cartas nobres para contra-ataque; autoriza bloqueio de *Ambush* e *Down and Dirty*. |
+| **4** | **Poda Global de Arsenal & Modo Cavar** | CR 3.1.5 & CR 4.3.2 | Proíbe recursos/gemas no Arsenal; desvaloriza blocos comuns; ativa Modo Cavar com $\ge 3$ recursos para destravar compras no EOT. |
+| **5** | **Resolução Legal de Armas & Sideboard** | CR 2.8.2 & CR 3.0 | Limite estrito de 2 mãos: armas 2H ocupam 2 mãos (sem escudo); armas 1H aceitam escudo ou 2ª arma; decks com 40 (Blitz) ou 60/65 (CC). |
+| **6** | **Stalemate / Empate Técnico & Anti-Loop** | Tournament Rules 5.4 | Declara empate oficial em decks a 0 sem dano (3 turnos) ou hard cap (45 turnos Blitz, 55 CC), liberando 100% da CPU. |
+| **7** | **Aprendizado Empírico de Equipamentos** | [`ai/equipment_learning.py`](ai/equipment_learning.py) | Substitui nomes fixos por metadados de 624 equipamentos e calibra multiplicadores aprendidos $\in [0.5, 2.0]$ por vitórias empíricas. |
+| **8** | **Ameaça On-Hit & Knapsack Breakpoint** | [`ai/policy/constants.py`](ai/policy/constants.py) | Quantifica ameaça ($0.0$ a $10.0$); resolve subconjunto mínimo de defesa (knapsack); veta queimar armadura em ataques vanilla. |
+| **9** | **PER & Auto-Tuning Dinâmico por Herói** | [`ai/blunder_reviewer.py`](ai/blunder_reviewer.py) | Superamostra blunders (peso 3.5) e viradas (peso 2.0); ajusta multiplicadores de ataque/defesa por herói em tempo real. |
+| **10** | **Proteção de Arsenal & Crown of Providence** | [`ai/bot_runtime/choice_handler.py`](ai/bot_runtime/choice_handler.py) | Crown entra no bloco sob ameaça a Arsenal; afunda a carta ameaçada do Arsenal ($+150.0$) ou a pior da mão para ciclar. |
+| **11** | **Poda de Prevenção e Reação no Vazio** | [`ai/bot_runtime/phase_decider.py`](ai/bot_runtime/phase_decider.py) | Veta Boots of Omniward, Ward e Spellvoid sem dano ativo; restringe Snapdragon Scalers ao turno de ataque sem Go Again. |
+| **12** | **Bloqueio Flexível & Conversão de Mão** | [`ai/hero_strategies/turn_planner.py`](ai/hero_strategies/turn_planner.py) | Rejeita blocos ineficientes ($\le 2.0$) para absorver dano e contra-atacar com 4 cartas; modo sobrevivência estrito se $HP \le 6$. |
+| **13** | **Treino Híbrido Humano vs Bot & Bônus ELO** | [`ai/bot_runtime/match_tracker.py`](ai/bot_runtime/match_tracker.py) | Isola salas humanas; imune a punching bag; bonifica trajetórias vitoriosas contra humanos com peso 3.0x no buffer. |
 
 ---
 
@@ -429,6 +379,9 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 ├── setup_templates/          # Templates e patches para replicação em outras máquinas
 │   ├── backend/              # APIs customizadas (AppendGameLog, JoinGame, CombatDummy...)
 │   └── frontend/             # Componentes React (ChessAdvantageTracker, ChatBox...)
+├── docs/                     # Documentação técnica e convenções de arquitetura
+│   ├── tactical_rules.md     # Detalhamento técnico das 13 Podas Táticas & Regras FaB (CR)
+│   └── agents/               # Guias para agentes (domain.md, issue-tracker.md)
 ├── ai/                       # Módulos de Inteligência Artificial e Deep RL
 │   ├── bot_runtime/          # Runtime modular do bot (lobby, tracker, choices, fases, client)
 │   ├── policy/               # Poda tática, avaliação de cartas e motor de decisão unificado
@@ -532,12 +485,13 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 
 ---
 
-## 🚀 Roadmap
+## 🚀 Roadmap e Próximos Passos
 
 ### ✅ Concluído
 
 | Item | Descrição |
 |------|-----------|
+| **Documentação Técnica de Podas Táticas & CR** | Criação de [`docs/tactical_rules.md`](docs/tactical_rules.md) com detalhamento matemático e regras oficiais (CR/TR) das 13 podas táticas e heurísticas da engine |
 | **Gestão de Checkpoints & GitHub Releases** | Utilitário `scripts/manage_state.py` com empacotamento compacto (~6.5 MB), comandos CLI de export/import e Git Hook `post-commit` automático que publica novos modelos treinados na release `checkpoint-latest` do GitHub |
 | **Perfis Dinâmicos de Treino (Equilibrado / Turbo)** | Calibração por hardware (GTX 1660 Super, CPUs, GPUs high-end), botão Turbo Máximo (~90% carga) com escalonamento de CPU em segundo plano (`nice 10`) garantindo estabilidade absoluta da interface web |
 | **Poda de Arsenal (CR 3.1.5) & RangerStrategy** | Poda estrita que proíbe recursos (`type: R`) e gemas no Arsenal (evitando travar o slot), priorização de flechas (`Arrow`) como condição essencial de ataque no Ranger e capacidade de passar sem arsenalar para preservar recursos |
