@@ -5,11 +5,14 @@ env/
 ENV/
 node_modules/
 
-# Python Cache
+# Python Cache & Coverage
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.coverage
+.coverage.*
+htmlcov/
 
 # Pastas de Clonagem/Replicação do Talishar (Evitar Redundância)
 Talishar/
