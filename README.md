@@ -379,8 +379,10 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 ├── setup_templates/          # Templates e patches para replicação em outras máquinas
 │   ├── backend/              # APIs customizadas (AppendGameLog, JoinGame, CombatDummy...)
 │   └── frontend/             # Componentes React (ChessAdvantageTracker, ChatBox...)
-├── docs/                     # Documentação técnica e convenções de arquitetura
+├── docs/                     # Documentação técnica, ADRs e Roadmap
+│   ├── ROADMAP.md            # Planejamento estratégico e expansão de cobertura
 │   ├── tactical_rules.md     # Detalhamento técnico das 13 Podas Táticas & Regras FaB (CR)
+│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0006)
 │   └── agents/               # Guias para agentes (domain.md, issue-tracker.md)
 ├── ai/                       # Módulos de Inteligência Artificial e Deep RL
 │   ├── bot_runtime/          # Runtime modular do bot (lobby, tracker, choices, fases, client)
