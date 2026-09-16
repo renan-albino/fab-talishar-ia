@@ -1,16 +1,6 @@
-# AGENTS.template.md — FaB Talishar AI Engine
+# GEMINI.md — FaB Talishar AI Engine
 
-Template de diretrizes e regras para agentes de IA. Execute `python scripts/prepare_environment.py` para gerar o `AGENTS.md` local customizado para sua máquina e runtime específico.
-
-## Agent skills
-
-### Issue tracker
-
-Issues are tracked in GitHub Issues on `renan-albino/fab-talishar-ia`. See `docs/agents/issue-tracker.md`.
-
-### Domain docs
-
-Single-context layout: one `CONTEXT.md` at the repo root, ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+Diretrizes e regras operacionais para agentes de IA (Google Antigravity / Gemini CLI).
 
 ## Project Rules
 
@@ -33,12 +23,15 @@ Single-context layout: one `CONTEXT.md` at the repo root, ADRs in `docs/adr/`. S
 - **Especialização:** Use o campo `Role` com título claro de trabalho e `Prompt` com escopo estrito, arquivos-alvo e critérios de aceitação.
 - **Reatividade:** Não faça loops ou polling de status; a plataforma acorda o agente automaticamente via mensagens quando o subagente finaliza.
 
-### Execução de Comandos (Configurado por scripts/prepare_environment.py)
+### Execução de Comandos (Ambiente Linux Nativo)
 
-O script `scripts/prepare_environment.py` detecta automaticamente se seu ambiente é WSL2 ou Linux Nativo e preenche esta seção no seu `AGENTS.md` local com os caminhos corretos:
-
-- **WSL2 (Windows Host):** Comandos executados via `wsl -d <distro> --cd <caminho_linux> ...`
-- **Linux Nativo:** Comandos executados diretamente no shell `./venv/bin/python ...`
+**SEMPRE execute no diretório do projeto:**
+- **Git:** `git <args>`
+- **Python / Scripts:** `./venv/bin/python <script>`
+- **Testes (Pytest):** `./venv/bin/python -m pytest <args>`
+- **Docker:** `docker <args>`
+- **Frontend (Node/NPM):** `npm <args>`
+- **Comandos Linux/Bash:** `<comando>`
 
 ### Architecture
 
@@ -55,4 +48,3 @@ O script `scripts/prepare_environment.py` detecta automaticamente se seu ambient
 - Patches do Talishar e Talishar-FE ficam em `setup_templates/` e são aplicados por `scripts/prepare_environment.py`.
 - Banco de cartas oficial fica em `data/fab_cards_db.json` (extraído por `extract_card_db.py`).
 - Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini`.
-
