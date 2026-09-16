@@ -2,6 +2,7 @@ import os
 import json
 from ai.equipment_learning import get_equipment_learning_engine
 from ai.turn_order_learning import get_turn_order_learner
+from ai.common import safe_int, safe_list
 
 def track_tick_health_and_damage(client, state: dict, my_h: int, opp_h: int):
     """Atualiza métricas de dano causado e recebido e dispara badge de avaliação no chat."""
@@ -10,25 +11,27 @@ def track_tick_health_and_damage(client, state: dict, my_h: int, opp_h: int):
     if client.initial_opp_health is None:
         client.initial_opp_health = opp_h
 
-    if not hasattr(client, "_prev_tracked_opp_h"):
+    prev_opp_h = getattr(client, "_prev_tracked_opp_h", None)
+    prev_my_h = getattr(client, "_prev_tracked_my_h", None)
+    if not isinstance(prev_opp_h, (int, float)) or not isinstance(prev_my_h, (int, float)):
         client._prev_tracked_opp_h = opp_h
         client._prev_tracked_my_h = my_h
     else:
-        if opp_h < client._prev_tracked_opp_h:
-            client.damage_dealt += (client._prev_tracked_opp_h - opp_h)
-        if my_h < client._prev_tracked_my_h:
-            client.damage_taken += (client._prev_tracked_my_h - my_h)
+        if opp_h < prev_opp_h:
+            client.damage_dealt += (prev_opp_h - opp_h)
+        if my_h < prev_my_h:
+            client.damage_taken += (prev_my_h - my_h)
         client._prev_tracked_opp_h = opp_h
         client._prev_tracked_my_h = my_h
 
-    turn = int(state.get("turnNo", state.get("currentTurn", 1))) if str(state.get("turnNo", state.get("currentTurn", 1))).isdigit() else 1
+    turn = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
     
     # Disparar banner de avaliação de turno no chat (estilo Chess Engine)
     if turn != getattr(client, "last_chat_turn", -1):
         client.last_chat_turn = turn
         board_eval = client.evaluate_board_state(state)
         eval_str = f"+{board_eval}" if board_eval > 0 else str(board_eval)
-        chat_turn_summary = f"<b>[Turno {turn}]</b> 📊 <b>AI Eval:</b> <code>{eval_str}</code> | <b>Vida:</b> {my_h} vs {opp_h} | <b>Mão:</b> {len(state.get('playerHand', []))} cartas"
+        chat_turn_summary = f"<b>[Turno {turn}]</b> 📊 <b>AI Eval:</b> <code>{eval_str}</code> | <b>Vida:</b> {my_h} vs {opp_h} | <b>Mão:</b> {len(safe_list(state.get('playerHand')))} cartas"
         client.send_chat_log(chat_turn_summary, highlight=True, bg_color="#1e293b", text_color="#94a3b8")
 
 def check_stalemate_and_timeout(client, state: dict, turn: int, my_h: int, opp_h: int) -> tuple[bool, str]:
@@ -38,12 +41,12 @@ def check_stalemate_and_timeout(client, state: dict, turn: int, my_h: int, opp_h
     2. Hard Cap de Turnos Anti-Loop (45 turnos no Blitz, 55 no CC).
     3. Estagnação prolongada (12 turnos sem dano com decks residuais <= 5).
     """
-    my_deck_cnt = int(state.get("playerDeckCount", len(state.get("playerDeck", []))))
-    opp_deck_cnt = int(state.get("opponentDeckCount", len(state.get("opponentDeck", []))))
-    my_hand_cnt = len(state.get("playerHand", []))
-    opp_hand_cnt = len(state.get("opponentHand", []))
-    my_ars_cnt = len(state.get("playerArsenal", []))
-    opp_ars_cnt = len(state.get("opponentArsenal", []))
+    my_deck_cnt = safe_int(state.get("playerDeckCount"), default=len(safe_list(state.get("playerDeck"))))
+    opp_deck_cnt = safe_int(state.get("opponentDeckCount"), default=len(safe_list(state.get("opponentDeck"))))
+    my_hand_cnt = len(safe_list(state.get("playerHand")))
+    opp_hand_cnt = len(safe_list(state.get("opponentHand")))
+    my_ars_cnt = len(safe_list(state.get("playerArsenal")))
+    opp_ars_cnt = len(safe_list(state.get("opponentArsenal")))
 
     # Inicializa variáveis de controle de estagnação no bot se não existirem
     if not hasattr(client, "_last_state_health"):
@@ -161,6 +164,11 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
             highlight=True, bg_color="#451a03", text_color="#fbbf24"
         )
 
+    trajectory_samples_count = len(client.trajectory) if hasattr(client, "trajectory") and isinstance(client.trajectory, list) else 0
+
+    if is_invalid_match and hasattr(client, "trajectory") and isinstance(client.trajectory, list):
+        client.trajectory.clear()
+
     if not is_invalid_match and hasattr(client, "trajectory") and client.trajectory:
         try:
             from ai.experience_collector import get_global_buffer, save_trajectory_file
@@ -192,8 +200,11 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
             buf = get_global_buffer(client.buffer_capacity)
             buf.add_trajectory(client.trajectory, winner_player_id=winner_id, weights=weights)
             buf.save()
+            client.trajectory.clear()
         except Exception as e:
             client.log(f"[ERRO BUFFER] {e}")
+            if hasattr(client, "trajectory") and isinstance(client.trajectory, list):
+                client.trajectory.clear()
 
     if hasattr(client, "equipment_tracker") and client.equipment_tracker.get_events():
         try:
@@ -264,7 +275,7 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                 f"• {p1_lbl}: {p1_hp} HP\n"
                 f"• {p2_lbl}: {p2_hp} HP\n"
                 f"• Duração: {turn} turnos\n"
-                f"• Decisões Coletadas para Treino: {len(client.trajectory)} amostras\n"
+                f"• Decisões Coletadas para Treino: {trajectory_samples_count} amostras\n"
                 f"═══════════════════════════════════════════════\n"
             )
             with open(f"logs/{client.room_id}_summary.log", "w", encoding="utf-8") as f:

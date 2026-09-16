@@ -1,11 +1,19 @@
 import os
 import json
 import re
+from ai.atomic_io import atomic_json_save
 from .slugifier import load_fab_cards_db, BASE_DIR
 from .parser import enrich_deck_metadata, extract_hero_from_deck
 
+def get_decks_dir(base_dir: str = None) -> str:
+    """Retorna o caminho canônico do diretório raiz decks/ (Project Rule 3)."""
+    target_base = base_dir if base_dir is not None else BASE_DIR
+    decks_dir = os.path.join(target_base, "decks")
+    os.makedirs(decks_dir, exist_ok=True)
+    return decks_dir
+
 def save_deck_to_workspace(deck_obj: dict, base_dir: str = None) -> dict:
-    """Salva um deck no diretório decks/ e define como deck ativo do Talishar."""
+    """Salva um deck exclusivamente no diretório raiz decks/ e define como deck ativo do Talishar."""
     if base_dir is None:
         base_dir = BASE_DIR
     deck_obj = enrich_deck_metadata(deck_obj)
@@ -14,27 +22,19 @@ def save_deck_to_workspace(deck_obj: dict, base_dir: str = None) -> dict:
     if not safe_slug:
         safe_slug = "custom_deck"
         
-    deck_str = json.dumps(deck_obj, indent=2, ensure_ascii=False)
     saved_files = []
     
-    # Salva na pasta decks/
-    for root in [base_dir, "."]:
-        for folder in [os.path.join(root, "Talishar", "decks"), os.path.join(root, "decks")]:
-            try:
-                os.makedirs(folder, exist_ok=True)
-                file_path = os.path.join(folder, f"{safe_slug}.json")
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write(deck_str)
-                saved_files.append(file_path)
-            except Exception:
-                pass
+    # Salva exclusivamente no diretório raiz decks/ (Project Rule 3) via atomic_json_save
+    decks_dir = get_decks_dir(base_dir)
+    file_path = os.path.join(decks_dir, f"{safe_slug}.json")
+    atomic_json_save(deck_obj, file_path, indent=2)
+    saved_files.append(file_path)
         
     # Também define como deck ativo atual
     for root in [base_dir, "."]:
         for main_file in [os.path.join(root, "Talishar", "deck.json"), os.path.join(root, "deck.json")]:
             try:
-                with open(main_file, "w", encoding="utf-8") as f:
-                    f.write(deck_str)
+                atomic_json_save(deck_obj, main_file, indent=2)
                 saved_files.append(main_file)
             except Exception:
                 pass
@@ -60,14 +60,11 @@ def update_saved_deck(slug: str, new_name: str, new_format: str, cards_list: lis
     return save_deck_to_workspace(deck_obj, base_dir=base_dir)
 
 def list_saved_decks(base_dir: str = None) -> list:
-    """Lista todos os decks salvos disponíveis no diretório decks/."""
+    """Lista todos os decks salvos disponíveis exclusivamente no diretório raiz decks/."""
     if base_dir is None:
         base_dir = BASE_DIR
     db = load_fab_cards_db()
-    decks_dir = os.path.join(base_dir, "decks")
-    if not os.path.exists(decks_dir):
-        decks_dir = "decks"
-    os.makedirs(decks_dir, exist_ok=True)
+    decks_dir = get_decks_dir(base_dir)
     deck_files = [f for f in os.listdir(decks_dir) if f.endswith(".json")]
     decks = []
     for df in sorted(deck_files):
@@ -92,29 +89,25 @@ def list_saved_decks(base_dir: str = None) -> list:
     return decks
 
 def delete_saved_deck(slug: str, base_dir: str = None) -> bool:
-    """Remove o arquivo JSON do deck do diretório decks/."""
-    if base_dir is None:
-        base_dir = BASE_DIR
-    for root in [base_dir, "."]:
-        deck_path = os.path.join(root, "decks", f"{slug}.json")
-        if os.path.exists(deck_path):
-            try:
-                os.remove(deck_path)
-                return True
-            except Exception as e:
-                print(f"Erro ao remover {deck_path}: {e}")
+    """Remove o arquivo JSON do deck exclusivamente do diretório raiz decks/."""
+    decks_dir = get_decks_dir(base_dir)
+    deck_path = os.path.join(decks_dir, f"{slug}.json")
+    if os.path.exists(deck_path):
+        try:
+            os.remove(deck_path)
+            return True
+        except Exception as e:
+            print(f"Erro ao remover {deck_path}: {e}")
     return False
 
 def set_active_deck(deck_data: dict, base_dir: str = None):
-    """Define o deck ativo no Talishar (deck.json)."""
+    """Define o deck ativo no Talishar (deck.json) usando atomic_json_save."""
     if base_dir is None:
         base_dir = BASE_DIR
-    deck_str = json.dumps(deck_data, indent=2)
     for root in [base_dir, "."]:
         for main_file in [os.path.join(root, "Talishar", "deck.json"), os.path.join(root, "deck.json")]:
             try:
-                with open(main_file, "w", encoding="utf-8") as f:
-                    f.write(deck_str)
+                atomic_json_save(deck_data, main_file, indent=2)
             except Exception:
                 pass
 
@@ -133,13 +126,11 @@ def load_current_deck(base_dir: str = None) -> dict:
     return {}
 
 def normalize_all_saved_decks(base_dir: str = None) -> list[str]:
-    """Reavalia e normaliza todos os arquivos JSON em decks/ com metadados canônicos."""
+    """Reavalia e normaliza todos os arquivos JSON exclusivamente em decks/ com metadados canônicos usando atomic_json_save."""
     if base_dir is None:
         base_dir = BASE_DIR
     db = load_fab_cards_db()
-    decks_dir = os.path.join(base_dir, "decks")
-    if not os.path.exists(decks_dir):
-        decks_dir = "decks"
+    decks_dir = get_decks_dir(base_dir)
     normalized = []
     if os.path.exists(decks_dir):
         for df in sorted(os.listdir(decks_dir)):
@@ -149,8 +140,7 @@ def normalize_all_saved_decks(base_dir: str = None) -> list[str]:
                     with open(fpath, "r", encoding="utf-8") as f:
                         d = json.load(f)
                     enriched = enrich_deck_metadata(d, db=db)
-                    with open(fpath, "w", encoding="utf-8") as f:
-                        json.dump(enriched, f, indent=2, ensure_ascii=False)
+                    atomic_json_save(enriched, fpath, indent=2)
                     normalized.append(df)
                 except Exception as e:
                     print(f"Erro ao normalizar deck {df}: {e}")

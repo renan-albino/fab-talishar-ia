@@ -341,8 +341,8 @@ class MCTSEngine:
     def _select(self, root: MCTSNode) -> MCTSNode:
         """Desce a árvore por PUCT considerando apenas filhos ativos (chave ≥ 0)."""
         node = root
+        path = [node]
         while node.is_expanded and any(k >= 0 for k in node.children):
-            node.virtual_loss += VIRTUAL_LOSS
             best_score, best_child = -float("inf"), None
             for key, child in node.children.items():
                 if key < 0:
@@ -354,7 +354,9 @@ class MCTSEngine:
             if best_child is None:
                 break
             node = best_child
-        node.virtual_loss += VIRTUAL_LOSS
+            path.append(node)
+        for n in path:
+            n.virtual_loss += VIRTUAL_LOSS
         return node
 
     # ── Backpropagação ────────────────────────────────────

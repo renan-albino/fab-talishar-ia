@@ -11,6 +11,7 @@ from ai.training.process_supervisor import (
     is_process_alive,
     get_active_pids,
     wait_for_processes,
+    terminate_process_cleanly,
 )
 from ai.training.orchestrator import GPUTrainingOrchestrator
 
@@ -22,4 +23,5 @@ __all__ = [
     "is_process_alive",
     "get_active_pids",
     "wait_for_processes",
+    "terminate_process_cleanly",
 ]

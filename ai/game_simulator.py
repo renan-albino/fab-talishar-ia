@@ -85,6 +85,14 @@ class GameSimulator:
             "zero_to_sixty", "throttle", "zipper", "expedite", "out_pace", "fast_and_furious", "leg_tap", "snatch", "rising_knee", "fai"
         ])
         has_on_hit = any(oh in card_num for oh in DANGEROUS_ON_HITS)
+        has_intimidate = (
+            bool(card.get("has_intimidate") or card.get("intimidate"))
+            or any(k in card_num for k in ["pack_hunt", "alpha_rampage", "barraging_beatdown", "intimidate"])
+        )
+        intimidate_count = 0
+        if has_intimidate:
+            raw_i = card.get("intimidate_count", card.get("intimidate", 1))
+            intimidate_count = int(raw_i) if isinstance(raw_i, (int, float)) and not isinstance(raw_i, bool) else 1
 
         return {
             "name": card_num,
@@ -94,6 +102,8 @@ class GameSimulator:
             "cost": cost,
             "has_go_again": has_go_again,
             "has_on_hit": has_on_hit,
+            "has_intimidate": has_intimidate,
+            "intimidate_count": intimidate_count,
             "raw": card
         }
 
@@ -181,23 +191,45 @@ class GameSimulator:
         atk_power = int(action.get("power", 4))
         opp_hp = int(sim_state.get("opponentHealth", sim_state.get("theirHealth", 40)))
         opp_hand = sim_state.get("opponentHand", [])
+
+        # Intimidate (CR 8.5.8): Quando a habilidade ou ataque tiver intimidate,
+        # descontar da mão do defensor (opp_hand_count) o número de cartas intimidadas (mínimo 0)
+        # ao calcular as probabilidades de bloqueio do oponente.
+        raw_intim = action.get("intimidate")
+        if raw_intim is None:
+            raw_intim = action.get("intimidate_count")
+        if isinstance(raw_intim, bool):
+            intimidate_count = 1 if raw_intim else 0
+        elif isinstance(raw_intim, (int, float)):
+            intimidate_count = max(0, int(raw_intim))
+        elif action.get("has_intimidate"):
+            intimidate_count = int(action.get("intimidate_count", 1))
+        elif any(k in str(action.get("name", "")).lower() for k in ["pack_hunt", "alpha_rampage", "barraging_beatdown", "intimidate"]):
+            intimidate_count = int(action.get("intimidate_count", 1))
+        else:
+            intimidate_count = 0
+
         if isinstance(opp_hand, list) and len(opp_hand) > 0 and isinstance(opp_hand[0], dict):
             # Mundo determinizado com cartas concretas amostradas (Cowling 2012 / ReBel 2020)
-            cards_def = [int(c.get("defense", c.get("block", 3))) for c in opp_hand]
+            # Descontar as cartas intimidadas da mão disponível para bloquear
+            usable_hand = opp_hand[intimidate_count:] if intimidate_count > 0 else opp_hand
+            cards_def = [int(c.get("defense", c.get("block", 3))) for c in usable_hand]
             cards_def.sort(reverse=True)
+            opp_hand_count = len(usable_hand)
+
             if opp_hp <= 8:
                 expected_block = min(atk_power, sum(cards_def))
-                cards_used_to_block = min(len(opp_hand), (expected_block + 2) // 3)
+                cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
             elif opp_hp <= 18:
                 expected_block = min(atk_power, sum(cards_def[:max(1, len(cards_def) // 2)]))
-                cards_used_to_block = min(len(opp_hand), (expected_block + 2) // 3)
+                cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
             else:
                 expected_block = min(atk_power, cards_def[0] if cards_def else 0)
                 cards_used_to_block = 1 if expected_block > 0 else 0
-            opp_hand_count = len(opp_hand)
         else:
-            opp_hand_count = int(sim_state.get("opponentHandCount", sim_state.get("theirHandCount", 3)))
-            # Estimativa de Bloqueio do Oponente baseada na contagem de mão dele
+            base_hand_count = int(sim_state.get("opponentHandCount", sim_state.get("theirHandCount", 3)))
+            opp_hand_count = max(0, base_hand_count - intimidate_count)
+            # Estimativa de Bloqueio do Oponente baseada na contagem de mão dele (com desconto de intimidate)
             if opp_hp <= 8:
                 expected_block = min(atk_power, int(opp_hand_count * 2.8))  # Oponente bloqueia pesado com vida baixa
                 cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
@@ -212,7 +244,7 @@ class GameSimulator:
         sim_state["opponentHealth"] = max(0, opp_hp - unblocked_damage)
         sim_state["theirHealth"] = max(0, opp_hp - unblocked_damage)
 
-        # Atualizar mão estimada do oponente pós-bloqueio
+        # Atualizar mão estimada do oponente pós-bloqueio (descontando bloqueadores e cartas intimidadas)
         new_opp_hand = max(0, opp_hand_count - cards_used_to_block)
         
         # 5. On-Hit Effects

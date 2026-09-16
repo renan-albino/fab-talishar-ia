@@ -119,7 +119,7 @@ $PY_BIN scripts/prepare_environment.py --export-templates
 
 # 4. Validar sintaxe Python de todos os scripts
 echo -e "${BLUE}[4/5] Validando sintaxe do código Python...${NC}"
-$PY_BIN -m py_compile *.py ai/*.py ai/policy/*.py ai/mcts/*.py ai/training/*.py ai/hero_strategies/*.py ai/bot_runtime/*.py deck_manager/*.py stats/*.py ui/*.py ui/tabs/*.py scripts/*.py tests/*.py
+$PY_BIN -m py_compile *.py ai/*.py ai/common/*.py ai/policy/*.py ai/mcts/*.py ai/training/*.py ai/hero_strategies/*.py ai/bot_runtime/*.py deck_manager/*.py stats/*.py ui/*.py ui/tabs/*.py scripts/*.py .agents/skills/automated-tasks/scripts/*.py tests/*.py
 echo -e "${GREEN}[OK] Sintaxe de todos os módulos Python validada sem erros!${NC}"
 
 # 5. Validar compilação do Frontend Vite (Prevenção de quebras no CI)

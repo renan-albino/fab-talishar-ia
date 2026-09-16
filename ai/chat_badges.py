@@ -6,6 +6,7 @@ para o chat in-game do Talishar.
 """
 
 from typing import Tuple, Dict, Any
+from ai.common import safe_int, safe_list
 
 def evaluate_board_state(state: Dict[str, Any]) -> float:
     """
@@ -15,10 +16,10 @@ def evaluate_board_state(state: Dict[str, Any]) -> float:
     if not isinstance(state, dict):
         return 0.0
 
-    my_h = int(state.get("playerHealth", state.get("yourHealth", 40)))
-    opp_h = int(state.get("opponentHealth", state.get("theirHealth", 40)))
-    my_hand_cnt = len(state.get("playerHand", []))
-    opp_hand_cnt = int(state.get("opponentHandCount", state.get("theirHandCount", 4)))
+    my_h = safe_int(state.get("playerHealth", state.get("yourHealth")), default=40)
+    opp_h = safe_int(state.get("opponentHealth", state.get("theirHealth")), default=40)
+    my_hand_cnt = len(safe_list(state.get("playerHand")))
+    opp_hand_cnt = safe_int(state.get("opponentHandCount", state.get("theirHandCount")), default=4)
 
     # Diferencial de Vida (peso 0.4) e Vantagem de Cartas (peso 0.8)
     eval_score = ((my_h - opp_h) * 0.4) + ((my_hand_cnt - opp_hand_cnt) * 0.8)

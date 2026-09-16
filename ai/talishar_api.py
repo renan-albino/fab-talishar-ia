@@ -35,7 +35,7 @@ class TalisharApiClient:
             "gameType": 1,
             "aiDummy": 0
         }
-        res = self.session.post(url, json=payload, timeout=10)
+        res = self.session.post(url, json=payload, timeout=5.0)
         res.raise_for_status()
         return res.json()
 
@@ -47,7 +47,7 @@ class TalisharApiClient:
             "format": deck_format,
             "passKey": ""
         }
-        res = self.session.post(url, json=payload, timeout=10)
+        res = self.session.post(url, json=payload, timeout=5.0)
         res.raise_for_status()
         return res.json()
 
@@ -89,7 +89,7 @@ class TalisharApiClient:
     def submit_sideboard(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Submete herói, equipamentos, armas e deck configurados."""
         url = f"{self.backend_url}/APIs/SubmitSideboard.php"
-        res = self.session.post(url, json=payload, timeout=10)
+        res = self.session.post(url, json=payload, timeout=5.0)
         if res.status_code == 200:
             try:
                 return res.json()
@@ -106,7 +106,7 @@ class TalisharApiClient:
             "authKey": auth_key,
             "lastAction": last_action
         }
-        res = self.session.get(url, params=params, timeout=5)
+        res = self.session.get(url, params=params, timeout=5.0)
         if res.status_code == 200:
             return res.json()
         return {}
@@ -144,7 +144,7 @@ class TalisharApiClient:
 
         try:
             url = f"{self.backend_url}/ProcessInput.php"
-            res = self.session.get(url, params=params, timeout=5)
+            res = self.session.get(url, params=params, timeout=5.0)
             if "Fatal error" in res.text or "Parse error" in res.text:
                 logger.warning(f"Erro PHP no backend: {res.text[:200].strip()}")
                 return False
@@ -160,7 +160,7 @@ class TalisharApiClient:
             res = self.session.post(
                 url,
                 json={"gameName": game_name, "message": message},
-                timeout=2
+                timeout=5.0
             )
             return res.status_code == 200
         except Exception:

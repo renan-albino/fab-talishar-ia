@@ -9,6 +9,7 @@ from ai.equipment_learning import EquipmentTracker
 from ai.talishar_api import TalisharApiClient, DEFAULT_BACKEND_URL
 from ai.chat_badges import evaluate_board_state, format_html_line
 from ai.bot_runtime import lobby_manager, match_tracker, choice_handler, phase_decider
+from ai.common import safe_int, safe_list, safe_dict, safe_str
 
 TALISHAR_API_URL = DEFAULT_BACKEND_URL
 
@@ -23,6 +24,8 @@ class FabBotClient:
         self.api = TalisharApiClient(backend_url=TALISHAR_API_URL, session=self.session)
         self.game_id = None
         self.player_id = None
+        self._last_metrics_save_time = 0.0
+        self._last_metrics_save_turn = None
         self.auth_key = None
         self.mcts_sims = mcts_sims
         self.device = device
@@ -80,6 +83,25 @@ class FabBotClient:
         except Exception:
             pass
 
+    def save_metrics_throttled(self, current_turn: int = None, force: bool = False):
+        """Grava o arquivo JSON de métricas respeitando throttling de 1.5s ou mudança de turno."""
+        now = time.time()
+        last_turn = getattr(self, "_last_metrics_save_turn", None)
+        last_time = getattr(self, "_last_metrics_save_time", 0.0)
+        turn_changed = (current_turn is not None and current_turn != last_turn)
+        time_elapsed = (now - last_time) >= 1.5
+
+        if force or turn_changed or time_elapsed:
+            try:
+                metrics_path = f"logs/{self.room_id}_{self.player_name}.json"
+                with open(metrics_path, "w", encoding="utf-8") as f:
+                    json.dump({"metrics": self.metrics}, f)
+                self._last_metrics_save_time = now
+                if current_turn is not None:
+                    self._last_metrics_save_turn = current_turn
+            except Exception:
+                pass
+
     def get_player_label(self, target_player_id: int) -> str:
         """Retorna uma identificação legível e clara para o Jogador 1 ou 2."""
         is_vs_human = (getattr(self, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(self.room_id) or str(self.room_id).isdigit())
@@ -135,14 +157,17 @@ class FabBotClient:
         if not lobby_manager.setup_game_room(self):
             return
 
-        # 2. Loop principal de Polling de estado da mesa
+        # 2. Loop principal de Polling de estado da mesa (Adaptativo)
         waiting_logged = False
         last_logged_turn = -1
+        backoff_delay = 0.25
         while True:
+            has_priority = False
             try:
                 res_state = self.session.get(
                     f"{TALISHAR_API_URL}/GetNextTurn.php",
-                    params={"gameName": self.game_id, "playerID": self.player_id, "authKey": self.auth_key}
+                    params={"gameName": self.game_id, "playerID": self.player_id, "authKey": self.auth_key},
+                    timeout=5.0
                 )
 
                 if res_state.status_code == 200:
@@ -153,24 +178,17 @@ class FabBotClient:
                             waiting_logged = True
                         self.metrics["phase"] = "Aguardando Início"
                         self.metrics["status"] = "Aguardando"
-                        with open(f"logs/{self.room_id}_{self.player_name}.json", "w") as f:
-                            json.dump({"metrics": self.metrics}, f)
+                        self.save_metrics_throttled(current_turn=0, force=False)
                     else:
                         try:
                             state = res_state.json()
                             if "errorMessage" in state:
                                 self.log(f"[AVISO MESA] {state['errorMessage']}")
                             else:
-                                turn_num = state.get("turnNo", state.get("currentTurn", 1))
+                                turn_num = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
                                 if turn_num != last_logged_turn:
-                                    try:
-                                        my_h = int(state.get("playerHealth", 40))
-                                    except Exception:
-                                        my_h = 40
-                                    try:
-                                        opp_h = int(state.get("opponentHealth", 40))
-                                    except Exception:
-                                        opp_h = 40
+                                    my_h = safe_int(state.get("playerHealth"), default=40)
+                                    opp_h = safe_int(state.get("opponentHealth"), default=40)
                                     p1_hp = my_h if self.player_id == 1 else opp_h
                                     p2_hp = opp_h if self.player_id == 1 else my_h
                                     p1_lbl = self.get_player_label(1)
@@ -185,6 +203,7 @@ class FabBotClient:
                                         with open(self.log_file, "a", encoding="utf-8") as lf:
                                             lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}\n")
                                     last_logged_turn = turn_num
+                                has_priority = bool(state.get("havePriority", False))
                                 self.handle_game_tick(state)
                                 waiting_logged = False
                                 if self.metrics.get("status") == "Finalizada":
@@ -199,7 +218,13 @@ class FabBotClient:
                 self.execution_exceptions_count += 1
                 self.log(f"[ERRO DE CONEXÃO] {e}")
 
-            time.sleep(0.005)
+            # Polling adaptativo: 0.03s quando tem prioridade / ações pendentes, 0.25s com backoff quando aguarda oponente
+            if has_priority:
+                backoff_delay = 0.25
+                time.sleep(0.03)
+            else:
+                time.sleep(backoff_delay)
+                backoff_delay = min(backoff_delay * 1.25, 1.0)
 
     def choose_first_player(self):
         return lobby_manager.choose_first_player(self)
@@ -258,7 +283,10 @@ class FabBotClient:
             "submission": json.dumps(sub_obj)
         }
 
-        res = self.session.post(f"{TALISHAR_API_URL}/APIs/SubmitSideboard.php", json=post_payload)
+        try:
+            res = self.session.post(f"{TALISHAR_API_URL}/APIs/SubmitSideboard.php", json=post_payload, timeout=5.0)
+        except TypeError:
+            res = self.session.post(f"{TALISHAR_API_URL}/APIs/SubmitSideboard.php", json=post_payload)
         try:
             data = res.json()
             if "error" in data or data.get("status") == "FAIL":
@@ -281,8 +309,7 @@ class FabBotClient:
             "sideboard_count": len(inv),
             "sideboard_cards": inv
         }
-        with open(f"logs/{self.room_id}_{self.player_name}.json", "w") as f:
-            json.dump({"metrics": self.metrics}, f)
+        self.save_metrics_throttled(force=True)
 
         self.policy_engine = PolicyEngine(
             hero_name=hero,
@@ -329,36 +356,27 @@ class FabBotClient:
         return f"{card_name} [Poder: {pow_val} | Bloqueio: {def_val}{extra_str}]"
 
     def handle_game_tick(self, state: dict):
+        if not isinstance(state, dict):
+            return
+
+        opp_hand = safe_list(state.get("opponentHand"))
         if "opponentHand" in state and "opponentHandCount" not in state:
-            state["opponentHandCount"] = len(state.get("opponentHand", []))
+            state["opponentHandCount"] = len(opp_hand)
 
         # Compatibilidade com backend Talishar (playerArse -> playerArsenal, theirArse -> theirArsenal)
         if "playerArse" in state and "playerArsenal" not in state:
-            state["playerArsenal"] = state.get("playerArse") or []
+            state["playerArsenal"] = safe_list(state.get("playerArse"))
         if "theirArse" in state and "theirArsenal" not in state:
-            state["theirArsenal"] = state.get("theirArse") or []
+            state["theirArsenal"] = safe_list(state.get("theirArse"))
         if "theirArsenal" in state and "opponentArsenal" not in state:
-            state["opponentArsenal"] = state.get("theirArsenal") or []
+            state["opponentArsenal"] = safe_list(state.get("theirArsenal"))
 
-        raw_my_h = state.get("playerHealth")
-        raw_opp_h = state.get("opponentHealth")
-        
-        try:
-            my_h = int(raw_my_h) if raw_my_h is not None else 40
-        except (ValueError, TypeError):
-            my_h = 40
-            
-        try:
-            opp_h = int(raw_opp_h) if raw_opp_h is not None else 40
-        except (ValueError, TypeError):
-            opp_h = 40
+        my_h = safe_int(state.get("playerHealth"), default=40)
+        opp_h = safe_int(state.get("opponentHealth"), default=40)
 
         match_tracker.track_tick_health_and_damage(self, state, my_h, opp_h)
 
-        try:
-            turn = int(state.get("turnNo", state.get("currentTurn", 1)))
-        except (ValueError, TypeError):
-            turn = 1
+        turn = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
 
         self.metrics["health"] = my_h
         self.metrics["opp_health"] = opp_h
@@ -366,21 +384,21 @@ class FabBotClient:
         self.metrics["player_id"] = self.player_id
             
         tp_raw = state.get("turnPhase", "")
-        tp_name = tp_raw.get("turnPhase", "") if isinstance(tp_raw, dict) else str(tp_raw)
+        tp_name = tp_raw.get("turnPhase", "") if isinstance(tp_raw, dict) else safe_str(tp_raw)
         self.metrics["phase"] = f"Turno {turn} ({tp_name})" if tp_name else f"Turno {turn}"
         self.metrics["status"] = "Jogando"
 
         is_stalemate, stalemate_reason = match_tracker.check_stalemate_and_timeout(self, state, turn, my_h, opp_h)
 
         # Checar se a partida terminou (vitória, derrota ou empate técnico)
-        if tp_name == "OVER" or state.get("gameStatus") == 2 or my_h <= 0 or opp_h <= 0 or is_stalemate:
+        is_game_over = (tp_name == "OVER" or state.get("gameStatus") == 2 or my_h <= 0 or opp_h <= 0 or is_stalemate)
+        if is_game_over:
             self.metrics["status"] = "Finalizada"
             if not getattr(self, "game_recorded", False):
                 self.game_recorded = True
                 match_tracker.finalize_match(self, state, turn, my_h, opp_h, is_stalemate, stalemate_reason)
 
-        with open(f"logs/{self.room_id}_{self.player_name}.json", "w") as f:
-            json.dump({"metrics": self.metrics}, f)
+        self.save_metrics_throttled(current_turn=turn, force=is_game_over)
             
         if state.get("havePriority") and self.metrics["status"] != "Finalizada":
             try:
@@ -415,21 +433,24 @@ class FabBotClient:
         return choice_handler.rank_choice_candidates(self, candidates, turn_phase=turn_phase, state=state, popup=popup)
 
     def decide_and_act(self, state: dict):
+        if not isinstance(state, dict):
+            return False
+
         # Compatibilidade com backend Talishar (playerArse -> playerArsenal, theirArse -> theirArsenal)
         if "playerArse" in state and "playerArsenal" not in state:
-            state["playerArsenal"] = state.get("playerArse") or []
+            state["playerArsenal"] = safe_list(state.get("playerArse"))
         if "theirArse" in state and "theirArsenal" not in state:
-            state["theirArsenal"] = state.get("theirArse") or []
+            state["theirArsenal"] = safe_list(state.get("theirArse"))
         if "theirArsenal" in state and "opponentArsenal" not in state:
-            state["opponentArsenal"] = state.get("theirArsenal") or []
+            state["opponentArsenal"] = safe_list(state.get("theirArsenal"))
 
         tp_raw = state.get("turnPhase", "M")
         if isinstance(tp_raw, dict):
-            turn_phase = str(tp_raw.get("turnPhase", "M"))
+            turn_phase = safe_str(tp_raw.get("turnPhase", "M"), default="M")
         else:
-            turn_phase = str(tp_raw) if tp_raw else "M"
+            turn_phase = safe_str(tp_raw, default="M") if tp_raw else "M"
             
-        turn_num = state.get("turnNo", state.get("currentTurn", 1))
+        turn_num = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
         
         if not hasattr(self, "unpayable_cards_turn"):
             self.unpayable_cards_turn = {}
@@ -439,26 +460,15 @@ class FabBotClient:
             self.reaction_attempts = {}
         unpayable_set = self.unpayable_cards_turn[turn_key]
 
-        # Gravar estado no Replay Buffer para aprendizado por reforço
-        try:
-            import numpy as np
-            from ai.model import FaBPolicyValueNetwork
-            s_vec = FaBPolicyValueNetwork.extract_state_vector(state, self.player_id)
-            p_dist = np.zeros(32, dtype=np.float32)
-            p_dist[0] = 1.0
-            b_eval = self.evaluate_board_state(state)
-            self.trajectory.append((s_vec, p_dist, self.player_id, b_eval))
-        except Exception:
-            pass
-        
-        popup = state.get("popup", {})
+        popup = safe_dict(state.get("popup"))
         prompt_buttons = []
-        if isinstance(state.get("playerPrompt"), dict):
-            prompt_buttons = state.get("playerPrompt", {}).get("buttons", []) or state.get("playerPrompt", {}).get("promptButtons", [])
+        player_prompt = state.get("playerPrompt")
+        if isinstance(player_prompt, dict):
+            prompt_buttons = safe_list(player_prompt.get("buttons")) or safe_list(player_prompt.get("promptButtons"))
         elif isinstance(state.get("promptButtons"), list):
-            prompt_buttons = state.get("promptButtons", [])
+            prompt_buttons = safe_list(state.get("promptButtons"))
         elif isinstance(state.get("buttons"), list):
-            prompt_buttons = state.get("buttons", [])
+            prompt_buttons = safe_list(state.get("buttons"))
 
         # 1. Anti-Loop
         if choice_handler.check_and_handle_anti_loop(self, state, turn_num, turn_phase, prompt_buttons, unpayable_set):

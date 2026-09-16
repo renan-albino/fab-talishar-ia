@@ -36,21 +36,53 @@ def kill_active_processes(active_procs: List[Any], proc_lock: Optional[threading
         _terminate_procs_list(active_procs)
 
 
+def terminate_process_cleanly(proc: Any, timeout: float = 2.0) -> None:
+    """
+    Implementa o ciclo correto de finalização de subprocessos para erradicar zumbis Unix <defunct>:
+    1. Envia proc.terminate().
+    2. Aguarda até `timeout` segundos via proc.wait(timeout=...).
+    3. Se não terminar (TimeoutExpired) ou continuar vivo, envia proc.kill() e
+       obrigatoriamente chama proc.wait() para limpar o processo da tabela do kernel.
+    """
+    if proc is None or not hasattr(proc, "poll"):
+        return
+    try:
+        if proc.poll() is None:
+            if hasattr(proc, "terminate"):
+                proc.terminate()
+            is_alive = True
+            try:
+                if hasattr(proc, "wait"):
+                    proc.wait(timeout=timeout)
+                is_alive = (proc.poll() is None)
+            except (subprocess.TimeoutExpired, Exception):
+                is_alive = True
+            
+            if is_alive:
+                if hasattr(proc, "kill"):
+                    proc.kill()
+                try:
+                    if hasattr(proc, "wait"):
+                        proc.wait(timeout=2.0)
+                except Exception:
+                    pass
+        else:
+            try:
+                if hasattr(proc, "wait"):
+                    proc.wait(timeout=0.1)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def _terminate_procs_list(active_procs: List[Any]) -> None:
     for item in active_procs:
         if isinstance(item, (list, tuple)):
             for p in item:
-                try:
-                    if p is not None and hasattr(p, "poll") and p.poll() is None:
-                        p.kill()
-                except Exception:
-                    pass
-        elif hasattr(item, "poll"):
-            try:
-                if item.poll() is None:
-                    item.kill()
-            except Exception:
-                pass
+                terminate_process_cleanly(p, timeout=2.0)
+        else:
+            terminate_process_cleanly(item, timeout=2.0)
     active_procs.clear()
 
 

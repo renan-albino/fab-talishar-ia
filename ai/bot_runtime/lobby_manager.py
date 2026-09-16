@@ -22,7 +22,8 @@ def get_opponent_info(client) -> tuple[str, str]:
     try:
         res = client.session.post(
             f"{TALISHAR_API_URL}/APIs/GetLobbyRefresh.php",
-            json={"gameName": client.game_id, "playerID": client.player_id, "authKey": client.auth_key}
+            json={"gameName": client.game_id, "playerID": client.player_id, "authKey": client.auth_key},
+            timeout=5.0
         )
         if res.status_code == 200:
             data = res.json()
@@ -184,7 +185,7 @@ def setup_game_room(client) -> bool:
             "gameDescription": client.room_id
         }
         try:
-            res = client.session.post(f"{TALISHAR_API_URL}/APIs/CreateGame.php", json=create_payload)
+            res = client.session.post(f"{TALISHAR_API_URL}/APIs/CreateGame.php", json=create_payload, timeout=5.0)
             client.log(f"[CREATE RAW RESPONSE] HTTP {res.status_code}: {res.text[:120]}")
             try:
                 data = res.json()
@@ -258,7 +259,7 @@ def setup_game_room(client) -> bool:
             "deck": deck_data
         }
         try:
-            res = client.session.post(f"{TALISHAR_API_URL}/APIs/JoinGame.php", json=join_payload)
+            res = client.session.post(f"{TALISHAR_API_URL}/APIs/JoinGame.php", json=join_payload, timeout=5.0)
             client.log(f"[JOIN RAW RESPONSE] HTTP {res.status_code}: {res.text[:120]}")
             data = res.json()
             if "error" in data:

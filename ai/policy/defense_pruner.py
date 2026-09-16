@@ -38,6 +38,45 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     on_hit_threat = get_on_hit_threat(incoming_name, incoming_text)
     has_dangerous_on_hit = on_hit_threat >= 3.0 or any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
+    # ── Palavras-chave Oficiais de Combate (CR Flesh and Blood) ────────
+    # Phantasm (CR 7.4.4): Ataque de Ilusionista destruído por defensor não-ilusionista com 6+ poder
+    has_phantasm = bool(
+        active_chain.get("phantasm")
+        or active_chain.get("hasPhantasm")
+        or state.get("phantasm")
+        or "phantasm" in incoming_name
+        or "phantasm" in incoming_text
+        or "phantasm" in str(active_chain.get("keywords", [])).lower()
+    )
+
+    # Dominate (CR 7.4.2a): Não pode ser defendido por mais de 1 carta da mão
+    has_dominate = bool(
+        active_chain.get("dominate")
+        or active_chain.get("hasDominate")
+        or state.get("dominate")
+        or "dominate" in incoming_text
+        or "dominate" in str(active_chain.get("keywords", [])).lower()
+    )
+
+    # Overpower (CR 7.4.2b): Não pode ser defendido por mais de 1 carta de ação
+    has_overpower = bool(
+        active_chain.get("overpower")
+        or active_chain.get("hasOverpower")
+        or state.get("overpower")
+        or "overpower" in incoming_text
+        or "overpower" in str(active_chain.get("keywords", [])).lower()
+    )
+
+    # Piercing (CR 8.5.21): Ataques com Piercing ganham +1 de dano se bloqueados por equipamento
+    has_piercing = bool(
+        active_chain.get("piercing")
+        or active_chain.get("hasPiercing")
+        or state.get("piercing")
+        or "piercing" in incoming_name
+        or "piercing" in incoming_text
+        or "piercing" in str(active_chain.get("keywords", [])).lower()
+    )
+
     # ── 3.1 Detecção Holística de Plano de Turno e Pivot ────────
     turn_plan = engine.strategy.analyze_turn_plan(state)
     is_heavy_hero = getattr(engine.strategy, "is_heavy_hero", False)
@@ -72,14 +111,39 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
                 info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"]
             )
 
-        # ── Poda Estrita de Peças Reservadas pelo TurnPlan ────────
+        # ── Identificação de Tipo e Classe para Regras Oficiais de Combate ──
         c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
+        c_db = cards_db.get(c_clean_name, {})
+        c_type = str(c.get("type") or c_db.get("type", "")).upper()
+        c_subtype = str(c.get("subtype") or c_db.get("subtype", "")).lower()
+        c_class = str(c.get("class") or c_db.get("class", "")).upper()
+        hero_class = str(getattr(engine, "hero_class", "") or state.get("playerClass", "") or state.get("heroClass", "")).upper()
+        is_illusionist = "ILLUSIONIST" in c_class or "ILLUSIONIST" in hero_class
+        effective_power = max(info.get("power", 0), int(c.get("power", 0)))
+
+        is_dr = (
+            c_type in ("DR", "DEFENSE REACTION")
+            or "defense reaction" in c_subtype
+            or any(k in c_clean_name for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable"])
+        )
+        is_action = not is_dr and (
+            c_type in ("A", "AA", "ACTION", "ATTACK ACTION")
+            or "action" in c_subtype
+            or c_type == ""
+        )
+
+        # Phantasm Popping (CR 7.4.4): Defensor não-ilusionista com 6+ de poder estoura o ataque!
+        is_phantasm_popper = has_phantasm and (not is_illusionist) and (effective_power >= 6)
+        if is_phantasm_popper:
+            score += 150.0  # Bonificação imensa para priorizar estourar o ataque e fechar cadeia com 0 dano
+
+        # ── Poda Estrita de Peças Reservadas pelo TurnPlan ────────
         is_reserved = (
             info["name"] in turn_plan.reserved_card_names
             or c_clean_name in turn_plan.reserved_card_names
             or any(r.lower() == c_clean_name for r in turn_plan.reserved_card_names)
         )
-        if is_reserved and turn_plan.can_absorb_damage:
+        if is_reserved and turn_plan.can_absorb_damage and not is_phantasm_popper:
             # Se o plano determinou absorver dano para pivotar, peças reservadas
             # NUNCA bloqueiam a menos que estejamos sob risco letal iminente
             if my_hp > 6 and not (has_dangerous_on_hit and opp_power >= my_hp):
@@ -91,7 +155,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             avail_fl, _ = engine.calculate_available_resources(state)
             opp_cost = engine.strategy.calculate_card_opportunity_cost(hand, c, floating_res=avail_fl)
 
-        if opp_cost > 0:
+        if opp_cost > 0 and not is_phantasm_popper:
             absorb_mult = engine.strategy.get_dynamic_multiplier("absorb_tempo_bonus", 1.0)
             score -= opp_cost * 1.5 * absorb_mult
             is_catastrophic = on_hit_threat >= 8.0 or (my_hp - opp_power) <= 0
@@ -101,17 +165,17 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         # ── Poda de Preservação de Mão Ofensiva:
         # Se temos vida alta (> 20) e o ataque inimigo é fraco (<= 2 sem on-hit),
         # penaliza queimar cartas vermelhas de ataque chave (power >= 4 e pitch == 1)
-        if my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2:
+        if my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2 and not is_phantasm_popper:
             if info["power"] >= 4 and info["pitch"] == 1:
                 score -= 5.0
 
         # ── Poda de Tempo Pivot e Reserva Estrita de Pitch Crítico:
         if (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
-            if info["pitch"] == 1 and info["power"] >= 6:
-                score -= 25.0  # Nunca bloqueia com a bomba de ataque de Pivot
-            elif engine.strategy.is_critical_pitch_resource(info, hand, state):
+            if info["pitch"] == 1 and info["power"] >= 6 and not has_phantasm:
+                score -= 25.0  # Nunca bloqueia com a bomba de ataque de Pivot (a menos que estoure Phantasm!)
+            elif engine.strategy.is_critical_pitch_resource(info, hand, state) and not is_phantasm_popper:
                 score -= 30.0  # Recurso de pitch sagrado preservado polimorficamente para o contra-ataque
-            elif info["pitch"] == 3 and is_heavy_hero:
+            elif info["pitch"] == 3 and is_heavy_hero and not is_phantasm_popper:
                 blue_count = len([x for x in hand if engine.extract_card_info(x)["pitch"] == 3])
                 if blue_count == 2:
                     score -= 15.0  # Preserva a 2ª azul para fusão elemental / custo 3 + arma
@@ -130,9 +194,11 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             block_candidates.append({
                 "type": "block", "score": score, "idx": idx, "card_id": c_id,
                 "name": info["name"], "mode": c_action, "block": info["block"],
-                "pitch": info["pitch"], "power": info["power"],
+                "pitch": info["pitch"], "power": effective_power,
                 "is_equipment": False, "is_hand": True, "cost": hand_cost,
-                "opp_cost": opp_cost
+                "opp_cost": opp_cost,
+                "is_action": is_action,
+                "is_phantasm_popper": is_phantasm_popper,
             })
 
     # ── 3.1b Cartas no Arsenal que podem defender (Ambush e Down and Dirty) ──
@@ -157,13 +223,39 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             effective_block = info["block"] + (1 if is_down_and_dirty else 0)
             # Defender do arsenal é altamente vantajoso: preserva a mão ofensiva e limpa o arsenal!
             score = float(effective_block) * 2.5 + 5.0
+
+            a_clean_name = str(c.get("cardNumber") or info["name"]).lower()
+            a_db = cards_db.get(a_clean_name, {})
+            a_type = str(c.get("type") or a_db.get("type", "")).upper()
+            a_subtype = str(c.get("subtype") or a_db.get("subtype", "")).lower()
+            a_class = str(c.get("class") or a_db.get("class", "")).upper()
+            hero_class = str(getattr(engine, "hero_class", "") or state.get("playerClass", "") or state.get("heroClass", "")).upper()
+            is_illusionist = "ILLUSIONIST" in a_class or "ILLUSIONIST" in hero_class
+            effective_power = max(info.get("power", 0), int(c.get("power", 0)))
+            is_popper = has_phantasm and (not is_illusionist) and (effective_power >= 6)
+            if is_popper:
+                score += 150.0
+
+            is_dr = (
+                a_type in ("DR", "DEFENSE REACTION")
+                or "defense reaction" in a_subtype
+                or any(k in a_clean_name for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable"])
+            )
+            is_action = not is_dr and (
+                a_type in ("A", "AA", "ACTION", "ATTACK ACTION")
+                or "action" in a_subtype
+                or a_type == ""
+            )
+
             c_id = info["actionDataOverride"] or str(a_idx)
             block_candidates.append({
                 "type": "block", "score": score, "idx": a_idx, "card_id": c_id,
                 "name": info["name"], "mode": c_action if c_action > 0 else 27,
-                "block": effective_block, "pitch": info["pitch"], "power": info["power"],
+                "block": effective_block, "pitch": info["pitch"], "power": effective_power,
                 "from_arsenal": True, "is_equipment": False, "is_hand": False,
-                "cost": 1.0
+                "cost": 1.0,
+                "is_action": is_action,
+                "is_phantasm_popper": is_popper,
             })
 
     # ── 3.1c Bloqueio com Equipamentos (Defesa Otimizada e Anti-Queima) ────────
@@ -261,7 +353,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         # Se o ataque NÃO possui efeito On-Hit e nossa vida está saudável (HP > 12),
         # armaduras em geral não devem ser gastas para mitigar dano comum!
         is_safe_multiuse_temper = is_evo and has_temp and effective_block > 1
-        if on_hit_threat == 0.0 and my_hp > 12:
+        if on_hit_threat == 0.0 and my_hp > 12 and not has_piercing:
             if not ((is_crown and is_awkward_hand) or is_safe_multiuse_temper):
                 continue
 
@@ -328,6 +420,15 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
                     eq_score += 3.0  # Ironrot / armadura pura bloqueia para mitigar dano e economizar mão
                     eq_cost = 3.5
 
+        # ── Piercing (CR 8.5.21) Penalidade em Equipamentos ──
+        if has_piercing:
+            # Ataques com Piercing ganham +1 de dano ao serem bloqueados por equipamento.
+            # Bloquear com armadura de block 1 resulta em 0 de mitigação líquida!
+            if effective_block <= 1:
+                eq_score -= 15.0
+            else:
+                eq_score -= 6.0
+
         if eq_score <= -20.0 and my_hp > 6:
             continue
 
@@ -337,36 +438,64 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             "type": "block", "score": eq_score, "idx": eq_idx, "card_id": str(c_id),
             "name": info["name"], "mode": c_action,
             "block": effective_block, "pitch": 0, "power": 0,
-            "is_equipment": True, "is_hand": False, "cost": eq_cost
+            "is_equipment": True, "is_hand": False, "cost": eq_cost,
+            "is_action": False, "is_phantasm_popper": False,
         })
 
     if not block_candidates:
         return []
 
     # ── 3.2 Otimização de Subconjunto Mínimo de Defesa (Knapsack Breakpoint) ──
-    # Quando há On-Hit perigoso e não estamos em modo sobrevivência de desespero:
+    # Quando há On-Hit perigoso ou Phantasm e não estamos em modo sobrevivência de desespero:
     # Encontra o subconjunto de menor custo total (poupando cartas da mão para o pivot)
-    # que neutraliza completamente o dano (total_block >= opp_power).
-    if has_dangerous_on_hit and opp_power > 0 and my_hp > 6:
+    # que neutraliza completamente o dano (total_block >= opp_power) ou estoura Phantasm.
+    if (has_dangerous_on_hit or has_phantasm) and opp_power > 0 and my_hp > 6:
         valid_subsets = []
         max_hand_in_subset = turn_plan.max_block_cards if turn_plan.can_absorb_damage else (
             2 if my_hp > 12 else 3
         )
+        if has_dominate:
+            max_hand_in_subset = min(max_hand_in_subset, 1)
+
         for r in range(1, min(len(block_candidates) + 1, 5)):
             for subset in itertools.combinations(block_candidates, r):
                 tot_block = sum(item["block"] for item in subset)
-                if tot_block >= opp_power:
-                    hand_count = sum(1 for item in subset if item.get("is_hand"))
-                    if hand_count > max_hand_in_subset:
+                hand_count = sum(1 for item in subset if item.get("is_hand"))
+                action_count = sum(1 for item in subset if item.get("is_action"))
+                has_eq = any(item.get("is_equipment") for item in subset)
+                req_power = (opp_power + 1) if (has_piercing and has_eq) else opp_power
+
+                # Regra Dominate (CR 7.4.2a): máximo 1 carta da mão
+                if has_dominate and hand_count > 1:
+                    continue
+
+                # Regra Overpower (CR 7.4.2b): máximo 1 carta de ação
+                if has_overpower and action_count > 1:
+                    continue
+
+                # Regra Piercing (CR 8.5.21): penaliza bloqueio puramente com equipamento que não evite dano real
+                if has_piercing and has_eq and all(item.get("is_equipment") for item in subset):
+                    if (tot_block - 1) <= 0 or tot_block < req_power:
+                        continue
+
+                # Regra Phantasm Popping (CR 7.4.4): se contém popper (6+ atk não-ilusionista), destrói o ataque!
+                pops_phantasm = any(item.get("is_phantasm_popper") for item in subset)
+                if pops_phantasm:
+                    tot_block = max(tot_block, req_power)
+
+                if tot_block >= req_power:
+                    if hand_count > max_hand_in_subset and not pops_phantasm:
                         continue
                     # Poda de Bloqueio Ineficiente: Se o plano permite absorver dano para pivotar
                     # ou vida saudável (> 12), rejeitar subconjuntos com 2+ cartas de mão com média <= 2.0 block
-                    if turn_plan.can_absorb_damage and hand_count >= 2:
+                    if turn_plan.can_absorb_damage and hand_count >= 2 and not pops_phantasm:
                         avg_hand_block = sum(item["block"] for item in subset if item.get("is_hand")) / hand_count
                         if avg_hand_block <= 2.0:
                             continue
-                    overblock = tot_block - opp_power
+                    overblock = tot_block - req_power
                     sub_cost = sum(item["cost"] for item in subset) + (overblock * 0.7)
+                    if pops_phantasm:
+                        sub_cost -= 200.0  # Subset com Phantasm popper tem custo mínimo e prioridade máxima
                     valid_subsets.append((sub_cost, subset))
 
         if valid_subsets:
@@ -429,24 +558,56 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     else:
         max_hand_blocks = min(2, len(block_candidates))
 
+    # Regra Dominate (CR 7.4.2a): Limite estrito de no máximo 1 carta da mão
+    if has_dominate:
+        max_hand_blocks = min(max_hand_blocks, 1)
+
     hand_blocks_count = 0
+    action_blocks_count = 0
+    popped_phantasm = False
+
     for item in block_candidates:
         is_equip = item.get("is_equipment", False)
-        if not is_equip and hand_blocks_count >= max_hand_blocks:
+        is_hand = item.get("is_hand", not is_equip and not item.get("from_arsenal", False))
+        is_action = item.get("is_action", False)
+        is_popper = item.get("is_phantasm_popper", False)
+
+        # Regra Dominate (CR 7.4.2a): Não mais de 1 carta da mão
+        if is_hand and hand_blocks_count >= max_hand_blocks:
+            continue
+
+        # Regra Overpower (CR 7.4.2b): Não mais de 1 carta de ação
+        if has_overpower and is_action and action_blocks_count >= 1:
+            continue
+
+        # Se já estouramos Phantasm neste elo, o ataque foi destruído: interrompe a defesa!
+        if popped_phantasm:
+            break
+
+        # Regra Piercing (CR 8.5.21): Armadura com block <= 1 é inútil sozinha contra Piercing
+        if has_piercing and is_equip and item["block"] <= 1 and my_hp > 2:
             continue
 
         # Poda de Bloqueio Ineficiente com Block <= 2 quando o plano é absorver dano:
-        if turn_plan.can_absorb_damage and not is_equip and item["block"] <= 2 and my_hp > 12:
+        if turn_plan.can_absorb_damage and not is_equip and item["block"] <= 2 and my_hp > 12 and not is_popper:
             continue
 
         # Poda de Bloqueio Ineficiente: Não bloqueia se score for muito negativo com HP alto
-        if my_hp > 15 and item["score"] < 0 and not has_dangerous_on_hit:
+        if my_hp > 15 and item["score"] < 0 and not has_dangerous_on_hit and not is_popper:
             continue
 
         chosen_blocks.append((item["idx"], item["card_id"], item["name"], item["mode"]))
         current_blocked += item["block"]
-        if not is_equip:
+        if is_hand:
             hand_blocks_count += 1
+        if is_action:
+            action_blocks_count += 1
+
+        # Phantasm Popping (CR 7.4.4):
+        if is_popper:
+            popped_phantasm = True
+            current_blocked = max(current_blocked, opp_power)
+            break  # Ataque destruído, elo fecha com 0 dano sofrido!
 
         # ── Defesa Mínima Viável (FaB Minimum Viable Defense / Preservação de Contra-Ataque) ──
         remaining_dmg = max(0, opp_power - current_blocked)
@@ -469,5 +630,15 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         # ── Poda de Overblocking Exato:
         if current_blocked >= opp_power and my_hp > 6:
             break
+
+    # Pós-processamento Piercing (CR 8.5.21): Se apenas peças de equipamento foram selecionadas
+    # e não evitam dano real (mitigação líquida <= 0), descarta o bloqueio de armadura inútil
+    if has_piercing and chosen_blocks:
+        chosen_items = [it for it in block_candidates if any(b[1] == it["card_id"] for b in chosen_blocks)]
+        if chosen_items and all(it.get("is_equipment") for it in chosen_items):
+            tot_eq_block = sum(it["block"] for it in chosen_items)
+            net_mitigation = tot_eq_block - 1  # Piercing concede +1 de dano
+            if net_mitigation <= 0 and my_hp > 2:
+                chosen_blocks = []
 
     return chosen_blocks
