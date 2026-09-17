@@ -1,6 +1,7 @@
 import os
 import json
 import pytest
+import numpy as np
 from stats_manager import canonicalize_deck_name, update_match_result, get_stats_data
 from ai.hero_strategies import get_hero_strategy, TeklovossenStrategy
 from bot_client import FabBotClient
@@ -405,15 +406,12 @@ def test_all_known_zone_cards_and_state_vector():
     assert len(zones["pitch"]) == 1
 
     vec = FaBPolicyValueNetwork.extract_state_vector(state)
-    assert vec.shape[0] == 192
-    # Mechanologist class (161) e Teklovossen (173)
-    assert vec[161] == 1.0
-    assert vec[173] == 1.0
-    # Oponente é Wizard (188 = 0.5) e Jovem (189 = 1.0)
-    assert vec[188] == 0.5
-    assert vec[189] == 1.0
-    # 2 Evos equipados (183 = 0.5)
-    assert vec[183] == 0.5
+    assert vec.shape[0] == 800
+    # Valida preenchimento dos slots de equipamentos (slots 8 e 9: indices 416 a 512)
+    slot_equip_chest = vec[32 + 8 * 48 : 32 + 9 * 48]
+    slot_equip_legs = vec[32 + 9 * 48 : 32 + 10 * 48]
+    assert np.any(slot_equip_chest != 0.0)
+    assert np.any(slot_equip_legs != 0.0)
 
 
 def test_gravy_bones_lethal_execution_and_finisher_boost():

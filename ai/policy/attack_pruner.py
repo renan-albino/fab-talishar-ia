@@ -12,6 +12,7 @@ from .constants import (
     WEAPON_KEYWORDS,
 )
 from ..hero_strategies import RangerStrategy, RunebladeStrategy
+from .card_semantics import parse_card_semantics
 
 
 def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = None) -> Optional[Dict[str, Any]]:
@@ -25,6 +26,16 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
     floating_res, total_res = engine.calculate_available_resources(state)
     hand = state.get("playerHand", [])
     player_ap = int(state.get("playerAP", state.get("actionPoints", 1)))
+
+    # ── Consciência Semântica de Itens Próprios na Arena (ex: Boom Grenade armada) ──
+    my_items = state.get("playerItems") or state.get("myItems") or []
+    has_own_on_hit_item = False
+    for item in my_items:
+        if isinstance(item, dict):
+            i_prof = parse_card_semantics(str(item.get("cardNumber", item.get("name", ""))), item)
+            if i_prof.extra_on_hit_damage > 0:
+                has_own_on_hit_item = True
+                break
 
     candidates = []
 
@@ -110,6 +121,11 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
         elif atk["has_go_again"] and atk["cost"] == 0:
             # Bônus para abrir cadeia com starter de custo zero
             atk["score"] += 1.5
+
+        if has_own_on_hit_item:
+            # Ataques rápidos ou de alto poder têm prioridade para garantir que o dano extra do item da arena converta
+            if atk["has_go_again"] or atk["power"] >= 4 or atk["cost"] == 0:
+                atk["score"] += 3.0
 
         candidates.append(atk)
 

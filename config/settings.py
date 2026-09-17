@@ -19,7 +19,7 @@ Variáveis de Ambiente para Override (útil em scripts cloud/spot):
   FAB_MCTS_SIMS     = int                        (force override)
   FAB_LR            = float                      (force override)
   FAB_C_PUCT        = float                      (padrão: 1.4)
-  FAB_STATE_DIM     = int                        (padrão: 192)
+  FAB_STATE_DIM     = int                        (padrão: 800)
   FAB_ACTION_DIM    = int                        (padrão: 32)
 """
 
@@ -230,7 +230,7 @@ def _compute_buffer_capacity(ram_gb: float, max_resources: bool = False) -> int:
     """Capacidade do replay buffer em amostras."""
     pct = 0.40 if max_resources else 0.20
     budget_bytes = ram_gb * 1e9 * pct
-    bytes_per_sample = (192 + 32 + 1) * 4
+    bytes_per_sample = (800 + 32 + 1) * 4
     capacity = int(budget_bytes / bytes_per_sample)
     max_cap = 20_000_000 if max_resources else 10_000_000
     return max(10_000, min(capacity, max_cap))
@@ -462,7 +462,7 @@ def _build_settings() -> FaBSettings:
     if current_phase not in ("teacher", "student"):
         current_phase = "teacher"
 
-    state_dim  = int(os.environ.get("FAB_STATE_DIM",  192))
+    state_dim  = int(os.environ.get("FAB_STATE_DIM",  800))
     action_dim = int(os.environ.get("FAB_ACTION_DIM",  32))
     c_puct     = float(os.environ.get("FAB_C_PUCT",   1.4))
     lr         = float(os.environ.get("FAB_LR", 3e-4))

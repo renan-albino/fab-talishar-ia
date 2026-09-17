@@ -19,7 +19,8 @@ Este documento descreve detalhadamente a engenharia de decisão, formalização 
 12. [Poda 11: Poda de Equipamentos de Prevenção e Reação no Vazio](#11-poda-de-equipamentos-de-prevenção-e-reação-no-vazio)
 13. [Poda 12: Bloqueio Flexível com Validação de Conversão de Mão](#12-bloqueio-flexível-com-validação-de-conversão-de-mão)
 14. [Poda 13: Treino Híbrido Humano vs Bot com Telemetria e Bônus ELO](#13-treino-híbrido-humano-vs-bot-com-telemetria-e-bônus-elo)
-15. [Mapeamento de Módulos e Referências](#-mapeamento-de-módulos-e-referências)
+15. [Poda 14: Compreensão Semântica de Arena e Modificadores Dinâmicos de Combate](#14-compreensão-semântica-de-arena-e-modificadores-dinâmicos-de-combate)
+16. [Mapeamento de Módulos e Referências](#-mapeamento-de-módulos-e-referências)
 
 ---
 
@@ -351,6 +352,32 @@ Partidas disputadas contra jogadores humanos oferecem amostras de treinamento de
 
 ---
 
+## 14. Compreensão Semântica de Arena e Modificadores Dinâmicos de Combate
+
+### Fundamentação Oficial e Conceito
+Cartas de arena como Itens, Auras e Equipamentos ativos frequentemente concedem bônus de dano ou palavras-chave de evasão a ataques subsequentes sem que o texto esteja impresso na própria carta de ataque:
+- **Dominate Concedido (CR 7.4.2a)**: Ex: *Convection Amplifier* concedendo Dominate ao próximo ataque, restringindo o bloqueio do defensor a no máximo 1 carta da mão.
+- **Piercing Concedido (CR 8.5.21)**: Ex: *Penetration Script* concedendo Piercing (+1 de dano caso o defensor bloqueie com equipamento).
+- **Dano On-Hit Concorrente**: Ex: Família *Boom Grenade* (+4, +3, +2 de dano se o ataque acertar).
+- **Ameaça Arcana Concorrente**: Acúmulo de *Runechants* gerando dano arcano paralelo na mesma cadeia.
+
+### Módulos do Código
+- [`ai/policy/card_semantics.py`](../ai/policy/card_semantics.py)
+- [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py)
+- [`ai/policy/attack_pruner.py`](../ai/policy/attack_pruner.py)
+- [`data/fab_card_semantics.json`](../data/fab_card_semantics.json)
+
+### Regras Algorítmicas
+1. **Síntese Dinâmica de Ameaça (`ArenaThreatContext`)**:
+   A cada ciclo de decisão, o bot sintetiza `total_effective_physical_damage` somando o poder base aos bônus de itens da arena e computa `extra_on_hit_damage`.
+2. **Defesa Adaptativa sob Dominate e Piercing de Arena**:
+   - Se a arena adversária conceder Dominate, o podador restringe rigidamente a busca de subconjuntos de bloqueio a no máximo 1 carta da mão, prevenindo seleções de bloqueio ilegais no motor.
+   - Se a arena adversária conceder Piercing, penaliza equipamentos com `block <= 1` (que gerariam mitigação líquida nula) e exige defesa estrita para cobrir o breakpoint.
+3. **Poda de Ataque para Conversão de Itens Próprios**:
+   Quando o bot possui itens próprios armados com gatilho de dano (ex: *Boom Grenade* própria), o `attack_pruner` eleva a prioridade de ataques com *Go Again* ou alto poder para forçar o acerto e disparar o dano extra.
+
+---
+
 ## 🔗 Mapeamento de Módulos e Referências
 
 | Regra / Poda Tática | Arquivos Principais | Referência CR / TR |
@@ -368,3 +395,4 @@ Partidas disputadas contra jogadores humanos oferecem amostras de treinamento de
 | **11. Prevenção no Vazio** | [`ai/bot_runtime/phase_decider.py`](../ai/bot_runtime/phase_decider.py) | CR 2.5, CR 2.6 |
 | **12. Conversão de Mão** | [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py), [`ai/hero_strategies/turn_planner.py`](../ai/hero_strategies/turn_planner.py) | Teoria de Valor de Cartas FaB |
 | **13. Treino Híbrido Humano** | [`ai/bot_runtime/match_tracker.py`](../ai/bot_runtime/match_tracker.py), [`stats/`](../stats/) | ELO Rating System |
+| **14. Semântica de Arena** | [`ai/policy/card_semantics.py`](../ai/policy/card_semantics.py), [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py) | CR 7.4.2a, CR 8.5.21 |

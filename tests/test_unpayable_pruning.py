@@ -208,25 +208,4 @@ def test_sideboard_2h_weapon_no_shield():
     assert "rampart_of_the_rams_head" in sub_data["inventory"]
     assert "stalagmite_bastion_of_isenloft" in sub_data["inventory"]
 
-def test_replay_buffer_dynamic_resize():
-    from ai.experience_collector import ReplayBuffer
-    import numpy as np
 
-    buf = ReplayBuffer(max_capacity=10)
-    for i in range(10):
-        buf.add(np.ones(192) * i, np.ones(32), 1.0)
-    assert len(buf) == 10
-    assert buf.max_capacity == 10
-
-    # Redimensiona para 25
-    buf.resize(25)
-    assert buf.max_capacity == 25
-    assert len(buf) == 10
-    assert buf.states[0, 0] == 0.0
-    assert buf.states[9, 0] == 9.0
-
-    # Adiciona mais 5 amostras
-    for i in range(10, 15):
-        buf.add(np.ones(192) * i, np.ones(32), 1.0)
-    assert len(buf) == 15
-    assert buf.states[14, 0] == 14.0

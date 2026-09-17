@@ -11,10 +11,18 @@ import torch
 from typing import List, Tuple, Dict, Any, Optional
 from ai.atomic_io import file_lock
 
+try:
+    from config.settings import SETTINGS
+    DEFAULT_STATE_DIM = SETTINGS.state_dim
+except Exception:
+    DEFAULT_STATE_DIM = 800
+
+
 class ReplayBuffer:
-    def __init__(self, max_capacity: int = 100000):
+    def __init__(self, max_capacity: int = 100000, state_dim: int = None):
         self.max_capacity = max_capacity
-        self.states = np.zeros((max_capacity, 192), dtype=np.float32)
+        self.state_dim = state_dim or DEFAULT_STATE_DIM
+        self.states = np.zeros((max_capacity, self.state_dim), dtype=np.float32)
         self.policies = np.zeros((max_capacity, 32), dtype=np.float32)
         self.values = np.zeros((max_capacity, 1), dtype=np.float32)
         self.weights = np.ones(max_capacity, dtype=np.float32)
@@ -186,7 +194,7 @@ class ReplayBuffer:
         """Redimensiona a capacidade máxima do buffer preservando os dados já coletados."""
         if new_capacity <= 0 or new_capacity == self.max_capacity:
             return
-        new_states = np.zeros((new_capacity, 192), dtype=np.float32)
+        new_states = np.zeros((new_capacity, self.state_dim), dtype=np.float32)
         new_policies = np.zeros((new_capacity, 32), dtype=np.float32)
         new_values = np.zeros((new_capacity, 1), dtype=np.float32)
         new_weights = np.ones(new_capacity, dtype=np.float32)
@@ -219,8 +227,8 @@ class ReplayBuffer:
             data = np.load(filepath)
             loaded_states = data["states"]
             # Prevenção de Distribution Shift (Kumagai et al. 2021)
-            if loaded_states.ndim != 2 or loaded_states.shape[1] != 192:
-                print(f"[ReplayBuffer] ⚠ Shape incompatível detectado ({loaded_states.shape}). Reiniciando buffer.")
+            if loaded_states.ndim != 2 or loaded_states.shape[1] != self.state_dim:
+                print(f"[ReplayBuffer] ⚠ Shape incompatível detectado ({loaded_states.shape}, esperado {self.state_dim}). Reiniciando buffer.")
                 return False
 
             loaded_policies = data["policies"]

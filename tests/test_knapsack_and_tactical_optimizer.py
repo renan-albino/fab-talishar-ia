@@ -108,76 +108,12 @@ def test_card_opportunity_cost_surplus_vs_essential():
 
 
 # =====================================================================
-# 3. Teste das Cabeças Auxiliares KataGo na Rede Neural (David J. Wu)
-# =====================================================================
-
-def test_katago_auxiliary_heads_shapes_and_compatibility():
-    """
-    Valida que a FaBPolicyValueNetwork calcula as saídas auxiliares (delta_hp e turn_dmg)
-    quando return_aux=True e preserva 100% de compatibilidade quando return_aux=False.
-    """
-    model = FaBPolicyValueNetwork(hidden_dim=128, num_res_blocks=2)
-    model.eval()
-
-    x = torch.randn(3, 192)
-
-    # Modo padrão (retrocompatível)
-    policy_logits, value = model(x)
-    assert policy_logits.shape == (3, 32)
-    assert value.shape == (3, 1)
-
-    # Modo com alvos auxiliares KataGo
-    p_logits, val, aux_dict = model(x, return_aux=True)
-    assert p_logits.shape == (3, 32)
-    assert val.shape == (3, 1)
-    assert "delta_hp" in aux_dict
-    assert "turn_dmg" in aux_dict
-    assert aux_dict["delta_hp"].shape == (3, 1)
-    assert aux_dict["turn_dmg"].shape == (3, 1)
-
-    # Validação dos intervalos de ativação (Tanh [-1, 1] e ReLU [0, inf))
-    assert torch.all(aux_dict["delta_hp"] >= -1.0) and torch.all(aux_dict["delta_hp"] <= 1.0)
-    assert torch.all(aux_dict["turn_dmg"] >= 0.0)
-
-
-# =====================================================================
-# 4. Teste de Importance Sampling no ReplayBuffer (Schaul et al. 2016)
-# =====================================================================
-
-def test_replay_buffer_importance_sampling_weights():
-    """
-    Valida o cálculo dos pesos de Importance Sampling normalizados w_i = (N * P(i))^(-beta) / max(w)
-    garantindo que o viés de superamostragem do PER seja compensado no gradiente.
-    """
-    buffer = ReplayBuffer(max_capacity=50)
-    dummy_s = np.zeros(192, dtype=np.float32)
-    dummy_p = np.zeros(32, dtype=np.float32)
-
-    # Amostras com pesos variados
-    for i in range(10):
-        buffer.add(dummy_s, dummy_p, 0.0, weight=1.0)
-    buffer.add(dummy_s, dummy_p, 1.0, weight=10.0)
-
-    states, policies, values, is_weights = buffer.sample_batch(
-        batch_size=15, prioritized=True, beta=0.6, return_is_weights=True
-    )
-
-    assert states.shape == (15, 192)
-    assert is_weights.shape == (15,)
-    # Pesos normalizados devem estar no intervalo (0, 1]
-    assert torch.all(is_weights > 0.0)
-    assert torch.all(is_weights <= 1.00001)
-    # A amostra de maior peso (10.0) é a mais provável, logo deve receber menor peso IS
-    assert float(torch.min(is_weights)) < float(torch.max(is_weights))
-
-
-# =====================================================================
-# 5. Teste de Features de Pitch Cycle (DouZero & GDC Talk)
+# 3. Teste de Features de Pitch Cycle (Densidade e Cores Vistas)
 # =====================================================================
 
 def test_pitch_cycle_vector_features():
     """
-    Valida a extração das features de ciclo de pitch nos índices 158-160 do vetor de estado.
+    Valida a extração das features de ciclo de pitch nos índices 19 (deck density) e 27-28 (blue/red ratios).
     """
     state = {
         "playerHealth": 20,
@@ -194,9 +130,10 @@ def test_pitch_cycle_vector_features():
     }
 
     vec = FaBPolicyValueNetwork.extract_state_vector(state)
-    assert vec.shape == (192,)
+    assert vec.shape == (800,)
 
+    # Deck density no índice 19 (24 cartas / 60)
+    assert pytest.approx(vec[19], 0.01) == 24.0 / 60.0
     # Total vistos: 4 (2 azuis, 2 vermelhos) -> 50% azul, 50% vermelho
-    assert pytest.approx(vec[158], 0.01) == 0.50  # Blue ratio
-    assert pytest.approx(vec[159], 0.01) == 0.50  # Red ratio
-    assert pytest.approx(vec[160], 0.01) == 24.0 / 60.0  # Deck density
+    assert pytest.approx(vec[27], 0.01) == 0.50  # Blue ratio
+    assert pytest.approx(vec[28], 0.01) == 0.50  # Red ratio

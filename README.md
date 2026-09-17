@@ -64,10 +64,10 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
 ## ✨ Principais Funcionalidades da Engine
 
 ### 1. 🧠 Motor de Decisão Híbrido (PyTorch + ISMCTS + GameSimulator)
-- **Rede Neural `FaBPolicyValueNetwork` (`ai/model.py`)**:
-  - Arquitetura com blocos residuais (ResNet) e normalização por camada (`LayerNorm`).
-  - Vetor de entrada de 192 dimensões (Vida, Pontos de Ação, Recursos, Contagem de Mão/Arsenal/Pitch/Banish/Descarte, Equipamentos e Fases).
-  - Dual-Head: **Policy Head** (distribuição sobre 32 modos de ação) e **Value Head** (estimativa de vitória entre $[-1.0, 1.0]$).
+- **Rede Neural `FaBCardTransformerNetwork` (`ai/model.py`)**:
+  - Arquitetura Transformer Encoder Dual-Head com Self-Attention para sinergia entre cartas e Cross-Attention contextual com o estado global.
+  - Vetor de entrada de 800 dimensões (32 dimensões globais de contexto + 16 slots de cartas × 48 floats semânticos de embeddings densos gerados via NLP/SVD).
+  - Dual-Head: **Policy Head** (distribuição sobre 32 modos de ação) e **Value Head** (estimativa de vitória entre $[-1.0, 1.0]$), além de **Cabeças Auxiliares KataGo** (diferencial de vida $\Delta\text{HP}$ e estimativa de dano do turno).
 - **Simulador Determinístico (`ai/game_simulator.py`)**:
   - Projeta estados futuros exatos pós-ação (desconto de custos, pitch automático, cálculo de ataque vs bloqueio, dano não bloqueado, *Go Again*, AP e vida).
   - Substitui ruído sintético por avaliações determinísticas nas folhas da árvore MCTS.
@@ -119,7 +119,7 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 
 | Módulo | Responsabilidade Principal |
 | :--- | :--- |
-| [`ai/model.py`](ai/model.py) | Rede Neural ResNet Dual-Head (`FaBPolicyValueNetwork`) com LayerNorm e 192 entradas de estado. |
+| [`ai/model.py`](ai/model.py) | Rede Neural Transformer Dual-Head (`FaBCardTransformerNetwork`) com Self/Cross-Attention e 800 entradas de estado. |
 | [`ai/policy/`](ai/policy/) & [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tático unificado modular (`constants`, `card_evaluator`, `attack_pruner`, `defense_pruner`, `pitch_pruner`, `arsenal_pruner`, `engine`). Alterna dinamicamente entre **ISMCTS** (mão oculta) e **MCTS clássico** (informação completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl`, quantifica ameaças On-Hit e resolve defesa por knapsack de breakpoint com fachada raiz retrocompatível. |
 | [`ai/mcts/`](ai/mcts/) & [`ai/mcts.py`](ai/mcts.py) | Motores `MCTSEngine` e `ISMCTSEngine` decompostos (`node`, `standard_mcts`, `world_generator`, `ismcts`). Amostragem de mundos (*Deck-Aware World Sampling*) e busca paralela multithread com `ThreadPoolExecutor`. |
 | [`ai/bot_runtime/`](ai/bot_runtime/) & [`bot_client.py`](bot_client.py) | Runtime modular do bot (`lobby_manager`, `match_tracker`, `choice_handler`, `phase_decider`, `client`). Gerencia ciclo de vida de salas, anti-loop heurístico, tratamento de modais e modulação de fases de combate. |

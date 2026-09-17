@@ -20,6 +20,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from ai.experience_collector import ReplayBuffer
+from ai.model import STATE_DIM
 from ai.blunder_reviewer import review_trajectory_for_blunders
 from ai.dynamic_rule_tuner import (
     get_multipliers_for_hero,
@@ -34,7 +35,7 @@ def test_replay_buffer_dense_reward_shaping():
     """Valida o cálculo de recompensa densa no ReplayBuffer."""
     buffer = ReplayBuffer(max_capacity=100)
 
-    dummy_state = np.zeros(192, dtype=np.float32)
+    dummy_state = np.zeros(STATE_DIM, dtype=np.float32)
     dummy_policy = np.zeros(32, dtype=np.float32)
     dummy_policy[0] = 1.0
 
@@ -59,7 +60,7 @@ def test_replay_buffer_dense_reward_shaping():
 def test_replay_buffer_prioritized_sampling():
     """Valida amostragem ponderada (PER)."""
     buffer = ReplayBuffer(max_capacity=100)
-    dummy_state = np.zeros(192, dtype=np.float32)
+    dummy_state = np.zeros(STATE_DIM, dtype=np.float32)
     dummy_policy = np.zeros(32, dtype=np.float32)
 
     # Adiciona 10 amostras com peso 0.01 e 1 amostra com peso 100.0 no índice 5
@@ -81,7 +82,7 @@ def test_replay_buffer_save_load_weights(tmp_path):
     save_file = str(tmp_path / "test_buffer.npz")
     buf1 = ReplayBuffer(max_capacity=50)
 
-    s = np.ones(192, dtype=np.float32)
+    s = np.ones(STATE_DIM, dtype=np.float32)
     p = np.zeros(32, dtype=np.float32)
     buf1.add(s, p, 0.5, weight=4.2)
     buf1.add(s, p, -0.5, weight=1.8)
@@ -96,9 +97,36 @@ def test_replay_buffer_save_load_weights(tmp_path):
     assert pytest.approx(buf2.weights[1], 0.01) == 1.8
 
 
+def test_replay_buffer_importance_sampling_weights():
+    """
+    Valida o cálculo dos pesos de Importance Sampling normalizados w_i = (N * P(i))^(-beta) / max(w)
+    garantindo que o viés de superamostragem do PER seja compensado no gradiente.
+    """
+    buffer = ReplayBuffer(max_capacity=50, state_dim=STATE_DIM)
+    dummy_s = np.zeros(STATE_DIM, dtype=np.float32)
+    dummy_p = np.zeros(32, dtype=np.float32)
+
+    # Amostras com pesos variados
+    for i in range(10):
+        buffer.add(dummy_s, dummy_p, 0.0, weight=1.0)
+    buffer.add(dummy_s, dummy_p, 1.0, weight=10.0)
+
+    states, policies, values, is_weights = buffer.sample_batch(
+        batch_size=15, prioritized=True, beta=0.6, return_is_weights=True
+    )
+
+    assert states.shape == (15, STATE_DIM)
+    assert is_weights.shape == (15,)
+    # Pesos normalizados devem estar no intervalo (0, 1]
+    assert torch.all(is_weights > 0.0)
+    assert torch.all(is_weights <= 1.00001)
+    # A amostra de maior peso (10.0) é a mais provável, logo deve receber menor peso IS
+    assert float(torch.min(is_weights)) < float(torch.max(is_weights))
+
+
 def test_blunder_reviewer():
     """Valida a identificação de blunders e atribuição de pesos."""
-    s = np.zeros(192, dtype=np.float32)
+    s = np.zeros(STATE_DIM, dtype=np.float32)
     p = np.zeros(32, dtype=np.float32)
 
     # Trajetória:
@@ -175,3 +203,25 @@ def test_dynamic_rule_tuner_and_hero_strategy(monkeypatch, tmp_path):
 
     # O herói com dificuldades defensivas (Guardian) prioriza o bloqueio mais alto
     assert blk_score_g > blk_score_n
+
+
+def test_replay_buffer_dynamic_resize():
+    """Valida o redimensionamento em tempo de execução do ReplayBuffer preservando amostras."""
+    buf = ReplayBuffer(max_capacity=10, state_dim=STATE_DIM)
+    for i in range(10):
+        buf.add(np.ones(STATE_DIM) * i, np.ones(32), 1.0)
+    assert len(buf) == 10
+    assert buf.max_capacity == 10
+
+    # Redimensiona para 25
+    buf.resize(25)
+    assert buf.max_capacity == 25
+    assert len(buf) == 10
+    assert buf.states[0, 0] == 0.0
+    assert buf.states[9, 0] == 9.0
+
+    # Adiciona mais 5 amostras
+    for i in range(10, 15):
+        buf.add(np.ones(STATE_DIM) * i, np.ones(32), 1.0)
+    assert len(buf) == 15
+    assert buf.states[14, 0] == 14.0

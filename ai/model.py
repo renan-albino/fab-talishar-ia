@@ -1,6 +1,9 @@
 """
-FaBPolicyValueNetwork: Rede Neural Profunda Dual-Head (Actor-Critic / AlphaZero Style) para Flesh and Blood.
-Mapeia o estado completo da partida para distribuição de ações ótimas (Policy) e probabilidade de vitória (Value).
+ai/model.py
+===========
+FaBCardTransformerNetwork: Rede Neural com Atenção Carta-a-Carta e Contexto Global (v2).
+Substitui o antigo MLP estático por uma arquitetura moderna baseada em Card Embeddings
+tensoriais em O(1), Transformer Encoder e Cross-Attention contextual.
 """
 
 import os
@@ -9,122 +12,170 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from typing import Tuple, Dict, Any, List
+from typing import Tuple, Dict, Any, List, Optional
 
-STATE_DIM = 192
+STATE_DIM = 800
 ACTION_DIM = 32
+CARD_EMBEDDING_DIM = 48
+NUM_CARD_SLOTS = 16
 
-_CARDS_DB_CACHE = None
+# ══════════════════════════════════════════════════════════════════
+# CARREGAMENTO EM MEMÓRIA DA MATRIZ DE EMBEDDINGS (CACHED O(1))
+# ══════════════════════════════════════════════════════════════════
 
-def _get_cards_db() -> dict:
-    global _CARDS_DB_CACHE
-    if _CARDS_DB_CACHE is None:
-        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "fab_cards_db.json")
-        if os.path.exists(db_path):
+_CARD_EMBEDDINGS_TABLE: Optional[torch.Tensor] = None
+_CARD_TO_IDX: Optional[Dict[str, int]] = None
+
+
+def _get_card_embeddings_table() -> Tuple[torch.Tensor, Dict[str, int]]:
+    global _CARD_EMBEDDINGS_TABLE, _CARD_TO_IDX
+    if _CARD_EMBEDDINGS_TABLE is None or _CARD_TO_IDX is None:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        pt_path = os.path.join(base_dir, "data", "card_embeddings.pt")
+        idx_path = os.path.join(base_dir, "data", "card_to_idx.json")
+
+        if os.path.exists(pt_path) and os.path.exists(idx_path):
             try:
-                with open(db_path, "r", encoding="utf-8") as f:
-                    _CARDS_DB_CACHE = json.load(f)
-            except Exception:
-                _CARDS_DB_CACHE = {}
+                _CARD_EMBEDDINGS_TABLE = torch.load(pt_path, map_location="cpu", weights_only=True)
+                with open(idx_path, "r", encoding="utf-8") as f:
+                    _CARD_TO_IDX = json.load(f)
+            except Exception as e:
+                print(f"[Model] ⚠ Erro ao carregar card_embeddings.pt: {e}. Criando matriz vazia.")
+                _CARD_EMBEDDINGS_TABLE = torch.zeros(1, CARD_EMBEDDING_DIM, dtype=torch.float32)
+                _CARD_TO_IDX = {"<PAD>": 0}
         else:
-            _CARDS_DB_CACHE = {}
-    return _CARDS_DB_CACHE
+            _CARD_EMBEDDINGS_TABLE = torch.zeros(1, CARD_EMBEDDING_DIM, dtype=torch.float32)
+            _CARD_TO_IDX = {"<PAD>": 0}
+
+    return _CARD_EMBEDDINGS_TABLE, _CARD_TO_IDX
 
 
-class ResidualBlock(nn.Module):
-    def __init__(self, hidden_dim: int = 256, dropout: float = 0.1):
-        super().__init__()
-        self.fc1 = nn.Linear(hidden_dim, hidden_dim)
-        self.norm1 = nn.LayerNorm(hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.norm2 = nn.LayerNorm(hidden_dim)
-        self.dropout = nn.Dropout(dropout)
-        self.act = nn.LeakyReLU(0.1)
+# ══════════════════════════════════════════════════════════════════
+# ARQUITETURA CARD TRANSFORMER (DUAL HEAD + KATA-GO AUXILIARY)
+# ══════════════════════════════════════════════════════════════════
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        residual = x
-        out = self.act(self.norm1(self.fc1(x)))
-        out = self.dropout(out)
-        out = self.norm2(self.fc2(out))
-        out = self.act(out + residual)
-        return out
+class FaBCardTransformerNetwork(nn.Module):
+    """
+    Rede Neural Dual-Head com Atenção Carta-a-Carta e Contexto Global.
+    Utiliza Self-Attention para relações de sinergia entre cartas ativas e
+    Cross-Attention para conectar o estado da partida às ações ótimas.
+    """
 
-class FaBPolicyValueNetwork(nn.Module):
     def __init__(
         self,
         state_dim: int = None,
         action_dim: int = None,
         hidden_dim: int = None,
-        num_res_blocks: int = None,
+        num_layers: int = None,
+        num_heads: int = None,
         dropout: float = None,
     ):
         super().__init__()
-        # Lê do SETTINGS se não fornecido — garante que toda a codebase
-        # usa automaticamente a arquitetura correta para o hardware atual.
         try:
             from config.settings import SETTINGS
-            state_dim     = state_dim     if state_dim     is not None else SETTINGS.state_dim
-            action_dim    = action_dim    if action_dim    is not None else SETTINGS.action_dim
-            hidden_dim    = hidden_dim    if hidden_dim    is not None else SETTINGS.hidden_dim
-            num_res_blocks= num_res_blocks if num_res_blocks is not None else SETTINGS.num_res_blocks
-            dropout       = dropout       if dropout       is not None else SETTINGS.dropout
+            state_dim = state_dim or SETTINGS.state_dim
+            action_dim = action_dim or SETTINGS.action_dim
+            hidden_dim = hidden_dim or SETTINGS.hidden_dim
+            dropout = dropout if dropout is not None else SETTINGS.dropout
         except Exception:
-            state_dim     = state_dim     or STATE_DIM
-            action_dim    = action_dim    or ACTION_DIM
-            hidden_dim    = hidden_dim    or 256
-            num_res_blocks= num_res_blocks or 3
-            dropout       = dropout       or 0.1
+            state_dim = state_dim or STATE_DIM
+            action_dim = action_dim or ACTION_DIM
+            hidden_dim = hidden_dim or 256
+            dropout = dropout if dropout is not None else 0.1
 
-        self.state_dim     = state_dim
-        self.action_dim    = action_dim
-        self.hidden_dim    = hidden_dim
-        self.num_res_blocks= num_res_blocks
+        num_layers = num_layers or 2
+        num_heads = num_heads or 4
 
-        # Backbone Compartilhado
-        self.input_layer = nn.Sequential(
-            nn.Linear(state_dim, hidden_dim),
+        # Garante que hidden_dim seja divisível pelo número de cabeças
+        if hidden_dim % num_heads != 0:
+            hidden_dim = (hidden_dim // num_heads) * num_heads
+
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.num_heads = num_heads
+
+        # 1. Projeção das Entradas
+        self.global_proj = nn.Sequential(
+            nn.Linear(32, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.LeakyReLU(0.1),
-            nn.Dropout(dropout)
         )
 
-        self.res_blocks = nn.ModuleList(
-            [ResidualBlock(hidden_dim, dropout) for _ in range(num_res_blocks)]
+        self.card_proj = nn.Sequential(
+            nn.Linear(CARD_EMBEDDING_DIM, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.LeakyReLU(0.1),
         )
 
-        # Policy Head (Distribuição de Probabilidades de Ação)
+        # 2. Zone Embeddings (5 zonas):
+        # 0: Mão (8 slots), 1: Equip (4 slots), 2: Arsenal (2 slots), 3: Cadeia (1 slot), 4: Arena (1 slot)
+        self.zone_embedding = nn.Embedding(5, hidden_dim)
+        slot_zones = [0] * 8 + [1] * 4 + [2] * 2 + [3] * 1 + [4] * 1
+        self.register_buffer("slot_zones", torch.tensor(slot_zones, dtype=torch.long))
+
+        # 3. Backbone de Self-Attention (Interação entre cartas)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=hidden_dim,
+            nhead=num_heads,
+            dim_feedforward=hidden_dim * 2,
+            dropout=dropout,
+            activation="gelu",
+            batch_first=True,
+            norm_first=True,  # Pre-LN para convergência estável
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+
+        # 4. Cross-Attention Contextual (Global State consulta Cartas Ativas)
+        self.cross_attn = nn.MultiheadAttention(
+            embed_dim=hidden_dim,
+            num_heads=num_heads,
+            dropout=dropout,
+            batch_first=True,
+        )
+        self.cross_norm = nn.LayerNorm(hidden_dim)
+
+        # 5. Camada de Fusão
+        self.fusion_fc = nn.Sequential(
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.LeakyReLU(0.1),
+            nn.Dropout(dropout),
+        )
+
+        # 6. Policy Head (32 ações)
         policy_mid = max(64, hidden_dim // 2)
         self.policy_head = nn.Sequential(
             nn.Linear(hidden_dim, policy_mid),
             nn.LayerNorm(policy_mid),
             nn.LeakyReLU(0.1),
-            nn.Linear(policy_mid, action_dim)
+            nn.Linear(policy_mid, action_dim),
         )
 
-        # Value Head (Estimativa de Vitória [-1, 1])
+        # 7. Value Head ([-1.0, +1.0])
         value_mid = max(32, hidden_dim // 4)
         self.value_head = nn.Sequential(
             nn.Linear(hidden_dim, value_mid),
             nn.LayerNorm(value_mid),
             nn.LeakyReLU(0.1),
             nn.Linear(value_mid, 1),
-            nn.Tanh()
+            nn.Tanh(),
         )
 
-        # Auxiliary Heads (KataGo Methodology - David J. Wu, 2019)
-        # Previsões intermediárias para aceleração da representação latente
+        # 8. Auxiliary Heads (KataGo - Delta HP e Turn Damage)
         aux_mid = max(32, hidden_dim // 4)
         self.aux_delta_hp = nn.Sequential(
             nn.Linear(hidden_dim, aux_mid),
             nn.LeakyReLU(0.1),
             nn.Linear(aux_mid, 1),
-            nn.Tanh()
+            nn.Tanh(),
         )
         self.aux_turn_dmg = nn.Sequential(
             nn.Linear(hidden_dim, aux_mid),
             nn.LeakyReLU(0.1),
             nn.Linear(aux_mid, 1),
-            nn.ReLU()
+            nn.ReLU(),
         )
 
     def forward(
@@ -132,268 +183,76 @@ class FaBPolicyValueNetwork(nn.Module):
         x: torch.Tensor,
         return_aux: bool = False
     ) -> Tuple[torch.Tensor, torch.Tensor] | Tuple[torch.Tensor, torch.Tensor, Dict[str, torch.Tensor]]:
-        h = self.input_layer(x)
-        for block in self.res_blocks:
-            h = block(h)
+        """
+        Recebe x no formato [batch, 800] (ou [batch, state_dim]).
+        Sintetiza features globais e tokens de cartas por atenção e projeta nas saídas.
+        """
+        batch_size = x.shape[0]
 
-        policy_logits = self.policy_head(h)
-        value = self.value_head(h)
+        # Decomposição do vetor flat-packed
+        global_features = x[:, :32]
+        card_features = x[:, 32:]
+
+        # Se houver inconsistência de tamanho residual, ajusta por corte ou preenchimento
+        target_len = NUM_CARD_SLOTS * CARD_EMBEDDING_DIM
+        if card_features.shape[1] < target_len:
+            pad_len = target_len - card_features.shape[1]
+            card_features = F.pad(card_features, (0, pad_len))
+        elif card_features.shape[1] > target_len:
+            card_features = card_features[:, :target_len]
+
+        card_tokens = card_features.view(batch_size, NUM_CARD_SLOTS, CARD_EMBEDDING_DIM)
+
+        # Máscara de Padding para ignorar slots vazios no cálculo de atenção
+        valid_slots = (card_tokens.abs().sum(dim=-1) > 1e-5)
+        padding_mask = ~valid_slots
+
+        # Garante que amostras vazias não causem NaNs no Transformer
+        all_pad = padding_mask.all(dim=-1)
+        if all_pad.any():
+            padding_mask[all_pad, 0] = False
+
+        # Projeção das cartas + Zone Embeddings
+        h_cards = self.card_proj(card_tokens)
+        h_zones = self.zone_embedding(self.slot_zones)
+        h_cards = h_cards + h_zones.unsqueeze(0)
+
+        # 1. Self-Attention entre cartas ativas
+        encoded_cards = self.transformer(h_cards, src_key_padding_mask=padding_mask)
+
+        # 2. Projeção do contexto global
+        h_global = self.global_proj(global_features).unsqueeze(1)
+
+        # 3. Cross-Attention: Global Context consulta Encoded Cards
+        attn_out, _ = self.cross_attn(
+            query=h_global,
+            key=encoded_cards,
+            value=encoded_cards,
+            key_padding_mask=padding_mask,
+        )
+        h_context = self.cross_norm(h_global + attn_out).squeeze(1)
+
+        # 4. Pooling mascarado das cartas
+        card_mask_weights = valid_slots.float().unsqueeze(-1)
+        card_pool = (encoded_cards * card_mask_weights).sum(dim=1) / card_mask_weights.sum(dim=1).clamp(min=1.0)
+
+        # 5. Fusão final
+        fused = self.fusion_fc(torch.cat([h_context, card_pool], dim=-1))
+
+        policy_logits = self.policy_head(fused)
+        value = self.value_head(fused)
 
         if return_aux:
             aux_dict = {
-                "delta_hp": self.aux_delta_hp(h),
-                "turn_dmg": self.aux_turn_dmg(h),
+                "delta_hp": self.aux_delta_hp(fused),
+                "turn_dmg": self.aux_turn_dmg(fused),
             }
             return policy_logits, value, aux_dict
 
         return policy_logits, value
 
-    def count_parameters(self) -> int:
-        """Retorna o número total de parâmetros treináveis."""
-        return sum(p.numel() for p in self.parameters() if p.requires_grad)
-
-    def model_info(self) -> str:
-        """Resumo legível da arquitetura."""
-        params = self.count_parameters()
-        return (
-            f"FaBPolicyValueNetwork | "
-            f"{self.state_dim}→{self.hidden_dim}×{self.num_res_blocks}→{self.action_dim}|1 | "
-            f"{params:,} parâmetros"
-        )
-
-    @staticmethod
-    def extract_state_vector(state: Dict[str, Any], player_id: int = 1) -> np.ndarray:
-        """Converte o estado JSON do Talishar em um vetor contínuo de 192 dimensões."""
-        try:
-            from config.settings import SETTINGS
-            dim = SETTINGS.state_dim
-        except Exception:
-            dim = STATE_DIM
-        vec = np.zeros(dim, dtype=np.float32)
-
-        if not isinstance(state, dict):
-            return vec
-
-        # 1. Vida e Recursos Básicos (Índices 0-9)
-        p_health = float(state.get("playerHealth", state.get("yourHealth", 40)))
-        o_health = float(state.get("opponentHealth", state.get("theirHealth", 40)))
-        vec[0] = p_health / 40.0
-        vec[1] = o_health / 40.0
-        
-        resources = state.get("playerResources", [0, 0])
-        floating_res = float(resources[0]) if isinstance(resources, list) and resources else 0.0
-        vec[2] = min(floating_res / 10.0, 1.0)
-
-        ap = float(state.get("playerAP", state.get("actionPoints", 1)))
-        vec[3] = min(ap / 5.0, 1.0)
-
-        # Turn Phase One-Hot (Índices 4-15)
-        phase = str(state.get("turnPhase", state.get("phase", ""))).upper()
-        phases = ["M", "B", "A", "D", "P", "PDECK", "ARS", "STARTTURN", "INSTANT", "RESOLUTIONSTEP"]
-        for idx, p in enumerate(phases):
-            if p in phase:
-                vec[4 + idx] = 1.0
-
-        # 2. Combat Chain Status (Índices 16-25)
-        combat_chain = state.get("combatChain", [])
-        if isinstance(combat_chain, list) and combat_chain:
-            vec[16] = min(len(combat_chain) / 5.0, 1.0)
-            curr_atk = combat_chain[0] if isinstance(combat_chain[0], dict) else {}
-            atk_power = float(curr_atk.get("attackPower", curr_atk.get("power", 4)))
-            vec[17] = min(atk_power / 15.0, 1.0)
-            
-            # Soma de bloqueio
-            total_def = sum(float(c.get("defenseValue", 0)) for c in combat_chain[1:] if isinstance(c, dict))
-            vec[18] = min(total_def / 15.0, 1.0)
-
-        # 3. Embeddings das Cartas na Mão (Índices 26-105: até 8 cartas x 10 features cada)
-        hand = state.get("playerHand", [])
-        if isinstance(hand, list):
-            db = _get_cards_db()
-            for i, c in enumerate(hand[:8]):
-                base_idx = 26 + (i * 10)
-                if isinstance(c, dict):
-                    card_num = str(c.get("cardNumber", "")).lower()
-                    c_name = str(c.get("name", "")).lower()
-                    meta = db.get(c_name) or db.get(card_num) or {}
-
-                    vec[base_idx + 0] = 1.0
-
-                    # Pitch (1=Red, 2=Yellow, 3=Blue)
-                    pitch = int(c.get("pitch", meta.get("pitch", 0) or 0))
-                    if pitch == 1:
-                        vec[base_idx + 1] = 1.0
-                    elif pitch == 2:
-                        vec[base_idx + 1] = 0.5
-                    elif pitch == 3:
-                        vec[base_idx + 2] = 1.0
-                    else:
-                        vec[base_idx + 1] = 1.0 if "red" in card_num else (0.5 if "yellow" in card_num else 0.0)
-                        vec[base_idx + 2] = 1.0 if "blue" in card_num else 0.0
-
-                    # Actionable / AP
-                    vec[base_idx + 3] = 1.0 if c.get("action", 0) > 0 else 0.0
-                    vec[base_idx + 4] = 0.5
-
-                    # Keywords / Types estruturados
-                    sub = str(meta.get("subtype", "")).lower()
-                    kws = str(meta.get("keywords", "")).lower()
-                    typ = str(meta.get("type", "")).lower()
-                    combined_text = f"{card_num} {c_name} {sub} {kws} {typ}"
-
-                    vec[base_idx + 5] = 1.0 if any(k in combined_text for k in ["sixty", "out_pace", "furious", "surging", "leg_tap", "combo", "boost"]) else 0.0
-                    vec[base_idx + 6] = 1.0 if any(k in combined_text for k in ["reaction", "defense reaction", "attack reaction"]) else 0.0
-                    vec[base_idx + 7] = 1.0 if any(k in combined_text for k in ["item", "grenade", "processor", "core", "evo"]) else 0.0
-                    vec[base_idx + 8] = 1.0 if any(k in combined_text for k in ["crush", "crippling", "spinal", "overpower", "dominate"]) else 0.0
-                    vec[base_idx + 9] = 1.0 if c.get("actionDataOverride") else 0.0
-
-        # 4. Embeddings de Equipamentos e Arsenal (Índices 106-145)
-        equip = state.get("playerEquipment", [])
-        if isinstance(equip, list):
-            for i, eq in enumerate(equip[:4]):
-                b_idx = 106 + (i * 5)
-                if isinstance(eq, dict):
-                    vec[b_idx + 0] = 1.0
-                    vec[b_idx + 1] = 1.0 if eq.get("action", 0) > 0 else 0.0
-                    vec[b_idx + 2] = float(eq.get("counters", 0)) / 5.0
-
-        arsenal = state.get("playerArsenal") or state.get("playerArse") or []
-        if isinstance(arsenal, list) and arsenal:
-            vec[126] = 1.0
-            if isinstance(arsenal[0], dict) and arsenal[0].get("action", 0) > 0:
-                vec[127] = 1.0
-
-        # 5. Profundidade e Consciência de Zonas (Índices 146-160)
-        deck_cards = state.get("playerDeck", [])
-        grave_cards = state.get("playerDiscard", state.get("playerGraveyard", []))
-        banish_cards = state.get("playerBanish", [])
-        pitch_cards = state.get("playerPitch", [])
-        soul_cards = state.get("playerSoul", [])
-
-        vec[146] = min(len(deck_cards) / 60.0, 1.0)
-        vec[147] = min(len(grave_cards) / 40.0, 1.0)
-        vec[148] = min(len(banish_cards) / 20.0, 1.0)
-        vec[149] = min(len(pitch_cards) / 10.0, 1.0)
-        vec[150] = min(len(soul_cards) / 10.0, 1.0)
-
-        # Ações jogáveis conhecidas fora da mão (Graveyard, Banish, Arsenal)
-        grave_acts = sum(1 for c in grave_cards if isinstance(c, dict) and c.get("action", 0) > 0)
-        banish_acts = sum(1 for c in banish_cards if isinstance(c, dict) and c.get("action", 0) > 0)
-        vec[151] = min(grave_acts / 4.0, 1.0)
-        vec[152] = min(banish_acts / 4.0, 1.0)
-
-        # 5.1 Aliados na Arena e Fichas de Ouro (Índices 153-157)
-        allies = state.get("playerAllies", [])
-        if isinstance(allies, list):
-            vec[153] = min(len(allies) / 5.0, 1.0)
-            active_allies = sum(1 for a in allies if isinstance(a, dict) and a.get("action", 0) > 0)
-            vec[154] = min(float(active_allies) / 3.0, 1.0)
-
-        auras_or_tokens = (state.get("playerAuras") or []) + (state.get("playerTokens") or [])
-        gold_count = sum(1 for t in auras_or_tokens if isinstance(t, dict) and "gold" in str(t.get("cardNumber") or t.get("name", "")).lower())
-        vec[155] = min(float(gold_count) / 4.0, 1.0)
-
-        # Janela de Letalidade Crítica (Opponent HP <= 6) e Diferencial de Vida
-        my_hp_val = float(state.get("playerHealth", 40))
-        opp_hp_val = float(state.get("opponentHealth", 40))
-        vec[156] = 1.0 if opp_hp_val <= 6.0 else 0.0
-        vec[157] = max(-1.0, min(1.0, (my_hp_val - opp_hp_val) / 40.0))
-
-        # 5.2 Pitch Cycle & Deck Resource Density (Índices 158-160) — DouZero & GDC Talk
-        seen_cards = list(grave_cards or []) + list(pitch_cards or [])
-        total_seen = len(seen_cards)
-        if total_seen > 0:
-            blue_seen = sum(1 for c in seen_cards if "blue" in str(c.get("cardNumber", "") if isinstance(c, dict) else "").lower())
-            red_seen = sum(1 for c in seen_cards if "red" in str(c.get("cardNumber", "") if isinstance(c, dict) else "").lower())
-            vec[158] = min(float(blue_seen) / float(total_seen), 1.0)
-            vec[159] = min(float(red_seen) / float(total_seen), 1.0)
-        else:
-            vec[158] = 0.33
-            vec[159] = 0.33
-        rem_deck_len = len(deck_cards) if isinstance(deck_cards, list) else 30
-        vec[160] = min(float(rem_deck_len) / 60.0, 1.0)
-
-        # 6. Hero Classes, Archetypes & Specific Heroes (Índices 161-191)
-        hero = str(state.get("playerHero", state.get("character", ""))).lower()
-        opp_hero = str(state.get("opponentHero", state.get("opponentCharacter", ""))).lower()
-        my_hp_val = float(state.get("playerHealth", 40))
-
-        # 6.1 Mapeamento Sistemático de Classes (Adultos e Jovens)
-        if any(k in hero for k in ["dash", "teklo", "maxx", "data", "puffin", "professor"]): vec[161] = 1.0
-        if any(k in hero for k in ["bravo", "victor", "betsy", "jarl", "oldhim", "valda", "brevant", "yoji", "tuffnut", "marlynn"]): vec[162] = 1.0
-        if any(k in hero for k in ["katsu", "ira", "fai", "zen", "benji", "cindra", "taipanis"]): vec[163] = 1.0
-        if any(k in hero for k in ["dorinthea", "kassai", "olympia", "boltyn", "hala", "ser"]): vec[164] = 1.0
-        if any(k in hero for k in ["kano", "oscilio", "verdance", "iyslander", "blaze", "emperor"]): vec[165] = 1.0
-        if any(k in hero for k in ["viserai", "chane", "briar", "vynnset", "vynsett", "florian", "aurora"]): vec[166] = 1.0
-        if any(k in hero for k in ["azalea", "riptide", "lexi"]): vec[167] = 1.0
-        if any(k in hero for k in ["rhinar", "kayo", "levia", "brutus", "kox", "bolfar"]): vec[168] = 1.0
-        if any(k in hero for k in ["arakni", "uzuri", "nuu", "killjoy"]): vec[169] = 1.0
-        if any(k in hero for k in ["prism", "dromai", "enigma", "pleiades", "zyggy"]): vec[170] = 1.0
-        if any(k in hero for k in ["kavdaen", "genis", "taylor", "shiyana", "melody", "gravy", "frankie", "ruudi", "mortimer", "scurv", "baalghor", "terra", "librarian", "theryon", "yorick", "fang", "squizzy", "dr", "groundbreaker", "malice", "lyath", "zane", "reya", "fightmaster"]): vec[171] = 1.0
-
-        # 6.2 Flag de Herói Jovem (Blitz / UPF) vs Adulto (Classic Constructed)
-        is_young = (my_hp_val <= 20) or any(y in hero for y in [
-            "young", "professor", "database", "seeker", "scion", "forked", "quicksilver",
-            "flattering", "cintari_sellsword", "berserker_runt", "underhanded", "strong_arm",
-            "legacy_of_tempest", "emissary", "new_moon", "match_fixer", "star_of_the_show"
-        ])
-        vec[172] = 1.0 if is_young else 0.0
-
-        # 6.3 Heróis Específicos Identificados
-        if "teklo" in hero or "professor" in hero: vec[173] = 1.0
-        if "oscilio" in hero: vec[174] = 1.0
-        if "dash" in hero: vec[175] = 1.0
-        if "vynnset" in hero or "vynsett" in hero: vec[176] = 1.0
-        if "kayo" in hero: vec[177] = 1.0
-        if "bravo" in hero: vec[178] = 1.0
-        if "dorinthea" in hero: vec[179] = 1.0
-        if "kano" in hero: vec[180] = 1.0
-        if any(k in hero for k in ["nuu", "zen", "enigma"]): vec[181] = 1.0
-        if any(k in hero for k in ["florian", "aurora", "verdance"]): vec[182] = 1.0
-
-        # 6.4 Mecânicas Dinâmicas por Herói
-        # Teklovossen: Contagem de Evos equipados (0 a 4)
-        evos_equipped = sum(1 for eq in equip if isinstance(eq, dict) and ("evo" in str(eq.get("cardNumber", "")).lower() or "evo" in str(eq.get("subtype", "")).lower()))
-        vec[183] = min(float(evos_equipped) / 4.0, 1.0)
-        vec[184] = 1.0 if state.get("teklo_ability_active") else 0.0
-
-        # Singularity presente
-        all_my_cards = [c for c in (hand + (arsenal or []) + banish_cards) if isinstance(c, dict)]
-        has_singularity = any("singularity" in str(c.get("cardNumber") or c.get("name", "")).lower() for c in all_my_cards)
-        vec[185] = 1.0 if has_singularity else 0.0
-
-        # Oscilio: Dano arcano acumulado no turno
-        arcane_dmg = float(state.get("arcaneDamageDealt", state.get("arcaneDamage", 0)) or 0)
-        vec[186] = min(arcane_dmg / 5.0, 1.0)
-
-        # Runeblade: Runechants ativos
-        runechants = float(state.get("playerRunechants", 0) or 0)
-        for a in (state.get("playerAuras") or []):
-            if isinstance(a, dict) and "runechant" in str(a.get("cardNumber", "")).lower():
-                runechants += max(1, int(a.get("counters", a.get("count", 1))))
-        vec[187] = min(runechants / 10.0, 1.0)
-
-        # Oponente: Classe e Formato
-        if any(k in opp_hero for k in ["dash", "teklo", "maxx"]): vec[188] = 0.1
-        elif any(k in opp_hero for k in ["bravo", "victor", "betsy", "jarl"]): vec[188] = 0.2
-        elif any(k in opp_hero for k in ["katsu", "ira", "fai", "zen"]): vec[188] = 0.3
-        elif any(k in opp_hero for k in ["dorinthea", "kassai"]): vec[188] = 0.4
-        elif any(k in opp_hero for k in ["kano", "oscilio", "verdance"]): vec[188] = 0.5
-        elif any(k in opp_hero for k in ["viserai", "chane", "vynnset", "aurora", "florian"]): vec[188] = 0.6
-        elif any(k in opp_hero for k in ["azalea", "riptide"]): vec[188] = 0.7
-        elif any(k in opp_hero for k in ["rhinar", "kayo", "levia"]): vec[188] = 0.8
-        elif any(k in opp_hero for k in ["arakni", "uzuri", "nuu"]): vec[188] = 0.9
-        elif any(k in opp_hero for k in ["prism", "dromai", "enigma"]): vec[188] = 1.0
-
-        opp_hp = float(state.get("opponentHealth", 40))
-        vec[189] = 1.0 if (opp_hp <= 20 or "young" in opp_hero) else 0.0
-        vec[190] = min(float(grave_acts) / 4.0, 1.0)
-        vec[191] = min(float(banish_acts) / 4.0, 1.0)
-
-        return vec
-
     def predict_state(self, state_vector: np.ndarray, device: str = "cpu") -> Tuple[np.ndarray, float]:
-        """Avalia um estado único e retorna as probabilidades da política e a estimativa de valor."""
+        """Avalia um estado único e retorna probabilidades e value escalar."""
         self.eval()
         with torch.no_grad():
             x = torch.from_numpy(state_vector).unsqueeze(0).float().to(device)
@@ -402,77 +261,198 @@ class FaBPolicyValueNetwork(nn.Module):
             value = float(val.cpu().numpy()[0][0])
         return probs, value
 
+    def count_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+    def model_info(self) -> str:
+        params = self.count_parameters()
+        return (
+            f"FaBCardTransformerNetwork (v2) | "
+            f"800-dim→{self.hidden_dim}×{self.num_layers}L-{self.num_heads}H→{self.action_dim}|1 | "
+            f"{params:,} parâmetros"
+        )
+
+    # ══════════════════════════════════════════════════════════════════
+    # EXTRAÇÃO DE VETOR DE ESTADO EM O(1) VIA EMBEDDINGS TENSORIAIS
+    # ══════════════════════════════════════════════════════════════════
+
+    @staticmethod
+    def extract_state_vector(state: Dict[str, Any], player_id: int = 1) -> np.ndarray:
+        """
+        Converte o estado do Talishar em um vetor contíguo de 800 dimensões (Flat-Packed)
+        usando lookup tensorial O(1) sem dependência de expressões regulares ou strings lentas.
+        """
+        vec = np.zeros(STATE_DIM, dtype=np.float32)
+        if not isinstance(state, dict):
+            return vec
+
+        table, c2idx = _get_card_embeddings_table()
+        table_np = table.numpy() if isinstance(table, torch.Tensor) else table
+
+        # ── 1. Contexto Global (Índices 0 a 31) ───────────────────────
+        p_hp = float(state.get("playerHealth", state.get("yourHealth", 40)))
+        o_hp = float(state.get("opponentHealth", state.get("theirHealth", 40)))
+        vec[0] = p_hp / 40.0
+        vec[1] = o_hp / 40.0
+
+        resources = state.get("playerResources", [0, 0])
+        fl_res = float(resources[0]) if isinstance(resources, list) and resources else 0.0
+        vec[2] = min(fl_res / 10.0, 1.0)
+
+        ap = float(state.get("playerAP", state.get("actionPoints", 1)))
+        vec[3] = min(ap / 5.0, 1.0)
+
+        # Fases do Turno (Índices 4 a 13)
+        phase = str(state.get("turnPhase", state.get("phase", ""))).upper()
+        phases = ["M", "B", "A", "D", "P", "PDECK", "ARS", "STARTTURN", "INSTANT", "RESOLUTIONSTEP"]
+        for idx, p in enumerate(phases):
+            if p in phase:
+                vec[4 + idx] = 1.0
+
+        # Combat Chain (Índices 14 a 16)
+        combat_chain = state.get("combatChain", [])
+        if isinstance(combat_chain, list) and combat_chain:
+            vec[14] = min(len(combat_chain) / 5.0, 1.0)
+            curr_atk = combat_chain[0] if isinstance(combat_chain[0], dict) else {}
+            atk_power = float(curr_atk.get("attackPower", curr_atk.get("power", 4)))
+            vec[15] = min(atk_power / 15.0, 1.0)
+            total_def = sum(float(c.get("defenseValue", 0)) for c in combat_chain[1:] if isinstance(c, dict))
+            vec[16] = min(total_def / 15.0, 1.0)
+
+        # Janela de Letalidade e Diferencial de Vida
+        vec[17] = 1.0 if o_hp <= 6.0 else 0.0
+        vec[18] = max(-1.0, min(1.0, (p_hp - o_hp) / 40.0))
+
+        # Contagens de Zonas (Índices 19 a 25)
+        deck_cards = state.get("playerDeck", [])
+        grave_cards = state.get("playerDiscard", state.get("playerGraveyard", []))
+        banish_cards = state.get("playerBanish", [])
+        soul_cards = state.get("playerSoul", [])
+        allies = state.get("playerAllies", [])
+
+        vec[19] = min(len(deck_cards) / 60.0, 1.0)
+        vec[20] = min(len(grave_cards) / 40.0, 1.0)
+        vec[21] = min(len(banish_cards) / 20.0, 1.0)
+        vec[22] = min(len(soul_cards) / 10.0, 1.0)
+        vec[23] = min(len(allies) / 5.0, 1.0)
+
+        auras_tokens = (state.get("playerAuras") or []) + (state.get("playerTokens") or [])
+        gold_count = sum(1 for t in auras_tokens if isinstance(t, dict) and "gold" in str(t.get("cardNumber") or t.get("name", "")).lower())
+        vec[24] = min(float(gold_count) / 4.0, 1.0)
+
+        runechants = float(state.get("playerRunechants", 0) or 0)
+        for a in (state.get("playerAuras") or []):
+            if isinstance(a, dict) and "runechant" in str(a.get("cardNumber", "")).lower():
+                runechants += max(1, int(a.get("counters", a.get("count", 1))))
+        vec[25] = min(runechants / 10.0, 1.0)
+
+        # Heróis e Formato (Índice 26)
+        hero = str(state.get("playerHero", state.get("character", ""))).lower()
+        vec[26] = 1.0 if (p_hp <= 20 or "young" in hero) else 0.0
+
+        # Ciclo de Pitch e Densidade de Cores Vistas (Índices 27 e 28)
+        pitch_cards = state.get("playerPitch", [])
+        seen_cards = (grave_cards if isinstance(grave_cards, list) else []) + (pitch_cards if isinstance(pitch_cards, list) else [])
+        if seen_cards:
+            total_seen = len(seen_cards)
+            blue_cnt = sum(1 for c in seen_cards if "blue" in str(c.get("cardNumber") if isinstance(c, dict) else c).lower())
+            red_cnt = sum(1 for c in seen_cards if "red" in str(c.get("cardNumber") if isinstance(c, dict) else c).lower())
+            vec[27] = blue_cnt / total_seen
+            vec[28] = red_cnt / total_seen
+
+        # ── 2. Preenchimento de Slots de Cartas em O(1) (Índices 32 a 799) ──
+        def _fill_slot(slot_idx: int, card_dict_or_name: Any):
+            if slot_idx >= NUM_CARD_SLOTS:
+                return
+            c_id = ""
+            if isinstance(card_dict_or_name, dict):
+                c_id = str(card_dict_or_name.get("cardNumber") or card_dict_or_name.get("name", "")).lower().strip()
+            elif isinstance(card_dict_or_name, str):
+                c_id = card_dict_or_name.lower().strip()
+
+            idx = c2idx.get(c_id, 0)
+            if idx > 0 and idx < len(table_np):
+                start = 32 + (slot_idx * CARD_EMBEDDING_DIM)
+                end = start + CARD_EMBEDDING_DIM
+                vec[start:end] = table_np[idx]
+
+        # Slots 0..7: Mão (até 8 cartas)
+        hand = state.get("playerHand", [])
+        if isinstance(hand, list):
+            for i, c in enumerate(hand[:8]):
+                _fill_slot(i, c)
+
+        # Slots 8..11: Equipamentos (4 slots)
+        equip = state.get("playerEquipment", [])
+        if isinstance(equip, list):
+            for i, eq in enumerate(equip[:4]):
+                _fill_slot(8 + i, eq)
+
+        # Slots 12..13: Arsenal (até 2 slots)
+        arsenal = state.get("playerArsenal") or state.get("playerArse") or []
+        if isinstance(arsenal, list):
+            for i, ars in enumerate(arsenal[:2]):
+                _fill_slot(12 + i, ars)
+
+        # Slot 14: Active Chain Link
+        active_chain = state.get("activeChainLink", {})
+        if isinstance(active_chain, dict) and active_chain.get("cardNumber"):
+            _fill_slot(14, active_chain.get("cardNumber"))
+
+        # Slot 15: Opponent Key Arena Threat (ex: Boom Grenade armada)
+        opp_items = state.get("opponentItems") or state.get("theirItems") or []
+        if isinstance(opp_items, list) and opp_items:
+            # Seleciona o primeiro item perigoso da arena
+            _fill_slot(15, opp_items[0])
+
+        return vec
+
+
+# Alias retrocompatível para evitar quebras em módulos existentes
+FaBPolicyValueNetwork = FaBCardTransformerNetwork
+
+
+# ══════════════════════════════════════════════════════════════════
+# FÁBRICA E CARREGAMENTO DE MODELO
+# ══════════════════════════════════════════════════════════════════
+
 def get_device() -> torch.device:
     if torch.cuda.is_available():
         return torch.device("cuda:0")
     return torch.device("cpu")
 
+
 def create_model(
     checkpoint_path: str = None,
     device: str = None,
     strict_load: bool = False,
-) -> Tuple[FaBPolicyValueNetwork, torch.device]:
+) -> Tuple[FaBCardTransformerNetwork, torch.device]:
     """
-    Cria ou carrega um modelo FaBPolicyValueNetwork.
-
-    A arquitetura é auto-detectada a partir do checkpoint se existente,
-    garantindo que checkpoints treinados em GPU carreguem 100% de seus pesos
-    mesmo quando executados em máquinas CPU-only.
+    Cria ou carrega um modelo FaBCardTransformerNetwork (v2).
+    Se nenhum checkpoint existir, inicializa com pesos aleatórios e salva em data/model_latest.pt.
     """
     dev = torch.device(device) if device else get_device()
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # Tenta o checkpoint fornecido; se não, tenta o padrão do SETTINGS
     if not checkpoint_path:
-        try:
-            from config.settings import SETTINGS
-            checkpoint_path = SETTINGS.teacher_checkpoint
-        except Exception:
-            checkpoint_path = os.path.join("data", "checkpoints", "teacher_latest.pt")
+        checkpoint_path = os.path.join(base_dir, "data", "model_latest.pt")
 
-    loaded_state_dict = None
-    inferred_h = None
-    inferred_blocks = None
+    model = FaBCardTransformerNetwork().to(dev)
 
     if checkpoint_path and os.path.exists(checkpoint_path):
         try:
-            loaded_state_dict = torch.load(checkpoint_path, map_location=dev)
-            if isinstance(loaded_state_dict, dict):
-                # Detecta hidden_dim pelo shape do peso da camada inicial: (hidden_dim, state_dim)
-                if "input_layer.0.weight" in loaded_state_dict:
-                    inferred_h = loaded_state_dict["input_layer.0.weight"].shape[0]
-                # Detecta num_res_blocks contando blocos residuais
-                blocks = {k.split(".")[1] for k in loaded_state_dict if k.startswith("res_blocks.") and ".fc1.weight" in k}
-                if blocks:
-                    inferred_blocks = len(blocks)
-        except Exception:
-            pass
-
-    if inferred_h and inferred_blocks:
-        model = FaBPolicyValueNetwork(hidden_dim=inferred_h, num_res_blocks=inferred_blocks).to(dev)
-    else:
-        model = FaBPolicyValueNetwork().to(dev)
-
-    if loaded_state_dict:
-        try:
-            model.load_state_dict(loaded_state_dict, strict=strict_load)
-            print(f"[Modelo] ✓ Checkpoint carregado (100%): {checkpoint_path}")
-        except RuntimeError as e:
-            # Arquitetura mudou — tenta carregamento parcial
-            try:
-                compatible = {k: v for k, v in loaded_state_dict.items()
-                              if k in model.state_dict() and
-                              model.state_dict()[k].shape == v.shape}
-                model.load_state_dict(compatible, strict=False)
-                pct = 100 * len(compatible) / len(model.state_dict())
-                print(f"[Modelo] ⚠ Checkpoint parcial ({pct:.0f}% de pesos reutilizados): {e}")
-            except Exception as e2:
-                print(f"[Modelo] ✗ Checkpoint ignorado (incompatível): {e2}")
+            state_dict = torch.load(checkpoint_path, map_location=dev, weights_only=True)
+            model.load_state_dict(state_dict, strict=strict_load)
+            print(f"[Modelo] ✓ Checkpoint v2 carregado (100%): {checkpoint_path}")
         except Exception as e:
-            print(f"[Modelo] ✗ Erro ao carregar checkpoint: {e}")
+            print(f"[Modelo] ⚠ Checkpoint incompatível ou inválido ({e}). Inicializando novo modelo.")
+            # Salva modelo inicial limpo
+            torch.save(model.state_dict(), checkpoint_path)
     else:
-        if checkpoint_path and not os.path.exists(checkpoint_path):
-            print(f"[Modelo] Iniciando com pesos aleatórios — nenhum checkpoint em: {checkpoint_path}")
+        # Salva o novo modelo limpo em data/model_latest.pt
+        os.makedirs(os.path.dirname(checkpoint_path) if os.path.dirname(checkpoint_path) else ".", exist_ok=True)
+        torch.save(model.state_dict(), checkpoint_path)
+        print(f"[Modelo] ✓ Novo modelo v2 inicializado e salvo em: {checkpoint_path}")
 
     print(f"[Modelo] {model.model_info()}")
     return model, dev
-

@@ -107,5 +107,29 @@ def run_tests():
 def test_arsenal_pruning():
     run_tests()
 
+
+def test_player_arse_support_in_policy_engine():
+    """Valida retrocompatibilidade com o backend Talishar enviando arsenal como playerArse."""
+    engine = PolicyEngine(hero_name="marlynn_treasure_hunter")
+    state = {
+        "playerHealth": 20,
+        "opponentHealth": 20,
+        "actionPoints": 1,
+        "amIActivePlayer": True,
+        "turnPhase": "M",
+        "playerHand": [
+            {"cardNumber": "yellow_fin_harpoon_blue", "pitch": 3, "action": 27, "cost": 0, "power": 1, "has_go_again": False}
+        ],
+        "playerArse": [
+            {"cardNumber": "king_kraken_harpoon_red", "action": 5, "actionDataOverride": "0", "cost": 0, "power": 8, "has_go_again": False}
+        ]
+    }
+    attack = engine.select_best_attack(state)
+    assert attack is not None
+    assert attack["name"] == "king_kraken_harpoon_red"
+    assert attack["mode"] == 5
+
+
 if __name__ == '__main__':
     run_tests()
+    test_player_arse_support_in_policy_engine()

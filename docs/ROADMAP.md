@@ -7,12 +7,13 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 ## 📌 Status Atual dos Marcos de Arquitetura & Testes
 
 - [x] **Modularização dos 9 Monólitos**: Todos os arquivos de lógica de negócio e interface decompostos em pacotes coesos abaixo de 500 linhas (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`).
-- [x] **Governança & ADRs**: ADR-0001 a ADR-0006 documentados em `docs/adr/`, `CONTEXT.md` com diretivas de vocabulário e domínio canônicos.
+- [x] **Governança & ADRs**: ADR-0001 a ADR-0007 documentados em `docs/adr/`, `CONTEXT.md` com diretivas de vocabulário e domínio canônicos.
 - [x] **Regras Oficiais de Combate (CR)**: Phantasm Popping (CR 7.4.4), Dominate (CR 7.4.2a), Overpower (CR 7.4.2b), Piercing (CR 8.5.21) e Intimidate (CR 8.5.8).
 - [x] **Resiliência & Concorrência**: Conversores universais seguros (`safe_int`, `safe_list`, `safe_dict`, `safe_str`), polling adaptativo, eliminação de processos zumbis Unix `<defunct>` e virtual loss simétrico no MCTS.
 - [x] **Ferramentas CLI de Automação**: Utilitários operacionais em `.agents/skills/automated-tasks/scripts/` (`validate_decks.py`, `benchmark_mcts.py`, `healthcheck_talishar.py` e `run_smoke_tests.py`).
-- [x] **Passo 1 (Ciclo de Rede & Lobby)**: **100% de cobertura** em `ai/talishar_api.py` (87/87 stmts) e `ai/bot_runtime/lobby_manager.py` (214/214 stmts) com 67 testes unitários e mocks isolados (`tests/test_lobby_and_api_mock.py`).
-- [x] **Passo 2 (Modais Complexos & Decisão de Fases)**: **100% de cobertura** em `ai/bot_runtime/choice_handler.py` (307/307 stmts) e `ai/bot_runtime/phase_decider.py` (281/281 stmts) com 101 testes parametrizados (`tests/test_choice_handler_and_modals.py`).
+- [x] **Rede Neural v2 (FaBCardTransformerNetwork - ADR-0007)**: Substituição completa do antigo MLP de 192 entradas por arquitetura Transformer com Self/Cross-Attention, vetor flat-packed de 800 dimensões, alvos auxiliares KataGo e embeddings densos em $O(1)$ (`data/card_embeddings.pt`).
+- [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.087 cartas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena (`ArenaThreatContext`) e poda adaptativa de combate sem hardcodes nominais.
+- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando **353 testes canônicos com 100% de aprovação**.
 - [ ] **Passo 3 (Especialização de Classes Não-Lineares)**: Expansão de testes em classes de alta complexidade tática (*Ilusionista*, *Assassino*, *Runeblade*, *Teklovossen*, *Ranger*).
 - [ ] **Passo 4 (Simulador Determinístico & Sideboard)**: Testes de casos de borda e transição de estados em `ai/game_simulator.py` e `ai/sideboard_manager.py`.
 - [ ] **Passo 5 (Pipeline de Treinamento Neural PyTorch)**: Bateria leve de testes CPU para `ai/training/orchestrator.py` e `ai/experience_collector.py`.

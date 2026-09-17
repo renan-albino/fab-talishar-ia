@@ -14,6 +14,7 @@ from .constants import (
 )
 from ..hero_strategies import VynnsetStrategy
 from ..model import FaBPolicyValueNetwork
+from .card_semantics import build_arena_threat_context
 
 
 def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str, int]]:
@@ -30,17 +31,24 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     active_chain = state.get("activeChainLink", {})
     if not isinstance(active_chain, dict):
         active_chain = {}
-    opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 4)))
+    base_chain_power = int(active_chain.get("totalPower", state.get("combatChainPower", 4)))
     incoming_name = str(active_chain.get("cardNumber", "")).lower()
     db_incoming = cards_db.get(incoming_name, {})
     incoming_text = str(db_incoming.get("text", "")).lower()
 
-    on_hit_threat = get_on_hit_threat(incoming_name, incoming_text)
-    has_dangerous_on_hit = on_hit_threat >= 3.0 or any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+    # ── Contexto Holístico da Arena e Ameaças Semânticas ──────────────
+    arena_ctx = build_arena_threat_context(state, my_hp=my_hp)
+    opp_power = max(base_chain_power, arena_ctx.total_effective_physical_damage)
+    on_hit_threat = max(get_on_hit_threat(incoming_name, incoming_text), arena_ctx.composite_threat_score)
+    has_dangerous_on_hit = (
+        on_hit_threat >= 3.0
+        or arena_ctx.extra_on_hit_damage > 0
+        or any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
+    )
 
-    # ── Palavras-chave Oficiais de Combate (CR Flesh and Blood) ────────
+    # ── Palavras-chave Oficiais de Combate e Evasão da Arena ────────
     # Phantasm (CR 7.4.4): Ataque de Ilusionista destruído por defensor não-ilusionista com 6+ poder
-    has_phantasm = bool(
+    has_phantasm = arena_ctx.has_active_phantasm or bool(
         active_chain.get("phantasm")
         or active_chain.get("hasPhantasm")
         or state.get("phantasm")
@@ -50,7 +58,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     )
 
     # Dominate (CR 7.4.2a): Não pode ser defendido por mais de 1 carta da mão
-    has_dominate = bool(
+    has_dominate = arena_ctx.has_active_dominate or bool(
         active_chain.get("dominate")
         or active_chain.get("hasDominate")
         or state.get("dominate")
@@ -59,7 +67,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     )
 
     # Overpower (CR 7.4.2b): Não pode ser defendido por mais de 1 carta de ação
-    has_overpower = bool(
+    has_overpower = arena_ctx.has_active_overpower or bool(
         active_chain.get("overpower")
         or active_chain.get("hasOverpower")
         or state.get("overpower")
@@ -68,7 +76,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     )
 
     # Piercing (CR 8.5.21): Ataques com Piercing ganham +1 de dano se bloqueados por equipamento
-    has_piercing = bool(
+    has_piercing = arena_ctx.has_active_piercing or bool(
         active_chain.get("piercing")
         or active_chain.get("hasPiercing")
         or state.get("piercing")
@@ -173,7 +181,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         if (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
             if info["pitch"] == 1 and info["power"] >= 6 and not has_phantasm:
                 score -= 25.0  # Nunca bloqueia com a bomba de ataque de Pivot (a menos que estoure Phantasm!)
-            elif engine.strategy.is_critical_pitch_resource(info, hand, state) and not is_phantasm_popper:
+            elif hasattr(engine.strategy, "is_critical_pitch_resource") and engine.strategy.is_critical_pitch_resource(info, hand, state) and not is_phantasm_popper:
                 score -= 30.0  # Recurso de pitch sagrado preservado polimorficamente para o contra-ataque
             elif info["pitch"] == 3 and is_heavy_hero and not is_phantasm_popper:
                 blue_count = len([x for x in hand if engine.extract_card_info(x)["pitch"] == 3])
@@ -350,10 +358,10 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         will_break = has_bb or (has_temp and effective_block <= 1)
 
         # ── Poda Estrita de Armadura em Ataques Vanilla ──
-        # Se o ataque NÃO possui efeito On-Hit e nossa vida está saudável (HP > 12),
+        # Se o ataque NÃO possui efeito On-Hit (nem na carta e nem na arena) e nossa vida está saudável (HP > 12),
         # armaduras em geral não devem ser gastas para mitigar dano comum!
         is_safe_multiuse_temper = is_evo and has_temp and effective_block > 1
-        if on_hit_threat == 0.0 and my_hp > 12 and not has_piercing:
+        if on_hit_threat == 0.0 and arena_ctx.extra_on_hit_damage == 0 and my_hp > 12 and not has_piercing:
             if not ((is_crown and is_awkward_hand) or is_safe_multiuse_temper):
                 continue
 
@@ -451,7 +459,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     # que neutraliza completamente o dano (total_block >= opp_power) ou estoura Phantasm.
     if (has_dangerous_on_hit or has_phantasm) and opp_power > 0 and my_hp > 6:
         valid_subsets = []
-        max_hand_in_subset = turn_plan.max_block_cards if turn_plan.can_absorb_damage else (
+        max_hand_in_subset = int(getattr(turn_plan, "max_block_cards", 2)) if getattr(turn_plan, "can_absorb_damage", False) else (
             2 if my_hp > 12 else 3
         )
         if has_dominate:
@@ -544,12 +552,12 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     current_blocked = 0
 
     # Limite máximo de cartas da MÃO para bloquear
-    if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= my_hp):
+    if my_hp <= 6 or arena_ctx.is_lethal_danger or (has_dangerous_on_hit and opp_power >= my_hp):
         max_hand_blocks = len(block_candidates)  # Modo Sobrevivência (Bloqueio total)
     elif turn_plan.plan_type in ("DEFENSIVE_TRAP", "FULL_DEFENSE", "DEFENSIVE"):
-        max_hand_blocks = min(turn_plan.max_block_cards, len(block_candidates))
+        max_hand_blocks = min(int(getattr(turn_plan, "max_block_cards", 2)), len(block_candidates))
     elif turn_plan.can_absorb_damage:
-        max_hand_blocks = min(turn_plan.max_block_cards, len(block_candidates))
+        max_hand_blocks = min(int(getattr(turn_plan, "max_block_cards", 2)), len(block_candidates))
     elif not has_dangerous_on_hit and my_hp > 15:
         # Em ataques comuns sem On-Hit com vida saudável (> 15), limita a no máximo 1 carta de mão para preservar a mão!
         max_hand_blocks = 1

@@ -38,6 +38,12 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
 
 ## Domain: AI Engine
 
+- **FaBCardTransformerNetwork (`ai/model.py`)**: Rede Neural Transformer Dual-Head com Self-Attention (entre 16 slots de cartas ativas) e Cross-Attention (com token de contexto global), operando sobre vetor de estado flat-packed de 800 dimensões contínuas e cabeças auxiliares KataGo.
+  - _Avoid_: MLP de cartas, Rede estática legada, ResNet v1 de 192 entradas, Rede de perceptron simples.
+- **Matriz de Embeddings Tensoriais (`data/card_embeddings.pt` & `data/card_to_idx.json`)**: Matriz densa pré-compilada em PyTorch de dimensões `[5133, 48]` em FP32, indexada em $O(1)$ pelo identificador de carta. Codifica atributos canônicos, classes one-hot, keywords de combate e componentes semânticos textuais via decomposição SVD.
+  - _Avoid_: Extração de embeddings em tempo de execução, Regex na inferência, One-hot gigante esparso.
+- **Compreensão Semântica de Arena (`ai/policy/card_semantics.py` & `data/fab_card_semantics.json`)**: Sistema holístico de percepção que compila perfis funcionais (`CardSemanticProfile`) e sintetiza o contexto dinâmico de perigo (`ArenaThreatContext`), interpretando modificadores de combate concedidos por itens, auras e gatilhos de dano concorrentes sem dependência de hardcodes nominais.
+  - _Avoid_: Hardcode nominal de itens, Lista estática de cartas de arena, Checagem cega por nome.
 - **ISMCTS (Information Set Monte Carlo Tree Search)**: Variante de MCTS especializada em jogos de informação imperfeita. Amostra múltiplos mundos determinizados preenchendo as cartas ocultas do oponente a partir de um pool consistente com a classe do herói rival.
   - _Avoid_: MCTS determinístico simples, Alpha-Beta minimax, Monte Carlo cego, Árvore de decisão comum.
 - **World / Determinization**: Uma instância hipotética e completa do estado da partida onde todas as variáveis ocultas (mão e arsenal do oponente) são simuladas com cartas plausíveis.

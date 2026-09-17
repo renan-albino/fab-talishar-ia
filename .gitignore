@@ -27,7 +27,10 @@ data/*
 !data/hero_map.json
 !data/ability_costs.json
 !data/equipment_metadata.json
+!data/card_to_idx.json
+!data/fab_card_semantics.json
 *.pt
+!data/card_embeddings.pt
 *.pth
 *.bin
 *.npz

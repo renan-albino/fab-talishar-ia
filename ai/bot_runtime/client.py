@@ -371,6 +371,18 @@ class FabBotClient:
         if "theirArsenal" in state and "opponentArsenal" not in state:
             state["opponentArsenal"] = safe_list(state.get("theirArsenal"))
 
+        # Normalização de zonas da arena adversária
+        if "theirItems" in state and "opponentItems" not in state:
+            state["opponentItems"] = safe_list(state.get("theirItems"))
+        if "theirAuras" in state and "opponentAuras" not in state:
+            state["opponentAuras"] = safe_list(state.get("theirAuras"))
+        if "theirPermanents" in state and "opponentPermanents" not in state:
+            state["opponentPermanents"] = safe_list(state.get("theirPermanents"))
+        if "theirEquipment" in state and "opponentEquipment" not in state:
+            state["opponentEquipment"] = safe_list(state.get("theirEquipment"))
+        if "theirAllies" in state and "opponentAllies" not in state:
+            state["opponentAllies"] = safe_list(state.get("theirAllies"))
+
         my_h = safe_int(state.get("playerHealth"), default=40)
         opp_h = safe_int(state.get("opponentHealth"), default=40)
 
@@ -443,6 +455,18 @@ class FabBotClient:
             state["theirArsenal"] = safe_list(state.get("theirArse"))
         if "theirArsenal" in state and "opponentArsenal" not in state:
             state["opponentArsenal"] = safe_list(state.get("theirArsenal"))
+
+        # Normalização de zonas da arena adversária
+        if "theirItems" in state and "opponentItems" not in state:
+            state["opponentItems"] = safe_list(state.get("theirItems"))
+        if "theirAuras" in state and "opponentAuras" not in state:
+            state["opponentAuras"] = safe_list(state.get("theirAuras"))
+        if "theirPermanents" in state and "opponentPermanents" not in state:
+            state["opponentPermanents"] = safe_list(state.get("theirPermanents"))
+        if "theirEquipment" in state and "opponentEquipment" not in state:
+            state["opponentEquipment"] = safe_list(state.get("theirEquipment"))
+        if "theirAllies" in state and "opponentAllies" not in state:
+            state["opponentAllies"] = safe_list(state.get("theirAllies"))
 
         tp_raw = state.get("turnPhase", "M")
         if isinstance(tp_raw, dict):
