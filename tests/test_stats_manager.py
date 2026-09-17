@@ -84,3 +84,70 @@ def test_elo_calculations():
     assert stats.calculate_k_factor == calculate_k_factor
     assert stats.calculate_elo_ratings == calculate_elo_ratings
 
+
+def test_reset_all_elos():
+    import stats
+    from stats_manager import reset_all_elos, get_stats_data
+
+    assert stats.reset_all_elos == reset_all_elos
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        test_file = os.path.join(tmp_dir, "test_training_stats.json")
+        initial_data = {
+            "total_matches": 42,
+            "bot1_wins": 25,
+            "bot2_wins": 15,
+            "draws": 2,
+            "bot1_elo": 1340,
+            "bot2_elo": 1180,
+            "deck_stats": {
+                "Dash IO": {"matches": 22, "wins": 14, "losses": 8, "elo": 1380, "human_matches": 4, "human_wins": 2},
+                "Betsy": {"matches": 20, "wins": 11, "losses": 9, "elo": 1220, "human_matches": 1, "human_wins": 0},
+            },
+            "deck_elo_history": [{"match": 1, "Dash IO": 1216, "Betsy": 1184}],
+            "elo_history": [{"match": 1, "bot1_elo": 1216, "bot2_elo": 1184, "timestamp": 12345.0}],
+            "recent_matches": [{"room": "room_xyz", "winner": "Bot 1"}],
+        }
+        with open(test_file, "w", encoding="utf-8") as f:
+            json.dump(initial_data, f)
+
+        res = reset_all_elos(stats_file=test_file)
+
+        # Totais zerados
+        assert res["total_matches"] == 0
+        assert res["bot1_wins"] == 0
+        assert res["bot2_wins"] == 0
+        assert res["draws"] == 0
+        assert res["bot1_elo"] == 1200
+        assert res["bot2_elo"] == 1200
+        assert res["recent_matches"] == []
+
+        # Decks mantidos e resetados para 1200
+        assert "Dash IO" in res["deck_stats"]
+        assert "Betsy" in res["deck_stats"]
+        for d_name in ["Dash IO", "Betsy"]:
+            d_info = res["deck_stats"][d_name]
+            assert d_info["elo"] == 1200
+            assert d_info["matches"] == 0
+            assert d_info["wins"] == 0
+            assert d_info["losses"] == 0
+            assert d_info["human_matches"] == 0
+            assert d_info["human_wins"] == 0
+
+        # Históricos limpos iniciando na partida 0 a 1200
+        assert len(res["deck_elo_history"]) == 1
+        assert res["deck_elo_history"][0]["match"] == 0
+        assert res["deck_elo_history"][0]["Dash IO"] == 1200
+        assert res["deck_elo_history"][0]["Betsy"] == 1200
+
+        assert len(res["elo_history"]) == 1
+        assert res["elo_history"][0]["match"] == 0
+        assert res["elo_history"][0]["bot1_elo"] == 1200
+        assert res["elo_history"][0]["bot2_elo"] == 1200
+
+        # Leitura subsequente do arquivo confirma persistência
+        loaded = get_stats_data(stats_file=test_file)
+        assert loaded["total_matches"] == 0
+        assert loaded["deck_stats"]["Dash IO"]["elo"] == 1200
+
+

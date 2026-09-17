@@ -24,6 +24,7 @@ from stats.storage import (
     STATS_FILE,
     delete_deck_stat,
     get_stats_data,
+    reset_all_elos,
     reset_stats,
     update_match_result,
 )
@@ -50,6 +51,7 @@ __all__ = [
     "update_match_result",
     "delete_deck_stat",
     "reset_stats",
+    "reset_all_elos",
     "sync_training_matches",
     "clean_stalled_matches",
 ]

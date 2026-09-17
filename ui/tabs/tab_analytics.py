@@ -7,7 +7,12 @@ ranqueadas estritas, histórico de rating ao longo do tempo, e controles de sinc
 
 import pandas as pd
 import streamlit as st
-from stats_manager import reset_stats, delete_deck_stat, sync_training_matches
+from stats_manager import (
+    delete_deck_stat,
+    reset_all_elos,
+    reset_stats,
+    sync_training_matches,
+)
 from ui.helpers import get_cached_stats_data, get_total_training_games
 
 
@@ -138,34 +143,85 @@ def render_stats_leaderboard():
             df_elo = pd.DataFrame(sampled_elo)[["match", "bot1_elo", "bot2_elo"]].set_index("match")
             df_elo.columns = ["Bot 1 (Host)", "Bot 2 (Join)"]
             st.line_chart(df_elo)
+        else:
+            st.info("ℹ️ A curva de evolução de ELO será desenhada conforme novas partidas ranqueadas forem disputadas (iniciando em 1200).")
 
 
 def render_tab_analytics():
     """Renderiza a Aba 6: Analytics & ELO por Deck."""
-    col_st_hdr1, col_st_hdr2 = st.columns([3, 1])
+    col_st_hdr1, col_st_hdr2, col_st_hdr3 = st.columns([2.5, 1, 1.2])
     with col_st_hdr1:
         st.subheader("📈 Leaderboard de ELO & Desempenho por Deck")
     with col_st_hdr2:
-        if st.button("🔄 Atualizar Leaderboard", key="btn_refresh_elo_data", use_container_width=True):
+        if st.button("🔄 Atualizar", key="btn_refresh_elo_data", use_container_width=True):
             get_cached_stats_data.clear()
             st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+    with col_st_hdr3:
+        with st.popover("🎯 Resetar ELOs", use_container_width=True):
+            st.markdown("##### 🎯 Resetar Ratings de ELO")
+            st.caption(
+                "Reinicia os ratings de todos os decks e bots para **1200** e zera o histórico de partidas "
+                "para avaliar a progressão do novo modelo de rede neural."
+            )
+            if st.button(
+                "⚠️ Confirmar Reset para 1200",
+                key="btn_confirm_reset_elo_hdr",
+                type="primary",
+                use_container_width=True,
+            ):
+                reset_all_elos()
+                get_cached_stats_data.clear()
+                st.toast("Todos os ratings de ELO foram resetados para 1200!", icon="🎯")
+                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
     render_stats_leaderboard()
 
-    col_btn1, col_btn2 = st.columns([1, 1])
+    col_btn1, col_btn2, col_btn3 = st.columns([1.5, 1.2, 1.2])
     with col_btn1:
         stats_data = get_cached_stats_data()
         tot_m = stats_data.get("total_matches", 0)
         total_training_games = get_total_training_games()
         if total_training_games > tot_m:
-            if st.button(f"⚡ Sincronizar Base ELO com Todas as Partidas do Treino ({total_training_games:,})", use_container_width=True):
+            if st.button(
+                f"⚡ Sincronizar Base ELO com Treino ({total_training_games:,})",
+                key="btn_sync_elo_matches",
+                use_container_width=True,
+            ):
                 sync_training_matches(total_training_games)
                 get_cached_stats_data.clear()
-                st.toast(f"Estatísticas de ELO sincronizadas com todas as {total_training_games:,} partidas!", icon="🎉")
+                st.toast(
+                    f"Estatísticas de ELO sincronizadas com todas as {total_training_games:,} partidas!",
+                    icon="🎉",
+                )
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
     with col_btn2:
-        if st.button("🗑️ Resetar Todas as Estatísticas de ELO", use_container_width=True):
-            reset_stats()
-            get_cached_stats_data.clear()
-            st.toast("Estatísticas resetadas!", icon="🗑️")
-            st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+        with st.popover("🎯 Resetar ELOs para 1200", use_container_width=True):
+            st.markdown("##### 🎯 Reiniciar Avaliação de ELO")
+            st.write(
+                "Todos os decks permanecerão na tabela com ELO 1200 e métricas zeradas, "
+                "permitindo avaliar uma nova curva de progressão limpa."
+            )
+            if st.button(
+                "Confirmar Reset de ELO",
+                key="btn_confirm_reset_elo_btm",
+                type="primary",
+                use_container_width=True,
+            ):
+                reset_all_elos()
+                get_cached_stats_data.clear()
+                st.toast("Ratings de ELO reiniciados para 1200!", icon="🎯")
+                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+    with col_btn3:
+        with st.popover("🗑️ Limpar Banco de Dados", use_container_width=True):
+            st.markdown("##### 🗑️ Reset Total da Telemetria")
+            st.write("Apaga completamente o arquivo de estatísticas e rankings.")
+            if st.button(
+                "Confirmar Limpeza Total",
+                key="btn_confirm_wipe_stats",
+                type="secondary",
+                use_container_width=True,
+            ):
+                reset_stats()
+                get_cached_stats_data.clear()
+                st.toast("Banco de dados de telemetria reiniciado!", icon="🗑️")
+                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()

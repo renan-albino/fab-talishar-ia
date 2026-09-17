@@ -10,7 +10,7 @@ from stats import (
     calculate_elo_ratings, calculate_expected_score, calculate_k_factor, calculate_new_ratings,
     canonicalize_deck_name, clean_stalled_matches, consolidate_deck_stats, delete_deck_stat,
     expected_score, get_expected_starting_health, get_k_factor, get_stats_data,
-    reset_stats, sync_training_matches, update_match_result,
+    reset_all_elos, reset_stats, sync_training_matches, update_match_result,
 )
 
 __all__ = [
@@ -18,5 +18,5 @@ __all__ = [
     "calculate_elo_ratings", "calculate_expected_score", "calculate_k_factor", "calculate_new_ratings",
     "canonicalize_deck_name", "clean_stalled_matches", "consolidate_deck_stats", "delete_deck_stat",
     "expected_score", "get_expected_starting_health", "get_k_factor", "get_stats_data",
-    "reset_stats", "sync_training_matches", "update_match_result",
+    "reset_all_elos", "reset_stats", "sync_training_matches", "update_match_result",
 ]

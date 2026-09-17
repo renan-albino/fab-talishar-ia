@@ -17,6 +17,7 @@ from typing import Optional
 from ai.atomic_io import atomic_json_save, file_lock
 from ai.logger import get_logger
 from stats.deck_names import (
+    DECKS_DIR,
     canonicalize_deck_name,
     consolidate_deck_stats,
     get_expected_starting_health,
@@ -391,3 +392,73 @@ def reset_stats(stats_file: Optional[str] = None) -> dict:
         if os.path.exists(target_file):
             os.remove(target_file)
         return _get_stats_data_unlocked(target_file)
+
+
+def reset_all_elos(stats_file: Optional[str] = None) -> dict:
+    """
+    Reinicializa todos os ratings de ELO para 1200 e zera as métricas de partidas,
+    mantendo os decks conhecidos inicializados em 1200 para avaliar a progressão do modelo.
+    """
+    target_file = _resolve_stats_file(stats_file)
+    with stats_file_lock(target_file):
+        stats = _get_stats_data_unlocked(target_file)
+
+        # Coleta os decks existentes para manter a estrutura e histórico limpo
+        known_decks = set(stats.get("deck_stats", {}).keys())
+
+        # Também inclui decks canônicos da pasta de baralhos se disponíveis
+        if os.path.exists(DECKS_DIR):
+            for fname in os.listdir(DECKS_DIR):
+                if fname.endswith((".json", ".txt")):
+                    base = os.path.splitext(fname)[0]
+                    c_name = canonicalize_deck_name(base)
+                    known_decks.add(c_name)
+
+        reset_deck_stats = {}
+        for d_name in sorted(known_decks):
+            reset_deck_stats[d_name] = {
+                "matches": 0,
+                "wins": 0,
+                "losses": 0,
+                "elo": 1200,
+                "human_matches": 0,
+                "human_wins": 0,
+            }
+
+        now_ts = time.time()
+        new_stats = {
+            "total_matches": 0,
+            "bot1_wins": 0,
+            "bot2_wins": 0,
+            "draws": 0,
+            "bot1_elo": 1200,
+            "bot2_elo": 1200,
+            "elo_history": [
+                {
+                    "match": 0,
+                    "bot1_elo": 1200,
+                    "bot2_elo": 1200,
+                    "timestamp": now_ts,
+                }
+            ],
+            "deck_stats": reset_deck_stats,
+            "deck_elo_history": [
+                {
+                    "match": 0,
+                    **{d: 1200 for d in reset_deck_stats},
+                }
+            ] if reset_deck_stats else [],
+            "recent_matches": [],
+        }
+
+        atomic_json_save(new_stats, target_file)
+
+        try:
+            from ai.dynamic_rule_tuner import sync_multipliers_with_stats
+
+            sync_multipliers_with_stats()
+        except Exception as e:
+            logger.warning(f"Erro ao sincronizar multiplicadores dinâmicos após reset de ELO: {e}")
+
+        return new_stats
+
