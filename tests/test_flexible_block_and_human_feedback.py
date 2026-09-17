@@ -7,7 +7,8 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from ai.hero_strategies.base import HeroStrategy, TurnPlan
-from ai.policy_engine import PolicyEngine
+from ai.policy_engine import PolicyEngine  # noqa: F401 — usado em testes específicos
+from conftest import make_policy_engine
 from stats_manager import update_match_result, get_stats_data
 from ai.dynamic_rule_tuner import get_multipliers_for_hero, sync_multipliers_with_stats, DEFAULT_MULTIPLIERS
 
@@ -53,7 +54,7 @@ def test_flexible_blocking_low_efficiency_hand_conversion():
     assert plan.max_block_cards <= 1, "Não deve queimar 3 cartas de block 2 para segurar 6 de dano"
 
     # Verificar seleção de blocos no PolicyEngine
-    pe = PolicyEngine()
+    pe = make_policy_engine()
     pe.strategy = strat
     chosen_blocks = pe.select_defense_blocks(state)
     # Não deve selecionar 3 cartas da mão

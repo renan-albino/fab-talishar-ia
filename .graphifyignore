@@ -1,0 +1,12 @@
+# Código de terceiros (backend PHP do Talishar) — não faz parte do motor AI
+setup_templates/
+
+# Dados brutos de decks (JSON, não código)
+decks/
+
+# Artefatos do graphify (gerados, não fonte)
+graphify-out/
+
+# Logs e checkpoints binários
+logs/
+*.pt

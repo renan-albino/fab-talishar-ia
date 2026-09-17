@@ -4,10 +4,10 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pytest
-from ai.policy_engine import PolicyEngine
+from conftest import make_policy_engine
 
 def test_unpayable_hand_attack_pruning():
-    pe = PolicyEngine()
+    pe = make_policy_engine()
 
     # Cenário A: Mão com Mangle (custo 4) e apenas 1 carta vermelha (pitch 1).
     # Pitch restante das outras cartas = 1 < 4. Mangle NÃO pode ser jogado!
@@ -43,7 +43,7 @@ def test_unpayable_hand_attack_pruning():
     assert atk_ok["cost"] == 4
 
 def test_unpayable_weapon_pruning():
-    pe = PolicyEngine()
+    pe = make_policy_engine()
 
     # Cenário A: Sledge of Anvilheim (Hammer, custo real 4 no FaB/Talishar) com apenas 2 cartas vermelhas (pitch 1 cada = 2).
     # Total pitch = 2 < 4. A arma NÃO pode ser usada!
@@ -101,7 +101,7 @@ def test_combat_chain_desc():
     assert "Go Again" in desc
 
 def test_ismcts_hand_detection():
-    pe = PolicyEngine(num_mcts_sims=5)
+    pe = make_policy_engine(num_mcts_sims=5)
     
     state_with_opp_hand = {
         "playerAP": 1,
@@ -125,7 +125,7 @@ def test_ismcts_hand_detection():
     assert "confidence" in log_data
 
 def test_weapon_power_and_cost():
-    pe = PolicyEngine()
+    pe = make_policy_engine()
     state_pile_driver = {
         "playerAP": 1,
         "playerPitchCount": 0,
@@ -144,7 +144,7 @@ def test_weapon_power_and_cost():
     assert atk["cost"] == 3
 
 def test_ranger_arrow_hand_pruning():
-    pe = PolicyEngine()
+    pe = make_policy_engine()
     # Flechas na mão NÃO podem ser jogadas diretamente como ação de ataque (CR 2.1.2)
     state_arrow_in_hand = {
         "playerAP": 1,
