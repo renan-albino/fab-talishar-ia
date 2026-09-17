@@ -56,3 +56,9 @@ O script `scripts/prepare_environment.py` detecta automaticamente se seu ambient
 - Banco de cartas oficial fica em `data/fab_cards_db.json` (extraído por `extract_card_db.py`).
 - Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini`.
 
+
+### Ponytail Protocol
+1. **Always Be Lazy:** The `ponytail` skill is PERMANENTLY ACTIVE for all coding and refactoring tasks in this project.
+2. **Strict YAGNI:** Question whether any new abstraction, wrapper, or feature needs to exist at all. Use the standard library before writing custom code. Use native platform features before adding dependencies.
+3. **No Boilerplate:** Delete dead code, unused flexibility, and speculative abstractions whenever you encounter them. Never add unrequested interfaces, factories, or configs.
+4. **Enforce Shrinking:** Prefer one-liners where appropriate. The shortest working diff is the right solution. Shrink existing logic whenever modifying it.

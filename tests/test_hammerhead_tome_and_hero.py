@@ -31,7 +31,7 @@ def test_gorganian_tome_pitch_zero():
     }
     choice = pe.select_best_pitch_card(state)
     assert choice is not None
-    p_idx, p_name, p_mode = choice
+    p_idx, p_name, p_mode, p_id = choice
     assert p_name != "gorganian_tome", "Gorganian Tome NUNCA deve ser selecionado para pitch!"
     assert "blue" in p_name.lower(), f"Deveria priorizar azul, escolheu {p_name}"
 

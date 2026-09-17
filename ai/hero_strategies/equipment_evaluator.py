@@ -6,7 +6,7 @@ Módulo de avaliação heurística e orientada a dados de habilidades de equipam
 """
 
 from typing import Optional, Dict, Any, List
-from .knapsack_solver import _get_cards_db
+
 
 
 def evaluate_equipment_ability(
@@ -83,6 +83,7 @@ def evaluate_equipment_ability(
 
     from ai.equipment_learning import load_equipment_metadata, get_equipment_learning_engine
     eq_meta = load_equipment_metadata().get(eq_name, {})
+    from ai.policy.constants import _get_cards_db
     cards_db = _get_cards_db()
     hand = actual_state.get("playerHand", [])
     arsenal = actual_state.get("playerArsenal", [])

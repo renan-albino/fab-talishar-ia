@@ -134,6 +134,12 @@ class VynnsetStrategy(RunebladeStrategy):
             return 25.0
         return 0.0
 
+    def evaluate_zone_card_play(self, zone_name: str, c_name: str, c_info: dict, base_score: float, state: dict, turn_plan: TurnPlan) -> Optional[Tuple[float, bool, bool]]:
+        play_score, is_instant, has_ga = super().evaluate_zone_card_play(zone_name, c_name, c_info, base_score, state, turn_plan)
+        if zone_name == "Banish":
+            play_score += 15.0  # Vynnset quer esvaziar o Banish para não morrer de Blood Debt
+        return play_score, is_instant, has_ga
+
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
         score = 8.0 + (3.0 if floating_res >= 1 else 0.0)
         return score

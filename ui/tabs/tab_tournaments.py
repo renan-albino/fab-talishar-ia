@@ -10,7 +10,7 @@ import os
 import json
 import pandas as pd
 import streamlit as st
-from tournament_manager import TournamentManager
+from stats.tournament_manager import TournamentManager
 from ui.helpers import get_cached_saved_decks
 
 

@@ -8,6 +8,8 @@ tensoriais em O(1), Transformer Encoder e Cross-Attention contextual.
 
 import os
 import json
+import shutil
+import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -261,6 +263,31 @@ class FaBCardTransformerNetwork(nn.Module):
             value = float(val.cpu().numpy()[0][0])
         return probs, value
 
+    def predict_states(
+        self,
+        state_vectors: List[np.ndarray],
+        device: Optional[str] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Avalia múltiplos vetores de estado simultaneamente em batch.
+        Retorna (probs, values) com probs [N, action_dim] e values [N, 1].
+        """
+        if not state_vectors:
+            return np.zeros((0, self.action_dim), dtype=np.float32), np.zeros((0, 1), dtype=np.float32)
+
+        self.eval()
+        dev = torch.device(device) if device else next(self.parameters()).device
+        with torch.no_grad():
+            if isinstance(state_vectors, np.ndarray):
+                batch_arr = state_vectors.astype(np.float32)
+            else:
+                batch_arr = np.stack(state_vectors, axis=0).astype(np.float32)
+            x = torch.from_numpy(batch_arr).to(dev)
+            logits, val = self(x)
+            probs = F.softmax(logits, dim=-1).cpu().numpy()
+            values = val.cpu().numpy()
+        return probs, values
+
     def count_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
@@ -445,9 +472,15 @@ def create_model(
             model.load_state_dict(state_dict, strict=strict_load)
             print(f"[Modelo] ✓ Checkpoint v2 carregado (100%): {checkpoint_path}")
         except Exception as e:
-            print(f"[Modelo] ⚠ Checkpoint incompatível ou inválido ({e}). Inicializando novo modelo.")
-            # Salva modelo inicial limpo
-            torch.save(model.state_dict(), checkpoint_path)
+            bak_path = f"{checkpoint_path}.corrupted.bak"
+            logging.error(f"[Modelo] ⚠ Falha ao carregar checkpoint '{checkpoint_path}': {e}. Criando backup '{bak_path}' e mantendo checkpoint sem sobrescrita.")
+            print(f"[Modelo] ⚠ Checkpoint incompatível ou corrompido ({e}). Criando backup em: {bak_path}. NÃO sobrescrevendo o arquivo original.")
+            try:
+                shutil.copyfile(checkpoint_path, bak_path)
+            except Exception as be:
+                logging.error(f"[Modelo] ⚠ Falha ao copiar arquivo para backup: {be}")
+            print(f"[Modelo] {model.model_info()}")
+            return model, dev
     else:
         # Salva o novo modelo limpo em data/model_latest.pt
         os.makedirs(os.path.dirname(checkpoint_path) if os.path.dirname(checkpoint_path) else ".", exist_ok=True)

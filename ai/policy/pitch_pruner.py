@@ -7,7 +7,7 @@ Módulo de poda e seleção de cartas para pitch (Pitch Efficiency com ISMCTS).
 from typing import Optional, Tuple, Any
 
 
-def select_best_pitch_card(engine: Any, state: dict) -> Optional[Tuple[int, str, int]]:
+def select_best_pitch_card(engine: Any, state: dict, target_cost: int = 1) -> Optional[Tuple[int, str, int, str]]:
     """
     Seleciona a melhor carta da mão para dar pitch, priorizando eficiência de recursos
     (Azul 3 > Amarelo 2 > Vermelho 1) e penalizando estritamente peças reservadas do TurnPlan.
@@ -18,6 +18,11 @@ def select_best_pitch_card(engine: Any, state: dict) -> Optional[Tuple[int, str,
 
     turn_plan = engine.strategy.analyze_turn_plan(state)
     pitch_candidates = []
+    
+    # Recursos flutuantes disponíveis
+    floating_res, _ = engine.calculate_available_resources(state)
+    missing_cost = max(1, target_cost - floating_res)
+
     for idx, c in enumerate(hand):
         info = engine.extract_card_info(c)
         c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
@@ -43,14 +48,25 @@ def select_best_pitch_card(engine: Any, state: dict) -> Optional[Tuple[int, str,
         # é penalizado pesadamente a menos que seja a única carta da mão
         if info["pitch"] == 1 and info["power"] >= 4:
             score -= 3.0
-        # Prioridade absoluta para Azuis (Pitch 3)
-        elif info["pitch"] == 3:
-            score += 4.0
+            
+        # Consciência de custo: Priorizar exatidão ou sobra útil
+        if info["pitch"] == missing_cost:
+            score += 5.0  # Match exato de pitch é ideal
+        elif info["pitch"] > missing_cost:
+            # Overpitching: Só faz sentido se for Azul e pretendemos usar a sobra
+            if info["pitch"] == 3:
+                score += 3.0
+            else:
+                score -= 1.0 # Penaliza overpitch ineficiente
+        elif info["pitch"] < missing_cost:
+            # Underpitching: Precisaremos de outra carta. Azuis são melhores para isso.
+            if info["pitch"] == 3:
+                score += 4.0
 
         pitch_candidates.append({
             "type": "pitch",
             "idx": idx,
-            "card_id": info["actionDataOverride"] or str(idx),
+            "card_id": str(c.get("actionDataOverride") or c.get("uniqueID") or idx),
             "mode": c_action,
             "name": info["name"],
             "pitch": info["pitch"],
@@ -81,7 +97,7 @@ def select_best_pitch_card(engine: Any, state: dict) -> Optional[Tuple[int, str,
             except Exception:
                 pass
             chosen = pitch_candidates[best_idx]
-            return chosen["idx"], chosen["name"], chosen["mode"]
+            return chosen["idx"], chosen["name"], chosen["mode"], chosen["card_id"]
         else:
             best_idx, _ = engine.mcts.search(
                 state=state,
@@ -89,8 +105,8 @@ def select_best_pitch_card(engine: Any, state: dict) -> Optional[Tuple[int, str,
                 num_simulations=engine.num_mcts_sims,
             )
             chosen = pitch_candidates[best_idx]
-            return chosen["idx"], chosen["name"], chosen["mode"]
+            return chosen["idx"], chosen["name"], chosen["mode"], chosen["card_id"]
 
     pitch_candidates.sort(key=lambda x: x["score"], reverse=True)
     best = pitch_candidates[0]
-    return best["idx"], best["name"], best["mode"]
+    return best["idx"], best["name"], best["mode"], best["card_id"]

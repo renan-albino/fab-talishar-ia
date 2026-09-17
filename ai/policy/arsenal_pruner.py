@@ -7,7 +7,7 @@ Módulo de poda e seleção de cartas para o Arsenal (Regra Oficial: Proibido Pi
 from typing import Optional, Tuple, Any
 
 from .constants import _get_cards_db
-from ..hero_strategies import is_resource_or_gem_card
+
 
 
 def select_arsenal_card(engine: Any, state: dict) -> Optional[Tuple[str, str]]:
@@ -22,6 +22,23 @@ def select_arsenal_card(engine: Any, state: dict) -> Optional[Tuple[str, str]]:
     if not hand:
         return None
 
+    # ── 0. Verificação de Ocupação do Arsenal ──
+    # Se o arsenal já estiver cheio (geralmente 1 carta, ou 2 se equipado com New Horizon), não podemos arsenalar mais.
+    arsenal = state.get("playerArsenal") or state.get("playerArse") or []
+    arsenal_capacity = 1
+    equip = state.get("playerEquipment", [])
+    for eq in equip:
+        if isinstance(eq, dict):
+            eq_name = str(eq.get("name") or eq.get("cardNumber") or "").lower()
+            if "new_horizon" in eq_name:
+                arsenal_capacity = 2
+                break
+
+    # Cada entrada no array que é um dicionário real de carta conta como ocupado
+    occupied_slots = sum(1 for c in arsenal if isinstance(c, dict) and (c.get("name") or c.get("cardNumber")))
+    if occupied_slots >= arsenal_capacity:
+        return None
+
     cards_db = _get_cards_db()
     valid_candidates = []
 
@@ -32,6 +49,7 @@ def select_arsenal_card(engine: Any, state: dict) -> Optional[Tuple[str, str]]:
         db_entry = cards_db.get(c_name, {})
 
         # 1. Filtro Global Universal: Recursos e Gemas são ESTRITAMENTE PROIBIDOS no Arsenal para qualquer herói!
+        from ai.hero_strategies import is_resource_or_gem_card
         if is_resource_or_gem_card(c_name, info, db_entry):
             continue
 
@@ -43,11 +61,28 @@ def select_arsenal_card(engine: Any, state: dict) -> Optional[Tuple[str, str]]:
             valid_candidates.append((score, info["name"], c_id))
 
     if not valid_candidates:
-        # ── 2. Modo Cavar (Digging Mode) para Mão Travada de Recursos (len(hand) >= 3) ───
-        # Se nenhuma carta atingiu score > 0 e a mão possui 3 ou mais cartas:
-        # Se não colocarmos nada no Arsenal, o jogador compra 0 ou 1 carta no End of Turn
+        # ── 2. Modo Cavar (Digging Mode) Dinâmico pelo Intelecto (CR 4.3.2, CR 4.4.3f) ───
+        # Se nenhuma carta atingiu score > 0 e a mão atingiu o limiar de cavar:
+        # Se não colocarmos nada no Arsenal, o jogador compra poucas ou nenhuma carta no End of Turn
         # e continua travado com recursos. Então, deve-se arsenalar 1 carta para cavar!
-        if len(hand) >= 3:
+        hero_intellect = 4
+        if hasattr(engine, "strategy") and hasattr(engine.strategy, "get_intellect"):
+            try:
+                hero_intellect = int(engine.strategy.get_intellect(state))
+            except Exception:
+                hero_intellect = 4
+        elif hasattr(engine, "strategy") and hasattr(engine.strategy, "intellect"):
+            hero_intellect = int(getattr(engine.strategy, "intellect", 4))
+        else:
+            hero_intellect = int(state.get("playerIntellect", state.get("intellect", 4)))
+
+        if "playerIntellect" in state:
+            hero_intellect = int(state["playerIntellect"])
+        elif "intellect" in state:
+            hero_intellect = int(state["intellect"])
+
+        digging_min_cards = max(2, hero_intellect - 1)
+        if len(hand) >= digging_min_cards:
             dig_candidates = []
             for c in hand:
                 info = engine.extract_card_info(c)

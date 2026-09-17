@@ -130,6 +130,56 @@ def test_player_arse_support_in_policy_engine():
     assert attack["mode"] == 5
 
 
+def test_digging_mode_dynamic_intellect_brute():
+    """Valida que para heróis Brute (Intellect 3), o Modo Cavar ativa com len(hand) >= 2."""
+    engine = PolicyEngine(hero_name="rhinar")
+    # Caso Intellect 3 com 2 recursos azuis: deve cavar!
+    state_2cards = {'playerHand': [
+        {'cardNumber': 'autumns_touch_blue', 'block': 3, 'power': 3, 'pitch': 3, 'type': 'AA', 'actionDataOverride': '201'},
+        {'cardNumber': 'fruits_of_the_forest_blue', 'block': 3, 'power': 2, 'pitch': 3, 'type': 'AA'},
+    ]}
+    res = engine.select_arsenal_card(state_2cards)
+    assert res is not None and res[0] == 'autumns_touch_blue', f"Rhinar (Intellect 3) com 2 recursos deveria cavar, obtido: {res}"
+
+    # Caso Intellect 3 com 1 recurso: NÃO deve cavar
+    state_1card = {'playerHand': [
+        {'cardNumber': 'fruits_of_the_forest_blue', 'block': 3, 'power': 2, 'pitch': 3, 'type': 'AA'},
+    ]}
+    res1 = engine.select_arsenal_card(state_1card)
+    assert res1 is None, f"Rhinar (Intellect 3) com 1 recurso não deveria cavar, obtido: {res1}"
+
+
+def test_digging_mode_dynamic_intellect_high():
+    """Valida que para heróis com Intellect 5, o Modo Cavar ativa com len(hand) >= 4."""
+    engine = PolicyEngine(hero_name="generic")
+    # State com playerIntellect = 5 e 3 cartas: NÃO deve cavar (3 < 4)
+    state_3cards = {
+        'playerIntellect': 5,
+        'playerHand': [
+            {'cardNumber': 'autumns_touch_blue', 'block': 3, 'power': 3, 'pitch': 3, 'type': 'AA'},
+            {'cardNumber': 'fruits_of_the_forest_blue', 'block': 3, 'power': 2, 'pitch': 3, 'type': 'AA'},
+            {'cardNumber': 'blue_res_blue', 'block': 3, 'power': 1, 'pitch': 3, 'type': 'AA'},
+        ]
+    }
+    res3 = engine.select_arsenal_card(state_3cards)
+    assert res3 is None, f"Intellect 5 com 3 recursos não deveria cavar, obtido: {res3}"
+
+    # State com playerIntellect = 5 e 4 cartas: DEVE cavar (4 >= 4)
+    state_4cards = {
+        'playerIntellect': 5,
+        'playerHand': [
+            {'cardNumber': 'autumns_touch_blue', 'block': 3, 'power': 3, 'pitch': 3, 'type': 'AA', 'actionDataOverride': '401'},
+            {'cardNumber': 'fruits_of_the_forest_blue', 'block': 3, 'power': 2, 'pitch': 3, 'type': 'AA'},
+            {'cardNumber': 'blue_res_blue', 'block': 3, 'power': 1, 'pitch': 3, 'type': 'AA'},
+            {'cardNumber': 'blue_weak_blue', 'block': 3, 'power': 0, 'pitch': 3, 'type': 'AA'},
+        ]
+    }
+    res4 = engine.select_arsenal_card(state_4cards)
+    assert res4 is not None and res4[0] == 'autumns_touch_blue', f"Intellect 5 com 4 recursos deveria cavar, obtido: {res4}"
+
+
 if __name__ == '__main__':
     run_tests()
     test_player_arse_support_in_policy_engine()
+    test_digging_mode_dynamic_intellect_brute()
+    test_digging_mode_dynamic_intellect_high()

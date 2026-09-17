@@ -11,7 +11,7 @@ from .constants import (
     ALL_FAB_WEAPONS,
     WEAPON_KEYWORDS,
 )
-from ..hero_strategies import RangerStrategy, RunebladeStrategy
+
 from .card_semantics import parse_card_semantics
 
 
@@ -147,13 +147,15 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
                 or any(h in eq_name for h in ["marlynn", "kassai", "bravo", "dash", "dorinthea", "rhinar", "kayo", "jarl", "azalea", "riptide", "teklovossen", "vynnset", "hala", "mario", "arakni"])
             )
             if is_hero:
-                hero_score = engine.strategy.evaluate_hero_ability(state, eq)
-                if hero_score > 0:
-                    candidates.append({
-                        "type": "hero_ability", "idx": 0, "card_id": str(eq_id), "mode": action,
-                        "name": eq_name, "score": hero_score, "cost": 0,
-                        "power": 0, "has_go_again": True
-                    })
+                hero_cost = engine.get_weapon_cost(eq_name, eq, state=state)
+                if total_res >= hero_cost:
+                    hero_score = engine.strategy.evaluate_hero_ability(state, eq)
+                    if hero_score > 0:
+                        candidates.append({
+                            "type": "hero_ability", "idx": 0, "card_id": str(eq_id), "mode": action,
+                            "name": eq_name, "score": hero_score, "cost": hero_cost,
+                            "power": 0, "has_go_again": True
+                        })
                 continue
 
             # 1.3.2 Armas de Combate e Buffs de Equipamento
@@ -315,48 +317,20 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
                         c_name, c_info["power"], effective_cost, c_info["has_go_again"], c_info["pitch"]
                     )
                     has_ga = c_info["has_go_again"]
-                    is_instant = False
-
-                    if zone_name == "Banish":
-                        # Jogar do Banish alivia Blood Debt e projeta dano alto
-                        play_score = base_score + 10.0
-                        if isinstance(engine.strategy, RunebladeStrategy) or "vynnset" in str(engine.hero_name).lower():
-                            play_score += 15.0  # Vynnset quer esvaziar o Banish para não morrer de Blood Debt
-                        # Regra oficial: equipar Evo da zona banida é jogado como Instant se permitido pelo herói (Teklovossen)
-                        if "evo" in c_name:
-                            if "singularity" not in c_name:
-                                if not engine.strategy.can_play_banished_card(c_name, c_info, state):
-                                    continue  # Habilidade inativa: Evo permanece banido e inerte!
-                            is_instant = True
-                            has_ga = True  # Instant resolve sem consumir Action Point
-                            play_score += 12.0
-                        if "singularity" in c_name:
-                            play_score += 35.0  # Mechropotent Singularity é o finalizador absoluto
-                    elif zone_name == "Graveyard":
-                        # Cartas jogáveis do cemitério (ex: Instant liberada por Astral Bridge ou recursão de cartas)
-                        play_score = base_score + 18.0
+                    zone_result = engine.strategy.evaluate_zone_card_play(zone_name, c_name, c_info, base_score, state, turn_plan)
+                    if zone_result is None:
+                        continue
+                        
+                    play_score, is_instant, has_ga = zone_result
+                    
+                    if zone_name == "Graveyard":
                         if getattr(engine.strategy, "is_ally_hero", False) or "gravy" in str(engine.hero_name).lower():
-                            play_score += 15.0  # Gravy Bones prioriza recursão de aliados face-up do cemitério
+                            play_score += 15.0
                         db_entry = _load_cards_db().get(c_name, {})
                         c_type = str(c_info.get("type") or db_entry.get("type", "")).upper()
                         if c_type == "I" or "instant" in c_type.lower() or action == 27:
                             is_instant = True
                             has_ga = True
-                    else:
-                        # Jogar do Arsenal executa a ofensiva e libera o slot para o canhão carregar nova flecha
-                        play_score = base_score + 4.0
-                        # Se a carta no Arsenal for uma Non-Attack Action (ex: Portside Exchange, Codex of Frailty):
-                        # Jogar do Arsenal PRIMEIRO libera o slot e concede bônus antes do disparo!
-                        c_type = str(_load_cards_db().get(c_name, {}).get("type", "")).upper()
-                        is_naa = ("AA" not in c_type and "ATTACK" not in c_type) or any(k in c_name for k in ["portside", "codex", "salvage", "three_of_a_kind", "tip_the_barkeep"])
-                        if is_naa:
-                            play_score += 15.0  # Prioridade máxima: jogue a NAA do arsenal para liberar o slot!
-                            if turn_plan.plan_type == "OVERPITCH_RECOVERY":
-                                play_score += 15.0
-                        elif any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy"]) or isinstance(engine.strategy, RangerStrategy):
-                            play_score += 10.0  # Flecha carregada no arsenal pronta para disparo!
-                            if turn_plan.plan_type == "HARPOON_CHAIN":
-                                play_score += 15.0
 
                     candidate_item = {
                         "type": zone_name.lower(), "idx": idx, "card_id": str(c_id), "mode": action,

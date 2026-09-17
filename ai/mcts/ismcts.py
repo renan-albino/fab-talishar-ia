@@ -111,7 +111,7 @@ class ISMCTSEngine:
         state_vec = FaBPolicyValueNetwork.extract_state_vector(state)
 
         vote_counts: Dict[int, int] = {i: 0 for i in range(num_legal)}
-        worlds = self._generate_worlds(state, self.num_worlds)
+        worlds = generate_worlds(state=state, opp_hand_count=None, num_worlds=self.num_worlds)
         actual_worlds = len(worlds)
 
         def _evaluate_world(world_state):
@@ -237,10 +237,3 @@ class ISMCTSEngine:
         active_children = {k: v for k, v in root.children.items() if k >= 0}
         return best_idx, active_children
 
-    def _generate_worlds(
-        self,
-        state: Dict[str, Any],
-        num_worlds: int,
-    ) -> List[Dict[str, Any]]:
-        """Delega para `generate_worlds` em `ai.mcts.world_generator`."""
-        return generate_worlds(state=state, opp_hand_count=None, num_worlds=num_worlds)

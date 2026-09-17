@@ -11,38 +11,6 @@ import json
 import itertools
 from typing import Optional, Dict, Any, Set, List, Tuple
 
-_FAB_CARDS_DB = None
-
-
-def _get_cards_db() -> dict:
-    global _FAB_CARDS_DB
-    if _FAB_CARDS_DB is None:
-        db_paths = [
-            "data/fab_cards_db.json",
-            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "fab_cards_db.json"),
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "fab_cards_db.json")
-        ]
-        for p in db_paths:
-            if os.path.exists(p):
-                try:
-                    with open(p, "r", encoding="utf-8") as f:
-                        _FAB_CARDS_DB = json.load(f)
-                    break
-                except Exception:
-                    pass
-        if _FAB_CARDS_DB is None:
-            _FAB_CARDS_DB = {}
-    return _FAB_CARDS_DB
-
-
-DANGEROUS_ON_HITS = [
-    "command_and_conquer", "cn_c", "snatch", "red_in_the_ledger",
-    "crippling_crush", "spinal_crush", "star_struck", "leave_no_witnesses",
-    "bloodrush_bellow", "warmonger", "inertia", "blood_drop",
-    "shake_down", "mask_of_momentum", "codex_of_frailty"
-]
-
-
 def solve_knapsack_turn(
     hero_name: Any = "generic",
     hand: Optional[List[Dict[str, Any]]] = None,
@@ -62,6 +30,10 @@ def solve_knapsack_turn(
     Retorna:
       (max_value, best_attacks, best_pitches, surplus_cards)
     """
+    # Importação local para evitar circular imports
+    from ai.hero_strategies import get_hero_strategy
+    from ai.policy.constants import _get_cards_db, DANGEROUS_ON_HITS
+
     # Resolução polimórfica para chamadas funcionais ou orientadas a objetos
     if isinstance(hero_name, (list, tuple)):
         actual_hand = list(hero_name)
@@ -71,8 +43,12 @@ def solve_knapsack_turn(
             base_ap = pitch_pool
         if isinstance(available_resources, list):
             arsenal = available_resources
+        hero_str = "generic"
     else:
         actual_hand = list(hand or [])
+        hero_str = str(hero_name)
+
+    strategy = get_hero_strategy(hero_str)
 
     if available_resources > 0 and floating_res == 0:
         floating_res = available_resources
@@ -107,8 +83,14 @@ def solve_knapsack_turn(
         # Regra CR 3.1.5: Cartas no Arsenal não podem dar pitch
         can_pitch = not is_from_ars and c_pitch > 0
 
-        # Valor ofensivo intrínseco
-        atk_val = float(c_power) + (2.5 if has_ga else 0.0) + (1.5 if has_on_hit else 0.0)
+        # Valor ofensivo intrínseco (agora ciente da classe do herói)
+        atk_val = strategy.evaluate_attack_card(
+            card_name=c_name, 
+            power=c_power, 
+            cost=c_cost, 
+            has_go_again=has_ga, 
+            pitch=c_pitch
+        )
 
         parsed_cards.append({
             "raw": c,

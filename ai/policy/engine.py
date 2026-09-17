@@ -8,7 +8,7 @@ import os
 import torch
 from typing import Dict, List, Optional, Tuple, Any
 
-from ..hero_strategies import get_hero_strategy, HeroStrategy
+
 from ..model import FaBPolicyValueNetwork, create_model, get_device
 from ..mcts import MCTSEngine, ISMCTSEngine
 from ..ismcts_logger import ISMCTSLogger
@@ -37,7 +37,8 @@ class PolicyEngine:
         room_id: str = "unknown",
     ):
         self.hero_name = hero_name
-        self.strategy: HeroStrategy = get_hero_strategy(hero_name)
+        from ..hero_strategies import get_hero_strategy
+        self.strategy: Any = get_hero_strategy(hero_name)
         self.room_id = room_id
 
         try:
@@ -100,6 +101,8 @@ class PolicyEngine:
         self.room_id = room_id
         if hero_name:
             self.hero_name = hero_name
+            from ..hero_strategies import get_hero_strategy
+            self.strategy = get_hero_strategy(hero_name)
         self.ismcts_logger = ISMCTSLogger(
             room_id=self.room_id,
             hero=self.hero_name,
@@ -145,9 +148,9 @@ class PolicyEngine:
         """Seleciona a melhor combinação de bloqueadores otimizando breakpoints e preservando contra-ataque."""
         return select_defense_blocks(self, state)
 
-    def select_best_pitch_card(self, state: dict) -> Optional[Tuple[int, str, int]]:
-        """Seleciona a melhor carta da mão para pitch priorizando eficiência de recursos."""
-        return select_best_pitch_card(self, state)
+    def select_best_pitch_card(self, state: dict, target_cost: int = 1) -> Optional[Tuple[int, str, int]]:
+        """Delega a escolha de pitch para o pruner especializado."""
+        return select_best_pitch_card(self, state, target_cost)
 
     def select_arsenal_card(self, state: dict) -> Optional[Tuple[str, str]]:
         """Seleciona a melhor carta para o Arsenal respeitando a proibição de pitch e modo cavar."""

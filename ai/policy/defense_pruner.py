@@ -12,7 +12,7 @@ from .constants import (
     get_on_hit_threat,
     DANGEROUS_ON_HITS,
 )
-from ..hero_strategies import VynnsetStrategy
+
 from ..model import FaBPolicyValueNetwork
 from .card_semantics import build_arena_threat_context
 
@@ -109,6 +109,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
 
         c_id = info["actionDataOverride"] or str(idx)
         c_action = info["action"] if info["action"] > 0 else 27
+        from ai.hero_strategies import VynnsetStrategy
         if isinstance(engine.strategy, VynnsetStrategy):
             score = engine.strategy.evaluate_block_card(
                 info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"],
@@ -260,7 +261,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
                 "type": "block", "score": score, "idx": a_idx, "card_id": c_id,
                 "name": info["name"], "mode": c_action if c_action > 0 else 27,
                 "block": effective_block, "pitch": info["pitch"], "power": effective_power,
-                "from_arsenal": True, "is_equipment": False, "is_hand": False,
+                "from_arsenal": True, "is_arsenal": True, "is_equipment": False, "is_hand": False,
                 "cost": 1.0,
                 "is_action": is_action,
                 "is_phantasm_popper": is_popper,
@@ -288,9 +289,10 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         info = engine.extract_card_info(eq)
         base_block = info["block"]
 
-        # ── Cálculo da Defesa Efetiva com Marcadores (-1 counters / defCounters) ──
-        # No Talishar nativo, marcadores de perda de defesa são números negativos (-1, -2).
-        # Em mocks/testes, podem vir como positivos (+1 para indicar 1 marcador de -1).
+        # ── Cálculo da Defesa Efetiva com Marcadores de Penalidade (defCounters) ──
+        # defCounters representam penalidades de defesa (ex: Battleworn, Blade Break).
+        # Talishar nativo envia negativos (-1, -2); mocks/testes podem enviar positivos (+1).
+        # Em ambos os casos, o valor absoluto é subtraído da defesa base.
         raw_def_counters = eq.get("defCounters")
         if raw_def_counters is None and isinstance(eq.get("countersMap"), dict):
             raw_def_counters = eq["countersMap"].get("defense")
@@ -299,12 +301,8 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         except Exception:
             def_val = 0
 
-        if def_val < 0:
-            effective_block = max(0, base_block + def_val)  # Talishar nativo: 1 + (-1) = 0
-        elif def_val > 0:
-            effective_block = max(0, base_block - def_val)  # Mocks/testes: 1 - 1 = 0
-        else:
-            effective_block = base_block
+        penalty = abs(def_val)
+        effective_block = max(0, base_block - penalty)
 
         # Se a engine do Talishar enviou explicitamente action <= 0, o equipamento não pode defender agora
         if eq_action <= 0 and "action" in eq:
@@ -469,7 +467,10 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             for subset in itertools.combinations(block_candidates, r):
                 tot_block = sum(item["block"] for item in subset)
                 hand_count = sum(1 for item in subset if item.get("is_hand"))
-                action_count = sum(1 for item in subset if item.get("is_action"))
+                action_hand_count = sum(
+                    1 for item in subset
+                    if item.get("is_action") and item.get("is_hand", True) and not item.get("is_arsenal", False)
+                )
                 has_eq = any(item.get("is_equipment") for item in subset)
                 req_power = (opp_power + 1) if (has_piercing and has_eq) else opp_power
 
@@ -477,8 +478,8 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
                 if has_dominate and hand_count > 1:
                     continue
 
-                # Regra Overpower (CR 7.4.2b): máximo 1 carta de ação
-                if has_overpower and action_count > 1:
+                # Regra Overpower (CR 7.4.2b, CR 8.3.22): máximo 1 carta de ação da mão
+                if has_overpower and action_hand_count > 1:
                     continue
 
                 # Regra Piercing (CR 8.5.21): penaliza bloqueio puramente com equipamento que não evite dano real
@@ -571,21 +572,22 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         max_hand_blocks = min(max_hand_blocks, 1)
 
     hand_blocks_count = 0
-    action_blocks_count = 0
+    action_hand_blocks_count = 0
     popped_phantasm = False
 
     for item in block_candidates:
         is_equip = item.get("is_equipment", False)
         is_hand = item.get("is_hand", not is_equip and not item.get("from_arsenal", False))
         is_action = item.get("is_action", False)
+        is_action_from_hand = is_action and is_hand and not item.get("is_arsenal", False)
         is_popper = item.get("is_phantasm_popper", False)
 
         # Regra Dominate (CR 7.4.2a): Não mais de 1 carta da mão
         if is_hand and hand_blocks_count >= max_hand_blocks:
             continue
 
-        # Regra Overpower (CR 7.4.2b): Não mais de 1 carta de ação
-        if has_overpower and is_action and action_blocks_count >= 1:
+        # Regra Overpower (CR 7.4.2b, CR 8.3.22): Não mais de 1 carta de ação da mão
+        if has_overpower and is_action_from_hand and action_hand_blocks_count >= 1:
             continue
 
         # Se já estouramos Phantasm neste elo, o ataque foi destruído: interrompe a defesa!
@@ -608,8 +610,8 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         current_blocked += item["block"]
         if is_hand:
             hand_blocks_count += 1
-        if is_action:
-            action_blocks_count += 1
+        if is_action_from_hand:
+            action_hand_blocks_count += 1
 
         # Phantasm Popping (CR 7.4.4):
         if is_popper:

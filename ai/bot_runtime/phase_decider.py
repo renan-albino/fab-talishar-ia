@@ -17,11 +17,16 @@ def handle_pitch_phase(client, state: dict, turn_phase: str, prompt_buttons: lis
         time.sleep(0.002)
         return True
 
-    pitch_choice = client.policy_engine.select_best_pitch_card(state)
+    target_cost = 1
+    if hasattr(client, "last_attempted_play") and client.last_attempted_play:
+        info = client.policy_engine.extract_card_info({"cardNumber": client.last_attempted_play})
+        target_cost = info.get("cost", 1)
+
+    pitch_choice = client.policy_engine.select_best_pitch_card(state, target_cost=target_cost)
     if pitch_choice:
-        p_idx, p_name, p_mode = pitch_choice
+        p_idx, p_name, p_mode, p_id = pitch_choice
         client.log(f"[AÇÃO JOGADOR {client.player_id}] Pitch Tático -> {p_name} (Index: {p_idx})")
-        client.send_action(mode=p_mode, card_id=str(p_idx), button_input=p_name)
+        client.send_action(mode=p_mode, card_id=p_id, button_input=p_name)
         time.sleep(0.002)
         return True
 
@@ -57,6 +62,7 @@ def handle_block_phase(client, state: dict, turn_num: int, prompt_buttons: list)
     if chain_desc and getattr(client, "last_logged_combat_attack", None) != (turn_num, chain_desc):
         client.last_logged_combat_attack = (turn_num, chain_desc)
         client.opp_attacks_count += 1
+        client.blocks_declared_count = 0
         client.log(f"[COMBAT CHAIN] ⚔️ Ataque em Andamento: {chain_desc}")
 
     if not hasattr(client, "declared_blocks_link"):
@@ -119,15 +125,57 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
         client.log(f"[COMBAT CHAIN] ⚔️ Ataque em Andamento: {chain_desc}")
 
     hand = state.get("playerHand", [])
-    
+    active_chain = state.get("activeChainLink") or {}
+
     if not hasattr(client, "reaction_attempts"):
         client.reaction_attempts = {}
 
-    # 6a. Reações / Instantâneos via Mão
+    # Reset reaction_attempts quando um novo chain link começa (novo ataque na cadeia)
+    current_chain_id = str(active_chain.get("cardNumber", "")) + str(active_chain.get("uniqueID", ""))
+    if not hasattr(client, "_last_chain_link_id"):
+        client._last_chain_link_id = ""
+    if current_chain_id and current_chain_id != client._last_chain_link_id:
+        client.reaction_attempts = {}
+        client._last_chain_link_id = current_chain_id
+
     turn_player = state.get("turnPlayer", 1)
     is_defending = (turn_player != client.player_id)
     is_attacking = (turn_player == client.player_id)
+    incoming_text = str(active_chain.get("text", "")).lower()
+    incoming_name = str(active_chain.get("cardNumber", "")).lower()
 
+    # Dominate (CR 7.4.2a, CR 8.3.4b): Não pode ser defendido por mais de 1 carta da mão
+    has_dominate = False
+    if hasattr(client, "policy_engine") and hasattr(client.policy_engine, "arena_ctx"):
+        has_dominate = getattr(client.policy_engine.arena_ctx, "has_active_dominate", False)
+    if not has_dominate:
+        has_dominate = bool(
+            active_chain.get("dominate")
+            or active_chain.get("hasDominate")
+            or state.get("dominate")
+            or state.get("hasDominate")
+            or "dominate" in incoming_text
+            or "dominate" in incoming_name
+            or "dominate" in str(active_chain.get("keywords", [])).lower()
+        )
+
+    # Verifica se já houve defesa com carta da mão neste elo de combate (CR 7.4.2a, CR 8.3.4b)
+    hand_defended = getattr(client, "blocks_declared_count", 0) >= 1
+    if not hand_defended:
+        combat_chain_cards = state.get("combatChain") or active_chain.get("reactions") or []
+        equip_names = {str(eq.get("cardNumber", "")).lower() for eq in state.get("playerEquipment", []) if isinstance(eq, dict)}
+        for ch_card in combat_chain_cards:
+            if isinstance(ch_card, dict):
+                ctrl = ch_card.get("controller", client.player_id)
+                if str(ctrl) == str(client.player_id):
+                    c_name_link = str(ch_card.get("cardNumber", "")).lower()
+                    is_eq = c_name_link in equip_names or ch_card.get("slot") or ch_card.get("is_equipment")
+                    is_ars = ch_card.get("from_arsenal") or ch_card.get("is_arsenal") or ch_card.get("zone") == "ARS"
+                    if not is_eq and not is_ars:
+                        hand_defended = True
+                        break
+
+    # 6a. Reações / Instantâneos via Mão
     for idx, c in enumerate(hand):
         c_action = c.get("action", 0)
         c_name = c.get("cardNumber", "")
@@ -138,6 +186,24 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
             
         if c_action > 0 and c_name not in unpayable_set:
             c_low = str(c_name).lower()
+            cards_db = getattr(client.policy_engine, "cards_db", {}) or {}
+            db_entry = cards_db.get(c_low, {})
+            c_type = str(c.get("type") or db_entry.get("type", "")).upper()
+            c_subtype = str(c.get("subtype") or db_entry.get("subtype", "")).lower()
+
+            is_dr = (
+                c_type in ("DR", "DEFENSE REACTION")
+                or "defense reaction" in c_subtype
+                or "defense reaction" in c_type.lower()
+                or any(k in c_low for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable", "shelter", "take_cover"])
+            )
+
+            # ── Regra Dominate (CR 7.4.2a, CR 8.3.4b) ──
+            # Se o ataque tem Dominate e já houve defesa com carta da mão, NÃO permite jogar Defense Reaction da mão!
+            if is_defending and has_dominate and hand_defended and is_dr:
+                client.log(f"[DOMINATE] ⚠️ Bloqueado jogar Defense Reaction da mão ({c_name}) sob Dominate.")
+                continue
+
             # ── Poda Estrita de Instants Ofensivos na Defesa ──
             # Cartas de ataque puro, setup ou buffs ofensivos (ex: Astral Bridge, Thunderous Retort, Lightning Press)
             # NUNCA devem ser disparadas cegamente no turno do oponente enquanto ele ataca/ativa habilidades!
@@ -145,7 +211,7 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
                 is_offensive_instant = any(k in c_low for k in [
                     "astral_bridge", "thunderous_retort", "lightning_press",
                     "flowstate", "consign_to_cosmos", "comet_storm", "second_strike",
-                    "razor_reflex", "ironsong_response", "pummel", " ancestral"
+                    "razor_reflex", "ironsong_response", "pummel", "ancestral"
                 ])
                 if is_offensive_instant:
                     continue
@@ -166,9 +232,82 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
                 time.sleep(0.002)
                 return True
 
-    # 6b. Reações / Instantâneos via Equipamentos (Snapdragon Scalers, Boots of Omniward, etc.)
+    # 6b. Reações / Instantâneos via Arsenal (CR 7.4.2d, CR 7.5b)
+    # Cartas de Defense Reaction e Instant no Arsenal podem ser jogadas legalmente, inclusive sob Dominate!
+    arsenal = state.get("playerArsenal") or state.get("playerArse") or []
+    for ars_idx, c in enumerate(arsenal):
+        if not isinstance(c, dict):
+            continue
+        c_action = c.get("action")
+        # Se action for explicitamente 0, carta não é jogável pelo Talishar
+        if c_action == 0:
+            continue
+        effective_action = c_action if (c_action is not None and c_action > 0) else 5
+        c_name = c.get("cardNumber", "")
+        c_low = str(c_name).lower()
+
+        attempts = client.reaction_attempts.get(c_name, 0)
+        if attempts >= 2:
+            unpayable_set.add(c_name)
+
+        if c_name in unpayable_set:
+            continue
+
+        cards_db = getattr(client.policy_engine, "cards_db", {}) or {}
+        db_entry = cards_db.get(c_low, {})
+        c_type = str(c.get("type") or db_entry.get("type", "")).upper()
+        c_subtype = str(c.get("subtype") or db_entry.get("subtype", "")).lower()
+
+        is_dr = (
+            c_type in ("DR", "DEFENSE REACTION")
+            or "defense reaction" in c_subtype
+            or "defense reaction" in c_type.lower()
+            or any(k in c_low for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable", "shelter", "take_cover"])
+        )
+        is_instant = (
+            c_type in ("I", "INSTANT")
+            or "instant" in c_subtype
+            or "instant" in c_type.lower()
+        )
+        is_ar = (
+            c_type in ("AR", "ATTACK REACTION")
+            or "attack reaction" in c_subtype
+            or "attack reaction" in c_type.lower()
+            or any(k in c_low for k in ["razor_reflex", "ironsong_response", "pummel"])
+        )
+
+        if is_defending:
+            if not (is_dr or is_instant):
+                continue
+            is_offensive_instant = any(k in c_low for k in [
+                "astral_bridge", "thunderous_retort", "lightning_press",
+                "flowstate", "consign_to_cosmos", "comet_storm", "second_strike",
+                "razor_reflex", "ironsong_response", "pummel", "ancestral"
+            ])
+            if is_offensive_instant:
+                continue
+        elif is_attacking:
+            if not (is_ar or is_instant):
+                continue
+
+        info = client.policy_engine.extract_card_info(c)
+        floating_res, total_res = client.policy_engine.calculate_available_resources(state)
+        # Cartas do Arsenal não contam para pitch da mão; todos os recursos totais estão disponíveis
+        if total_res >= info["cost"]:
+            c_id = c.get("actionDataOverride") or str(c.get("uniqueID", ars_idx))
+            if effective_action == 5:
+                c_id = c.get("actionDataOverride") or str(ars_idx)
+            client.last_attempted_play = c_name
+            client.reaction_attempts[c_name] = attempts + 1
+            chat_msg = f"<b>[Turno {turn_num}] ⚡ Reação de Arsenal</b> -> <b>{c_name}</b> (Modo {effective_action})"
+            client.send_chat_log(chat_msg, highlight=True, bg_color="#14532d", text_color="#4ade80")
+            client.log(f"[AÇÃO JOGADOR {client.player_id}] Jogou Reação/Instant (Arsenal) -> {c_name} (ID: {c_id}, Modo: {effective_action})")
+            client.send_action(mode=effective_action, card_id=str(c_id), button_input=c_name)
+            time.sleep(0.002)
+            return True
+
+    # 6c. Reações / Instantâneos via Equipamentos (Snapdragon Scalers, Boots of Omniward, etc.)
     equip = state.get("playerEquipment", [])
-    active_chain = state.get("activeChainLink") or {}
     opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
     arcane_dmg = int(state.get("arcaneDamage", 0) or 0)
     my_hp = int(state.get("playerHealth", 20))

@@ -36,7 +36,7 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
                  │                                       │
 ┌────────────────▼────────────────┐     ┌────────────────▼────────────────┐
 │   Talishar-FE (React / Vite)    │     │   Treinador GPU (ai/trainer.py) │
-│  - Tracker de Vantagem (Xadrez) │     │  - PyTorch Policy-Value ResNet  │
+│  - Tracker de Vantagem (Xadrez) │     │  - FaBCardTransformerNetwork (Transformer Encoder)  │
 │  - Lobby & Sideboard Instantâneo│     │  - FP16 Mixed Precision (AMP)   │
 │  - Chat com Métricas In-Game    │     │  - Replay Buffer Multithread    │
 └────────────────┬────────────────┘     └────────────────┬────────────────┘
@@ -106,7 +106,7 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
 ### 5. ⚔️ Podas Táticas Globais & Conformidade com Regras Oficiais (CR)
 - **Conformidade Estrita com as Regras de Flesh and Blood**:
   - **Poda Global de Arsenal (CR 3.1.5)**: Bloqueio universal de recursos/gemas, desvalorização de blocos comuns que perdem defesa no arsenal e priorização de reações de defesa e cartas com *Ambush* / *Down and Dirty*.
-  - **Modo Cavar (Digging Mode - CR 4.3.2)**: Quando a mão possui $\ge 3$ cartas e todas são recursos, arsenala a melhor ação para permitir compras de cartas novas no *End of Turn* e destravar o bot.
+  - **Modo Cavar (Digging Mode - CR 4.3.2)**: Quando a mão possui dinamicamente `max(2, intellect - 1)` cartas e todas são recursos, arsenala a melhor ação para permitir compras de cartas novas no *End of Turn* e destravar o bot.
   - **Resolução Legal de Armas & Mãos (CR 2.8.2 e CR 3.0)**: Gestão estrita do limite de 2 mãos no sideboard. Armas de duas mãos (2H) ocupam 2 mãos e nunca são combinadas com escudo/off-hand; armas 1H podem ser combinadas com escudo ou segunda arma 1H.
   - **Detecção de Stalemate / Empate Técnico & Anti-Loop**: Decks esgotados (0 cartas) sem dano por 3 turnos ou partidas que atingem o hard cap de turnos (45 em Blitz, 55 em CC) são imediatamente finalizadas como Empate Oficial, liberando os processos e economizando 100% da CPU.
 - **Mapeamento Canônico de 139 Heróis (`HERO_CLASS_REGISTRY`)**: Cobertura de 100% de todos os heróis oficiais de Rathe catalogados no Talishar, associados às suas estratégias especializadas de classe.
@@ -301,7 +301,7 @@ Para garantir que todos os módulos de IA, simulador, ISMCTS, podas táticas e e
 ```bash
 ./venv/bin/pytest
 ```
-*(Todos os 143 testes automatizados executam e passam em ~3 segundos, isolados nativamente via `pytest.ini`).*
+*(Todos os 377 testes automatizados executam e passam em ~3 segundos, isolados nativamente via `pytest.ini`).*
 
 ---
 
@@ -382,7 +382,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 ├── docs/                     # Documentação técnica, ADRs e Roadmap
 │   ├── ROADMAP.md            # Planejamento estratégico e expansão de cobertura
 │   ├── tactical_rules.md     # Detalhamento técnico das 13 Podas Táticas & Regras FaB (CR)
-│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0006)
+│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0007)
 │   └── agents/               # Guias para agentes (domain.md, issue-tracker.md)
 ├── ai/                       # Módulos de Inteligência Artificial e Deep RL
 │   ├── bot_runtime/          # Runtime modular do bot (lobby, tracker, choices, fases, client)
@@ -411,14 +411,15 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 │   └── tabs/                 # Módulos individuais de cada aba do Dashboard
 ├── scripts/
 │   ├── sync_and_clean.sh     # Automação de limpeza, exportação de templates e pré-commit
-│   ├── extract_equipment_metadata.py # Extração semântica de 624 equipamentos oficiais do Talishar
-│   ├── extract_ability_costs.py # Extração dinâmica de custos de ativação de habilidades e armas
+│   ├── extract_equipment_metadata.py # Extração semântica de equipamentos
+│   ├── extract_ability_costs.py # Extração de custos de ativação
+│   ├── extract_card_db.py    # Extração de banco de dados de cartas
 │   ├── analyze_ismcts.py     # Analisador local ISMCTS (--dry-run sem servidor)
 │   ├── prepare_environment.sh # Script shell de setup automático
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
 │   ├── manage_state.py       # Gestão de checkpoints compactos e releases no GitHub
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 143 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 377 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -493,7 +494,7 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 
 | Item | Descrição |
 |------|-----------|
-| **Documentação Técnica de Podas Táticas & CR** | Criação de [`docs/tactical_rules.md`](docs/tactical_rules.md) com detalhamento matemático e regras oficiais (CR/TR) das 13 podas táticas e heurísticas da engine |
+| **Documentação Técnica de Podas Táticas & CR** | Criação de [`docs/tactical_rules.md`](docs/tactical_rules.md) com detalhamento matemático e regras oficiais (CR/TR) das 14 podas táticas e heurísticas da engine |
 | **Gestão de Checkpoints & GitHub Releases** | Utilitário `scripts/manage_state.py` com empacotamento compacto (~6.5 MB), comandos CLI de export/import e Git Hook `post-commit` automático que publica novos modelos treinados na release `checkpoint-latest` do GitHub |
 | **Perfis Dinâmicos de Treino (Equilibrado / Turbo)** | Calibração por hardware (GTX 1660 Super, CPUs, GPUs high-end), botão Turbo Máximo (~90% carga) com escalonamento de CPU em segundo plano (`nice 10`) garantindo estabilidade absoluta da interface web |
 | **Poda de Arsenal (CR 3.1.5) & RangerStrategy** | Poda estrita que proíbe recursos (`type: R`) e gemas no Arsenal (evitando travar o slot), priorização de flechas (`Arrow`) como condição essencial de ataque no Ranger e capacidade de passar sem arsenalar para preservar recursos |
@@ -513,11 +514,12 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Imunidade a Adblockers (BannerUnit)** | Criação do módulo `bannerUnit` e alias Vite substituindo importações dinâmicas `/components/ads/`, eliminando quebras causadas por extensões de bloqueio de anúncios (uBlock Origin, Brave Shields) |
 | **Decomposição Modular Completa (9 Monólitos)** | Refatoração estrutural completa de 9 arquivos monolíticos (`dashboard.py`, `bot_client.py`, `policy_engine.py`, `mcts.py`, `trainer.py`, `deck_parser.py`, `stats_manager.py`, `hero_strategies/base.py`, `hero_strategies/other_classes.py`) em pacotes limpos e coesos (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`), preservando 100% de retrocompatibilidade em todas as fachadas raízes |
 | **Paralelização Multi-Thread do ISMCTS** | Busca paralela e thread-safe em mundos determinizados com `concurrent.futures.ThreadPoolExecutor` em `ai/mcts/ismcts.py`, acelerando a amostragem e a agregação ponderada de votos na árvore de decisão |
-| **Suíte de Testes Expandida (143 Testes Automatizados)** | Ampliação da cobertura de testes para 143 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks e orquestração de GPU, com isolamento via `pytest.ini` |
+| **Suíte de Testes Expandida (377 Testes Automatizados)** | Ampliação da cobertura de testes para 377 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks e orquestração de GPU, com isolamento via `pytest.ini` |
+| **Torneios Suíços Automatizados** | Implementado em `stats/tournament_manager.py` com ligas entre decks e persistência no `stats/`. |
 
 ### 📋 Pendente
 
-1. **Torneios Suíços Automatizados**: Orquestrador no Dashboard para ligas entre os decks em `decks/`.
+ 
 2. **Modelagem de Matchups**: Fine-tuning da rede para arquétipos específicos do meta competitivo.
 
 ---

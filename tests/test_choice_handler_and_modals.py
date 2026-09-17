@@ -708,14 +708,14 @@ class TestPhaseDeciderPitch:
         assert client.sent_actions[0] == {"mode": 6, "card_id": "0", "button_input": "0"}
 
     def test_tactical_pitch_selected(self, client):
-        client.policy_engine.select_best_pitch_card.return_value = (0, "blue_resource_card", 6)
+        client.policy_engine.select_best_pitch_card.return_value = (0, "blue_resource_card", 6, "123")
         handled = phase_decider.handle_pitch_phase(
             client, state={}, turn_phase="P", prompt_buttons=[], unpayable_set=set()
         )
         assert handled is True
         assert client.sent_actions[0] == {
             "mode": 6,
-            "card_id": "0",
+            "card_id": "123",
             "button_input": "blue_resource_card",
         }
 

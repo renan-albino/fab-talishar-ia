@@ -2417,6 +2417,17 @@
   ],
   "surprises": [
     {
+      "source": "test_combat_chain_desc()",
+      "target": "FabBotClient",
+      "source_files": [
+        "tests/test_unpayable_pruning.py",
+        "ai/bot_runtime/client.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities; peripheral node `test_combat_chain_desc()` unexpectedly reaches hub `FabBotClient`"
+    },
+    {
       "source": "test_policy_engine_integration()",
       "target": "PolicyEngine",
       "source_files": [
@@ -2439,41 +2450,63 @@
       "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities; peripheral node `__init__()` unexpectedly reaches hub `PolicyEngine`"
     },
     {
-      "source": "test_combat_chain_desc()",
+      "source": "TestMetricsThrottlingAndReplayBuffer",
       "target": "FabBotClient",
       "source_files": [
-        "tests/test_unpayable_pruning.py",
+        "tests/test_converters_and_resilience.py",
         "ai/bot_runtime/client.py"
-      ],
-      "confidence": "INFERRED",
-      "relation": "calls",
-      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities; peripheral node `test_combat_chain_desc()` unexpectedly reaches hub `FabBotClient`"
-    },
-    {
-      "source": "DummyBotClient",
-      "target": "TalisharApiClient",
-      "source_files": [
-        "tests/test_lobby_and_api_mock.py",
-        "ai/talishar_api.py"
       ],
       "confidence": "INFERRED",
       "relation": "uses",
       "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
     },
     {
-      "source": "test_cr_game_simulator_canonical_metadata()",
-      "target": "GameSimulator",
+      "source": "TestPayloadResilience",
+      "target": "FabBotClient",
       "source_files": [
-        "tests/test_cr_comprehensive_rules.py",
-        "ai/game_simulator.py"
+        "tests/test_converters_and_resilience.py",
+        "ai/bot_runtime/client.py"
       ],
       "confidence": "INFERRED",
       "relation": "uses",
       "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
     }
   ],
-  "tokens": {
-    "input": 0,
-    "output": 0
-  }
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `PolicyEngine` connect `PolicyEngine` to `engine.py`, `analyze_ismcts.py`, `test_equipment_learning_and_defense_optimization.py`, `pytest`, `FabBotClient`, `test_combat_rules_pruning.py`, `get_hero_strategy`, `test_sub50_hero_strategies.py`, `test_teklovossen_and_deck_normalization.py`, `ISMCTSEngine`, `test_unpayable_pruning.py`, `model.py`, `test_cr_comprehensive_rules.py`, `test_hammerhead_tome_and_hero.py`, `test_arsenal_pruning.py`, `test_cr_arsenal_reaction_allowed_under_dominate`, `resolve_sideboard`, `.get_all_known_zone_cards`, `.select_best_attack`, `.calculate_available_resources`, `.select_arsenal_card`?",
+      "why": "High betweenness centrality (0.069) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `HeroStrategy` connect `HeroStrategy` to `typing`, `test_equipment_learning_and_defense_optimization.py`, `pytest`, `test_dynamic_learning_and_per.py`, `knapsack_solver.py`, `TeklovossenStrategy`, `get_hero_strategy`, `PolicyEngine`, `GuardianStrategy`, `TurnPlan`, `test_unpayable_pruning.py`, `AssassinStrategy`, `BruteStrategy`, `WarriorStrategy`, `test_cr_comprehensive_rules.py`, `RangerStrategy`, `MechanologistStrategy`, `NinjaStrategy`, `IllusionistStrategy`, `WizardStrategy`?",
+      "why": "High betweenness centrality (0.055) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `get_hero_strategy()` connect `get_hero_strategy` to `typing`, `engine.py`, `analyze_ismcts.py`, `HeroStrategy`, `knapsack_solver.py`, `test_sub50_hero_strategies.py`, `GuardianStrategy`, `MarlynnStrategy`, `test_teklovossen_and_deck_normalization.py`, `model.py`, `test_hero_hierarchical_strategies.py`, `AssassinStrategy`, `BruteStrategy`, `WarriorStrategy`, `OscilioStrategy`, `test_hammerhead_tome_and_hero.py`, `RangerStrategy`, `MechanologistStrategy`, `NinjaStrategy`, `IllusionistStrategy`, `WizardStrategy`?",
+      "why": "High betweenness centrality (0.040) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 2 inferred relationships involving `HeroStrategy` (e.g. with `TurnPlan` and `get_hero_strategy()`) actually correct?",
+      "why": "`HeroStrategy` has 2 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 53 inferred relationships involving `PolicyEngine` (e.g. with `.__init__()` and `.submit_sideboard()`) actually correct?",
+      "why": "`PolicyEngine` has 53 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `prepare_environment.sh script`, `start_frontend.sh script`, `Repetitive Task Detection Pipeline` to the rest of the system?",
+      "why": "50 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `storage.py` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.056962025316455694 - nodes in this community are weakly interconnected."
+    }
+  ]
 }

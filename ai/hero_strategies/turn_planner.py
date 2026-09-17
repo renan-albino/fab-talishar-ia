@@ -9,8 +9,6 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, Set, List
 from .knapsack_solver import (
     calculate_hand_conversion_potential,
-    _get_cards_db,
-    DANGEROUS_ON_HITS,
 )
 
 
@@ -62,8 +60,12 @@ def should_trigger_survival_block(
         active_chain = state.get("activeChainLink") or {}
         if opp_power == 0:
             opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+        from ai.policy.constants import DANGEROUS_ON_HITS
+        
         incoming_name = str(active_chain.get("cardNumber", "")).lower()
-        if not has_dangerous_on_hit:
+        incoming_power = opp_power
+        # 1. Checagem direta de On-Hits Perigosos e breakpoints letais
+        if incoming_power > 0:
             has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
         is_fatal = bool(is_lethal) or ((my_hp - opp_power) <= 0)
         if hand is None:
@@ -86,6 +88,7 @@ def should_trigger_survival_block(
     # Se há on-hit perigoso e vida saudável (> 12), avalia conversão da mão
     if my_hp > 12 and hand:
         hand_conv, _ = calculate_hand_conversion_potential(hero_name, hand=hand, floating_res=floating_res)
+        from ai.policy.constants import _get_cards_db
         cards_db = _get_cards_db()
         block_vals = [
             int(c.get("block", c.get("defense", cards_db.get(str(c.get("cardNumber") or c.get("name", "")).lower(), {}).get("block", 0))) or 0)
@@ -149,6 +152,7 @@ def analyze_turn_plan(
     incoming_name = str(active_chain.get("cardNumber", "")).lower()
 
     is_fatal = (my_hp - opp_power) <= 0
+    from ai.policy.constants import DANGEROUS_ON_HITS
     has_dangerous_on_hit = any(oh in incoming_name for oh in DANGEROUS_ON_HITS)
 
     floating_res = int(actual_state.get("playerPitchCount", 0))
@@ -176,6 +180,7 @@ def analyze_turn_plan(
 
     # 2. Avaliação de Conversão Ofensiva da Mão (Hand Conversion vs Inefficient Block)
     hand_conversion, key_cards = calculate_hand_conversion_potential(actual_hero, hand=hand, floating_res=floating_res)
+    from ai.policy.constants import _get_cards_db
     cards_db = _get_cards_db()
     block_values = [
         int(c.get("block", c.get("defense", cards_db.get(str(c.get("cardNumber") or c.get("name", "")).lower(), {}).get("block", 0))) or 0)

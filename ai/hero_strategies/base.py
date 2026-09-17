@@ -12,9 +12,8 @@ from .knapsack_solver import (
     solve_knapsack_turn,
     calculate_card_opportunity_cost,
     calculate_hand_conversion_potential,
-    _get_cards_db,
-    DANGEROUS_ON_HITS,
 )
+from ai.policy.constants import _get_cards_db, DANGEROUS_ON_HITS
 from .turn_planner import (
     TurnPlan,
     analyze_turn_plan,
@@ -49,9 +48,19 @@ KNOWN_AMBUSH_CARDS: Set[str] = {
 class HeroStrategy:
     """Estratégia base genérica para heróis de Flesh and Blood."""
     is_heavy_hero: bool = False
+    intellect: int = 4
 
     def __init__(self, hero_name: str = "generic"):
         self.hero_name = str(hero_name).lower().strip()
+
+    def get_intellect(self, state: Optional[dict] = None) -> int:
+        """Retorna o Intelecto do herói (CR 4.3.2), com padrão 4 para heróis adultos."""
+        if state and ("playerIntellect" in state or "intellect" in state):
+            return int(state.get("playerIntellect", state.get("intellect", self.intellect)))
+        name = getattr(self, "hero_name", "").lower()
+        if any(h in name for h in ["rhinar", "kayo"]):
+            return 3
+        return getattr(self, "intellect", 4)
 
     def get_dynamic_multiplier(self, key: str, default: float = 1.0) -> float:
         """Obtém o multiplicador tático calibrado para o herói atual."""
@@ -78,6 +87,37 @@ class HeroStrategy:
 
     def evaluate_hero_ability(self, state: dict, hero_info: dict) -> float:
         return 0.0
+
+    def evaluate_zone_card_play(self, zone_name: str, c_name: str, c_info: dict, base_score: float, state: dict, turn_plan: TurnPlan) -> Optional[Tuple[float, bool, bool]]:
+        """
+        Avalia taticamente jogar cartas de zonas específicas (Arsenal, Banish, Graveyard).
+        Retorna (score, is_instant, has_go_again) ou None se inválido.
+        """
+        has_ga = c_info.get("has_go_again", False)
+        is_instant = False
+        play_score = base_score
+        
+        if zone_name == "Arsenal":
+            play_score += 4.0
+            # NAA ganha bônus no Arsenal padrão
+            c_type = str(c_info.get("type", "")).upper()
+            is_arrow = any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy", "goldfin", "king_kraken", "king_shark", "endless"])
+            is_naa = (not is_arrow) and (("AA" not in c_type and "ATTACK" not in c_type) or any(k in c_name for k in ["portside", "codex", "salvage", "three_of_a_kind", "tip_the_barkeep"]))
+            if is_naa:
+                play_score += 15.0
+                if turn_plan.plan_type == "OVERPITCH_RECOVERY":
+                    play_score += 15.0
+            return play_score, is_instant, has_ga
+            
+        if zone_name == "Banish":
+            play_score += 10.0
+            return play_score, is_instant, has_ga
+            
+        if zone_name == "Graveyard":
+            play_score += 18.0
+            return play_score, is_instant, has_ga
+            
+        return play_score, is_instant, has_ga
 
     def evaluate_card_priority(self, card_name: str, cost: int, pitch: int, power: int, has_go_again: bool) -> float:
         return self.evaluate_attack_card(card_name, power, cost, has_go_again, pitch)

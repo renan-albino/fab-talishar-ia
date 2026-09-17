@@ -68,18 +68,22 @@ DANGEROUS_ON_HITS = {
     "crippling", "crush", "command_and_conquer", "red_in_the_ledger",
     "snatch", "mask_of_momentum", "bloodrot", "frailty", "inertia",
     "leave_no_witnesses", "surgical_extraction", "erase_face",
-    "spitfire", "spinal_crush", "rightful_king", "hypothermia"
+    "spitfire", "spinal_crush", "rightful_king", "hypothermia",
+    "dishonor", "bonds_of_ancestry", "star_struck", "pummel"
 }
 
 # Mapeamento hierárquico de valor de ameaça de On-Hit (0.0 = vanilla, 10.0 = catastrófico)
 ON_HIT_THREAT_VALUES = {
-    # Catastrófico (8.0 - 10.0): Destrói arsenal / Trava o próximo turno / Descarta cartas
+    # Catastrófico (8.0 - 10.0): Destrói arsenal / Trava o próximo turno / Descarta cartas / Dano letal
     "command_and_conquer": 10.0,
+    "dishonor": 10.0,
+    "star_struck": 9.5,
     "red_in_the_ledger": 9.5,
     "spinal_crush": 9.0,
     "crippling_crush": 9.0,
     "rightful_king": 8.5,
     "hypothermia": 8.0,
+    "bonds_of_ancestry": 8.0,
 
     # Alto (5.0 - 7.5): Compra de cartas pelo oponente / Banimento / Interrupção
     "herald_of_erudition": 7.0,
@@ -87,6 +91,7 @@ ON_HIT_THREAT_VALUES = {
     "surgical_extraction": 6.5,
     "snatch": 6.0,
     "leave_no_witnesses": 6.0,
+    "pummel": 6.0,
     "erase_face": 5.5,
     "spitfire": 5.0,
 
@@ -100,27 +105,42 @@ ON_HIT_THREAT_VALUES = {
 }
 
 
-def get_on_hit_threat(card_name: str, card_text: str = "") -> float:
-    """Calcula o valor numérico de ameaça de um efeito On-Hit (0.0 a 10.0)."""
+def get_on_hit_threat(card_name: str, card_text: str = "", defending_hp: float = 40.0) -> float:
+    """
+    Calcula o valor numérico de ameaça de um efeito On-Hit (0.0 a 10.0).
+    Escala dinamicamente para 10.0 se a vida do defensor estiver crítica (<= 2.0)
+    e a ameaça infligir dano letal direto ou aflição (Bloodrot Pox).
+    """
     name_low = str(card_name or "").lower().strip()
     text_low = str(card_text or "").lower()
 
-    for k, threat in ON_HIT_THREAT_VALUES.items():
+    threat = 0.0
+    for k, t_val in ON_HIT_THREAT_VALUES.items():
         if k in name_low:
-            return threat
+            threat = t_val
+            break
 
-    if "when this hits" in text_low or "if this hits" in text_low or "hit effect" in text_low:
+    if threat == 0.0 and ("when this hits" in text_low or "if this hits" in text_low or "hit effect" in text_low):
         if "destroy" in text_low and "arsenal" in text_low:
-            return 10.0
-        if "draw" in text_low:
-            return 6.0
-        if "discard" in text_low:
-            return 7.0
-        if any(token in text_low for token in ["bloodrot", "frailty", "inertia"]):
-            return 4.0
-        return 3.0
+            threat = 10.0
+        elif "discard" in text_low:
+            threat = 7.0
+        elif "draw" in text_low:
+            threat = 6.0
+        elif any(token in text_low for token in ["bloodrot", "frailty", "inertia"]):
+            threat = 4.0
+        else:
+            threat = 3.0
 
-    return 0.0
+    # Escalonamento dinâmico por vida crítica (CR 8.6.19 - Bloodrot Pox causa 2 dano no fim do turno)
+    if defending_hp <= 2.0:
+        if "bloodrot" in name_low or "bloodrot" in text_low:
+            return 10.0
+        if threat >= 4.0:
+            return min(10.0, threat + 3.0)
+
+    return threat
+
 
 
 # Todas as 154+ armas oficiais mapeadas do Flesh and Blood

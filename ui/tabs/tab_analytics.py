@@ -75,10 +75,20 @@ def render_stats_leaderboard():
                 "Partidas": disp_matches,
                 "Vitórias": disp_wins,
                 "Derrotas": disp_losses,
-                "Win Rate %": f"{wr:.1f}%",
+                "Win Rate %": round(wr, 1),
             })
         df_dstats = pd.DataFrame(rows).sort_values(by="Rating ELO", ascending=False)
-        st.dataframe(df_dstats, use_container_width=True)
+        st.dataframe(
+            df_dstats,
+            use_container_width=True,
+            column_config={
+                "Win Rate %": st.column_config.NumberColumn(
+                    "Win Rate %",
+                    format="%.1f%%",
+                    help="Percentual de vitórias (ordenável numericamente)",
+                ),
+            },
+        )
 
         # Opção de Excluir / Apagar Deck Específico do Ranking
         col_del1, col_del2 = st.columns([3, 1])

@@ -6,7 +6,7 @@ Prioriza cartas com Poder 6+ para ativar Intimidate, Beat Chest e pivot ofensivo
 """
 
 from functools import lru_cache
-from typing import Set
+from typing import Set, Optional
 from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS
 
 
@@ -17,6 +17,13 @@ class BruteStrategy(HeroStrategy):
     e intimidar a mão do oponente.
     """
     is_heavy_hero: bool = True
+    intellect: int = 3
+
+    def get_intellect(self, state: Optional[dict] = None) -> int:
+        """Retorna o Intelecto do herói Brute (CR 4.3.2), padrão 3 para heróis Brute (Rhinar, Kayo)."""
+        if state and ("playerIntellect" in state or "intellect" in state):
+            return int(state.get("playerIntellect", state.get("intellect", self.intellect)))
+        return self.intellect
 
     def has_heavy_attack(self, card_info: dict) -> bool:
         return int(card_info.get("power", 0)) >= 6

@@ -287,3 +287,51 @@ def test_replay_buffer_800_dims():
     assert b_states.shape == (4, 800)
     assert b_policies.shape == (4, 32)
     assert b_values.shape == (4, 1)
+
+
+# ══════════════════════════════════════════════════════════════════
+# 7. TESTES DE RESILIÊNCIA DE CHECKPOINT E PREDIÇÃO EM BATCH
+# ══════════════════════════════════════════════════════════════════
+
+def test_create_model_corrupted_checkpoint_backup_and_no_overwrite(tmp_path):
+    """
+    Testa que se o checkpoint for inválido ou corrompido, create_model JAMAIS
+    o sobrescreve com pesos aleatórios, criando backup .corrupted.bak.
+    """
+    bad_ckpt = tmp_path / "bad_model.pt"
+    corrupted_data = b"CORRUPTED_OR_INCOMPATIBLE_PYTORCH_WEIGHTS_12345"
+    bad_ckpt.write_bytes(corrupted_data)
+
+    model, dev = create_model(checkpoint_path=str(bad_ckpt), device="cpu")
+
+    assert isinstance(model, FaBCardTransformerNetwork)
+
+    # O arquivo original NÃO pode ter sido sobrescrito com pesos aleatórios
+    assert bad_ckpt.read_bytes() == corrupted_data
+
+    # Um backup .corrupted.bak deve ter sido criado
+    bak_path = tmp_path / "bad_model.pt.corrupted.bak"
+    assert bak_path.exists()
+    assert bak_path.read_bytes() == corrupted_data
+
+
+def test_transformer_predict_states_batch():
+    """Testa predição vetorizada em batch para múltiplos estados simultâneos."""
+    model = FaBCardTransformerNetwork(hidden_dim=128, num_layers=2, num_heads=4)
+    model.eval()
+
+    # 1. Batch de 4 estados
+    states = [np.random.randn(800).astype(np.float32) for _ in range(4)]
+    probs, values = model.predict_states(states, device="cpu")
+
+    assert isinstance(probs, np.ndarray)
+    assert probs.shape == (4, 32)
+    assert isinstance(values, np.ndarray)
+    assert values.shape == (4, 1)
+    assert np.allclose(probs.sum(axis=-1), 1.0, atol=1e-4)
+    assert np.all(values >= -1.0) and np.all(values <= 1.0)
+
+    # 2. Entrada vazia
+    empty_p, empty_v = model.predict_states([], device="cpu")
+    assert empty_p.shape == (0, 32)
+    assert empty_v.shape == (0, 1)

@@ -378,3 +378,18 @@ class TeklovossenStrategy(HeroStrategy):
         if "singularity" in c_clean:
             score += 35.0
         return score
+
+    def evaluate_zone_card_play(self, zone_name: str, c_name: str, c_info: dict, base_score: float, state: dict, turn_plan: TurnPlan) -> Optional[Tuple[float, bool, bool]]:
+        play_score, is_instant, has_ga = super().evaluate_zone_card_play(zone_name, c_name, c_info, base_score, state, turn_plan)
+        if zone_name == "Banish":
+            c_low = c_name.lower()
+            if "evo" in c_low:
+                if "singularity" not in c_low:
+                    if not self.can_play_banished_card(c_name, c_info, state):
+                        return None  # Habilidade inativa: Evo permanece banido e inerte!
+                is_instant = True
+                has_ga = True  # Instant resolve sem consumir Action Point
+                play_score += 12.0
+            if "singularity" in c_low:
+                play_score += 35.0  # Mechropotent Singularity é o finalizador absoluto
+        return play_score, is_instant, has_ga

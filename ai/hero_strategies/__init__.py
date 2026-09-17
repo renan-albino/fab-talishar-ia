@@ -11,10 +11,10 @@ from typing import Dict, Any
 from .base import (
     HeroStrategy,
     TurnPlan,
-    _get_cards_db,
     is_resource_or_gem_card,
     KNOWN_AMBUSH_CARDS,
 )
+
 from .guardian import GuardianStrategy, JarlStrategy
 from .brute import BruteStrategy
 from .warrior import WarriorStrategy, KassaiStrategy, HalaStrategy
@@ -301,6 +301,7 @@ def get_hero_strategy(hero_name: str) -> HeroStrategy:
         return HERO_CLASS_REGISTRY[root](h)
 
     # 2.3 Fallback dinâmico via Card Database
+    from ai.policy.constants import _get_cards_db
     cards_db = _get_cards_db()
     for candidate in (h, f"{h}_young", f"{h}_adult", root):
         cdata = cards_db.get(candidate, {})

@@ -312,6 +312,16 @@ class MarlynnStrategy(RangerStrategy):
             "has_go_again": True
         }
 
+    def evaluate_zone_card_play(self, zone_name: str, c_name: str, c_info: dict, base_score: float, state: dict, turn_plan: TurnPlan) -> Optional[Tuple[float, bool, bool]]:
+        play_score, is_instant, has_ga = super().evaluate_zone_card_play(zone_name, c_name, c_info, base_score, state, turn_plan)
+        if zone_name == "Arsenal":
+            c_low = c_name.lower()
+            if any(k in c_low for k in ["arrow", "harpoon", "bolt", "trophy", "goldfin", "king_kraken", "king_shark", "endless"]):
+                play_score += 10.0  # Flecha pronta
+                if turn_plan.plan_type == "HARPOON_CHAIN":
+                    play_score += 15.0
+        return play_score, is_instant, has_ga
+
     @lru_cache(maxsize=1024)
     def evaluate_pitch_card(self, card_name: str, pitch: int, cost: int, power: int, has_go_again: bool) -> float:
         if pitch <= 0:

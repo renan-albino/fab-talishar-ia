@@ -25,6 +25,19 @@ DEFAULT_MULTIPLIERS = {
     "absorb_tempo_bonus": 1.0,
 }
 
+AGGRO_COMBO_KEYWORDS = (
+    "dash", "teklovossen", "marlinn", "vynnset", "oscilio", "kano",
+    "fai", "katsu", "chane", "briar", "viserai", "cindra", "betsy",
+    "azalea", "lexi", "riptide", "ninja", "mechanologist", "wizard", "runeblade", "ranger"
+)
+
+
+def is_aggro_or_combo_hero(name: str) -> bool:
+    """Verifica se o herói pertence a um arquétipo aggro, combo ou de sinergia de mão/peças."""
+    n = str(name).lower().strip()
+    return any(k in n for k in AGGRO_COMBO_KEYWORDS)
+
+
 _CACHE = {
     "mtime": 0.0,
     "data": {},
@@ -121,12 +134,21 @@ def sync_multipliers_with_stats() -> Dict[str, Any]:
         human_wins = d_info.get("human_wins", 0)
 
         if win_rate < 0.45:
-            # Herói com dificuldades: reforçar postura defensiva e sobrevivência
-            new_blk = min(1.40, old_blk + 0.04)
-            new_piv = min(1.35, old_piv + 0.03)
-            new_atk = max(0.80, old_atk - 0.02)
-            new_ars = min(1.25, old_ars + 0.02)
-            new_abs = max(0.85, old_abs - 0.02)
+            if is_aggro_or_combo_hero(key):
+                # Heróis aggro/combo/sinergia em dificuldade: NUNCA reduza ataque nem force bloqueio com peças de combo!
+                # Devem reforçar o timing de pivot, absorção de tempo e manter agressividade
+                new_atk = min(1.35, max(1.10, old_atk + 0.03))
+                new_blk = max(0.80, min(0.95, old_blk - 0.02))
+                new_piv = min(1.35, old_piv + 0.03)
+                new_ars = min(1.30, old_ars + 0.02)
+                new_abs = min(1.35, max(1.10, old_abs + 0.03))
+            else:
+                # Herói defensivo / midrange clássico (Guardian, Brute/Warrior defensivo): reforçar postura defensiva
+                new_blk = min(1.40, old_blk + 0.04)
+                new_piv = min(1.35, old_piv + 0.03)
+                new_atk = max(0.80, old_atk - 0.02)
+                new_ars = min(1.25, old_ars + 0.02)
+                new_abs = max(0.85, old_abs - 0.02)
         elif win_rate > 0.60:
             # Herói dominante: manter agressividade controlada e capacidade de absorver e punir
             new_atk = min(1.35, old_atk + 0.03)

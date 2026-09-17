@@ -13,6 +13,8 @@ import threading
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
+import stats_manager
+
 DATA_DIR = "data"
 STATS_FILE = os.path.join(DATA_DIR, "training_stats.json")
 TOURNAMENT_RESULTS_FILE = os.path.join(DATA_DIR, "tournament_results.json")
@@ -174,7 +176,10 @@ class TournamentManager:
                     for r in recent:
                         if r.get("room") == room_name:
                             winner = r.get("winner")
-                            match["winner"] = match["deck1_name"] if "Host" in str(winner) or "1" in str(winner) else match["deck2_name"]
+                            if str(winner) == "0" or "Empate" in str(winner) or "Draw" in str(winner):
+                                match["winner"] = "Empate"
+                            else:
+                                match["winner"] = match["deck1_name"] if "Host" in str(winner) or "1" in str(winner) else match["deck2_name"]
                             match["p1_health"] = r.get("p1_health")
                             match["p2_health"] = r.get("p2_health")
                             match["turns"] = r.get("turns")
@@ -183,9 +188,25 @@ class TournamentManager:
             except Exception as e:
                 self.log(f"Erro ao ler estatísticas da partida: {e}")
 
-        if not match["winner"]:
-            match["winner"] = match["deck1_name"]  # Fallback default
+        if not match.get("winner"):
+            match["winner"] = "Empate"
             match["status"] = "Concluída"
+            match["p1_health"] = 0
+            match["p2_health"] = 0
+            match["turns"] = 0
+            
+            # Atualização do banco de dados/stat_manager para empate/timeout
+            stats_manager.update_match_result(
+                room_id=room_name,
+                p1_deck=deck1_id,
+                p2_deck=deck2_id,
+                p1_health=0,
+                p2_health=0,
+                total_turns=0,
+                winner_id=0,
+                is_invalid_match=True,
+                invalid_reason="Timeout do Torneio"
+            )
 
         # 5. Atualizar pontuação e ELO dos participantes
         self._update_standings(match)
@@ -195,6 +216,13 @@ class TournamentManager:
     def _update_standings(self, match: Dict[str, Any]):
         """Atualiza a tabela de classificação com base no resultado da partida."""
         winner_name = match["winner"]
+        if winner_name == "Empate":
+            for p in self.participants:
+                if p["name"] in (match["deck1_name"], match["deck2_name"]):
+                    p["draws"] += 1
+                    p["points"] += 1
+            return
+
         for p in self.participants:
             if p["name"] == winner_name:
                 p["wins"] += 1

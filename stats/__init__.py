@@ -13,11 +13,8 @@ from stats.deck_names import (
 )
 from stats.elo import (
     calculate_elo_ratings,
-    calculate_expected_score,
     calculate_k_factor,
-    calculate_new_ratings,
     expected_score,
-    get_k_factor,
 )
 from stats.storage import (
     BASE_DIR,
@@ -42,11 +39,11 @@ __all__ = [
     "consolidate_deck_stats",
     "get_expected_starting_health",
     "expected_score",
-    "calculate_expected_score",
+    
     "calculate_k_factor",
-    "get_k_factor",
+    
     "calculate_elo_ratings",
-    "calculate_new_ratings",
+    
     "get_stats_data",
     "update_match_result",
     "delete_deck_stat",

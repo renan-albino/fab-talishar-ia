@@ -18,7 +18,6 @@ def expected_score(rating_a: float, rating_b: float) -> float:
     return 1.0 / (1.0 + 10.0 ** ((float(rating_b) - float(rating_a)) / 400.0))
 
 
-calculate_expected_score = expected_score
 
 
 def calculate_k_factor(
@@ -41,7 +40,6 @@ def calculate_k_factor(
     return max(16, int(base_k * 0.5))
 
 
-get_k_factor = calculate_k_factor
 
 
 def calculate_elo_ratings(
@@ -73,4 +71,3 @@ def calculate_elo_ratings(
     return new_r1, new_r2
 
 
-calculate_new_ratings = calculate_elo_ratings

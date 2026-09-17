@@ -224,3 +224,210 @@ def test_intimidate_reduces_opponent_hand_in_simulator():
     )
     # Mão restante do oponente deve ser menor após o combate
     assert st_intimidate["opponentHandCount"] < st_normal["opponentHandCount"]
+
+
+# =====================================================================
+# 6. Overpower com Ação no Arsenal (CR 7.4.2b, CR 8.3.22)
+# =====================================================================
+
+def test_overpower_allows_action_from_arsenal_with_action_from_hand():
+    """
+    Overpower (CR 7.4.2b, CR 8.3.22):
+    "This can't be defended by more than one action card from hand".
+    Cartas defendidas do Arsenal (com Ambush / Down and Dirty) são cartas de ação,
+    mas NÃO vêm da mão (is_hand=False, is_arsenal=True).
+    Portanto, defender com 1 ação da mão + 1 ação do Arsenal é 100% legal sob Overpower!
+    """
+    pe = PolicyEngine(hero_name="generic")
+
+    # Mão com 1 Attack Action e Arsenal com 1 Attack Action com Ambush (Down and Dirty)
+    hand = [
+        {"cardNumber": "action_atk_1", "name": "Action Attack 1", "type": "AA", "power": 4, "block": 3, "pitch": 1, "action": 27},
+    ]
+    arsenal = [
+        {"cardNumber": "down_and_dirty_red", "name": "Down and Dirty", "type": "AA", "power": 4, "block": 3, "pitch": 1, "action": 27},
+    ]
+
+    state = {
+        "playerHealth": 2,
+        "playerHand": hand,
+        "playerArsenal": arsenal,
+        "activeChainLink": {
+            "cardNumber": "overpower_slam",
+            "totalPower": 7,
+            "overpower": True,
+        },
+        "combatChainPower": 7,
+    }
+
+    chosen_blocks = pe.select_defense_blocks(state)
+    chosen_names = [b[2].lower() for b in chosen_blocks]
+    assert any("down_and_dirty" in n for n in chosen_names), f"Esperado Down and Dirty do Arsenal, obtido: {chosen_names}"
+    assert any("action_atk_1" in n for n in chosen_names), f"Esperado action_atk_1 da mão, obtido: {chosen_names}"
+    assert len(chosen_blocks) == 2, f"Overpower deve permitir 1 ação da mão + 1 ação do Arsenal, obtido {len(chosen_blocks)}"
+
+
+# =====================================================================
+# 7. Arsenal em Fase de Reação e Dominate (CR 7.4.2a, CR 7.4.2d, CR 7.5b, CR 8.3.4b)
+# =====================================================================
+
+from ai.bot_runtime.phase_decider import handle_reaction_phase
+
+class MockReactionClient:
+    def __init__(self, player_id=1, hero_name="generic"):
+        self.player_id = player_id
+        self.hero_name = hero_name
+        self.policy_engine = PolicyEngine(hero_name=hero_name)
+        self.blocks_declared_count = 0
+        self.reaction_attempts = {}
+        self.last_attempted_play = None
+        self.last_logged_combat_attack = None
+        self.sent_actions = []
+        self.chat_logs = []
+        self.logs = []
+
+    def log(self, msg):
+        self.logs.append(msg)
+
+    def send_chat_log(self, msg, **kwargs):
+        self.chat_logs.append(msg)
+
+    def send_action(self, **kwargs):
+        self.sent_actions.append(kwargs)
+
+    def get_combat_chain_desc(self, state):
+        return "Dominate Attack (Power: 6)"
+
+
+def test_reaction_phase_dominate_prohibits_hand_dr_when_hand_defended():
+    """
+    Dominate (CR 7.4.2a, CR 8.3.4b):
+    Se o ataque possui Dominate e o defensor já declarou defesa com carta da mão
+    (blocks_declared_count >= 1), jogar Defense Reaction da mão é ILEGAL.
+    """
+    client = MockReactionClient(player_id=1)
+    client.blocks_declared_count = 1
+
+    state = {
+        "turnPlayer": 2,
+        "playerHealth": 10,
+        "playerHand": [
+            {"cardNumber": "sink_below_red", "type": "DR", "cost": 0, "action": 27}
+        ],
+        "playerArsenal": [],
+        "playerEquipment": [],
+        "activeChainLink": {
+            "cardNumber": "heavy_dominate_attack",
+            "dominate": True,
+            "totalPower": 6,
+        },
+    }
+
+    unpayable = set()
+    result = handle_reaction_phase(client, state, turn_num=1, turn_phase="D", prompt_buttons=[{"caption": "Pass", "mode": 99}], unpayable_set=unpayable)
+    assert result is True
+    assert len(client.sent_actions) == 1
+    assert client.sent_actions[0]["mode"] == 99, f"Deveria ter passado prioridade sob Dominate, mas enviou: {client.sent_actions[0]}"
+
+
+def test_reaction_phase_dominate_allows_arsenal_dr():
+    """
+    Arsenal em Fase de Reação sob Dominate (CR 7.4.2d, CR 7.5b, CR 8.3.4b):
+    Mesmo que o jogador já tenha defendido com 1 carta da mão no Defend Step (blocks_declared_count >= 1),
+    jogar uma Defense Reaction do Arsenal é 100% legal sob Dominate, pois a carta NÃO veio da mão!
+    """
+    client = MockReactionClient(player_id=1)
+    client.blocks_declared_count = 1
+
+    state = {
+        "turnPlayer": 2,
+        "playerHealth": 10,
+        "playerHand": [],
+        "playerArsenal": [
+            {"cardNumber": "sink_below_red", "type": "DR", "cost": 0, "action": 5, "actionDataOverride": "0"}
+        ],
+        "playerEquipment": [],
+        "activeChainLink": {
+            "cardNumber": "heavy_dominate_attack",
+            "dominate": True,
+            "totalPower": 6,
+        },
+    }
+
+    unpayable = set()
+    result = handle_reaction_phase(client, state, turn_num=1, turn_phase="D", prompt_buttons=[], unpayable_set=unpayable)
+    assert result is True
+    assert len(client.sent_actions) == 1
+    action = client.sent_actions[0]
+    assert action["mode"] == 5, f"Esperado modo 5 (jogar do Arsenal), obtido: {action}"
+    assert action["card_id"] == "0", f"Esperado slot 0 do Arsenal, obtido: {action}"
+    assert action["button_input"] == "sink_below_red"
+
+
+def test_reaction_phase_dominate_allows_hand_dr_if_no_hand_defended():
+    """
+    Dominate (CR 7.4.2a, CR 8.3.4b):
+    Se nenhuma carta da mão defendeu ainda (blocks_declared_count == 0),
+    jogar Defense Reaction da mão é permitido (será a única carta da mão a defender).
+    """
+    client = MockReactionClient(player_id=1)
+    client.blocks_declared_count = 0
+
+    state = {
+        "turnPlayer": 2,
+        "playerHealth": 10,
+        "playerHand": [
+            {"cardNumber": "sink_below_red", "type": "DR", "cost": 0, "action": 27}
+        ],
+        "playerArsenal": [],
+        "playerEquipment": [],
+        "activeChainLink": {
+            "cardNumber": "heavy_dominate_attack",
+            "dominate": True,
+            "totalPower": 6,
+        },
+    }
+
+    unpayable = set()
+    result = handle_reaction_phase(client, state, turn_num=1, turn_phase="D", prompt_buttons=[], unpayable_set=unpayable)
+    assert result is True
+    assert len(client.sent_actions) == 1
+    action = client.sent_actions[0]
+    assert action["mode"] == 27, f"Deveria jogar Sink Below da mão se nenhuma defendeu ainda, obtido: {action}"
+    assert action["button_input"] == "sink_below_red"
+
+
+def test_reaction_phase_dominate_prohibits_hand_dr_when_combat_chain_has_hand_card():
+    """
+    Dominate (CR 7.4.2a, CR 8.3.4b):
+    Mesmo com blocks_declared_count == 0, se a combat chain já contém carta defensora da mão,
+    a Defense Reaction da mão é bloqueada pelo Dominate.
+    """
+    client = MockReactionClient(player_id=1)
+    client.blocks_declared_count = 0
+
+    state = {
+        "turnPlayer": 2,
+        "playerHealth": 10,
+        "playerHand": [
+            {"cardNumber": "sink_below_red", "type": "DR", "cost": 0, "action": 27}
+        ],
+        "combatChain": [
+            {"cardNumber": "heavy_dominate_attack", "controller": 2},
+            {"cardNumber": "regular_hand_blocker", "controller": 1}
+        ],
+        "playerArsenal": [],
+        "playerEquipment": [],
+        "activeChainLink": {
+            "cardNumber": "heavy_dominate_attack",
+            "dominate": True,
+            "totalPower": 6,
+        },
+    }
+
+    unpayable = set()
+    result = handle_reaction_phase(client, state, turn_num=1, turn_phase="D", prompt_buttons=[{"caption": "Pass", "mode": 99}], unpayable_set=unpayable)
+    assert result is True
+    assert len(client.sent_actions) == 1
+    assert client.sent_actions[0]["mode"] == 99, f"Deveria ter passado prioridade, obtido: {client.sent_actions[0]}"
+

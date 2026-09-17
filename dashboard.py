@@ -10,15 +10,19 @@ from ui.helpers import (
     get_cached_services_status,
     get_cached_saved_decks,
 )
+import importlib
+import ui.tabs.tab_analytics
+importlib.reload(ui.tabs.tab_analytics)
 from ui.tabs import (
     render_tab_play,
     render_tab_arena,
     render_tab_training,
     render_tab_tournaments,
     render_tab_decks,
-    render_tab_analytics,
     render_tab_ismcts,
 )
+from ui.tabs.tab_analytics import render_tab_analytics
+
 
 # Configuração da Página
 st.set_page_config(

@@ -31,10 +31,11 @@ Em jogos com informação imperfeita e alta profundidade combinatória como Fles
 - O número de subconjuntos de blocos a partir de uma mão de 4 cartas e 4 equipamentos ultrapassa $2^8 = 256$ combinações teóricas por elo de cadeia.
 - Decisões ilegais segundo as regras do jogo (como pitchar cartas do Arsenal ou equipar simultaneamente armas 2H e escudos) inviabilizam o treinamento ou causam loops infinitos no motor de regras.
 
-As **13 Podas Táticas** atuam como um filtro pré-MCTS e direcionador heurístico:
+As **14 Podas Táticas** atuam como um filtro pré-MCTS e direcionador heurístico:
 1. **Garantem conformidade estrita com o Comprehensive Rules (CR)** de Flesh and Blood.
 2. **Eliminam ramos dominados ou ilegais** antes da amostragem de mundos no ISMCTS.
 3. **Preservam recursos de longo prazo** (*tempo*, cartas reservadas para combos e integridade de armaduras de uso único).
+4. **Respeitam restrições de zona e camadas (CR 3, CR 5 e CR 7)**, incluindo reação via Arsenal e Overpower restrito à mão.
 
 ---
 
@@ -378,6 +379,34 @@ Cartas de arena como Itens, Auras e Equipamentos ativos frequentemente concedem 
 
 ---
 
+
+---
+
+## 15. Comportamento e Avaliação de Palavras-Chave de Combate
+
+### Fundamentação Oficial e Conceito
+A engine processa intrinsecamente os efeitos táticos de palavras-chave estruturais do Flesh and Blood, seja limitando matematicamente o domínio de cartas válidas para defesa, seja aplicando heurísticas de prioridade ou simulação de penalidades e efeitos estritos. O motor não apenas repassa a informação ao simulador de danos, mas ativamente avalia a semântica de cada keyword no podador de árvore de estados (MCTS) e na tomada de decisão em fases defensivas.
+
+### Módulos do Código
+- [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py)
+- [`ai/game_simulator.py`](../ai/game_simulator.py)
+- [`ai/policy/card_semantics.py`](../ai/policy/card_semantics.py)
+- [`ai/hero_strategies/`](../ai/hero_strategies/) (especificamente `illusionist.py`, `guardian.py`, `brute.py`, `assassin.py`)
+
+### Regras Algorítmicas
+1. **Phantasm (CR 7.4.4)**:
+   - **Mecânica:** Quando um ataque com Phantasm é bloqueado por uma carta não-Ilusionista com 6+ de Poder ("popper"), o ataque é destruído e a corrente de combate se encerra.
+   - **Tática e Engine:** O `defense_pruner.py` procura ativamente por um *popper* na mão e atribui prioridade absoluta (custo `-200.0` no subset de defesa) se ele puder ser jogado, fechando a chain imediatamente sem perda de vida. A IA de Ilusionistas foca em usar e proteger cartas com Phantasm, sabendo deste risco calculável.
+2. **Dominate (CR 7.4.2a) & Overpower (CR 7.4.2b, CR 8.3.22)**:
+   - **Mecânica:** Restringem severamente a quantidade de cartas que podem defender vindas da mão do herói.
+   - **Tática e Engine:** Em vez de depender do simulador para punir subconjuntos inválidos, o gerador em `defense_pruner.py` e a leitura de itens em `card_semantics.py` aplicam a poda preventivamente. Se há *Dominate*, nenhum subset de bloqueio gerado para o podador pode conter mais de 1 carta da mão. Se há *Overpower*, no máximo 1 carta de *Ação* da mão.
+3. **Intimidate (CR 8.5.8)**:
+   - **Mecânica:** Baniu aleatoriamente cartas da mão do oponente, reduzindo sua capacidade defensiva para a corrente de combate atual.
+   - **Tática e Engine:** O `game_simulator.py` detecta cartas com o nome ou palavra-chave de *Intimidate* (ex: *Pack Hunt*). Ele contabiliza o `intimidate_count` acumulado e corta este número de cartas (`opp_hand[intimidate_count:]`) antes de calcular o bloqueio esperado do adversário. A estratégia de Brute usa ataques com mais de 6 de Poder para acionar esses gatilhos em massa.
+4. **Piercing (CR 8.5.21)**:
+   - **Mecânica:** Se o ataque for defendido por um equipamento, o atacante ganha +1 de dano para aquele elo.
+   - **Tática e Engine:** Em `defense_pruner.py`, o motor soma +1 de poder ao ataque caso algum equipamento seja selecionado para o bloqueio. Equipamentos que defendem apenas 1 (`block <= 1`) geram mitigação líquida de `0` e são duramente penalizados heuristicamente (`-15.0`) e descartados no pós-processamento, já que a quebra ou uso deles seria em vão.
+
 ## 🔗 Mapeamento de Módulos e Referências
 
 | Regra / Poda Tática | Arquivos Principais | Referência CR / TR |
@@ -396,3 +425,4 @@ Cartas de arena como Itens, Auras e Equipamentos ativos frequentemente concedem 
 | **12. Conversão de Mão** | [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py), [`ai/hero_strategies/turn_planner.py`](../ai/hero_strategies/turn_planner.py) | Teoria de Valor de Cartas FaB |
 | **13. Treino Híbrido Humano** | [`ai/bot_runtime/match_tracker.py`](../ai/bot_runtime/match_tracker.py), [`stats/`](../stats/) | ELO Rating System |
 | **14. Semântica de Arena** | [`ai/policy/card_semantics.py`](../ai/policy/card_semantics.py), [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py) | CR 7.4.2a, CR 8.5.21 |
+| **15. Palavras-Chave de Combate** | [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py), [`ai/game_simulator.py`](../ai/game_simulator.py) | CR 7.4.2, 7.4.4, 8.5.8, 8.5.21 |
