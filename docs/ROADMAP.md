@@ -13,8 +13,8 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 - [x] **Ferramentas CLI de Automação**: Utilitários operacionais em `.agents/skills/automated-tasks/scripts/` (`validate_decks.py`, `benchmark_mcts.py`, `healthcheck_talishar.py` e `run_smoke_tests.py`).
 - [x] **Rede Neural v2 (FaBCardTransformerNetwork - ADR-0007)**: Substituição completa do antigo MLP de 192 entradas por arquitetura Transformer com Self/Cross-Attention, vetor flat-packed de 800 dimensões, alvos auxiliares KataGo e embeddings densos em $O(1)$ (`data/card_embeddings.pt`).
 - [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.087 cartas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena (`ArenaThreatContext`) e poda adaptativa de combate sem hardcodes nominais.
-- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando **353 testes canônicos com 100% de aprovação**.
-- [ ] **Passo 3 (Especialização de Classes Não-Lineares)**: Expansão de testes em classes de alta complexidade tática (*Ilusionista*, *Assassino*, *Runeblade*, *Teklovossen*, *Ranger*).
+- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando **385 testes canônicos com 100% de aprovação**.
+- [x] **Passo 3 (Especialização de Classes Não-Lineares & Auto-Tuning por Arquétipo)**: Implementação de auto-tuning consciente de arquétipo (`dynamic_rule_tuner.py`) prevenindo death spiral em heróis de sinergia/combo (Dash I/O, Teklovossen, Vynnset, Marlinn, Oscilio) e suíte canônica de testes sub-50 (`tests/test_sub50_hero_strategies.py`).
 - [ ] **Passo 4 (Simulador Determinístico & Sideboard)**: Testes de casos de borda e transição de estados em `ai/game_simulator.py` e `ai/sideboard_manager.py`.
 - [ ] **Passo 5 (Pipeline de Treinamento Neural PyTorch)**: Bateria leve de testes CPU para `ai/training/orchestrator.py` e `ai/experience_collector.py`.
 - [ ] **Passo 6 (Interface Gráfica Streamlit)**: Mocks automatizados de renderização de abas com `streamlit.testing.v1.AppTest`.

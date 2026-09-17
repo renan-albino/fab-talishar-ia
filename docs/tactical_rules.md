@@ -259,12 +259,18 @@ Nem todas as jogadas possuem a mesma relevância tática. Lances que causaram qu
    - **Lance Brilhante / Virada** ($\Delta_{\text{eval}} \ge +3.0$): Peso $2.0$.
    - **Lances Neutros**: Peso $1.0$.
    - **Últimos Passos em Derrota**: Peso mínimo $2.5$ para identificar o erro letal.
-2. **Auto-Tuning Heurístico por Taxa de Vitória (`hero_rule_multipliers.json`)**:
+2. **Auto-Tuning Heurístico por Arquétipo e Taxa de Vitória (`hero_rule_multipliers.json`)**:
+   - **Prevenção da "Espiral da Morte" (Death Spiral)**: Em Flesh and Blood, heróis aggro, combo ou de sinergia de mão/peças (Dash I/O, Teklovossen, Marlinn, Vynnset, Oscilio, Ninjas, Wizards, Rangers) possuem cartas e itens com 0 de defesa ou peças vitais de motor. Forçá-los a bloquear quando estão perdendo destrói sua mão e impede que montem seus turnos.
    - **Taxa de Vitória $< 45\%$ (em $\ge 3$ jogos)**:
-     $$\text{block\_weight} \mathrel{+}= 0.04, \quad \text{pivot\_bonus} \mathrel{+}= 0.03, \quad \text{attack\_weight} \mathrel{-}= 0.02$$
+     - *Arquétipos Aggro / Combo / Setup* (`is_aggro_or_combo_hero`):
+       $$\text{attack\_weight} \mathrel{+}= 0.03 \quad (\ge 1.10), \quad \text{block\_weight} \mathrel{-}= 0.02 \quad (\le 0.95), \quad \text{absorb\_tempo\_bonus} \mathrel{+}= 0.03 \quad (\ge 1.10)$$
+       $$\text{pivot\_bonus} \mathrel{+}= 0.03 \quad (\le 1.35), \quad \text{arsenal\_bonus} \mathrel{+}= 0.02 \quad (\le 1.30)$$
+       *Objetivo: Capacitar o bot a absorver dano via `TEMPO_COUNTER_ATTACK`, preservar cartas de combo na mão e manter pressão ofensiva.*
+     - *Arquétipos Controle / Defensivo Clássico* (Guardians, Warriors pesados):
+       $$\text{block\_weight} \mathrel{+}= 0.04, \quad \text{pivot\_bonus} \mathrel{+}= 0.03, \quad \text{attack\_weight} \mathrel{-}= 0.02$$
    - **Taxa de Vitória $> 60\%$ (em $\ge 3$ jogos)**:
-     $$\text{attack\_weight} \mathrel{+}= 0.03, \quad \text{absorb\_tempo\_bonus} \mathrel{+}= 0.03$$
-   - **Limites de Segurança**: Todos os pesos são estritamente mantidos em $[0.70, 1.40]$.
+     $$\text{attack\_weight} \mathrel{+}= 0.03, \quad \text{absorb\_tempo\_bonus} \mathrel{+}= 0.03, \quad \text{block\_weight} \mathrel{-}= 0.01$$
+   - **Limites de Segurança**: Todos os pesos são estritamente delimitados entre $[0.70, 1.40]$.
 
 ---
 
