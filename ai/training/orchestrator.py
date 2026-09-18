@@ -96,6 +96,7 @@ class GPUTrainingOrchestrator:
             "num_workers":      SETTINGS.num_workers,
             "mcts_sims":        SETTINGS.mcts_simulations,
             "max_resources":    SETTINGS.max_resources_mode,
+            "ismcts_concurrency": getattr(SETTINGS, "default_ismcts_concurrency", "threads"),
         }
         self.load_metrics()
 
@@ -112,6 +113,7 @@ class GPUTrainingOrchestrator:
             "fp16":                self._extra.get("fp16", SETTINGS.fp16),
             "save_interval_games": self._extra.get("save_interval_games", SETTINGS.save_interval_games),
             "training_decks":      self._extra.get("training_decks", []),
+            "ismcts_concurrency":  self._extra.get("ismcts_concurrency", getattr(SETTINGS, "default_ismcts_concurrency", "threads")),
             "max_resources":       SETTINGS.max_resources_mode,
         }
 
@@ -254,6 +256,10 @@ class GPUTrainingOrchestrator:
             bot_device = "cpu" if (num_workers >= 3 or "cuda" not in str(dev_val)) else dev_val
 
             epoch_ratio = min(1.0, self.stats["epochs_completed"] / max(1, self.config.get("max_epochs", 100)))
+            ismcts_concurrency_val = str(self.config.get("ismcts_concurrency", getattr(SETTINGS, "default_ismcts_concurrency", "threads")))
+            bot_env = os.environ.copy()
+            bot_env["TALISHAR_SKIP_GPU_PROBE"] = "1"
+
             for _ in range(num_workers):
                 if not self.is_running:
                     break
@@ -266,8 +272,10 @@ class GPUTrainingOrchestrator:
                      "--mcts-sims", str(mcts_sims_val),
                      "--device", str(bot_device),
                      "--buffer-capacity", str(buffer_cap),
-                     "--epoch-ratio", str(epoch_ratio)],
+                     "--epoch-ratio", str(epoch_ratio),
+                     "--ismcts-concurrency", ismcts_concurrency_val],
                     cwd=BASE_DIR,
+                    env=bot_env,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
@@ -280,8 +288,10 @@ class GPUTrainingOrchestrator:
                      "--mcts-sims", str(mcts_sims_val),
                      "--device", str(bot_device),
                      "--buffer-capacity", str(buffer_cap),
-                     "--epoch-ratio", str(epoch_ratio)],
+                     "--epoch-ratio", str(epoch_ratio),
+                     "--ismcts-concurrency", ismcts_concurrency_val],
                     cwd=BASE_DIR,
+                    env=bot_env,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,

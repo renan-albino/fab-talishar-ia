@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import os
 import math
+import functools
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Tuple
@@ -39,8 +40,19 @@ DATA_DIR = PROJECT_ROOT / "data"
 # 1. DETECÇÃO DE HARDWARE
 # ══════════════════════════════════════════════════════════════════
 
+@functools.lru_cache(maxsize=1)
 def _probe_gpu() -> Tuple[bool, float, int, str]:
     """Retorna (cuda_ok, vram_gb, sm_count, gpu_name)."""
+    if os.environ.get("TALISHAR_SKIP_GPU_PROBE") == "1":
+        try:
+            import torch
+            if torch.cuda.is_available():
+                p = torch.cuda.get_device_properties(0)
+                return True, p.total_memory / 1e9, p.multi_processor_count, p.name
+            return False, 0.0, 0, "cpu"
+        except Exception:
+            return False, 0.0, 0, "cpu"
+
     import shutil
     import subprocess
     if shutil.which("nvidia-smi"):
@@ -446,6 +458,43 @@ class FaBSettings:
     mock_fabrary_port: int
     elo_k_factor: int
     match_timeout_seconds: int
+    default_ismcts_concurrency: str = "threads"
+
+    def estimate_vram_usage(
+        self,
+        num_rooms: int = 1,
+        ismcts_worlds: int = 4,
+        mode: str = "threads",
+    ) -> float:
+        """
+        Calcula estimativa preditiva de uso de VRAM (em GB) para um dado setup.
+
+        Componentes:
+          - Base do Orquestrador (modelo PyTorch + AMP + optimizer AdamW): ~1.2 GB
+          - Por sala (2 bots):
+            * 'threads': ~0.35 GB por bot (threads compartilham mesmo contexto PyTorch/GPU)
+            * 'sequential': ~0.35 GB por bot
+            * 'multiprocessing': ~0.40 GB por bot (evaluator central na GPU, workers em CPU)
+            * 'direct_gpu': ~0.35 GB base + (ismcts_worlds * 0.45 GB por bot devido a múltiplos contextos CUDA)
+        """
+        if self.device == "cpu" or self.vram_gb <= 0:
+            return 0.0
+
+        base_trainer_gb = 1.2
+        num_bots = max(1, num_rooms * 2)
+
+        mode_clean = (mode or self.default_ismcts_concurrency).lower()
+        if mode_clean == "direct_gpu":
+            per_bot_gb = 0.35 + (ismcts_worlds * 0.45)
+        elif mode_clean == "multiprocessing":
+            per_bot_gb = 0.40
+        elif mode_clean in ("threads", "sequential"):
+            per_bot_gb = 0.35
+        else:
+            per_bot_gb = 0.35
+
+        total_vram = base_trainer_gb + (num_bots * per_bot_gb)
+        return round(total_vram, 2)
 
 # ══════════════════════════════════════════════════════════════════
 # 4. FACTORY — Constrói a instância calculando tudo
@@ -554,6 +603,10 @@ def _build_settings() -> FaBSettings:
     elo_k_factor = int(os.environ.get("FAB_ELO_K", 32))
     match_timeout_s = int(os.environ.get("FAB_MATCH_TIMEOUT", 120))
 
+    default_ismcts_concurrency = os.environ.get("FAB_ISMCTS_CONCURRENCY", "threads").lower()
+    if default_ismcts_concurrency not in ("threads", "multiprocessing", "direct_gpu", "sequential"):
+        default_ismcts_concurrency = "threads"
+
     return FaBSettings(
         # Hardware
         machine_profile=profile,
@@ -622,6 +675,7 @@ def _build_settings() -> FaBSettings:
         mock_fabrary_port=mock_fabrary_port,
         elo_k_factor=elo_k_factor,
         match_timeout_seconds=match_timeout_s,
+        default_ismcts_concurrency=default_ismcts_concurrency,
     )
 
 
@@ -670,6 +724,7 @@ def print_settings_report():
     print(f"  {'Partidas paralelas':<26}  {s.num_workers:<14}  min(CPU, RAM, Talishar)")
     print(f"  {'Buffer de Replay':<26}  {s.buffer_capacity:<14,}  RAM ÷ 900 bytes/amostra")
     print(f"  {'ISMCTS Mundos':<26}  {s.ismcts_worlds:<14}  Hardware scan: {s.inference_latency_ms:.3f} ms/pass")
+    print(f"  {'ISMCTS Concorrência':<26}  {s.default_ismcts_concurrency:<14}  threads | multiprocessing | direct_gpu | sequential")
     print(f"  {'Latência Inferência':<26}  {s.inference_latency_ms:<10.3f} ms  Medido em startup (rede proxy)")
     print(f"  {'Min p/ treinar':<26}  {s.min_buffer_to_train:<14,}  max(batch_size, 512)")
 

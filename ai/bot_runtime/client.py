@@ -2,6 +2,7 @@ import os
 import time
 import json
 import requests
+from typing import Optional
 from datetime import datetime
 
 from ai.policy_engine import PolicyEngine
@@ -14,7 +15,18 @@ from ai.common import safe_int, safe_list, safe_dict, safe_str
 TALISHAR_API_URL = DEFAULT_BACKEND_URL
 
 class FabBotClient:
-    def __init__(self, room_id: str, deck_url: str, role: str, player_name: str, mcts_sims: int = None, device: str = None, buffer_capacity: int = None, epoch_ratio: float = 0.0):
+    def __init__(
+        self,
+        room_id: str,
+        deck_url: str,
+        role: str,
+        player_name: str,
+        mcts_sims: int = None,
+        device: str = None,
+        buffer_capacity: int = None,
+        epoch_ratio: float = 0.0,
+        ismcts_concurrency: Optional[str] = None,
+    ):
         self.room_id = room_id
         self.deck_url = deck_url
         self.role = role
@@ -31,6 +43,7 @@ class FabBotClient:
         self.mcts_sims = mcts_sims
         self.device = device
         self.buffer_capacity = buffer_capacity
+        self.ismcts_concurrency = ismcts_concurrency
         self.use_gpu = (self.device != "cpu") if self.device else True
         self.log_file = f"logs/{self.room_id}_{self.player_name}_debug.log"
         self.match_log_file = f"logs/{self.room_id}_match_feed.log"
@@ -38,7 +51,8 @@ class FabBotClient:
         self.policy_engine = PolicyEngine(
             model_path="data/model_latest.pt" if os.path.exists("data/model_latest.pt") else None,
             num_mcts_sims=self.mcts_sims,
-            use_gpu=self.use_gpu
+            use_gpu=self.use_gpu,
+            ismcts_concurrency=self.ismcts_concurrency,
         )
         self.metrics = {"health": 20, "opp_health": 20, "card_advantage": 0, "status": "Iniciando", "phase": "pre-game"}
         self.trajectory = []

@@ -35,11 +35,13 @@ class PolicyEngine:
         use_gpu: bool = True,
         num_mcts_sims: int = None,
         room_id: str = "unknown",
+        ismcts_concurrency: Optional[str] = None,
     ):
         self.hero_name = hero_name
         from ..hero_strategies import get_hero_strategy
         self.strategy: Any = get_hero_strategy(hero_name)
         self.room_id = room_id
+        self.ismcts_concurrency = ismcts_concurrency
 
         try:
             from config.settings import SETTINGS
@@ -73,6 +75,7 @@ class PolicyEngine:
         self.ismcts = ISMCTSEngine(
             model=self.model,
             device=str(self.device),
+            concurrency_mode=self.ismcts_concurrency,
         )
 
         # Logger de decisões ISMCTS
@@ -94,6 +97,7 @@ class PolicyEngine:
         self.ismcts = ISMCTSEngine(
             model=self.model,
             device=str(self.device),
+            concurrency_mode=self.ismcts_concurrency,
         )
 
     def update_room_id(self, room_id: str, hero_name: str = None) -> None:

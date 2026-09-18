@@ -149,6 +149,59 @@ def render_tab_training(deck_options=None, gpu_available=None):
                 help="Frequência de gravação de novos checkpoints em disco.",
             )
 
+        st.markdown("---")
+        st.markdown("#### 🧠 Concorrência Híbrida ISMCTS & Telemetria Preditiva")
+        col_ismcts_1, col_ismcts_2 = st.columns([2, 1])
+        with col_ismcts_1:
+            concurrency_options = ["threads", "multiprocessing", "direct_gpu", "sequential"]
+            concurrency_labels = {
+                "threads": "threads (Padrão/Estável - In-Process Multithread)",
+                "multiprocessing": "multiprocessing (Actor-Evaluator IPC via Pipes)",
+                "direct_gpu": "direct_gpu (Workers Spawnam Direto na GPU)",
+                "sequential": "sequential (Determinizações Sequenciais in-process)",
+            }
+            selected_concurrency = st.selectbox(
+                "Modo de Concorrência ISMCTS:",
+                concurrency_options,
+                index=0,
+                format_func=lambda x: concurrency_labels.get(x, x),
+                key="train_ismcts_concurrency",
+                help="Estratégia de paralelização para os mundos determinizados do ISMCTS."
+            )
+        with col_ismcts_2:
+            st.write("")
+            force_direct_gpu = st.checkbox(
+                "Forçar modo direct_gpu",
+                key="train_force_direct_gpu",
+                help="Força a execução de workers na GPU diretamente (alto consumo de VRAM por processo)."
+            )
+            if force_direct_gpu:
+                selected_concurrency = "direct_gpu"
+
+        from config.settings import SETTINGS
+        est_vram = SETTINGS.estimate_vram_usage(
+            num_rooms=workers_count,
+            ismcts_worlds=SETTINGS.ismcts_worlds,
+            mode=selected_concurrency,
+        )
+        if gpu_available and SETTINGS.vram_gb > 0:
+            if est_vram > SETTINGS.vram_gb:
+                st.error(
+                    f"⚠️ **Alerta de Sobrecarga de VRAM:** O setup selecionado (`{selected_concurrency}`) demandará "
+                    f"~**{est_vram:.1f} GB** de VRAM, excedendo os **{SETTINGS.vram_gb:.1f} GB** físicos da GPU ({SETTINGS.gpu_name}). "
+                    f"Risco iminente de CUDA Out of Memory (OOM)! Considere utilizar o modo `threads`."
+                )
+            elif est_vram > (SETTINGS.vram_gb * 0.85):
+                st.warning(
+                    f"⚡ **Atenção à VRAM:** Uso estimado de **{est_vram:.1f} GB** / **{SETTINGS.vram_gb:.1f} GB** disponíveis "
+                    f"(`{selected_concurrency}` com {workers_count} salas). Operando próximo ao limite do hardware."
+                )
+            else:
+                st.info(
+                    f"📊 **Telemetria Preditiva de VRAM:** Uso estimado de **{est_vram:.1f} GB** / **{SETTINGS.vram_gb:.1f} GB** disponíveis "
+                    f"(`{selected_concurrency}` com {workers_count} salas de treino)."
+                )
+
     col_t_btn1, col_t_btn2 = st.columns([1, 1])
     with col_t_btn1:
         if not orchestrator.is_running:
@@ -165,6 +218,7 @@ def render_tab_training(deck_options=None, gpu_available=None):
                     "fp16": use_fp16,
                     "save_interval_games": save_interval,
                     "training_decks": deck_slugs,
+                    "ismcts_concurrency": selected_concurrency,
                 })
                 st.toast("⚡ Treinador de Deep RL iniciado com sucesso!", icon="🚀")
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
@@ -199,7 +253,7 @@ def render_tab_training(deck_options=None, gpu_available=None):
             <div style="background-color: #1e293b; padding: 15px; border-radius: 8px; border-left: 5px solid #22c55e; margin-bottom: 15px;">
                 <h4 style="margin: 0; color: #22c55e;">🟢 Treinamento em Andamento (GPU Ativa)</h4>
                 <p style="margin: 6px 0 0 0; color: #cbd5e1; font-size: 14px;">
-                    <b>Dispositivo:</b> {cfg.get('device')} | <b>Batch:</b> {cfg.get('batch_size')} | <b>LR:</b> {cfg.get('learning_rate')} | <b>MCTS Sims:</b> {cfg.get('mcts_sims')} | <b>FP16:</b> {cfg.get('fp16')}<br>
+                    <b>Dispositivo:</b> {cfg.get('device')} | <b>Batch:</b> {cfg.get('batch_size')} | <b>Concorrência:</b> {cfg.get('ismcts_concurrency', 'threads')} | <b>LR:</b> {cfg.get('learning_rate')} | <b>MCTS Sims:</b> {cfg.get('mcts_sims')} | <b>FP16:</b> {cfg.get('fp16')}<br>
                     <b>Confronto Atual em Execução:</b> <code>{orchestrator.stats.get('active_matchup', 'Rotativo')}</code>
                 </p>
             </div>

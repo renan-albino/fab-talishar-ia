@@ -16,6 +16,7 @@ Referência: Cowling, Powley & Whitehouse (2012), IEEE Transactions on Games.
 
 import os
 import multiprocessing as mp
+import concurrent.futures
 import numpy as np
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -158,6 +159,98 @@ def _ismcts_worker_process(
             pass
 
 
+def _ismcts_direct_gpu_worker_process(
+    conn,
+    world_idx: int,
+    world_state: Dict[str, Any],
+    legal_actions: List[Dict[str, Any]],
+    num_simulations: int,
+    training_mode: bool,
+    c_puct: float,
+    state_vec: np.ndarray,
+    device: str,
+    model: Optional[Any] = None,
+) -> None:
+    """
+    Função de execução do Worker direct_gpu em processo isolado.
+    Executa a inferência MCTS diretamente na GPU sem IPC com o processo pai.
+    """
+    try:
+        if model is not None:
+            try:
+                if hasattr(model, "to"):
+                    model = model.to(device)
+                if hasattr(model, "eval"):
+                    model.eval()
+            except Exception:
+                pass
+
+        mcts = MCTSEngine(
+            model=model,
+            device=device,
+            c_puct=c_puct,
+            single_player_tree=True,
+        )
+
+        num_legal = len(legal_actions)
+        if num_legal == 0:
+            conn.send(("done", {
+                "world_idx": world_idx,
+                "best_idx": 0,
+                "root_stats": {},
+                "children_stats": {},
+            }))
+            return
+
+        priors, base_value = mcts._evaluate(state_vec)
+
+        root = MCTSNode(prior=1.0)
+        mcts._expand(root, legal_actions, priors)
+
+        if training_mode and root.children:
+            mcts._add_dirichlet_noise(root, len(root.children) + len(root.pending))
+
+        leaf_nodes: List[MCTSNode] = []
+        for sim_idx in range(num_simulations):
+            mcts._progressive_widen(root, sim_idx)
+            node = mcts._select(root)
+            leaf_nodes.append(node)
+
+        leaf_values = mcts._batch_evaluate_leaves(
+            root_state_vec=state_vec,
+            nodes=leaf_nodes,
+            base_value=base_value,
+            state=world_state,
+            legal_actions=legal_actions,
+            world_seed=world_idx,
+        )
+
+        for node, lv in zip(leaf_nodes, leaf_values):
+            mcts._backpropagate(node, lv)
+
+        best_idx = mcts._select_action(root, legal_actions, training_mode)
+        summary = _extract_level1_summary(root, best_idx, world_idx)
+        conn.send(("done", summary))
+
+    except Exception as e:
+        logger.error(f"Erro no worker direct_gpu ISMCTS mundo {world_idx}: {e}", exc_info=True)
+        try:
+            conn.send(("done", {
+                "world_idx": world_idx,
+                "best_idx": 0,
+                "root_stats": {},
+                "children_stats": {},
+                "error": str(e),
+            }))
+        except Exception:
+            pass
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 class ISMCTSEngine:
     """
     Information Set MCTS para Flesh and Blood (informação imperfeita).
@@ -179,11 +272,13 @@ class ISMCTSEngine:
         device: str = "cpu",
         c_puct: Optional[float] = None,
         num_worlds: Optional[int] = None,
+        concurrency_mode: Optional[str] = None,
     ):
-        self.model      = model
-        self.device     = device
-        self.c_puct     = c_puct if c_puct is not None else _get_c_puct()
-        self.num_worlds = num_worlds if num_worlds is not None else _get_ismcts_worlds()
+        self.model            = model
+        self.device           = device
+        self.c_puct           = c_puct if c_puct is not None else _get_c_puct()
+        self.num_worlds       = num_worlds if num_worlds is not None else _get_ismcts_worlds()
+        self.concurrency_mode = concurrency_mode
 
         self._mcts = MCTSEngine(
             model=model,
@@ -207,18 +302,16 @@ class ISMCTSEngine:
         num_simulations: int = 25,
         training_mode: bool = False,
         use_multiprocessing: Optional[bool] = None,
+        concurrency_mode: Optional[str] = None,
     ) -> Tuple[int, np.ndarray, Dict[str, Any]]:
         """
-        Executa ISMCTS via Arquitetura Actor-Evaluator e retorna (best_idx, policy_dist, ismcts_log).
+        Executa ISMCTS via Concorrência Híbrida e retorna (best_idx, policy_dist, ismcts_log).
 
-        Fluxo por mundo:
-          1. Amostra mão oculta do oponente -> estado determinizado.
-          2. Em multi-processo (se actual_worlds > 1 ou use_multiprocessing=True), spawn de workers
-             isolados em CPU com RemoteModelProxy que enviam requisições pelo Pipe IPC.
-          3. Processo principal agrupa as requisições de inferência dinamicamente via
-             BatchedInferenceServer e executa forward passes únicos em batch na GPU/CPU.
-          4. Cada worker finaliza sua simulação e envia o resumo de Nível 1 (Escolha C) pelo Pipe.
-          5. Processo principal agrega votos, Q-values e priors médios de todos os mundos.
+        Modos suportados (concurrency_mode):
+          - 'threads' (Padrão/Estável): ThreadPoolExecutor in-process com 0 MB de overhead de processos.
+          - 'multiprocessing': Pipeline Actor-Evaluator com mp.get_context("spawn") e BatchedInferenceServer via Pipes.
+          - 'direct_gpu': Workers spawnados executando diretamente na GPU sem IPC.
+          - 'sequential': Loop sequencial simples in-process para 1 mundo por vez.
 
         Returns:
             best_action_idx : Índice da melhor ação em `legal_actions`.
@@ -237,15 +330,51 @@ class ISMCTSEngine:
         if actual_worlds == 0:
             return 0, np.zeros(32, dtype=np.float32), {}
 
-        should_multiprocess = (
-            use_multiprocessing
-            if use_multiprocessing is not None
-            else (actual_worlds > 1)
-        )
+        # Resolução do modo de concorrência ativo
+        mode = concurrency_mode or self.concurrency_mode
+        if mode is None:
+            if use_multiprocessing is not None:
+                mode = "multiprocessing" if use_multiprocessing else "sequential"
+            else:
+                try:
+                    from config.settings import SETTINGS
+                    mode = getattr(SETTINGS, "default_ismcts_concurrency", "threads")
+                except Exception:
+                    mode = "threads"
+
+        mode = str(mode).lower()
+        if mode not in ("threads", "multiprocessing", "direct_gpu", "sequential"):
+            mode = "threads"
 
         results: List[Dict[str, Any]] = []
 
-        if should_multiprocess:
+        if mode == "threads":
+            try:
+                max_workers = min(4, actual_worlds)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    futures = [
+                        executor.submit(
+                            self._run_world_mcts,
+                            world_state=world_state,
+                            legal_actions=legal_actions,
+                            num_simulations=num_simulations,
+                            training_mode=training_mode,
+                            state_vec=FaBPolicyValueNetwork.extract_state_vector(world_state),
+                            world_seed=idx,
+                        )
+                        for idx, world_state in enumerate(worlds)
+                    ]
+                    for idx, future in enumerate(futures):
+                        try:
+                            best_idx_w, root = future.result()
+                            results.append(_extract_level1_summary(root, best_idx_w, idx))
+                        except Exception as e:
+                            logger.error(f"Erro no thread worker ISMCTS mundo {idx}: {e}", exc_info=True)
+            except Exception as e:
+                logger.error(f"Falha no modo threads do ISMCTS: {e}. Executando fallback.", exc_info=True)
+                results = []
+
+        elif mode == "multiprocessing":
             ctx = mp.get_context("spawn")
             server_pipes = []
             worker_pipes = []
@@ -305,7 +434,89 @@ class ISMCTSEngine:
                     except Exception:
                         pass
 
-        # Fallback sequencial / in-process se multiprocessing desligado ou se falhar
+        elif mode == "direct_gpu":
+            ctx = mp.get_context("spawn")
+            server_pipes = []
+            worker_pipes = []
+            processes = []
+
+            try:
+                for idx, world_state in enumerate(worlds):
+                    p_serv, p_work = ctx.Pipe(duplex=True)
+                    server_pipes.append(p_serv)
+                    worker_pipes.append(p_work)
+
+                    world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
+                    proc = ctx.Process(
+                        target=_ismcts_direct_gpu_worker_process,
+                        args=(
+                            p_work,
+                            idx,
+                            world_state,
+                            legal_actions,
+                            num_simulations,
+                            training_mode,
+                            self.c_puct,
+                            world_vec,
+                            self.device,
+                            self.model,
+                        ),
+                    )
+                    processes.append(proc)
+                    proc.start()
+
+                for p_work in worker_pipes:
+                    try:
+                        p_work.close()
+                    except Exception:
+                        pass
+                worker_pipes.clear()
+
+                results = []
+                for p_serv in server_pipes:
+                    try:
+                        if p_serv.poll(timeout=30.0):
+                            msg = p_serv.recv()
+                            if isinstance(msg, tuple) and len(msg) == 2 and msg[0] == "done":
+                                results.append(msg[1])
+                    except Exception as e:
+                        logger.error(f"Erro ao coletar resultado direct_gpu: {e}")
+
+            except Exception as e:
+                logger.error(f"Falha na execução direct_gpu do ISMCTS: {e}. Executando fallback.", exc_info=True)
+                results = []
+            finally:
+                for p in worker_pipes:
+                    try:
+                        p.close()
+                    except Exception:
+                        pass
+                for proc in processes:
+                    proc.join(timeout=1.0)
+                    if proc.is_alive():
+                        proc.terminate()
+                        proc.join(timeout=0.5)
+                for p in server_pipes:
+                    try:
+                        p.close()
+                    except Exception:
+                        pass
+
+        elif mode == "sequential":
+            results = []
+            for idx, world_state in enumerate(worlds):
+                world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
+                best_idx_w, root = self._run_world_mcts(
+                    world_state=world_state,
+                    legal_actions=legal_actions,
+                    num_simulations=num_simulations,
+                    training_mode=training_mode,
+                    state_vec=world_vec,
+                    world_seed=idx,
+                )
+                results.append(_extract_level1_summary(root, best_idx_w, idx))
+
+        # Fallback sequencial / in-process se nenhum resultado válido for retornado
         if not results or not any(s.get("children_stats") for s in results):
             results = []
             for idx, world_state in enumerate(worlds):
@@ -347,8 +558,8 @@ class ISMCTSEngine:
         if total_votes > 0:
             for idx, votes in vote_counts.items():
                 if idx < num_legal:
-                    mode = legal_actions[idx].get("mode", 99)
-                    dist_idx = min(mode, 31) if mode < 32 else (mode % 32)
+                    act_mode = legal_actions[idx].get("mode", 99)
+                    dist_idx = min(act_mode, 31) if act_mode < 32 else (act_mode % 32)
                     policy_dist[dist_idx] += votes / total_votes
                 if votes > best_votes:
                     best_votes = votes
@@ -387,6 +598,7 @@ class ISMCTSEngine:
             "mcts_value_root" : round(float(base_value), 4),
             "total_votes"     : total_votes,
             "level1_summary"  : level1_summary,
+            "concurrency_mode": mode,
         }
 
         return best_idx, policy_dist, ismcts_log
