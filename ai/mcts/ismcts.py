@@ -279,6 +279,7 @@ class ISMCTSEngine:
         self.c_puct           = c_puct if c_puct is not None else _get_c_puct()
         self.num_worlds       = num_worlds if num_worlds is not None else _get_ismcts_worlds()
         self.concurrency_mode = concurrency_mode
+        self._cached_cpu_model: Optional[Any] = None
 
         self._mcts = MCTSEngine(
             model=model,
@@ -288,10 +289,47 @@ class ISMCTSEngine:
         )
 
     def set_model(self, model: FaBPolicyValueNetwork, device: str = None) -> None:
-        self.model        = model
-        self.device       = device or self.device
-        self._mcts.model  = model
-        self._mcts.device = self.device
+        self.model            = model
+        self.device           = device or self.device
+        self._mcts.model      = model
+        self._mcts.device     = self.device
+        self._cached_cpu_model = None
+
+    def _get_worker_model_for_direct_gpu(self) -> Optional[Any]:
+        """
+        Retorna uma versão segura para IPC/spawn do modelo (em CPU).
+        No WSL2/Linux, passar tensores CUDA diretamente entre processos spawnados
+        falha com 'CUDA error: invalid resource handle' devido a limitações de CUDA IPC.
+        Garante que o modelo seja transmitido com tensores na CPU,
+        permitindo que o worker faça model.to(device) em seu próprio contexto de processo.
+        """
+        if self.model is None:
+            return None
+        if not hasattr(self.model, "parameters"):
+            return self.model
+        try:
+            has_cuda = any(getattr(p, "is_cuda", False) for p in self.model.parameters())
+            if not has_cuda:
+                return self.model
+        except Exception:
+            return self.model
+
+        if self._cached_cpu_model is not None:
+            try:
+                self._cached_cpu_model.load_state_dict(
+                    {k: v.cpu() for k, v in self.model.state_dict().items()}
+                )
+                return self._cached_cpu_model
+            except Exception:
+                self._cached_cpu_model = None
+
+        try:
+            import copy
+            self._cached_cpu_model = copy.deepcopy(self.model).to("cpu")
+            return self._cached_cpu_model
+        except Exception as e:
+            logger.warning(f"Aviso ao preparar modelo CPU para worker direct_gpu: {e}")
+            return self.model
 
     # ── API pública ────────────────────────────────────────────────
 
@@ -440,6 +478,9 @@ class ISMCTSEngine:
             worker_pipes = []
             processes = []
 
+            # Obtém versão segura em CPU do modelo para evitar erro de CUDA IPC no spawn
+            worker_model = self._get_worker_model_for_direct_gpu()
+
             try:
                 for idx, world_state in enumerate(worlds):
                     p_serv, p_work = ctx.Pipe(duplex=True)
@@ -459,7 +500,7 @@ class ISMCTSEngine:
                             self.c_puct,
                             world_vec,
                             self.device,
-                            self.model,
+                            worker_model,
                         ),
                     )
                     processes.append(proc)
@@ -517,7 +558,10 @@ class ISMCTSEngine:
                 results.append(_extract_level1_summary(root, best_idx_w, idx))
 
         # Fallback sequencial / in-process se nenhum resultado válido for retornado
+        used_fallback = False
         if not results or not any(s.get("children_stats") for s in results):
+            used_fallback = True
+            logger.warning(f"ISMCTS modo '{mode}' não retornou resultados válidos. Executando fallback sequencial.")
             results = []
             for idx, world_state in enumerate(worlds):
                 world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
@@ -599,6 +643,7 @@ class ISMCTSEngine:
             "total_votes"     : total_votes,
             "level1_summary"  : level1_summary,
             "concurrency_mode": mode,
+            "fallback"        : used_fallback,
         }
 
         return best_idx, policy_dist, ismcts_log

@@ -66,7 +66,8 @@ def _probe_gpu() -> Tuple[bool, float, int, str]:
                 parts = [p.strip() for p in line.split(",")]
                 name = parts[0]
                 vram_mb = float(parts[1]) if len(parts) > 1 else 0.0
-                return True, vram_mb / 1000.0, 22, name
+                if vram_mb > 0:
+                    return True, vram_mb / 1000.0, 22, name
         except Exception:
             pass
     try:
@@ -481,7 +482,7 @@ class FaBSettings:
             return 0.0
 
         base_trainer_gb = 1.2
-        num_bots = max(1, num_rooms * 2)
+        num_bots = max(0, num_rooms) * 2
 
         mode_clean = (mode or self.default_ismcts_concurrency).lower()
         if mode_clean == "direct_gpu":

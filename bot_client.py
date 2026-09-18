@@ -7,10 +7,10 @@ import os
 import argparse
 from ai.bot_runtime import FabBotClient
 
-__all__ = ["FabBotClient"]
+__all__ = ["FabBotClient", "build_parser"]
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="FaB Talishar Bot Client")
     parser.add_argument('--room', required=True)
     parser.add_argument('--deck', required=True)
     parser.add_argument('--role', choices=['host', 'join'], required=True)
@@ -20,6 +20,10 @@ if __name__ == '__main__':
     parser.add_argument('--buffer-capacity', type=int, default=None)
     parser.add_argument('--epoch-ratio', type=float, default=0.0)
     parser.add_argument('--ismcts-concurrency', choices=['threads', 'multiprocessing', 'direct_gpu', 'sequential'], default=None)
+    return parser
+
+if __name__ == '__main__':
+    parser = build_parser()
     args = parser.parse_args()
 
     os.makedirs('logs', exist_ok=True)

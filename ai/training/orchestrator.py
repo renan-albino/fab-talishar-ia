@@ -227,6 +227,7 @@ class GPUTrainingOrchestrator:
         os.environ["FAB_BUFFER_CAPACITY"] = str(buffer_cap)
         buffer = get_global_buffer(buffer_cap)
         self.stats["buffer_capacity"] = buffer_cap
+        self.stats["ismcts_concurrency"] = str(cfg.get("ismcts_concurrency", getattr(SETTINGS, "default_ismcts_concurrency", "threads")))
 
         training_decks: List[str] = cfg.get("training_decks", [])
         num_workers = int(cfg.get("num_workers", SETTINGS.num_workers))
