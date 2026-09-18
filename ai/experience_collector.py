@@ -18,6 +18,39 @@ except Exception:
     DEFAULT_STATE_DIM = 800
 
 
+class SumTree:
+    def __init__(self, capacity: int):
+        self.capacity = capacity
+        self.tree = np.zeros(2 * capacity - 1, dtype=np.float32)
+
+    def update(self, idx: int, priority: float):
+        tree_idx = idx + self.capacity - 1
+        change = priority - self.tree[tree_idx]
+        self.tree[tree_idx] = priority
+        while tree_idx != 0:
+            tree_idx = (tree_idx - 1) // 2
+            self.tree[tree_idx] += change
+
+    def get_leaf(self, v: float) -> Tuple[int, int, float]:
+        parent_idx = 0
+        while True:
+            left_child_idx = 2 * parent_idx + 1
+            right_child_idx = left_child_idx + 1
+            if left_child_idx >= len(self.tree):
+                break
+            if v <= self.tree[left_child_idx] or self.tree[right_child_idx] == 0:
+                parent_idx = left_child_idx
+            else:
+                v -= self.tree[left_child_idx]
+                parent_idx = right_child_idx
+        data_idx = parent_idx - self.capacity + 1
+        return parent_idx, data_idx, self.tree[parent_idx]
+
+    @property
+    def total_priority(self) -> float:
+        return self.tree[0]
+
+
 class ReplayBuffer:
     def __init__(self, max_capacity: int = 100000, state_dim: int = None):
         self.max_capacity = max_capacity
@@ -25,7 +58,9 @@ class ReplayBuffer:
         self.states = np.zeros((max_capacity, self.state_dim), dtype=np.float32)
         self.policies = np.zeros((max_capacity, 32), dtype=np.float32)
         self.values = np.zeros((max_capacity, 1), dtype=np.float32)
-        self.weights = np.ones(max_capacity, dtype=np.float32)
+        
+        self.sum_tree = SumTree(max_capacity)
+        
         # Alvos Auxiliares (Metodologia KataGo - David J. Wu, 2019)
         self.aux_delta_hp = np.zeros((max_capacity, 1), dtype=np.float32)
         self.aux_turn_dmg = np.zeros((max_capacity, 1), dtype=np.float32)
@@ -45,7 +80,9 @@ class ReplayBuffer:
         self.states[idx] = state
         self.policies[idx] = policy
         self.values[idx] = float(value)
-        self.weights[idx] = max(float(weight), 0.01)
+        
+        self.sum_tree.update(idx, max(float(weight), 0.01))
+        
         self.aux_delta_hp[idx] = float(aux_delta_hp)
         self.aux_turn_dmg[idx] = float(aux_turn_dmg)
         self.pointer = (self.pointer + 1) % self.max_capacity
@@ -55,7 +92,8 @@ class ReplayBuffer:
         self,
         trajectory: List[Any],
         winner_player_id: int,
-        weights: Optional[List[float]] = None
+        weights: Optional[List[float]] = None,
+        epoch_ratio: float = 0.0
     ):
         """
         Adiciona trajetória completa ao buffer calculando Recompensa Densa (Reward Shaping),
@@ -77,13 +115,15 @@ class ReplayBuffer:
             else:
                 r_term = 0.0
 
-            # 2. Reward Shaping Intermediário (Dense Reward)
+            # 2. Reward Shaping Intermediário (Dense Reward) com Annealing
             if board_eval is not None:
                 try:
                     # Normaliza a vantagem de mesa do FaB com tanh (escala típica [-15, +15] -> [-1, 1])
                     norm_eval = float(np.tanh(float(board_eval) / 10.0))
-                    # Combinação convexa: 60% ancorado no resultado final, 40% na vantagem posicional do turno
-                    reward = 0.6 * r_term + 0.4 * norm_eval
+                    # Annealing: peso da vantagem posicional decai de 0.4 para 0.0 com o avanço das épocas
+                    eval_weight = 0.4 * (1.0 - epoch_ratio)
+                    term_weight = 1.0 - eval_weight
+                    reward = term_weight * r_term + eval_weight * norm_eval
                     reward = float(np.clip(reward, -1.0, 1.0))
                     aux_delta = norm_eval
                     aux_dmg = max(0.0, float(board_eval) / 5.0)
@@ -116,18 +156,28 @@ class ReplayBuffer:
             raise ValueError("Buffer vazio, não é possível amostrar batch.")
 
         if prioritized and self.current_size > 1:
-            active_weights = self.weights[:self.current_size]
-            sum_w = float(np.sum(active_weights))
-            if sum_w > 0:
-                probs = active_weights / sum_w
-                indices = np.random.choice(self.current_size, batch_size, replace=True, p=probs)
-                # Cálculo de Importance Sampling Weights: w_i = (N * P(i))^(-beta)
-                sampled_probs = np.maximum(probs[indices], 1e-8)
-                is_weights = (float(self.current_size) * sampled_probs) ** (-beta)
-                is_weights = is_weights / np.max(is_weights)  # Normalização para estabilidade de gradiente
-            else:
-                indices = np.random.choice(self.current_size, batch_size, replace=True)
-                is_weights = np.ones(batch_size, dtype=np.float32)
+            indices = []
+            is_weights_list = []
+            segment = self.sum_tree.total_priority / batch_size
+            for i in range(batch_size):
+                a = segment * i
+                b = segment * (i + 1)
+                v = random.uniform(a, b)
+                parent_idx, data_idx, priority = self.sum_tree.get_leaf(v)
+                if data_idx >= self.current_size:
+                    data_idx = random.randint(0, self.current_size - 1)
+                    priority = self.sum_tree.tree[data_idx + self.sum_tree.capacity - 1]
+                indices.append(data_idx)
+                
+                prob = priority / max(self.sum_tree.total_priority, 1e-8)
+                sampled_prob = max(prob, 1e-8)
+                is_weight = (float(self.current_size) * sampled_prob) ** (-beta)
+                is_weights_list.append(is_weight)
+                
+            indices = np.array(indices)
+            is_weights = np.array(is_weights_list, dtype=np.float32)
+            if np.max(is_weights) > 0:
+                is_weights = is_weights / np.max(is_weights)
         else:
             if self.current_size < batch_size:
                 indices = np.random.choice(self.current_size, self.current_size, replace=True)
@@ -171,12 +221,14 @@ class ReplayBuffer:
             os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else ".", exist_ok=True)
             tmp_path = f"{filepath}.{os.getpid()}_{time.time_ns()}.tmp.npz"
             try:
+                tree_start = self.sum_tree.capacity - 1
+                current_weights = self.sum_tree.tree[tree_start : tree_start + self.current_size]
                 np.savez_compressed(
                     tmp_path,
                     states=self.states[:self.current_size],
                     policies=self.policies[:self.current_size],
                     values=self.values[:self.current_size],
-                    weights=self.weights[:self.current_size],
+                    weights=current_weights,
                     aux_delta_hp=self.aux_delta_hp[:self.current_size],
                     aux_turn_dmg=self.aux_turn_dmg[:self.current_size],
                     schema_version=np.int32(2),
@@ -197,7 +249,7 @@ class ReplayBuffer:
         new_states = np.zeros((new_capacity, self.state_dim), dtype=np.float32)
         new_policies = np.zeros((new_capacity, 32), dtype=np.float32)
         new_values = np.zeros((new_capacity, 1), dtype=np.float32)
-        new_weights = np.ones(new_capacity, dtype=np.float32)
+        new_sum_tree = SumTree(new_capacity)
         new_aux_delta = np.zeros((new_capacity, 1), dtype=np.float32)
         new_aux_dmg = np.zeros((new_capacity, 1), dtype=np.float32)
 
@@ -206,14 +258,17 @@ class ReplayBuffer:
             new_states[:copy_n] = self.states[:copy_n]
             new_policies[:copy_n] = self.policies[:copy_n]
             new_values[:copy_n] = self.values[:copy_n]
-            new_weights[:copy_n] = self.weights[:copy_n]
             new_aux_delta[:copy_n] = self.aux_delta_hp[:copy_n]
             new_aux_dmg[:copy_n] = self.aux_turn_dmg[:copy_n]
+            
+            tree_start = self.sum_tree.capacity - 1
+            for i in range(copy_n):
+                new_sum_tree.update(i, self.sum_tree.tree[tree_start + i])
 
         self.states = new_states
         self.policies = new_policies
         self.values = new_values
-        self.weights = new_weights
+        self.sum_tree = new_sum_tree
         self.aux_delta_hp = new_aux_delta
         self.aux_turn_dmg = new_aux_dmg
         self.max_capacity = new_capacity
@@ -244,10 +299,12 @@ class ReplayBuffer:
             self.states[:n] = loaded_states[:n]
             self.policies[:n] = loaded_policies[:n]
             self.values[:n] = loaded_values[:n]
-            if loaded_weights is not None and len(loaded_weights) >= n:
-                self.weights[:n] = loaded_weights[:n]
-            else:
-                self.weights[:n] = 1.0
+            
+            # Repopular SumTree
+            self.sum_tree = SumTree(self.max_capacity)
+            for i in range(n):
+                w = float(loaded_weights[i]) if (loaded_weights is not None and len(loaded_weights) > i) else 1.0
+                self.sum_tree.update(i, w)
 
             if loaded_aux_delta is not None and len(loaded_aux_delta) >= n:
                 self.aux_delta_hp[:n] = loaded_aux_delta[:n]

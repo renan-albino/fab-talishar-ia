@@ -25,17 +25,13 @@ DEFAULT_MULTIPLIERS = {
     "absorb_tempo_bonus": 1.0,
 }
 
-AGGRO_COMBO_KEYWORDS = (
-    "dash", "teklovossen", "marlinn", "vynnset", "oscilio", "kano",
-    "fai", "katsu", "chane", "briar", "viserai", "cindra", "betsy",
-    "azalea", "lexi", "riptide", "ninja", "mechanologist", "wizard", "runeblade", "ranger"
-)
-
-
 def is_aggro_or_combo_hero(name: str) -> bool:
-    """Verifica se o herói pertence a um arquétipo aggro, combo ou de sinergia de mão/peças."""
-    n = str(name).lower().strip()
-    return any(k in n for k in AGGRO_COMBO_KEYWORDS)
+    """Verifica se o herói pertence a um arquétipo aggro, combo ou de sinergia de mão/peças usando metadata oficial."""
+    from ai.game_simulator import _get_cards_db
+    db = _get_cards_db()
+    hero_data = db.get(name.lower().replace(" ", "-"), {})
+    aggro_classes = {"ninja", "mechanologist", "runeblade", "ranger", "wizard"}
+    return bool(aggro_classes & set(hero_data.get("classes", [])))
 
 
 _CACHE = {

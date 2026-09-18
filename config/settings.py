@@ -27,8 +27,12 @@ from __future__ import annotations
 
 import os
 import math
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Tuple
+
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+DATA_DIR = PROJECT_ROOT / "data"
 
 
 # ══════════════════════════════════════════════════════════════════

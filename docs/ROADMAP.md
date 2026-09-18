@@ -11,12 +11,12 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 - [x] **Regras Oficiais de Combate (CR)**: Phantasm Popping (CR 7.4.4), Dominate (CR 7.4.2a), Overpower (CR 7.4.2b), Piercing (CR 8.5.21) e Intimidate (CR 8.5.8).
 - [x] **Resiliência & Concorrência**: Conversores universais seguros (`safe_int`, `safe_list`, `safe_dict`, `safe_str`), polling adaptativo, eliminação de processos zumbis Unix `<defunct>` e virtual loss simétrico no MCTS.
 - [x] **Ferramentas CLI de Automação**: Utilitários operacionais em `.agents/skills/automated-tasks/scripts/` (`validate_decks.py`, `benchmark_mcts.py`, `healthcheck_talishar.py` e `run_smoke_tests.py`).
-- [x] **Rede Neural v2 (FaBCardTransformerNetwork - ADR-0007)**: Substituição completa do antigo MLP de 192 entradas por arquitetura Transformer com Self/Cross-Attention, vetor flat-packed de 800 dimensões, alvos auxiliares KataGo e embeddings densos em $O(1)$ (`data/card_embeddings.pt`).
-- [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.087 cartas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena (`ArenaThreatContext`) e poda adaptativa de combate sem hardcodes nominais.
-- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando **385 testes canônicos com 100% de aprovação**.
-- [x] **Passo 3 (Especialização de Classes Não-Lineares & Auto-Tuning por Arquétipo)**: Implementação de auto-tuning consciente de arquétipo (`dynamic_rule_tuner.py`) prevenindo death spiral em heróis de sinergia/combo (Dash I/O, Teklovossen, Vynnset, Marlinn, Oscilio) e suíte canônica de testes sub-50 (`tests/test_sub50_hero_strategies.py`).
-- [ ] **Passo 4 (Simulador Determinístico & Sideboard)**: Testes de casos de borda e transição de estados em `ai/game_simulator.py` e `ai/sideboard_manager.py`.
-- [ ] **Passo 5 (Pipeline de Treinamento Neural PyTorch)**: Bateria leve de testes CPU para `ai/training/orchestrator.py` e `ai/experience_collector.py`.
+- [x] **Rede Neural v2 (FaBCardTransformerNetwork - ADR-0007)**: Substituição completa do antigo MLP de 192 entradas por arquitetura Transformer com Self/Cross-Attention (4x dim_feedforward), alvos auxiliares KataGo e embeddings densos em $O(1)$.
+- [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.087 cartas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena e poda adaptativa sem hardcodes nominais (incluindo regra dinâmica aggro/combo via DB).
+- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando testes canônicos robustos e centralizados em `PROJECT_ROOT`.
+- [x] **Passo 3 (Especialização de Classes Não-Lineares & Auto-Tuning por Arquétipo)**: Auto-tuning consciente de arquétipo via banco de dados sem dependência estática.
+- [ ] **Passo 4 (Simulador Determinístico & Sideboard)**: Testes de casos de borda e transição de estados no simulador (agora otimizado com deepcopy seguro).
+- [ ] **Passo 5 (Pipeline de Treinamento Neural PyTorch)**: Implementação e bateria de testes para `ai/training/orchestrator.py` e `ai/experience_collector.py` (PER agora operando em $O(\log N)$ via SumTree).
 - [ ] **Passo 6 (Interface Gráfica Streamlit)**: Mocks automatizados de renderização de abas com `streamlit.testing.v1.AppTest`.
 
 ---

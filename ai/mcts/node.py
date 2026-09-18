@@ -5,6 +5,7 @@ Nó da árvore MCTS para busca AlphaZero / PUCT.
 """
 
 import math
+import threading
 from typing import Dict, List, Optional
 
 
@@ -28,7 +29,7 @@ class MCTSNode:
 
     __slots__ = (
         "prior", "visit_count", "value_sum", "virtual_loss",
-        "children", "pending", "is_expanded", "parent", "action_id", "action_name"
+        "children", "pending", "is_expanded", "parent", "action_id", "action_name", "_lock"
     )
 
     def __init__(
@@ -48,6 +49,7 @@ class MCTSNode:
         self.parent       = parent
         self.action_id    = action_id
         self.action_name  = action_name
+        self._lock        = threading.Lock()
 
     @property
     def q_value(self) -> float:

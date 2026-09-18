@@ -356,7 +356,8 @@ class MCTSEngine:
             node = best_child
             path.append(node)
         for n in path:
-            n.virtual_loss += VIRTUAL_LOSS
+            with n._lock:
+                n.virtual_loss += VIRTUAL_LOSS
         return node
 
     # ── Backpropagação ────────────────────────────────────
@@ -371,9 +372,10 @@ class MCTSEngine:
         curr = node
         sign = 1.0
         while curr is not None:
-            curr.virtual_loss = max(0, curr.virtual_loss - VIRTUAL_LOSS)
-            curr.visit_count += 1
-            curr.value_sum   += value * sign
+            with curr._lock:
+                curr.virtual_loss = max(0, curr.virtual_loss - VIRTUAL_LOSS)
+                curr.visit_count += 1
+                curr.value_sum   += value * sign
             if not self.single_player_tree:
                 sign *= -1.0
             curr = curr.parent

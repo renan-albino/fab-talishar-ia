@@ -32,20 +32,19 @@ _CARD_TO_IDX: Optional[Dict[str, int]] = None
 def _get_card_embeddings_table() -> Tuple[torch.Tensor, Dict[str, int]]:
     global _CARD_EMBEDDINGS_TABLE, _CARD_TO_IDX
     if _CARD_EMBEDDINGS_TABLE is None or _CARD_TO_IDX is None:
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        pt_path = os.path.join(base_dir, "data", "card_embeddings.pt")
-        idx_path = os.path.join(base_dir, "data", "card_to_idx.json")
+        try:
+            from config.settings import DATA_DIR
+            pt_path = DATA_DIR / "card_embeddings.pt"
+            idx_path = DATA_DIR / "card_to_idx.json"
 
-        if os.path.exists(pt_path) and os.path.exists(idx_path):
-            try:
+            if pt_path.exists() and idx_path.exists():
                 _CARD_EMBEDDINGS_TABLE = torch.load(pt_path, map_location="cpu", weights_only=True)
                 with open(idx_path, "r", encoding="utf-8") as f:
                     _CARD_TO_IDX = json.load(f)
-            except Exception as e:
-                print(f"[Model] ⚠ Erro ao carregar card_embeddings.pt: {e}. Criando matriz vazia.")
-                _CARD_EMBEDDINGS_TABLE = torch.zeros(1, CARD_EMBEDDING_DIM, dtype=torch.float32)
-                _CARD_TO_IDX = {"<PAD>": 0}
-        else:
+            else:
+                raise FileNotFoundError("Embeddings not found")
+        except Exception as e:
+            print(f"[Model] ⚠ Erro ao carregar card_embeddings.pt: {e}. Criando matriz vazia.")
             _CARD_EMBEDDINGS_TABLE = torch.zeros(1, CARD_EMBEDDING_DIM, dtype=torch.float32)
             _CARD_TO_IDX = {"<PAD>": 0}
 
@@ -121,7 +120,7 @@ class FaBCardTransformerNetwork(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=hidden_dim,
             nhead=num_heads,
-            dim_feedforward=hidden_dim * 2,
+            dim_feedforward=hidden_dim * 4,
             dropout=dropout,
             activation="gelu",
             batch_first=True,
@@ -142,8 +141,10 @@ class FaBCardTransformerNetwork(nn.Module):
         self.fusion_fc = nn.Sequential(
             nn.Linear(hidden_dim * 2, hidden_dim),
             nn.LayerNorm(hidden_dim),
-            nn.LeakyReLU(0.1),
+            nn.GELU(),
             nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
         )
 
         # 6. Policy Head (32 ações)

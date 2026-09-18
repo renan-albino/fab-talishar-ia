@@ -27,20 +27,14 @@ _FAB_CARD_SEMANTICS: Optional[dict] = None
 def _get_cards_db() -> dict:
     global _FAB_CARDS_DB
     if _FAB_CARDS_DB is None:
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        db_paths = [
-            os.path.join(base_dir, "data", "fab_cards_db.json"),
-            "data/fab_cards_db.json",
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "fab_cards_db.json"),
-        ]
-        for p in db_paths:
-            if os.path.exists(p):
-                try:
-                    with open(p, "r", encoding="utf-8") as f:
-                        _FAB_CARDS_DB = json.load(f)
-                    break
-                except Exception:
-                    pass
+        try:
+            from config.settings import DATA_DIR
+            db_path = DATA_DIR / "fab_cards_db.json"
+            if db_path.exists():
+                with open(db_path, "r", encoding="utf-8") as f:
+                    _FAB_CARDS_DB = json.load(f)
+        except Exception:
+            pass
         if _FAB_CARDS_DB is None:
             _FAB_CARDS_DB = {}
     return _FAB_CARDS_DB
@@ -49,25 +43,20 @@ def _get_cards_db() -> dict:
 def _get_card_semantics() -> dict:
     global _FAB_CARD_SEMANTICS
     if _FAB_CARD_SEMANTICS is None:
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        sem_paths = [
-            os.path.join(base_dir, "data", "fab_card_semantics.json"),
-            "data/fab_card_semantics.json",
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "fab_card_semantics.json"),
-        ]
-        for p in sem_paths:
-            if os.path.exists(p):
-                try:
-                    with open(p, "r", encoding="utf-8") as f:
-                        _FAB_CARD_SEMANTICS = json.load(f)
-                    break
-                except Exception:
-                    pass
+        try:
+            from config.settings import DATA_DIR
+            sem_path = DATA_DIR / "fab_card_semantics.json"
+            if sem_path.exists():
+                with open(sem_path, "r", encoding="utf-8") as f:
+                    _FAB_CARD_SEMANTICS = json.load(f)
+        except Exception:
+            pass
         if _FAB_CARD_SEMANTICS is None:
             _FAB_CARD_SEMANTICS = {}
     return _FAB_CARD_SEMANTICS
 
 
+import copy
 def _shallow_clone_state(state: dict) -> dict:
     """
     Faz uma cópia rápida do estado, garantindo isolamento de estruturas mutáveis
@@ -76,26 +65,11 @@ def _shallow_clone_state(state: dict) -> dict:
     """
     if not isinstance(state, dict):
         return {}
-    sim_state = state.copy()
-    
-    list_fields = [
-        "playerResources", "playerHand", "playerPitch", 
-        "playerDiscard", "playerArsenal", "playerBanish",
-        "playerEquipment", "opponentHand", "combatChain",
-        "opponentItems", "playerAuras", "playerTokens",
-        "playerDeck", "playerGraveyard", "playerSoul", "playerAllies"
-    ]
-    for field in list_fields:
-        if field in sim_state and isinstance(sim_state[field], list):
-            sim_state[field] = [
-                item.copy() if isinstance(item, dict) else (item[:] if isinstance(item, list) else item)
-                for item in sim_state[field]
-            ]
-            
-    if "activeChainLink" in sim_state and isinstance(sim_state["activeChainLink"], dict):
-        sim_state["activeChainLink"] = sim_state["activeChainLink"].copy()
-        
-    return sim_state
+    cloned = state.copy()
+    for key in ("playerHand", "activeChainLink", "playerEquipment", "opponentHand", "combatChain"):
+        if key in cloned:
+            cloned[key] = copy.deepcopy(cloned[key])
+    return cloned
 
 
 DANGEROUS_ON_HITS = {

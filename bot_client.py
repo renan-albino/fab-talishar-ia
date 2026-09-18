@@ -21,7 +21,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     os.makedirs('logs', exist_ok=True)
-    with open(f'logs/{args.room}_{args.name}_debug.log', 'w') as f:
+    with open(f'logs/{args.room}_{args.name}_debug.log', 'a') as f:
         f.write('--- INICIO HTTP ---\n')
     
     client = FabBotClient(
