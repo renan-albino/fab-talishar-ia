@@ -4,9 +4,11 @@ ai/hero_strategies/ranger.py
 Estratégias para Ranger (Azalea, Lexi, Riptide) e especialização para Marlynn / Marlinn.
 """
 
+import logging
 from functools import lru_cache
-from typing import Set, List, Optional, Dict, Any
-from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS, is_resource_or_gem_card, KNOWN_AMBUSH_CARDS, _get_cards_db
+from typing import Optional, List, Tuple
+from .base import HeroStrategy, TurnPlan, is_resource_or_gem_card, KNOWN_AMBUSH_CARDS, _get_cards_db
+from .ninja import NinjaStrategy
 
 
 class RangerStrategy(HeroStrategy):

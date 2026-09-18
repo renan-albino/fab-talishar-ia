@@ -114,7 +114,8 @@ class ISMCTSEngine:
         worlds = generate_worlds(state=state, opp_hand_count=None, num_worlds=self.num_worlds)
         actual_worlds = len(worlds)
 
-        def _evaluate_world(world_state):
+        def _evaluate_world(args):
+            world_idx, world_state = args
             try:
                 # Condicionamento de Mundo Determinizado (Cowling 2012 & ReBel 2020)
                 world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
@@ -124,6 +125,7 @@ class ISMCTSEngine:
                     num_simulations=num_simulations,
                     training_mode=training_mode,
                     state_vec=world_vec,
+                    world_seed=world_idx,
                 )
                 return world_children
             except Exception:
@@ -131,18 +133,18 @@ class ISMCTSEngine:
 
         if actual_worlds > 1:
             with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, actual_worlds)) as executor:
-                futures = [executor.submit(_evaluate_world, w) for w in worlds]
+                futures = [executor.submit(_evaluate_world, (idx, w)) for idx, w in enumerate(worlds)]
                 for fut in concurrent.futures.as_completed(futures):
                     world_children = fut.result()
                     for idx, child in world_children.items():
                         if 0 <= idx < num_legal:
                             vote_counts[idx] = vote_counts.get(idx, 0) + child.visit_count
         else:
-            for world_state in worlds:
-                world_children = _evaluate_world(world_state)
-                for idx, child in world_children.items():
-                    if 0 <= idx < num_legal:
-                        vote_counts[idx] = vote_counts.get(idx, 0) + child.visit_count
+            for idx, world_state in enumerate(worlds):
+                world_children = _evaluate_world((idx, world_state))
+                for idx_c, child in world_children.items():
+                    if 0 <= idx_c < num_legal:
+                        vote_counts[idx_c] = vote_counts.get(idx_c, 0) + child.visit_count
 
         # ── Agregação ─────────────────────────────────────────────
         total_votes = sum(vote_counts.values())
@@ -193,6 +195,7 @@ class ISMCTSEngine:
         num_simulations: int,
         training_mode: bool,
         state_vec: np.ndarray,
+        world_seed: int = 0,
     ) -> Tuple[int, Dict[int, MCTSNode]]:
         """
         Executa MCTSEngine em um mundo determinizado com batch leaf evaluation.
@@ -227,6 +230,7 @@ class ISMCTSEngine:
             base_value=base_value,
             state=world_state,
             legal_actions=legal_actions,
+            world_seed=world_seed,
         )
 
         # ── Phase 3: Backpropagate ─────────────────────────────────

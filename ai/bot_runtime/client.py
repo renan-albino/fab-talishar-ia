@@ -14,12 +14,13 @@ from ai.common import safe_int, safe_list, safe_dict, safe_str
 TALISHAR_API_URL = DEFAULT_BACKEND_URL
 
 class FabBotClient:
-    def __init__(self, room_id: str, deck_url: str, role: str, player_name: str, mcts_sims: int = None, device: str = None, buffer_capacity: int = None):
+    def __init__(self, room_id: str, deck_url: str, role: str, player_name: str, mcts_sims: int = None, device: str = None, buffer_capacity: int = None, epoch_ratio: float = 0.0):
         self.room_id = room_id
         self.deck_url = deck_url
         self.role = role
         self.player_name = player_name
         self.name = player_name  # Garante self.name definido para evitar AttributeError
+        self.epoch_ratio = epoch_ratio
         self.session = requests.Session()
         self.api = TalisharApiClient(backend_url=TALISHAR_API_URL, session=self.session)
         self.game_id = None

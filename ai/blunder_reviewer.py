@@ -60,13 +60,18 @@ def review_trajectory_for_blunders(
         # Se for o oponente, aumento indica ganho do oponente (ponto de atenção)
         step_swing = delta if is_my_step else -delta
 
-        if step_swing <= -3.0:
+        from config.settings import SETTINGS
+        blunder_thresh = getattr(SETTINGS, "blunder_threshold", -3.0)
+        inacc_thresh = getattr(SETTINGS, "inaccuracy_threshold", -1.5)
+        brill_thresh = getattr(SETTINGS, "brilliant_threshold", 3.0)
+
+        if step_swing <= blunder_thresh:
             weights[i] = 3.5
             blunder_count += 1
-        elif step_swing <= -1.5:
+        elif step_swing <= inacc_thresh:
             weights[i] = 2.0
             inaccuracy_count += 1
-        elif step_swing >= 3.0:
+        elif step_swing >= brill_thresh:
             weights[i] = 2.0
             brilliant_count += 1
 

@@ -11,7 +11,7 @@ simulando com precisão:
   - Cálculo de dano não bloqueado e perda de vida
   - Efeitos on-hit e redução de cartas na mão do oponente
   - Zonas de jogo (Mão, Arsenal, Pitch, Descarte, Banidas)
-  - Vetorização do estado resultante (800 dimensões) para avaliação imediata pelo Value Head
+  - Vetorização do estado resultante (832 dimensões) para avaliação imediata pelo Value Head
 """
 
 import os

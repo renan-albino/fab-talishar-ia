@@ -18,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--mcts-sims', type=int, default=None)
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--buffer-capacity', type=int, default=None)
+    parser.add_argument('--epoch-ratio', type=float, default=0.0)
     args = parser.parse_args()
 
     os.makedirs('logs', exist_ok=True)
@@ -27,6 +28,7 @@ if __name__ == '__main__':
     client = FabBotClient(
         args.room, args.deck, args.role, args.name,
         mcts_sims=args.mcts_sims, device=args.device,
-        buffer_capacity=args.buffer_capacity
+        buffer_capacity=args.buffer_capacity,
+        epoch_ratio=args.epoch_ratio
     )
     client.run_loop()

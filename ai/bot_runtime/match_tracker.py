@@ -196,9 +196,15 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                 weights=weights,
                 room_id=str(client.room_id),
                 player_id=client.player_id,
+                epoch_ratio=getattr(client, "epoch_ratio", 0.0),
             )
             buf = get_global_buffer(client.buffer_capacity)
-            buf.add_trajectory(client.trajectory, winner_player_id=winner_id, weights=weights)
+            buf.add_trajectory(
+                client.trajectory,
+                winner_player_id=winner_id,
+                weights=weights,
+                epoch_ratio=getattr(client, "epoch_ratio", 0.0)
+            )
             buf.save()
             client.trajectory.clear()
         except Exception as e:

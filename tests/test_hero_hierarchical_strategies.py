@@ -21,7 +21,7 @@ from ai.hero_strategies import (
     AssassinStrategy,
     MerchantStrategy,
 )
-from ai.trainer import RoundRobinMatchupEngine
+from ai.training import RoundRobinMatchupEngine
 from deck_parser import enrich_deck_metadata, list_saved_decks
 from bot_client import FabBotClient
 

@@ -15,7 +15,7 @@ try:
     from config.settings import SETTINGS
     DEFAULT_STATE_DIM = SETTINGS.state_dim
 except Exception:
-    DEFAULT_STATE_DIM = 800
+    DEFAULT_STATE_DIM = 832
 
 
 class SumTree:
@@ -370,7 +370,8 @@ def save_trajectory_file(
     weights: Optional[List[float]] = None,
     room_id: str = "",
     player_id: int = 1,
-    out_dir: str = "data/trajectories"
+    out_dir: str = "data/trajectories",
+    epoch_ratio: float = 0.0
 ) -> str:
     """Salva uma trajetória individual de forma atômica e ultrarrápida sem contenção de disco."""
     os.makedirs(out_dir, exist_ok=True)
@@ -391,7 +392,14 @@ def save_trajectory_file(
         if board_eval is not None:
             try:
                 norm_eval = float(np.tanh(float(board_eval) / 10.0))
-                reward = float(np.clip(0.6 * r_term + 0.4 * norm_eval, -1.0, 1.0))
+                
+                # Reward Annealing (MCTS Value Network Scaling)
+                # Início (ratio=0): Confia mais na avaliação tática de curto prazo (0.8) vs (0.2) vitória
+                # Fim (ratio=1): Confia mais na vitória real da partida (0.8) vs (0.2) avaliação
+                w_term = 0.2 + (0.6 * epoch_ratio)
+                w_eval = 0.8 - (0.6 * epoch_ratio)
+                
+                reward = float(np.clip(w_term * r_term + w_eval * norm_eval, -1.0, 1.0))
                 aux_delta = norm_eval
                 aux_dmg = max(0.0, float(board_eval) / 5.0)
             except Exception:

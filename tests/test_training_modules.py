@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import ai.trainer as trainer_facade
+import ai.training as trainer_facade
 from ai.training import (
     GPUTrainingOrchestrator,
     RoundRobinMatchupEngine,

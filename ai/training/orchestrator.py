@@ -56,6 +56,14 @@ class GPUTrainingOrchestrator:
             cls._instance._initialized = False
         return cls._instance
 
+    @classmethod
+    def reset_instance(cls):
+        """Reseta o singleton, útil para isolamento em testes unitários."""
+        if cls._instance is not None:
+            if hasattr(cls._instance, "stop"):
+                cls._instance.stop()
+            cls._instance = None
+
     def __init__(self):
         if getattr(self, "_initialized", False):
             return
@@ -245,6 +253,7 @@ class GPUTrainingOrchestrator:
             # saturação de múltiplos contextos CUDA. O orquestrador mantém o treino de gradientes na GPU.
             bot_device = "cpu" if (num_workers >= 3 or "cuda" not in str(dev_val)) else dev_val
 
+            epoch_ratio = min(1.0, self.stats["epochs_completed"] / max(1, self.config.get("max_epochs", 100)))
             for _ in range(num_workers):
                 if not self.is_running:
                     break
@@ -256,7 +265,8 @@ class GPUTrainingOrchestrator:
                      "--role", "host",  "--name", "Bot1",
                      "--mcts-sims", str(mcts_sims_val),
                      "--device", str(bot_device),
-                     "--buffer-capacity", str(buffer_cap)],
+                     "--buffer-capacity", str(buffer_cap),
+                     "--epoch-ratio", str(epoch_ratio)],
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
@@ -269,7 +279,8 @@ class GPUTrainingOrchestrator:
                      "--role", "join",  "--name", "Bot2",
                      "--mcts-sims", str(mcts_sims_val),
                      "--device", str(bot_device),
-                     "--buffer-capacity", str(buffer_cap)],
+                     "--buffer-capacity", str(buffer_cap),
+                     "--epoch-ratio", str(epoch_ratio)],
                     cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,

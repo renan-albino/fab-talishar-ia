@@ -48,7 +48,7 @@ def get_gpu_info():
 @st.cache_resource
 def get_orchestrator():
     """Carrega o GPUTrainingOrchestrator de forma lazy apenas quando a aba de treino for acessada."""
-    from ai.trainer import GPUTrainingOrchestrator
+    from ai.training import GPUTrainingOrchestrator
 
     return GPUTrainingOrchestrator()
 

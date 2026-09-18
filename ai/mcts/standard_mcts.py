@@ -178,6 +178,14 @@ class MCTSEngine:
             logger.warning(f"Erro na avaliação da rede: {e}. Usando fallback.")
             return np.ones(32, dtype=np.float32) / 32.0, 0.0
 
+    def _node_depth(self, node: MCTSNode) -> int:
+        depth = 0
+        curr = node
+        while curr.parent is not None:
+            depth += 1
+            curr = curr.parent
+        return depth
+
     def _batch_evaluate_leaves(
         self,
         root_state_vec: np.ndarray,
@@ -185,6 +193,7 @@ class MCTSEngine:
         base_value: float,
         state: Optional[dict] = None,
         legal_actions: Optional[List[Dict[str, Any]]] = None,
+        world_seed: int = 0,
     ) -> List[float]:
         """
         Avalia todas as folhas selecionadas em UM ÚNICO forward pass batch.
@@ -208,11 +217,11 @@ class MCTSEngine:
                     try:
                         _, leaf_vec = GameSimulator.simulate_step(state, legal_actions[node.action_id])
                     except Exception:
-                        rng = np.random.default_rng(seed=(node.action_id + 1) % (2**31))
+                        rng = np.random.default_rng(seed=(node.action_id + 1 + world_seed * 1000) % (2**31))
                         noise = rng.normal(0.0, LEAF_PERTURB_SCALE, size=root_state_vec.shape).astype(np.float32)
                         leaf_vec = np.clip(root_state_vec + noise, 0.0, 1.0)
                 else:
-                    rng = np.random.default_rng(seed=(node.action_id + 1) % (2**31))
+                    rng = np.random.default_rng(seed=(node.action_id + 1 + world_seed * 1000) % (2**31))
                     noise = rng.normal(0.0, LEAF_PERTURB_SCALE, size=root_state_vec.shape).astype(np.float32)
                     leaf_vec = np.clip(root_state_vec + noise, 0.0, 1.0)
                 leaf_vecs.append(leaf_vec)
@@ -319,16 +328,21 @@ class MCTSEngine:
 
     # ── Dirichlet ─────────────────────────────────────────────────
 
-    def _add_dirichlet_noise(self, root: MCTSNode, num_legal: int) -> None:
-        active = [c for k, c in root.children.items() if k >= 0]
-        n = len(active)
+    def _add_dirichlet_noise(self, root: MCTSNode, n_actions: int) -> None:
+        """Adiciona ruído de Dirichlet na raiz (apenas no modo de treinamento)."""
+        valid_keys = [k for k in root.children.keys() if k >= 0]
+        n = len(valid_keys)
         if n == 0:
             return
-        alpha = np.full(n, DIRICHLET_ALPHA, dtype=np.float32)
+        
+        # Dirichlet Alpha dinâmico (AlphaZero usa ~10 / avg_actions)
+        alpha_val = min(1.0, 10.0 / max(1, n_actions))
+        alpha = np.full(n, alpha_val, dtype=np.float32)
         try:
             noise = np.random.dirichlet(alpha)
         except Exception:
             return
+        active = [root.children[k] for k in valid_keys]
         for i, child in enumerate(active):
             if i < len(noise):
                 child.prior = (

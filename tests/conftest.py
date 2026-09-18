@@ -1,7 +1,11 @@
 """Fixtures compartilhadas para a suíte de testes do FaB Talishar AI."""
 
 import pytest
+import platform
 from ai.policy.engine import PolicyEngine
+
+if platform.system() == "Windows":
+    pytest.skip("Testes requerem ambiente Linux/WSL2 para fcntl/atomic IO", allow_module_level=True)
 
 
 def make_policy_engine(hero_name="generic", num_mcts_sims=0, use_gpu=False, **kwargs):

@@ -16,7 +16,7 @@ import torch.nn.functional as F
 import numpy as np
 from typing import Tuple, Dict, Any, List, Optional
 
-STATE_DIM = 800
+STATE_DIM = 832
 ACTION_DIM = 32
 CARD_EMBEDDING_DIM = 48
 NUM_CARD_SLOTS = 16
@@ -99,7 +99,7 @@ class FaBCardTransformerNetwork(nn.Module):
 
         # 1. Projeção das Entradas
         self.global_proj = nn.Sequential(
-            nn.Linear(32, hidden_dim),
+            nn.Linear(64, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.LeakyReLU(0.1),
         )
@@ -187,14 +187,14 @@ class FaBCardTransformerNetwork(nn.Module):
         return_aux: bool = False
     ) -> Tuple[torch.Tensor, torch.Tensor] | Tuple[torch.Tensor, torch.Tensor, Dict[str, torch.Tensor]]:
         """
-        Recebe x no formato [batch, 800] (ou [batch, state_dim]).
+        Recebe x no formato [batch, 832] (ou [batch, state_dim]).
         Sintetiza features globais e tokens de cartas por atenção e projeta nas saídas.
         """
         batch_size = x.shape[0]
 
         # Decomposição do vetor flat-packed
-        global_features = x[:, :32]
-        card_features = x[:, 32:]
+        global_features = x[:, :64]
+        card_features = x[:, 64:]
 
         # Se houver inconsistência de tamanho residual, ajusta por corte ou preenchimento
         target_len = NUM_CARD_SLOTS * CARD_EMBEDDING_DIM
@@ -388,7 +388,7 @@ class FaBCardTransformerNetwork(nn.Module):
             vec[27] = blue_cnt / total_seen
             vec[28] = red_cnt / total_seen
 
-        # ── 2. Preenchimento de Slots de Cartas em O(1) (Índices 32 a 799) ──
+        # ── 2. Preenchimento de Slots de Cartas em O(1) (Índices 64 a 831) ──
         def _fill_slot(slot_idx: int, card_dict_or_name: Any):
             if slot_idx >= NUM_CARD_SLOTS:
                 return
@@ -400,7 +400,7 @@ class FaBCardTransformerNetwork(nn.Module):
 
             idx = c2idx.get(c_id, 0)
             if idx > 0 and idx < len(table_np):
-                start = 32 + (slot_idx * CARD_EMBEDDING_DIM)
+                start = 64 + (slot_idx * CARD_EMBEDDING_DIM)
                 end = start + CARD_EMBEDDING_DIM
                 vec[start:end] = table_np[idx]
 

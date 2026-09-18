@@ -3,10 +3,10 @@ tests/test_model.py
 ===================
 Testes unitários canônicos para o motor neural FaBCardTransformerNetwork (v2):
 - Integridade da matriz de embeddings tensoriais em O(1) (data/card_embeddings.pt)
-- Extração do vetor de estado flat-packed de 800 dimensões e fallback defensivo
+- Extração do vetor de estado flat-packed de 832 dimensões e fallback defensivo
 - Invariância a permutações das cartas da mão (Self-Attention)
 - Forward e Backward pass com cálculo de gradientes e cabeças auxiliares KataGo
-- Predição de estado com interface JSON e integração com ReplayBuffer (800 dimensões)
+- Predição de estado com interface JSON e integração com ReplayBuffer (832 dimensões)
 """
 
 import os
@@ -63,7 +63,7 @@ def test_card_embeddings_table_integrity():
 
 
 # ══════════════════════════════════════════════════════════════════
-# 2. TESTES DA EXTRAÇÃO DE VETOR DE ESTADO (800 dimensões)
+# 2. TESTES DA EXTRAÇÃO DE VETOR DE ESTADO (832 dimensões)
 # ══════════════════════════════════════════════════════════════════
 
 def test_extract_state_vector_shape_and_fallback():
@@ -109,7 +109,7 @@ def test_extract_state_vector_shape_and_values():
 
     vec = FaBCardTransformerNetwork.extract_state_vector(state)
     assert isinstance(vec, np.ndarray)
-    assert vec.shape == (800,)
+    assert vec.shape == (832,)
     assert not np.isnan(vec).any()
 
     # Contexto Global (0 a 31)
@@ -153,14 +153,14 @@ def test_transformer_forward_single_and_batch():
     model.eval()
 
     # 1. Amostra única
-    x_single = torch.randn(1, 800)
+    x_single = torch.randn(1, 832)
     policy_logits, value = model(x_single)
     assert policy_logits.shape == (1, 32)
     assert value.shape == (1, 1)
     assert -1.0 <= value.item() <= 1.0
 
     # 2. Batch de 8 amostras com alvos auxiliares KataGo
-    x_batch = torch.randn(8, 800)
+    x_batch = torch.randn(8, 832)
     p_batch, v_batch, aux_dict = model(x_batch, return_aux=True)
     assert p_batch.shape == (8, 32)
     assert v_batch.shape == (8, 1)
@@ -174,7 +174,7 @@ def test_transformer_forward_single_and_batch():
 
 def test_transformer_predict_state():
     model = FaBCardTransformerNetwork(hidden_dim=128, num_layers=2, num_heads=4)
-    vec = np.random.randn(800).astype(np.float32)
+    vec = np.random.randn(832).astype(np.float32)
     probs, val = model.predict_state(vec, device="cpu")
 
     assert isinstance(probs, np.ndarray)
@@ -241,7 +241,7 @@ def test_transformer_training_backward_pass():
     model.train()
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 
-    x = torch.randn(4, 800)
+    x = torch.randn(4, 832)
     target_policy = F.softmax(torch.randn(4, 32), dim=-1)
     target_value = torch.tensor([[0.5], [-0.5], [1.0], [0.0]], dtype=torch.float32)
     target_aux_delta = torch.randn(4, 1)
@@ -267,15 +267,15 @@ def test_transformer_training_backward_pass():
 
 
 # ══════════════════════════════════════════════════════════════════
-# 6. TESTES DO REPLAY BUFFER COM 800 DIMENSÕES
+# 6. TESTES DO REPLAY BUFFER COM 832 DIMENSÕES
 # ══════════════════════════════════════════════════════════════════
 
-def test_replay_buffer_800_dims():
-    buf = ReplayBuffer(max_capacity=100, state_dim=800)
-    assert buf.states.shape == (100, 800)
+def test_replay_buffer_832_dims():
+    buf = ReplayBuffer(max_capacity=100, state_dim=832)
+    assert buf.states.shape == (100, 832)
 
     for i in range(10):
-        s = np.full(800, fill_value=i, dtype=np.float32)
+        s = np.full(832, fill_value=i, dtype=np.float32)
         p = np.zeros(32, dtype=np.float32)
         p[i % 32] = 1.0
         v = 0.5
@@ -284,7 +284,7 @@ def test_replay_buffer_800_dims():
     assert len(buf) == 10
     b_states, b_policies, b_values = buf.sample_batch(batch_size=4, prioritized=False)
 
-    assert b_states.shape == (4, 800)
+    assert b_states.shape == (4, 832)
     assert b_policies.shape == (4, 32)
     assert b_values.shape == (4, 1)
 
@@ -321,7 +321,7 @@ def test_transformer_predict_states_batch():
     model.eval()
 
     # 1. Batch de 4 estados
-    states = [np.random.randn(800).astype(np.float32) for _ in range(4)]
+    states = [np.random.randn(832).astype(np.float32) for _ in range(4)]
     probs, values = model.predict_states(states, device="cpu")
 
     assert isinstance(probs, np.ndarray)

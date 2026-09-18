@@ -130,7 +130,7 @@ def test_pitch_cycle_vector_features():
     }
 
     vec = FaBPolicyValueNetwork.extract_state_vector(state)
-    assert vec.shape == (800,)
+    assert vec.shape == (832,)
 
     # Deck density no índice 19 (24 cartas / 60)
     assert pytest.approx(vec[19], 0.01) == 24.0 / 60.0
