@@ -374,3 +374,197 @@ def test_ismcts_empty_legal_actions():
     assert best_idx == 0
     assert policy_dist.sum() == 0.0
     assert ismcts_log == {}
+
+
+def test_batched_inference_server_1d_value_tensor():
+    """
+    Testa resiliência contra modelos que retornam tensores 1D para valores (batch,).
+    Garante que BatchedInferenceServer e RemoteModelProxy não quebram com IndexError.
+    """
+    class ModelWith1DValue(nn.Module):
+        def forward(self, x: torch.Tensor, return_aux: bool = False):
+            batch_size = x.shape[0]
+            logits = torch.zeros((batch_size, ACTION_DIM), dtype=torch.float32)
+            # Tensor 1D de tamanho [batch_size] em vez de [batch_size, 1]
+            values_1d = torch.full((batch_size,), 0.42, dtype=torch.float32)
+            if return_aux:
+                return logits, values_1d, {}
+            return logits, values_1d
+
+    model = ModelWith1DValue()
+    server = BatchedInferenceServer(model=model, device="cpu")
+    p_s, p_w = mp.Pipe(duplex=True)
+    proxy = RemoteModelProxy(p_w)
+
+    def worker():
+        # 1. predict_state
+        probs, val = proxy.predict_state(np.ones(STATE_DIM, dtype=np.float32))
+        assert pytest.approx(val, 0.001) == 0.42
+        assert probs.shape == (ACTION_DIM,)
+
+        # 2. predict_states
+        probs_b, vals_b = proxy.predict_states([np.ones(STATE_DIM, dtype=np.float32)] * 3)
+        assert probs_b.shape == (3, ACTION_DIM)
+        assert vals_b.shape == (3, 1)
+        assert pytest.approx(vals_b[0, 0], 0.001) == 0.42
+
+        # 3. __call__
+        pol_t, val_t = proxy(torch.ones((2, STATE_DIM)))
+        assert pol_t.shape == (2, ACTION_DIM)
+        assert val_t.shape == (2, 1)
+
+        p_w.send(("done", {"worker": "ok"}))
+
+    t = threading.Thread(target=worker)
+    t.start()
+    summaries = server.serve([p_s], timeout=5.0)
+    t.join()
+
+    assert len(summaries) == 1
+    assert summaries[0]["worker"] == "ok"
+    p_s.close()
+    p_w.close()
+
+
+def test_remote_model_proxy_empty_state_predict_state():
+    """Valida que predict_state com vetor vazio retorna uniform priors e 0.0 sem envio."""
+    p_s, p_w = mp.Pipe(duplex=True)
+    proxy = RemoteModelProxy(p_w)
+    probs, val = proxy.predict_state(np.zeros(0, dtype=np.float32))
+    assert probs.shape == (ACTION_DIM,)
+    assert pytest.approx(probs[0], 0.001) == 1.0 / ACTION_DIM
+    assert val == 0.0
+    p_s.close()
+    p_w.close()
+
+
+def test_ismcts_in_process_root_stats_fidelity():
+    """Valida que o fallback in-process preserva o nó raiz real e suas estatísticas de simulação."""
+    model = MockPolicyValueModel()
+    engine = ISMCTSEngine(model=model, device="cpu", num_worlds=1)
+
+    state = {
+        "playerHealth": 20,
+        "opponentHealth": 15,
+        "opponentHandCount": 0,
+        "opponentHand": [],
+    }
+    legal_actions = [
+        {"name": "Slash", "mode": 0, "score": 5.0},
+    ]
+
+    best_idx, root = engine._run_world_mcts(
+        world_state=state,
+        legal_actions=legal_actions,
+        num_simulations=6,
+        training_mode=False,
+        state_vec=np.zeros(STATE_DIM, dtype=np.float32),
+        world_seed=0,
+    )
+
+    assert best_idx == 0
+    assert root.visit_count == 6
+    summary = _extract_level1_summary(root, best_idx=best_idx, world_idx=0)
+    assert summary["root_stats"]["visit_count"] == 6
+
+
+def test_ismcts_all_workers_error_triggers_in_process_fallback():
+    """
+    Se todos os workers falharem (retornando children_stats vazios com erro),
+    o ISMCTS deve acionar automaticamente o fallback in-process para não deixar o bot sem votos.
+    """
+    model = MockPolicyValueModel()
+    engine = ISMCTSEngine(model=model, device="cpu", num_worlds=2)
+
+    state = {
+        "playerHealth": 20,
+        "opponentHealth": 15,
+        "opponentHandCount": 1,
+        "opponentHand": [{"cardNumber": "CardBack"}],
+    }
+    legal_actions = [
+        {"name": "Heavy Attack", "mode": 0, "score": 8.0, "power": 6, "cost": 2},
+        {"name": "Quick Strike", "mode": 1, "score": 6.0, "power": 3, "cost": 0},
+    ]
+
+    # Simula interceptação do BatchedInferenceServer.serve retornando erros de workers
+    original_serve = BatchedInferenceServer.serve
+    try:
+        def failing_serve(self, pipes, timeout=None):
+            return [
+                {"world_idx": 0, "best_idx": 0, "root_stats": {}, "children_stats": {}, "error": "Crash 1"},
+                {"world_idx": 1, "best_idx": 0, "root_stats": {}, "children_stats": {}, "error": "Crash 2"},
+            ]
+        BatchedInferenceServer.serve = failing_serve
+
+        best_idx, policy_dist, ismcts_log = engine.search_ismcts(
+            state=state,
+            legal_actions=legal_actions,
+            num_simulations=4,
+            training_mode=False,
+            use_multiprocessing=True,
+        )
+
+        # O fallback in-process deve ter rodado e produzido votos reais (>0)
+        assert ismcts_log["total_votes"] > 0
+        assert best_idx in [0, 1]
+    finally:
+        BatchedInferenceServer.serve = original_serve
+
+
+def test_ismcts_string_keys_in_children_stats():
+    """Valida agregação segura caso chaves de children_stats venham como strings."""
+    engine = ISMCTSEngine(model=None, device="cpu", num_worlds=1)
+    legal_actions = [
+        {"name": "Action 0", "mode": 0},
+        {"name": "Action 1", "mode": 1},
+    ]
+    # Injeta resumo simulado com chaves em formato string
+    summaries = [{
+        "world_idx": 0,
+        "best_idx": 0,
+        "root_stats": {"visit_count": 10, "value_sum": 5.0, "q_value": 0.5},
+        "children_stats": {
+            "0": {"action_id": 0, "action_name": "Action 0", "visit_count": 7, "q_value": 0.6, "prior": 0.5},
+            "1": {"action_id": 1, "action_name": "Action 1", "visit_count": 3, "q_value": 0.4, "prior": 0.5},
+        }
+    }]
+
+    # Agrega simulando a rotina de search_ismcts
+    num_legal = len(legal_actions)
+    vote_counts = {i: 0 for i in range(num_legal)}
+    q_value_sums = {i: 0.0 for i in range(num_legal)}
+    prior_sums = {i: 0.0 for i in range(num_legal)}
+    world_counts = {i: 0 for i in range(num_legal)}
+
+    for summary in summaries:
+        children_stats = summary.get("children_stats", {})
+        for act_idx_raw, stats in children_stats.items():
+            try:
+                act_idx = int(act_idx_raw)
+            except (ValueError, TypeError):
+                continue
+            if 0 <= act_idx < num_legal:
+                vc = stats.get("visit_count", 0)
+                vote_counts[act_idx] += vc
+                q_value_sums[act_idx] += stats.get("q_value", 0.0)
+                prior_sums[act_idx] += stats.get("prior", 0.0)
+                world_counts[act_idx] += 1
+
+    assert vote_counts[0] == 7
+    assert vote_counts[1] == 3
+    assert q_value_sums[0] == 0.6
+    assert prior_sums[1] == 0.5
+
+
+def test_batched_inference_server_timeout():
+    """Valida encerramento gracioso ao estourar o timeout do servidor."""
+    server = BatchedInferenceServer(model=None, device="cpu")
+    p_s, p_w = mp.Pipe(duplex=True)
+    t0 = time.time()
+    summaries = server.serve([p_s], timeout=0.08)
+    elapsed = time.time() - t0
+    assert elapsed >= 0.07
+    assert summaries == []
+    p_s.close()
+    p_w.close()

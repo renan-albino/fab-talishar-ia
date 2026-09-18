@@ -237,9 +237,9 @@ class MCTSEngine:
                 else:
                     x = torch.from_numpy(batch).float()
                 out = self.model(x)
-                if isinstance(out, tuple) and len(out) == 3:
+                if isinstance(out, (tuple, list)) and len(out) == 3:
                     _, values, _ = out
-                elif isinstance(out, tuple) and len(out) == 2:
+                elif isinstance(out, (tuple, list)) and len(out) == 2:
                     _, values = out
                 else:
                     values = out

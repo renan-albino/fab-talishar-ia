@@ -276,7 +276,11 @@ class ISMCTSEngine:
 
                 # Fecha referências do processo pai para os pipes dos workers
                 for p_work in worker_pipes:
-                    p_work.close()
+                    try:
+                        p_work.close()
+                    except Exception:
+                        pass
+                worker_pipes.clear()
 
                 server = BatchedInferenceServer(model=self.model, device=self.device)
                 results = server.serve(server_pipes, timeout=30.0)
@@ -285,10 +289,16 @@ class ISMCTSEngine:
                 logger.error(f"Falha na execução Actor-Evaluator do ISMCTS: {e}. Executando fallback.", exc_info=True)
                 results = []
             finally:
+                for p in worker_pipes:
+                    try:
+                        p.close()
+                    except Exception:
+                        pass
                 for proc in processes:
+                    proc.join(timeout=1.0)
                     if proc.is_alive():
                         proc.terminate()
-                    proc.join(timeout=1.0)
+                        proc.join(timeout=0.5)
                 for p in server_pipes:
                     try:
                         p.close()
@@ -296,10 +306,11 @@ class ISMCTSEngine:
                         pass
 
         # Fallback sequencial / in-process se multiprocessing desligado ou se falhar
-        if not results:
+        if not results or not any(s.get("children_stats") for s in results):
+            results = []
             for idx, world_state in enumerate(worlds):
                 world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
-                best_idx_w, active_children = self._run_world_mcts(
+                best_idx_w, root = self._run_world_mcts(
                     world_state=world_state,
                     legal_actions=legal_actions,
                     num_simulations=num_simulations,
@@ -307,8 +318,6 @@ class ISMCTSEngine:
                     state_vec=world_vec,
                     world_seed=idx,
                 )
-                root = MCTSNode(prior=1.0)
-                root.children = active_children
                 results.append(_extract_level1_summary(root, best_idx_w, idx))
 
         # ── Agregação de Votos e Estatísticas Nível 1 ───────────────
@@ -319,7 +328,11 @@ class ISMCTSEngine:
 
         for summary in results:
             children_stats = summary.get("children_stats", {})
-            for act_idx, stats in children_stats.items():
+            for act_idx_raw, stats in children_stats.items():
+                try:
+                    act_idx = int(act_idx_raw)
+                except (ValueError, TypeError):
+                    continue
                 if 0 <= act_idx < num_legal:
                     vc = stats.get("visit_count", 0)
                     vote_counts[act_idx] += vc
@@ -388,17 +401,17 @@ class ISMCTSEngine:
         training_mode: bool,
         state_vec: np.ndarray,
         world_seed: int = 0,
-    ) -> Tuple[int, Dict[int, MCTSNode]]:
+    ) -> Tuple[int, MCTSNode]:
         """
         Executa MCTSEngine em um mundo determinizado com batch leaf evaluation.
 
-        Retorna (best_idx, dict de filhos ativos) para extração de vote_counts.
+        Retorna (best_idx, root) para extração de estatísticas e vote_counts.
         Reutiliza o `state_vec` da raiz entre mundos — os mundos diferem apenas
         na mão oculta do oponente, não no vetor de estado do próprio bot.
         """
         num_legal = len(legal_actions)
         if num_legal == 0:
-            return 0, {}
+            return 0, MCTSNode(prior=1.0)
 
         priors, base_value = self._mcts._evaluate(state_vec)
 
@@ -430,6 +443,5 @@ class ISMCTSEngine:
             self._mcts._backpropagate(node, lv)
 
         best_idx = self._mcts._select_action(root, legal_actions, training_mode)
-        active_children = {k: v for k, v in root.children.items() if k >= 0}
-        return best_idx, active_children
+        return best_idx, root
 

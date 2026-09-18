@@ -109,6 +109,9 @@ class RemoteModelProxy:
         else:
             s_np = np.asarray(state_vector, dtype=np.float32)
 
+        if s_np.size == 0:
+            return np.ones(ACTION_DIM, dtype=np.float32) / float(ACTION_DIM), 0.0
+
         if s_np.ndim == 1:
             s_np = s_np[np.newaxis, :]
 
@@ -119,7 +122,7 @@ class RemoteModelProxy:
         logits = policy_np[0]
         exp_logits = np.exp(logits - np.max(logits))
         probs = (exp_logits / np.sum(exp_logits)).astype(np.float32)
-        value = float(values_np[0, 0])
+        value = float(values_np.flat[0]) if values_np.size > 0 else 0.0
         return probs, value
 
     def predict_states(
@@ -138,14 +141,17 @@ class RemoteModelProxy:
         else:
             batch_arr = np.asarray(state_vectors, dtype=np.float32)
 
+        if batch_arr.size == 0:
+            return np.zeros((0, ACTION_DIM), dtype=np.float32), np.zeros((0, 1), dtype=np.float32)
+
         if batch_arr.ndim == 1:
             batch_arr = batch_arr[np.newaxis, :]
 
-        if batch_arr.shape[0] == 0:
-            return np.zeros((0, ACTION_DIM), dtype=np.float32), np.zeros((0, 1), dtype=np.float32)
-
         self.conn.send(("infer", batch_arr))
         policy_np, values_np, _ = self.conn.recv()
+
+        if values_np.ndim == 1:
+            values_np = values_np[:, np.newaxis]
 
         exp_logits = np.exp(policy_np - np.max(policy_np, axis=-1, keepdims=True))
         probs = (exp_logits / np.sum(exp_logits, axis=-1, keepdims=True)).astype(np.float32)
@@ -189,11 +195,13 @@ class BatchedInferenceServer:
         start_time = time.time()
 
         while active_conns:
-            if timeout is not None and (time.time() - start_time) > timeout:
+            elapsed = time.time() - start_time
+            if timeout is not None and elapsed >= timeout:
                 logger.error(f"Timeout de {timeout}s atingido no BatchedInferenceServer.")
                 break
 
-            poll_timeout = min(0.05, timeout) if timeout is not None else 0.05
+            remaining = timeout - elapsed if timeout is not None else 0.05
+            poll_timeout = min(0.05, max(0.0, remaining))
             ready = connection.wait(active_conns, timeout=poll_timeout)
             if not ready:
                 continue
@@ -245,6 +253,10 @@ class BatchedInferenceServer:
                                     results.append(payload)
                                     if conn in active_conns:
                                         active_conns.remove(conn)
+                                else:
+                                    logger.warning(f"Tag desconhecida recebida em janela batch: {tag}")
+                            else:
+                                logger.warning(f"Mensagem inesperada no pipe em janela batch: {type(msg)}")
                         except Exception:
                             if conn in active_conns:
                                 active_conns.remove(conn)
@@ -272,7 +284,7 @@ class BatchedInferenceServer:
                     except TypeError:
                         out = self.model(x_tensor)
 
-                    if isinstance(out, tuple) and len(out) == 3:
+                    if isinstance(out, (tuple, list)) and len(out) == 3:
                         logits_t, val_t, aux_t = out
                         logits_np = logits_t.detach().cpu().numpy()
                         val_np = val_t.detach().cpu().numpy()
@@ -281,7 +293,7 @@ class BatchedInferenceServer:
                             if isinstance(aux_t, dict)
                             else {}
                         )
-                    elif isinstance(out, tuple) and len(out) == 2:
+                    elif isinstance(out, (tuple, list)) and len(out) == 2:
                         logits_t, val_t = out
                         logits_np = logits_t.detach().cpu().numpy()
                         val_np = val_t.detach().cpu().numpy()
@@ -299,6 +311,14 @@ class BatchedInferenceServer:
             logits_np = np.zeros((total_n, ACTION_DIM), dtype=np.float32)
             val_np = np.zeros((total_n, 1), dtype=np.float32)
             aux_np = {}
+
+        if val_np.ndim == 1:
+            val_np = val_np[:, np.newaxis]
+        elif val_np.ndim == 0:
+            val_np = np.full((total_n, 1), float(val_np), dtype=np.float32)
+
+        if logits_np.ndim == 1:
+            logits_np = logits_np[np.newaxis, :]
 
         # Fatiamento e envio direto a cada worker
         offset = 0
