@@ -66,7 +66,7 @@ def _shallow_clone_state(state: dict) -> dict:
     if not isinstance(state, dict):
         return {}
     cloned = state.copy()
-    for key in ("playerHand", "activeChainLink", "playerEquipment", "opponentHand", "combatChain"):
+    for key in ("playerHand", "activeChainLink", "playerEquipment", "opponentHand", "combatChain", "playerResources", "opponentResources", "playerPitch", "playerDiscard", "playerArsenal", "playerBanish"):
         if key in cloned:
             cloned[key] = copy.deepcopy(cloned[key])
     return cloned

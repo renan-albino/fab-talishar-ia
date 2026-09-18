@@ -93,8 +93,8 @@ def test_replay_buffer_save_load_weights(tmp_path):
 
     assert loaded is True
     assert buf2.current_size == 2
-    assert pytest.approx(buf2.weights[0], 0.01) == 4.2
-    assert pytest.approx(buf2.weights[1], 0.01) == 1.8
+    assert pytest.approx(buf2.sum_tree.tree[buf2.sum_tree.capacity - 1 + 0], 0.01) == 4.2
+    assert pytest.approx(buf2.sum_tree.tree[buf2.sum_tree.capacity - 1 + 1], 0.01) == 1.8
 
 
 def test_replay_buffer_importance_sampling_weights():

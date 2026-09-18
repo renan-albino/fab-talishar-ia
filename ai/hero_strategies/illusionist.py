@@ -6,7 +6,7 @@ Heralds, Phantasm, dragões e auras de suporte.
 """
 
 from functools import lru_cache
-from typing import Set
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Set
 from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS
 
 

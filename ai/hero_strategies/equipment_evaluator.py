@@ -5,7 +5,7 @@ Módulo de avaliação heurística e orientada a dados de habilidades de equipam
 (Head, Chest, Arms, Legs, Off-Hand) para Flesh and Blood.
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Optional, Dict, Any, List
 
 
 

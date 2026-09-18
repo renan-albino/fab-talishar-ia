@@ -5,8 +5,10 @@ Estratégia para a classe Runeblade (Viserai, Chane, Briar, Vynnset, Florian, Au
 e especializações como Vynnset, Iron Maiden.
 """
 
+import logging
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Optional, List, Tuple, Dict, Any
 from functools import lru_cache
-from typing import Set
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Set
 from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS
 
 

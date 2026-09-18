@@ -6,8 +6,8 @@ Estratégias para Ranger (Azalea, Lexi, Riptide) e especialização para Marlynn
 
 import logging
 from functools import lru_cache
-from typing import Optional, List, Tuple
-from .base import HeroStrategy, TurnPlan, is_resource_or_gem_card, KNOWN_AMBUSH_CARDS, _get_cards_db
+from typing import Optional, List, Tuple, Dict, Any, Set, Union
+from .base import HeroStrategy, TurnPlan, is_resource_or_gem_card, KNOWN_AMBUSH_CARDS, _get_cards_db, DANGEROUS_ON_HITS
 from .ninja import NinjaStrategy
 
 

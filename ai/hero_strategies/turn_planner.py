@@ -6,7 +6,7 @@ e decisão inteligente de bloqueio de sobrevivência (Survival Block) para Flesh
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, Set, List
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Optional, Dict, Any, Set, List
 from .knapsack_solver import (
     calculate_hand_conversion_potential,
 )

@@ -6,7 +6,7 @@ e especialização para Jarl Vetreiði (Guardião Elemental de Terra e Gelo).
 """
 
 from functools import lru_cache
-from typing import Set, List, Optional
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Set, List, Optional
 from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS, _get_cards_db
 
 

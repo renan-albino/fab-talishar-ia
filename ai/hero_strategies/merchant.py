@@ -6,7 +6,7 @@ e especializações como Gravy Bones, Shipwrecked Looter.
 """
 
 from functools import lru_cache
-from typing import Set, Any
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Set, Any
 from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS
 
 

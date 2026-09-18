@@ -9,7 +9,7 @@ custo de oportunidade tático V*(H) - V*(H \\ {c}) e potencial de conversão de 
 import os
 import json
 import itertools
-from typing import Optional, Dict, Any, Set, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Optional, Dict, Any, Set, List, Tuple
 
 def solve_knapsack_turn(
     hero_name: Any = "generic",

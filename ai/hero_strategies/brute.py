@@ -6,7 +6,7 @@ Prioriza cartas com Poder 6+ para ativar Intimidate, Beat Chest e pivot ofensivo
 """
 
 from functools import lru_cache
-from typing import Set, Optional
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Set, Optional
 from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS
 
 

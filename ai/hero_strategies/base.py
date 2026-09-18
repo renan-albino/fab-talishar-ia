@@ -6,7 +6,7 @@ de TurnPlan e submódulos táticos (knapsack_solver, turn_planner, equipment_eva
 """
 
 from functools import lru_cache
-from typing import Optional, Dict, Any, Set, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Optional, Dict, Any, Set, List, Tuple
 
 from .knapsack_solver import (
     solve_knapsack_turn,

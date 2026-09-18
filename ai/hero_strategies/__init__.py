@@ -6,7 +6,7 @@ Mapeamento canônico de todos os 139+ heróis oficiais e arquétipos de classe.
 """
 
 from functools import lru_cache
-from typing import Dict, Any
+from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Dict, Any
 
 from .base import (
     HeroStrategy,
