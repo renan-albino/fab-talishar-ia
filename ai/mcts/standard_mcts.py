@@ -229,11 +229,27 @@ class MCTSEngine:
             # Batch: shape (num_sims, state_dim)
             batch = np.stack(leaf_vecs, axis=0)
 
-            self.model.eval()
+            if hasattr(self.model, "eval"):
+                self.model.eval()
             with torch.no_grad():
-                x = torch.from_numpy(batch).float().to(self.device)
-                _, values = self.model(x)           # values: (num_sims, 1)
-                values_flat = values.cpu().numpy().flatten().tolist()
+                if hasattr(self.model, "to") and isinstance(self.model, torch.nn.Module):
+                    x = torch.from_numpy(batch).float().to(self.device)
+                else:
+                    x = torch.from_numpy(batch).float()
+                out = self.model(x)
+                if isinstance(out, tuple) and len(out) == 3:
+                    _, values, _ = out
+                elif isinstance(out, tuple) and len(out) == 2:
+                    _, values = out
+                else:
+                    values = out
+
+                if hasattr(values, "cpu"):
+                    values_flat = values.cpu().numpy().flatten().tolist()
+                elif isinstance(values, np.ndarray):
+                    values_flat = values.flatten().tolist()
+                else:
+                    values_flat = list(values)
 
             return values_flat
 
