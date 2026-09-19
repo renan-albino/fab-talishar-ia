@@ -1,14 +1,14 @@
 {
   "vynsett": {
-    "attack_weight": 0.93,
+    "attack_weight": 0.8,
     "block_weight": 1.4,
     "pivot_bonus": 1.35,
     "arsenal_bonus": 1.25,
-    "absorb_tempo_bonus": 0.93,
-    "last_win_rate": 0.379,
+    "absorb_tempo_bonus": 0.85,
+    "last_win_rate": 0.386,
     "human_wins": 0,
-    "matches_evaluated": 87,
-    "updated_at": 1789708590.7957437
+    "matches_evaluated": 88,
+    "updated_at": 1789794455.5381677
   },
   "betsy": {
     "attack_weight": 1.35,
@@ -16,10 +16,10 @@
     "pivot_bonus": 1.0,
     "arsenal_bonus": 1.3,
     "absorb_tempo_bonus": 1.35,
-    "last_win_rate": 0.71,
+    "last_win_rate": 0.714,
     "human_wins": 0,
-    "matches_evaluated": 62,
-    "updated_at": 1789708590.7956016
+    "matches_evaluated": 63,
+    "updated_at": 1789794455.5380604
   },
   "cindra": {
     "attack_weight": 1.35,
@@ -27,21 +27,21 @@
     "pivot_bonus": 1.0,
     "arsenal_bonus": 1.3,
     "absorb_tempo_bonus": 1.35,
-    "last_win_rate": 0.957,
+    "last_win_rate": 0.944,
     "human_wins": 0,
-    "matches_evaluated": 70,
-    "updated_at": 1789708590.7956104
+    "matches_evaluated": 71,
+    "updated_at": 1789794455.5380735
   },
   "dash_io": {
-    "attack_weight": 1.03,
-    "block_weight": 1.37,
+    "attack_weight": 0.81,
+    "block_weight": 1.4,
     "pivot_bonus": 1.35,
     "arsenal_bonus": 1.25,
-    "absorb_tempo_bonus": 1.07,
-    "last_win_rate": 0.212,
+    "absorb_tempo_bonus": 0.85,
+    "last_win_rate": 0.217,
     "human_wins": 0,
-    "matches_evaluated": 85,
-    "updated_at": 1789708590.7956307
+    "matches_evaluated": 92,
+    "updated_at": 1789794455.5381012
   },
   "gravy_bones": {
     "attack_weight": 1.35,
@@ -52,18 +52,18 @@
     "last_win_rate": 1.0,
     "human_wins": 0,
     "matches_evaluated": 56,
-    "updated_at": 1789708590.7956364
+    "updated_at": 1789794455.5381088
   },
   "oscilio_giaf": {
-    "attack_weight": 1.03,
-    "block_weight": 1.37,
+    "attack_weight": 0.81,
+    "block_weight": 1.4,
     "pivot_bonus": 1.35,
     "arsenal_bonus": 1.25,
-    "absorb_tempo_bonus": 1.03,
-    "last_win_rate": 0.408,
+    "absorb_tempo_bonus": 0.85,
+    "last_win_rate": 0.418,
     "human_wins": 0,
-    "matches_evaluated": 76,
-    "updated_at": 1789708590.795676
+    "matches_evaluated": 79,
+    "updated_at": 1789794455.5381525
   },
   "hala": {
     "attack_weight": 1.35,
@@ -74,21 +74,21 @@
     "last_win_rate": 0.615,
     "human_wins": 0,
     "matches_evaluated": 65,
-    "updated_at": 1789708590.7956421
+    "updated_at": 1789794455.5381153
   },
   "jarl": {
-    "attack_weight": 1.151,
-    "block_weight": 0.934,
+    "attack_weight": 1.12,
+    "block_weight": 0.945,
     "pivot_bonus": 1.0,
-    "arsenal_bonus": 1.128,
-    "absorb_tempo_bonus": 1.151,
-    "last_win_rate": 0.485,
+    "arsenal_bonus": 1.105,
+    "absorb_tempo_bonus": 1.12,
+    "last_win_rate": 0.514,
     "human_wins": 0,
-    "matches_evaluated": 33,
-    "updated_at": 1789708590.7956467
+    "matches_evaluated": 35,
+    "updated_at": 1789794455.5381212
   },
   "mario": {
-    "attack_weight": 0.83,
+    "attack_weight": 0.8,
     "block_weight": 1.4,
     "pivot_bonus": 1.35,
     "arsenal_bonus": 1.25,
@@ -96,39 +96,39 @@
     "last_win_rate": 0.405,
     "human_wins": 0,
     "matches_evaluated": 37,
-    "updated_at": 1789708590.7956598
+    "updated_at": 1789794455.538138
   },
   "kassai": {
-    "attack_weight": 1.151,
-    "block_weight": 0.934,
+    "attack_weight": 1.12,
+    "block_weight": 0.945,
     "pivot_bonus": 1.0,
-    "arsenal_bonus": 1.128,
-    "absorb_tempo_bonus": 1.151,
-    "last_win_rate": 0.462,
+    "arsenal_bonus": 1.105,
+    "absorb_tempo_bonus": 1.12,
+    "last_win_rate": 0.5,
     "human_wins": 0,
-    "matches_evaluated": 26,
-    "updated_at": 1789708590.7956514
+    "matches_evaluated": 28,
+    "updated_at": 1789794455.5381267
   },
   "teklovossen": {
-    "attack_weight": 0.93,
+    "attack_weight": 0.8,
     "block_weight": 1.4,
     "pivot_bonus": 1.35,
     "arsenal_bonus": 1.25,
-    "absorb_tempo_bonus": 0.93,
+    "absorb_tempo_bonus": 0.85,
     "last_win_rate": 0.016,
     "human_wins": 0,
-    "matches_evaluated": 61,
-    "updated_at": 1789708590.7957158
+    "matches_evaluated": 62,
+    "updated_at": 1789794455.5381594
   },
   "marlinn": {
-    "attack_weight": 0.98,
+    "attack_weight": 0.8,
     "block_weight": 1.4,
     "pivot_bonus": 1.35,
     "arsenal_bonus": 1.25,
-    "absorb_tempo_bonus": 0.98,
-    "last_win_rate": 0.375,
+    "absorb_tempo_bonus": 0.85,
+    "last_win_rate": 0.367,
     "human_wins": 0,
-    "matches_evaluated": 56,
-    "updated_at": 1789708590.7956672
+    "matches_evaluated": 60,
+    "updated_at": 1789794455.5381453
   }
 }

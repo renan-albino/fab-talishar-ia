@@ -38,8 +38,8 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
 
 ## Domain: AI Engine
 
-- **FaBCardTransformerNetwork (`ai/model.py`)**: Rede Neural Transformer Dual-Head com Self-Attention (entre 16 slots de cartas ativas) e Cross-Attention (com token de contexto global), operando sobre vetor de estado flat-packed de 800 dimensões contínuas e cabeças auxiliares KataGo.
-  - _Avoid_: MLP de cartas, Rede estática legada, ResNet v1 de 192 entradas, Rede de perceptron simples.
+- **FaBCardTransformerNetwork (`ai/model.py`)**: Rede Neural Transformer Dual-Head com Self-Attention (entre 16 slots de cartas ativas) e Cross-Attention (com 64 tokens de contexto global), operando sobre vetor de estado flat-packed de 832 dimensões contínuas e cabeças auxiliares KataGo.
+  - _Avoid_: MLP de cartas, Rede estática legada, ResNet v1 de 192 entradas, Rede de perceptron simples, Vetor legado de 800 dimensões.
 - **Matriz de Embeddings Tensoriais (`data/card_embeddings.pt` & `data/card_to_idx.json`)**: Matriz densa pré-compilada em PyTorch de dimensões `[5133, 48]` em FP32, indexada em $O(1)$ pelo identificador de carta. Codifica atributos canônicos, classes one-hot, keywords de combate e componentes semânticos textuais via decomposição SVD.
   - _Avoid_: Extração de embeddings em tempo de execução, Regex na inferência, One-hot gigante esparso.
 - **Compreensão Semântica de Arena (`ai/policy/card_semantics.py` & `data/fab_card_semantics.json`)**: Sistema holístico de percepção que compila perfis funcionais (`CardSemanticProfile`) e sintetiza o contexto dinâmico de perigo (`ArenaThreatContext`), interpretando modificadores de combate concedidos por itens, auras e gatilhos de dano concorrentes sem dependência de hardcodes nominais.
@@ -50,8 +50,14 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Cenário simulado genérico, Universo paralelo, Hipótese de jogo.
 - **Deck-Aware World Sampling**: Mecanismo de amostragem de mundos que utiliza `data/fab_cards_db.json` para filtrar cartas estritamente válidas para a classe, talentos e formato do herói oponente.
   - _Avoid_: Amostragem randômica cega, Deck guesser, Chute de cartas.
-- **Multi-Threaded ISMCTS (`ai/mcts/ismcts.py`)**: Arquitetura concorrente que utiliza `concurrent.futures.ThreadPoolExecutor` para avaliar mundos determinizados paralelamente, agregando contadores de visitas de nós filhos da raiz de forma consolidada e thread-safe.
-  - _Avoid_: MCTS sequencial, Multiprocessing com pickle pesado, Árvore global compartilhada com locks.
+- **Concorrência Híbrida ISMCTS (`ai/mcts/ismcts.py`)**: Arquitetura adaptativa de execução que suporta 4 modos de concorrência (`threads`, `multiprocessing`, `direct_gpu` e `sequential`). O modo `threads` (ThreadPoolExecutor in-process) atua como padrão estável de zero-overhead de processos para treino multi-salas (ADR-0002 / ADR-0008).
+  - _Avoid_: Concorrência rígida de processo único, Multiprocessing cego para self-play, Paralelismo não configurável.
+- **Actor-Evaluator ISMCTS (`ai/mcts/inference_server.py`)**: Arquitetura de concorrência avançada onde múltiplos processos MCTS em CPU (Actors com `RemoteModelProxy`) enviam requisições de inferência via IPC Pipes para um servidor centralizado na GPU (`BatchedInferenceServer`), que processa lotes dinâmicos e devolve resumos de Nível 1.
+  - _Avoid_: Réplicas completas de modelo em subprocessos, Pickle de árvores recursivas profundas, Contextos CUDA aninhados sem servidor.
+- **Lazy Hardware Probe (`config/settings.py`)**: Mecanismo de avaliação sob demanda e cacheada (`@lru_cache`) para detecção de GPU (`nvidia-smi`) e benchmark de latência, com bypass seguro via flag `TALISHAR_SKIP_GPU_PROBE` para evitar storms de processos em subprocessos paralelos.
+  - _Avoid_: Hardware probe síncrono na importação, Subprocesso repetido de nvidia-smi, Checagem pesada em boot de worker.
+- **Orçamento Preditivo de VRAM (`SETTINGS.estimate_vram_usage`)**: Função de dimensionamento analítico que calcula a memória de vídeo necessária para o conjunto de salas, mundos e modo de concorrência antes da inicialização do treino, alertando contra riscos de CUDA OOM.
+  - _Avoid_: Trava arbitrária de hardware, Dimensionamento empírico cego, Alocação sem checagem de VRAM.
 - **Distilação Assimétrica (Asymmetric Distillation)**: Paradigma de aprendizado onde a distribuição de contagem de visitas gerada pelo ISMCTS ($\pi_{\text{MCTS}}$) é utilizada diretamente como alvo de treino supervisionado (Cross-Entropy/KL) para a cabeça de política da rede neural $p_\theta(s)$.
   - _Avoid_: Treinamento supervisionado ingênuo, Policy Gradient puro com vitória binária, Imitação de heurística.
 - **Alvos Auxiliares KataGo (Auxiliary Targets)**: Metodologia em `ai/model.py` e `ai/training/orchestrator.py` que treina cabeças auxiliares lineares para predição contínua da variação líquida de vida no turno ($\Delta\text{HP}$) e dano de ataque desferido (`turn_dmg`), adicionados com peso 0.2 na função de custo.

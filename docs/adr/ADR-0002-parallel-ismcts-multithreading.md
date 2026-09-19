@@ -1,7 +1,7 @@
 # ADR-0002: Paralelização do ISMCTS através de Determinizações Independentes de Mundos com ThreadPoolExecutor
 
-- **Status**: Accepted
-- **Date**: 2026-09-16
+- **Status**: Amended by [ADR-0008](ADR-0008-hybrid-ismcts-concurrency-and-actor-evaluator.md)
+- **Date**: 2026-09-16 (Emendado em 2026-09-18 via ADR-0008)
 - **Deciders**: Equipe FaB Talishar AI (Architecture Review)
 
 ## Context
@@ -57,3 +57,10 @@ Paralelizar a avaliação de mundos determinizados utilizando `concurrent.future
 - **ProcessPoolExecutor (Multiprocessing)**: Rejeitado devido ao elevado custo de serialização (pickle/unpickle) dos tensores PyTorch, dicionários de estado de jogo e instâncias de regras a cada lance.
 - **Árvore MCTS Única Global com Virtual Loss**: Rejeitado pois árvores globais em jogos de informação imperfeita sofrem severamente de *strategy fusion* e contenção destrutiva de locks em nós raízes concorrentes.
 - **Determinização Sequencial Simples**: Rejeitada pela latência inaceitável para jogo em tempo real.
+
+---
+
+## Amendments & Evolution
+
+- **2026-09-18 (ADR-0008)**: O `ThreadPoolExecutor` permanece como a implementação padrão e mandatória para o auto-treinamento por Self-Play multi-salas para prevenir estouro de memória (OOM) no WSL2. No entanto, a arquitetura foi expandida para a **Concorrência Híbrida ISMCTS**, introduzindo os modos `multiprocessing` (Actor-Evaluator centralizado via Pipes IPC) e `direct_gpu` (CUDA nativo para GPUs de alta VRAM) como opções avançadas configuráveis. Consulte [ADR-0008](ADR-0008-hybrid-ismcts-concurrency-and-actor-evaluator.md).
+

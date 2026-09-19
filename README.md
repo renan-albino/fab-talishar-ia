@@ -35,7 +35,7 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
                  ┌───────────────────┴───────────────────┐
                  │                                       │
 ┌────────────────▼────────────────┐     ┌────────────────▼────────────────┐
-│   Talishar-FE (React / Vite)    │     │   Treinador GPU (ai/trainer.py) │
+│   Talishar-FE (React / Vite)    │     │Treinador GPU (ai/training/orchestrator.py)│
 │  - Tracker de Vantagem (Xadrez) │     │  - FaBCardTransformerNetwork (Transformer Encoder)  │
 │  - Lobby & Sideboard Instantâneo│     │  - FP16 Mixed Precision (AMP)   │
 │  - Chat com Métricas In-Game    │     │  - Replay Buffer Multithread    │
@@ -46,7 +46,7 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
 ┌────────────────────────────────────▼───────────────────────────────────┐
 │                    Bot Client (bot_client.py)                          │
 │  - Motor Híbrido: Rede Neural + ISMCTS + GameSimulator + Heurísticas   │
-│  - ISMCTS: Information Set MCTS para decisões com mão oculta           │
+│  - ISMCTS: Concorrência Híbrida (Threads, Actor-Evaluator, Direct GPU) │
 │  - Simulador de Transição Local (ai/game_simulator.py)                 │
 │  - Emissão de Badges no Chat (Brilhante, Melhor Lance, Bloqueio)       │
 └────────────────────────────────────┬───────────────────────────────────┘
@@ -66,13 +66,15 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
 ### 1. 🧠 Motor de Decisão Híbrido (PyTorch + ISMCTS + GameSimulator)
 - **Rede Neural `FaBCardTransformerNetwork` (`ai/model.py`)**:
   - Arquitetura Transformer Encoder Dual-Head com Self-Attention para sinergia entre cartas e Cross-Attention contextual com o estado global.
-  - Vetor de entrada de 800 dimensões (32 dimensões globais de contexto + 16 slots de cartas × 48 floats semânticos de embeddings densos gerados via NLP/SVD).
+  - Vetor de entrada de 832 dimensões (64 dimensões globais de contexto + 16 slots de cartas × 48 floats semânticos de embeddings densos gerados via NLP/SVD).
   - Dual-Head: **Policy Head** (distribuição sobre 32 modos de ação) e **Value Head** (estimativa de vitória entre $[-1.0, 1.0]$), além de **Cabeças Auxiliares KataGo** (diferencial de vida $\Delta\text{HP}$ e estimativa de dano do turno).
 - **Simulador Determinístico (`ai/game_simulator.py`)**:
   - Projeta estados futuros exatos pós-ação (desconto de custos, pitch automático, cálculo de ataque vs bloqueio, dano não bloqueado, *Go Again*, AP e vida).
   - Substitui ruído sintético por avaliações determinísticas nas folhas da árvore MCTS.
-- **ISMCTS em Ataque, Defesa e Pitch (`ai/mcts.py` & `ai/policy_engine.py`)**:
+- **Concorrência Híbrida no ISMCTS (`ai/mcts/ismcts.py` & ADR-0008)**:
   - *Information Set MCTS*: Amostra mundos determinizados preenchendo a mão oculta do adversário com filtro por classe do herói oponente (*Deck-Aware World Sampling* via `fab_cards_db.json`).
+  - **4 Modos de Execução**: `threads` (ThreadPool in-process leve, padrão para auto-treinamento com zero risco de OOM), `multiprocessing` (Actor-Evaluator em CPU com GPU centralizada em batch via Pipes), `direct_gpu` (CUDA nativo para GPUs de alta VRAM) e `sequential`.
+  - **Telemetria Preditiva & Lazy Probe**: Cálculo de VRAM em tempo real no dashboard e cache de GPU probe (`@lru_cache`) para evitar sobrecarga no driver.
   - Avalia a melhor linha defensiva prevenindo *overblocking* e preservando a mão de contra-ataque (*Tempo Pivot*).
 - **Cache LRU de Heurísticas e Sistema de TurnPlan (`ai/hero_strategies/`)**:
   - Memoização de alta velocidade para scores estáticos de cartas e planos táticos unificados (`TurnPlan`).
