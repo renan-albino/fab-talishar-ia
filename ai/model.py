@@ -296,7 +296,7 @@ class FaBCardTransformerNetwork(nn.Module):
         params = self.count_parameters()
         return (
             f"FaBCardTransformerNetwork (v2) | "
-            f"800-dim→{self.hidden_dim}×{self.num_layers}L-{self.num_heads}H→{self.action_dim}|1 | "
+            f"{self.state_dim}-dim→{self.hidden_dim}×{self.num_layers}L-{self.num_heads}H→{self.action_dim}|1 | "
             f"{params:,} parâmetros"
         )
 
@@ -307,7 +307,7 @@ class FaBCardTransformerNetwork(nn.Module):
     @staticmethod
     def extract_state_vector(state: Dict[str, Any], player_id: int = 1) -> np.ndarray:
         """
-        Converte o estado do Talishar em um vetor contíguo de 800 dimensões (Flat-Packed)
+        Converte o estado do Talishar em um vetor contíguo de 832 dimensões (Flat-Packed)
         usando lookup tensorial O(1) sem dependência de expressões regulares ou strings lentas.
         """
         vec = np.zeros(STATE_DIM, dtype=np.float32)

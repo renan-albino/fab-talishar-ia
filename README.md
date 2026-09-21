@@ -303,7 +303,7 @@ Para garantir que todos os módulos de IA, simulador, ISMCTS, podas táticas e e
 ```bash
 ./venv/bin/pytest
 ```
-*(Todos os 377 testes automatizados executam e passam em ~3 segundos, isolados nativamente via `pytest.ini`).*
+*(Todos os 424 testes automatizados executam e passam em ~3 segundos, isolados nativamente via `pytest.ini`).*
 
 ---
 
@@ -384,7 +384,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 ├── docs/                     # Documentação técnica, ADRs e Roadmap
 │   ├── ROADMAP.md            # Planejamento estratégico e expansão de cobertura
 │   ├── tactical_rules.md     # Detalhamento técnico das 13 Podas Táticas & Regras FaB (CR)
-│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0007)
+│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0008)
 │   └── agents/               # Guias para agentes (domain.md, issue-tracker.md)
 ├── ai/                       # Módulos de Inteligência Artificial e Deep RL
 │   ├── bot_runtime/          # Runtime modular do bot (lobby, tracker, choices, fases, client)
@@ -516,7 +516,7 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Imunidade a Adblockers (BannerUnit)** | Criação do módulo `bannerUnit` e alias Vite substituindo importações dinâmicas `/components/ads/`, eliminando quebras causadas por extensões de bloqueio de anúncios (uBlock Origin, Brave Shields) |
 | **Decomposição Modular Completa (9 Monólitos)** | Refatoração estrutural completa de 9 arquivos monolíticos (`dashboard.py`, `bot_client.py`, `policy_engine.py`, `mcts.py`, `trainer.py`, `deck_parser.py`, `stats_manager.py`, `hero_strategies/base.py`, `hero_strategies/other_classes.py`) em pacotes limpos e coesos (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`), preservando 100% de retrocompatibilidade em todas as fachadas raízes |
 | **Paralelização Multi-Thread do ISMCTS** | Busca paralela e thread-safe em mundos determinizados com `concurrent.futures.ThreadPoolExecutor` em `ai/mcts/ismcts.py`, acelerando a amostragem e a agregação ponderada de votos na árvore de decisão |
-| **Suíte de Testes Expandida (377 Testes Automatizados)** | Ampliação da cobertura de testes para 377 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks e orquestração de GPU, com isolamento via `pytest.ini` |
+| **Suíte de Testes Expandida (424 Testes Automatizados)** | Ampliação da cobertura de testes para 424 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks e orquestração de GPU, com isolamento via `pytest.ini` |
 | **Torneios Suíços Automatizados** | Implementado em `stats/tournament_manager.py` com ligas entre decks e persistência no `stats/`. |
 
 ### 📋 Pendente

@@ -33,7 +33,7 @@ $$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{T
 |---|:---:|:---:|:---:|:---:|:---:|
 | **Baseline Inicial** | 143 testes | 4.850 / 8.680 | 3.830 | **55,8%** | 35% |
 | **Pós-Frentes A, B e C** | 168 testes | 5.101 / 8.680 | 3.579 | **58,8%** | 39% |
-| **Pós-Passos 1 e 2 (Atual)** | **336 testes** | **5.833 / 8.687** | **2.854** | **67,1%** | **88%** |
+| **Pós-Passos 1 e 2 (Atual)** | **424 testes** | **5.833 / 8.687** | **2.854** | **67,1%** | **88%** |
 
 ---
 

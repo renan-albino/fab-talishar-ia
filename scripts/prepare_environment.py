@@ -305,12 +305,12 @@ def fix_permissions():
         p = os.path.join(TALISHAR_DIR, sub)
         if os.path.exists(p):
             try:
-                subprocess.run(["chmod", "-R", "777", p], stderr=subprocess.DEVNULL, check=False)
+                subprocess.run(["chmod", "-R", "775", p], stderr=subprocess.DEVNULL, check=False)
             except Exception:
                 pass
     if os.path.exists(LOGS_DIR):
         try:
-            subprocess.run(["chmod", "-R", "777", LOGS_DIR], stderr=subprocess.DEVNULL, check=False)
+            subprocess.run(["chmod", "-R", "775", LOGS_DIR], stderr=subprocess.DEVNULL, check=False)
         except Exception:
             pass
     log_success("Permissões de I/O concedidas para Talishar (Games, HostFiles, AccountFiles, APIKeys) e logs/.")
@@ -486,15 +486,13 @@ def sync_agents_environment_rules():
     agents_file = os.path.join(BASE_DIR, "AGENTS.md")
     template_file = os.path.join(BASE_DIR, "AGENTS.template.md")
 
-    if not os.path.exists(agents_file) and os.path.exists(template_file):
-        shutil.copyfile(template_file, agents_file)
-
-    if not os.path.exists(agents_file):
-        log_warn("AGENTS.md não encontrado para sincronização de regras.")
+    source_file = template_file if os.path.exists(template_file) else agents_file
+    if not os.path.exists(source_file):
+        log_warn("AGENTS.template.md e AGENTS.md não encontrados para sincronização de regras.")
         return
 
     try:
-        with open(agents_file, "r", encoding="utf-8") as f:
+        with open(source_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         if is_wsl:
@@ -560,11 +558,16 @@ O agente executa nativamente no Linux/Container no diretório `{linux_repo_path}
             f'execute `{export_cmd}`',
             new_content
         )
+        new_content = re.sub(
+            r'execute o script de exportação configurado no seu ambiente',
+            f'execute `{export_cmd}`',
+            new_content
+        )
 
         with open(agents_file, "w", encoding="utf-8") as f:
             f.write(new_content)
 
-        log_success(f"AGENTS.md atualizado localmente com as regras de execução do ambiente ({linux_repo_path}).")
+        log_success(f"AGENTS.md sincronizado com base no template para o ambiente ({linux_repo_path}).")
     except Exception as e:
         log_warn(f"Falha ao sincronizar AGENTS.md: {e}")
 

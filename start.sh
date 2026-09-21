@@ -139,7 +139,7 @@ if [ "$START_DOCKER" = true ]; then
         echo "1" > "$PROJECT_ROOT/Talishar/HostFiles/GameIDCounter.txt"
     fi
     mkdir -p "$PROJECT_ROOT/Talishar/Games" "$PROJECT_ROOT/Talishar/AccountFiles"
-    chmod -R 777 "$PROJECT_ROOT/Talishar/HostFiles" "$PROJECT_ROOT/Talishar/Games" "$PROJECT_ROOT/Talishar/AccountFiles" "$PROJECT_ROOT/Talishar/APIKeys" 2>/dev/null || true
+    chmod -R 775 "$PROJECT_ROOT/Talishar/HostFiles" "$PROJECT_ROOT/Talishar/Games" "$PROJECT_ROOT/Talishar/AccountFiles" "$PROJECT_ROOT/Talishar/APIKeys" 2>/dev/null || true
 
     if [ "$VERBOSE" = true ]; then
         echo -e "${BLUE}[+] Subindo containers Docker do Talishar via $DC_CMD...${NC}"
