@@ -178,11 +178,18 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                 winner_player_id=winner_id,
                 bot_player_id=client.player_id
             )
-            if is_human_victory:
-                weights = [float(w) * 3.0 for w in weights]
+            if is_vs_human:
+                from config.settings import SETTINGS
+                human_mult = SETTINGS.human_loss_sample_weight if winner_id != client.player_id else SETTINGS.human_win_sample_weight
+                weights = [float(w) * human_mult for w in weights]
+                outcome_desc = "Vitória do Bot" if winner_id == client.player_id else "Vitória do Humano (Aprendizado de Erros e Linhas Superiores)"
                 client.log(
-                    "🏆 [VITÓRIA CONTRA HUMANO] O Bot AI Master superou o jogador Humano! "
-                    "Recompensando todas as decisões da partida com peso amostral amplificado 3.0x no Replay Buffer!"
+                    f"🧠 [APRENDIZADO ACELERADO COM HUMANO] Peso amostral amplificado {human_mult:.1f}x no Replay Buffer! ({outcome_desc})"
+                )
+                client.send_chat_log(
+                    f"🧠 <b>[APRENDIZADO ACELERADO]</b> Partida contra Humano concluída! "
+                    f"Prioridade de {human_mult:.1f}x aplicada no Replay Buffer. A IA iniciou a assimilação pós-partida.",
+                    highlight=True, bg_color="#1e1b4b", text_color="#a5b4fc"
                 )
             if b_stats.get("blunders", 0) > 0 or b_stats.get("brilliants", 0) > 0:
                 client.log(
@@ -206,6 +213,15 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                 epoch_ratio=getattr(client, "epoch_ratio", 0.0)
             )
             buf.save()
+
+            if is_vs_human:
+                from ai.training.assimilation import trigger_human_match_assimilation
+                trigger_human_match_assimilation(
+                    room_id=str(client.room_id),
+                    bot_player_id=client.player_id,
+                    winner_id=winner_id,
+                )
+
             client.trajectory.clear()
         except Exception as e:
             client.log(f"[ERRO BUFFER] {e}")

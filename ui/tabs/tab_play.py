@@ -64,6 +64,40 @@ def render_tab_play(saved_decks=None, deck_options=None, fe_running=None, be_run
     st.markdown("---")
     st.subheader("⚔️ Lançador Rápido: Você vs Bot AI Master")
 
+    # ── Status de Assimilação Neural Pós-Partida ──
+    from ai.training.assimilation import get_assimilation_status
+    from stats_manager import get_hero_training_recommendations, get_stats_data
+
+    assim_info = get_assimilation_status()
+    is_assimilating = (assim_info.get("status") == "assimilating")
+
+    if is_assimilating:
+        st.warning(
+            "⏳ **A Rede Neural está assimilando sua partida recém-jogada!**\n\n"
+            "O motor de IA está realizando um mini-treinamento com prioridade amplificada (PER) para incorporar "
+            "suas jogadas e atualizar os pesos do modelo (`model_latest.pt`).\n\n"
+            "**Por favor, aguarde alguns instantes antes de criar um novo duelo** para que a IA jogue já utilizando este aprendizado!",
+            icon="🧠"
+        )
+    elif assim_info.get("status") == "completed":
+        finished_at = assim_info.get("finished_at", 0)
+        if time.time() - finished_at < 180:
+            st.success(
+                f"✅ **Partida assimilada com sucesso!** {assim_info.get('message', '')} "
+                "Você já pode iniciar o próximo duelo com a IA atualizada!",
+                icon="🎉"
+            )
+
+    # ── Dica de Heróis Recomendados para Treino ──
+    stats_data = get_stats_data()
+    recs = get_hero_training_recommendations(stats_data.get("deck_stats", {}), saved_decks)
+    if recs.get("top_picks"):
+        top_names = ", ".join([f"`{r['deck']}`" for r in recs["top_picks"][:3]])
+        st.caption(
+            f"💡 **Dica de Treino Acelerado:** A IA evoluirá mais rápido se você jogar com ou contra: {top_names} "
+            f"(veja a análise completa na aba **Analytics & ELO**)."
+        )
+
     col_p1, col_p2 = st.columns(2)
     with col_p1:
         st.markdown("##### 👤 Seu Deck (Player 1 - Humano):")
@@ -87,7 +121,13 @@ def render_tab_play(saved_decks=None, deck_options=None, fe_running=None, be_run
     with col_btn:
         st.write("")
         st.write("")
-        btn_create_duel = st.button("⚔️ Criar Duelo & Conectar Bot AI", type="primary", use_container_width=True)
+        btn_create_duel = st.button(
+            "⚔️ Criar Duelo & Conectar Bot AI",
+            type="primary",
+            use_container_width=True,
+            disabled=is_assimilating,
+            help="Aguarde a assimilação neural terminar antes de criar uma nova partida" if is_assimilating else None
+        )
 
     if btn_create_duel:
         with st.spinner("Criando sala no Talishar e inicializando o Bot AI..."):

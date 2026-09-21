@@ -14,6 +14,11 @@ from ai.training.process_supervisor import (
     terminate_process_cleanly,
 )
 from ai.training.orchestrator import GPUTrainingOrchestrator
+from ai.training.assimilation import (
+    get_assimilation_status,
+    trigger_human_match_assimilation,
+    clear_assimilation_status,
+)
 
 __all__ = [
     "GPUTrainingOrchestrator",
@@ -24,4 +29,7 @@ __all__ = [
     "get_active_pids",
     "wait_for_processes",
     "terminate_process_cleanly",
+    "get_assimilation_status",
+    "trigger_human_match_assimilation",
+    "clear_assimilation_status",
 ]

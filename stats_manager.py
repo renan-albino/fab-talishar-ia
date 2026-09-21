@@ -11,6 +11,7 @@ from stats import (
     canonicalize_deck_name, clean_stalled_matches, consolidate_deck_stats, delete_deck_stat,
     expected_score, get_expected_starting_health, get_stats_data,
     reset_all_elos, reset_stats, sync_training_matches, update_match_result,
+    get_hero_training_recommendations,
 )
 
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "canonicalize_deck_name", "clean_stalled_matches", "consolidate_deck_stats", "delete_deck_stat",
     "expected_score", "get_expected_starting_health", "get_stats_data",
     "reset_all_elos", "reset_stats", "sync_training_matches", "update_match_result",
+    "get_hero_training_recommendations",
 ]

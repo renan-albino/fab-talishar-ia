@@ -29,6 +29,7 @@ from stats.sync import (
     clean_stalled_matches,
     sync_training_matches,
 )
+from stats.recommendations import get_hero_training_recommendations
 
 __all__ = [
     "CANONICAL_DECK_NAMES",
@@ -39,11 +40,8 @@ __all__ = [
     "consolidate_deck_stats",
     "get_expected_starting_health",
     "expected_score",
-    
     "calculate_k_factor",
-    
     "calculate_elo_ratings",
-    
     "get_stats_data",
     "update_match_result",
     "delete_deck_stat",
@@ -51,4 +49,5 @@ __all__ = [
     "reset_all_elos",
     "sync_training_matches",
     "clean_stalled_matches",
+    "get_hero_training_recommendations",
 ]

@@ -184,6 +184,29 @@ def render_tab_analytics():
                 st.toast("Todos os ratings de ELO foram resetados para 1200!", icon="🎯")
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
+    stats_data = get_cached_stats_data()
+    deck_stats = stats_data.get("deck_stats", {})
+    from stats_manager import get_hero_training_recommendations
+    from ui.helpers import get_cached_saved_decks
+    saved_decks = get_cached_saved_decks()
+    recs = get_hero_training_recommendations(deck_stats, saved_decks)
+
+    top_picks = recs.get("top_picks", [])
+    if top_picks:
+        with st.expander("🎯 Recomendações de Treino: Quais Heróis Jogar para a IA Aprender Mais Rápido?", expanded=True):
+            st.caption(
+                "A rede neural aprende de forma acelerada com suas decisões humanas. "
+                "Para maximizar a evolução e cobrir pontos cegos da IA, priorize jogar com ou contra os heróis abaixo:"
+            )
+            col_recs = st.columns(min(len(top_picks), 4))
+            for idx, rec in enumerate(top_picks[:4]):
+                with col_recs[idx]:
+                    st.markdown(f"**{rec['badge']}**")
+                    st.markdown(f"##### {rec['deck']}")
+                    st.caption(rec['reason'])
+                    if rec.get('win_rate') is not None and rec.get('matches', 0) > 0:
+                        st.write(f"📊 Win Rate do Bot: **{rec['win_rate']:.1f}%** ({rec['matches']} jogos)")
+
     render_stats_leaderboard()
 
     col_btn1, col_btn2, col_btn3 = st.columns([1.5, 1.2, 1.2])

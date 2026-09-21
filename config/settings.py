@@ -460,6 +460,9 @@ class FaBSettings:
     elo_k_factor: int
     match_timeout_seconds: int
     default_ismcts_concurrency: str = "threads"
+    human_win_sample_weight: float = 4.0
+    human_loss_sample_weight: float = 7.0
+    human_post_match_training_steps: int = 10
 
     def estimate_vram_usage(
         self,
@@ -677,6 +680,9 @@ def _build_settings() -> FaBSettings:
         elo_k_factor=elo_k_factor,
         match_timeout_seconds=match_timeout_s,
         default_ismcts_concurrency=default_ismcts_concurrency,
+        human_win_sample_weight=float(os.environ.get("FAB_HUMAN_WIN_SAMPLE_WEIGHT", 4.0)),
+        human_loss_sample_weight=float(os.environ.get("FAB_HUMAN_LOSS_SAMPLE_WEIGHT", 7.0)),
+        human_post_match_training_steps=int(os.environ.get("FAB_HUMAN_POST_MATCH_TRAINING_STEPS", 10)),
     )
 
 
