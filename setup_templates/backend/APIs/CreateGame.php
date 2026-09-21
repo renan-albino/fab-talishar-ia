@@ -78,8 +78,8 @@ session_write_close();
 $gameName = GetGameCounter("../");
 
 
-if ((!file_exists("../Games/$gameName")) && (mkdir("../Games/$gameName", 0775, true))) {
-  chmod("../Games/$gameName", 0775);
+if ((!file_exists("../Games/$gameName")) && (mkdir("../Games/$gameName", 0777, true))) {
+  chmod("../Games/$gameName", 0777);
 } else {
   $response->error = "Game file could not be created.";
   echo (json_encode($response));
@@ -250,7 +250,7 @@ if ($handler === false) {
 }
 fclose($handler);
 @chmod($filename, 0666);
-@chmod("../Games/" . $gameName, 0775);
+@chmod("../Games/" . $gameName, 0777);
 
 $currentTime = round(microtime(true) * 1000);
 $cacheVisibility = ($visibility == "public" ? "1" : ($visibility == "friends-only" ? "2" : "0"));

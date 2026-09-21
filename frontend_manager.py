@@ -194,7 +194,13 @@ def create_human_vs_bot_match(
             headers={"Content-Type": "application/json"},
             timeout=5
         )
-        data = resp.json()
+        try:
+            data = resp.json()
+        except Exception:
+            return {
+                "success": False,
+                "error": f"Resposta inválida do backend Talishar (HTTP {resp.status_code}): {resp.text[:300]}"
+            }
     except Exception as e:
         return {"success": False, "error": f"Falha na comunicacao com o backend Talishar: {e}"}
 

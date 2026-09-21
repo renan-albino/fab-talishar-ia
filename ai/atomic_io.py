@@ -51,6 +51,7 @@ def atomic_json_save(data: dict | list, filepath: str, indent: int = 2) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=indent, ensure_ascii=False)
+        os.chmod(tmp_path, 0o666)
         os.replace(tmp_path, filepath)
     except Exception:
         try:

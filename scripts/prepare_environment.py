@@ -305,12 +305,18 @@ def fix_permissions():
         p = os.path.join(TALISHAR_DIR, sub)
         if os.path.exists(p):
             try:
-                subprocess.run(["chmod", "-R", "775", p], stderr=subprocess.DEVNULL, check=False)
+                # O container Docker roda Apache como www-data (UID 33) enquanto o host roda como usuário comum.
+                # Permissões 777 nestas pastas específicas de I/O são necessárias para compartilhamento de volumes.
+                subprocess.run(["chmod", "777", p], stderr=subprocess.DEVNULL, check=False)
+                for f in os.listdir(p):
+                    fp = os.path.join(p, f)
+                    if os.path.isfile(fp):
+                        subprocess.run(["chmod", "666", fp], stderr=subprocess.DEVNULL, check=False)
             except Exception:
                 pass
     if os.path.exists(LOGS_DIR):
         try:
-            subprocess.run(["chmod", "-R", "775", LOGS_DIR], stderr=subprocess.DEVNULL, check=False)
+            subprocess.run(["chmod", "-R", "777", LOGS_DIR], stderr=subprocess.DEVNULL, check=False)
         except Exception:
             pass
     log_success("Permissões de I/O concedidas para Talishar (Games, HostFiles, AccountFiles, APIKeys) e logs/.")

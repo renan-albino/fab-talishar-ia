@@ -221,18 +221,19 @@ def run_healthcheck(auto_fix: bool = False, host: str = "127.0.0.1", timeout: fl
         exists = os.path.exists(p)
         writable = check_writable(p) if exists else False
 
+        perm = 0o777 if item["name"].startswith("Talishar/") else 0o775
         if not exists and auto_fix:
             try:
                 os.makedirs(p, exist_ok=True)
-                os.chmod(p, 0o775)
+                os.chmod(p, perm)
                 exists = True
                 writable = check_writable(p)
-                report["fixed_items"].append(f"Criado diretório '{item['name']}' com permissão 775.")
+                report["fixed_items"].append(f"Criado diretório '{item['name']}' com permissão {oct(perm)[2:]}.")
             except Exception:
                 pass
         elif exists and not writable and auto_fix:
             try:
-                os.chmod(p, 0o775)
+                os.chmod(p, perm)
                 writable = check_writable(p)
                 if writable:
                     report["fixed_items"].append(f"Ajustada permissão de escrita em '{item['name']}'.")
