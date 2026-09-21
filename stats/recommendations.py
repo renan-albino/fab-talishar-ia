@@ -48,7 +48,7 @@ def get_hero_training_recommendations(
         hero_name = all_known_decks.get(d_name, {}).get("hero", d_name)
         slug = all_known_decks.get(d_name, {}).get("slug", d_name.lower().replace(" ", "_"))
 
-        # A. Gargalo de ELO (Bot perde muito contra este deck)
+        # A. Gargalo de ELO (Bot perde muito com este deck)
         if matches >= 3 and wr < 45.0:
             bottlenecks.append({
                 "deck": d_name,
@@ -58,7 +58,7 @@ def get_hero_training_recommendations(
                 "win_rate": round(wr, 1),
                 "priority": "alta",
                 "badge": "🔴 Gargalo de ELO",
-                "reason": f"O bot vence apenas {wr:.1f}% das partidas contra este deck. Jogar com ele força a rede a aprender como responder e se defender deste arquétipo.",
+                "reason": f"O bot vence apenas {wr:.1f}% das partidas com este deck. Jogar com ele ensina à rede neural linhas vencedoras de pilotagem para dominar este arquétipo.",
             })
 
         # B. Baixa amostragem (Menos de 6 partidas)
@@ -83,7 +83,7 @@ def get_hero_training_recommendations(
                 "matches": matches,
                 "priority": "alta",
                 "badge": "👤 Inédito contra Humano",
-                "reason": "O bot nunca enfrentou um jogador humano pilotando este deck. Seu feedback fornecerá novos padrões táticos.",
+                "reason": "O bot nunca disputou partidas humanas com este deck. Seu feedback fornecerá novos padrões táticos para a IA.",
             })
 
     # 2. Decks salvos no workspace que nem sequer entraram no ranking de partidas
