@@ -46,11 +46,11 @@ O script `scripts/prepare_environment.py` detecta automaticamente se seu ambient
   - `ai/bot_runtime/`: Runtime do bot (lobby, match tracker, choices, fases de decisão). Fachada raiz: `bot_client.py`.
   - `ai/policy/`: Poda tática (ataque, defesa, pitch, arsenal) e motor de decisão unificado. Fachada: `ai/policy_engine.py`.
   - `ai/mcts/`: Motores MCTS e ISMCTS paralelo multithread (`ThreadPoolExecutor`). Fachada: `ai/mcts/`.
-  - `ai/training/`: Orquestrador de treino GPU FP16 e supervisor de processos. Fachada: `ai/trainer.py`.
+  - `ai/training/`: Orquestrador de treino GPU FP16, supervisor de processos e assimilação pós-partida (`assimilation.py`).
   - `ai/hero_strategies/`: 139 heróis oficiais, `knapsack_solver.py`, `turn_planner.py`, `equipment_evaluator.py` e submódulos por classe.
   - `ai/model.py`, `ai/game_simulator.py`, `ai/experience_collector.py`, `ai/equipment_learning.py`.
 - O gerenciamento de decks vive no pacote `deck_manager/` (fachada raiz: `deck_parser.py`).
-- O sistema de ranking e estatísticas vive no pacote `stats/` (fachada raiz: `stats_manager.py`).
+- O sistema de ranking e estatísticas vive no pacote `stats/` (recomendações de heróis, ELO e persistência). Fachada raiz: `stats_manager.py`.
 - O dashboard Streamlit é orquestrado por `dashboard.py` delegando para `ui/helpers.py` e `ui/tabs/` (7 abas).
 - Patches do Talishar e Talishar-FE ficam em `setup_templates/` e são aplicados por `scripts/prepare_environment.py`.
 - Banco de cartas oficial fica em `data/fab_cards_db.json` (extraído por `extract_card_db.py`).

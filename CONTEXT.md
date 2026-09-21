@@ -114,6 +114,12 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Não defender por padrão, Bloqueio fraco arbitrário.
 - **Human ELO Feedback System**: Telemetria em `stats_manager.py` que distingue partidas contra jogadores humanos, aplicando ponderação reforçada para calibração de estratégias.
   - _Avoid_: ELO unificado, Ranking sem separação de oponentes.
+- **Human Replay Boost (`ai/bot_runtime/match_tracker.py`)**: Multiplicação de peso amostral no Replay Buffer (4.0x para vitórias do bot, 7.0x para derrotas contra humanos) para priorizar a correção de blunders e a assimilação de linhas humanas no Prioritized Experience Replay.
+  - _Avoid_: Peso arbitrário de replay, Boost genérico de amostras.
+- **Assimilação Pós-Partida (`ai/training/assimilation.py`)**: Ciclo leve de treinamento supervisionado/PER (10 passos de gradiente) disparado em segundo plano logo após o encerramento de duelos contra jogadores humanos, atualizando imediatamente `data/model_latest.pt` com bloqueio concorrente via `file_lock`.
+  - _Avoid_: Treinamento síncrono bloqueante, Retreino completo do modelo, Auto-treino infinito.
+- **Recomendação de Heróis para Treino (`stats/recommendations.py`)**: Motor heurístico de diagnóstico que inspeciona `deck_stats` e cataloga os heróis mais valiosos para duelos humanos (Gargalos de ELO com Win Rate < 45%, Alta Incerteza com < 6 partidas e Inéditos contra Humanos).
+  - _Avoid_: Chute de herói, Sugestão randômica de deck, Matchup aleatório.
 - **Invalid Match Filtering**: Algoritmo que invalida e expurga partidas espúrias (empates sem dano trocado $< 4$ HP ou bots inertes *Punching Bag*), mantendo a integridade dos dados de treino e rankings.
   - _Avoid_: Limpeza cega de partidas, Exclusão manual de dados.
 - **Punching Bag / Inert Stall**: Anomalia técnica onde um bot perdedor passa $\ge 6$ turnos sem desferir ataques ou dano enquanto o adversário permanece intacto (100% HP), exigindo anulação da partida.
