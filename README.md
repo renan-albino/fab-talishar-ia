@@ -520,6 +520,8 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Torneios Suíços Automatizados** | Implementado em `stats/tournament_manager.py` com ligas entre decks e persistência no `stats/`. |
 | **Aprendizado Acelerado com Humanos & Assimilação Pós-Partida** | Ponderação amplificada (4.0x a 7.0x no PER) para partidas contra humanos, assimilação imediata pós-jogo em background via `ai/training/assimilation.py` com atualização segura do modelo (`model_latest.pt`) e alertas visuais com bloqueio protetor no Dashboard (`tab_play.py`) |
 | **Recomendação Inteligente de Heróis (Analytics & ELO)** | Motor de diagnóstico tático em `stats/recommendations.py` que analisa a telemetria e sugere os heróis prioritários para treino humano (gargalos de ELO < 45% WR, alta incerteza amostral e matchups inéditos contra humanos) integrado nas abas 1 e 6 do Dashboard |
+| **Sincronização de Telemetria do Replay Buffer** | Leitura direta com cache leve (TTL=3s) das amostras físicas do `replay_buffer.npz` no Dashboard (`ui/helpers.py`, `ui/tabs/tab_training.py`) e sincronização imediata de `samples_collected` pós-assimilação |
+| **Notificações Visuais de Assimilação em Tempo Real** | Ampulheta animada CSS e aviso de status na aba de Duelo Humano (`tab_play.py`) com injeção de logs estilizados no chat do Talishar durante a assimilação |
 
 ### 📋 Pendente
 

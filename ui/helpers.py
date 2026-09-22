@@ -66,6 +66,21 @@ def get_total_training_games() -> int:
     return 0
 
 
+@st.cache_data(ttl=3)
+def get_replay_buffer_sample_count() -> int:
+    """Lê diretamente o número real de amostras gravadas no replay_buffer.npz sem instanciar a rede."""
+    buffer_file = os.path.join("data", "replay_buffer.npz")
+    if os.path.exists(buffer_file):
+        try:
+            import numpy as np
+            with np.load(buffer_file) as data:
+                if "states" in data.files:
+                    return int(len(data["states"]))
+        except Exception:
+            pass
+    return 0
+
+
 @st.cache_data(ttl=4)
 def get_cached_services_status():
     """Retorna o status de execução do frontend e backend com cache TTL."""

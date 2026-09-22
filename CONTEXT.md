@@ -120,6 +120,10 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Treinamento síncrono bloqueante, Retreino completo do modelo, Auto-treino infinito.
 - **Recomendação de Heróis para Treino (`stats/recommendations.py`)**: Motor heurístico de diagnóstico que inspeciona `deck_stats` e cataloga os heróis mais valiosos para duelos humanos (Gargalos de ELO com Win Rate < 45%, Alta Incerteza com < 6 partidas e Inéditos contra Humanos).
   - _Avoid_: Chute de herói, Sugestão randômica de deck, Matchup aleatório.
+- **Sincronização de Telemetria do Replay Buffer (`ui/helpers.py`, `ui/tabs/tab_training.py`, `ai/training/assimilation.py`)**: Mecanismo de leitura direta e cacheada (`get_replay_buffer_sample_count`, TTL=3s) das amostras físicas de `data/replay_buffer.npz` para o Dashboard e atualização contínua do campo `samples_collected` em `training_metrics.json` pela assimilação pós-partida, evitando descompassos visuais entre duelos humanos e o orquestrador GPU.
+  - _Avoid_: Leitura cega estática de métricas, Polling bloqueante de disco, Descompasso de amostras.
+- **Notificação e Ampulheta em Tempo Real da Assimilação (`ui/tabs/tab_play.py`, `Talishar/Games/.../gamelog.txt`)**: Indicador visual dinâmico com ampulheta animada CSS na aba de Duelo e injeção de balões de status no chat oficial do Talishar avisando o progresso da assimilação em background e prevenindo o início precipitado de novas partidas enquanto os pesos neurais estão sendo sincronizados.
+  - _Avoid_: Trava cega de tela, Pop-up modal intrusivo.
 - **Invalid Match Filtering**: Algoritmo que invalida e expurga partidas espúrias (empates sem dano trocado $< 4$ HP ou bots inertes *Punching Bag*), mantendo a integridade dos dados de treino e rankings.
   - _Avoid_: Limpeza cega de partidas, Exclusão manual de dados.
 - **Punching Bag / Inert Stall**: Anomalia técnica onde um bot perdedor passa $\ge 6$ turnos sem desferir ataques ou dano enquanto o adversário permanece intacto (100% HP), exigindo anulação da partida.

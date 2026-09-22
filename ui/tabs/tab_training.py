@@ -14,6 +14,7 @@ from ui.helpers import (
     get_stats_data,
     get_cached_saved_decks,
     get_gpu_info,
+    get_replay_buffer_sample_count,
 )
 
 
@@ -263,7 +264,9 @@ def render_tab_training(deck_options=None, gpu_available=None):
         st_m1, st_m2, st_m3, st_m4 = st.columns(4)
         st_m1.metric("Partidas Disputadas", orchestrator.stats.get("total_games", 0))
         max_cap = orchestrator.config.get("buffer_capacity", orchestrator.stats.get("buffer_capacity", 100000))
-        st_m2.metric("Amostras no Replay Buffer", f"{orchestrator.stats.get('samples_collected', 0):,} / {max_cap:,}")
+        real_samples = get_replay_buffer_sample_count()
+        display_samples = max(real_samples, orchestrator.stats.get("samples_collected", 0))
+        st_m2.metric("Amostras no Replay Buffer", f"{display_samples:,} / {max_cap:,}")
         st_m3.metric("Policy Loss (Ação)", orchestrator.stats.get("policy_loss", 0.0))
         st_m4.metric("Value Loss (Vitória MSE)", orchestrator.stats.get("value_loss", 0.0))
 

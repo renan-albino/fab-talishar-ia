@@ -147,6 +147,17 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
         except Exception:
             pass
 
+        # Sincroniza samples_collected em training_metrics.json se o arquivo existir
+        try:
+            metrics_path = os.path.join(DATA_DIR, "training_metrics.json")
+            if os.path.exists(metrics_path):
+                with open(metrics_path, "r", encoding="utf-8") as mf:
+                    mdata = json.load(mf)
+                mdata["samples_collected"] = len(buffer)
+                atomic_json_save(mdata, metrics_path)
+        except Exception:
+            pass
+
         atomic_json_save({
             "status": "completed",
             "room_id": str(room_id),
