@@ -1,10 +1,10 @@
 {
-  "total_matches": 370,
-  "bot1_wins": 178,
+  "total_matches": 371,
+  "bot1_wins": 179,
   "bot2_wins": 189,
   "draws": 3,
-  "bot1_elo": 1192,
-  "bot2_elo": 1208,
+  "bot1_elo": 1200,
+  "bot2_elo": 1200,
   "elo_history": [
     {
       "match": 0,
@@ -2231,15 +2231,21 @@
       "bot1_elo": 1192,
       "bot2_elo": 1208,
       "timestamp": 1790035032.8829658
+    },
+    {
+      "match": 371,
+      "bot1_elo": 1200,
+      "bot2_elo": 1200,
+      "timestamp": 1790047805.0112448
     }
   ],
   "deck_stats": {
     "Betsy": {
-      "matches": 63,
+      "matches": 64,
       "wins": 45,
-      "losses": 17,
-      "elo": 1314,
-      "human_matches": 0,
+      "losses": 18,
+      "elo": 1304,
+      "human_matches": 1,
       "human_wins": 0
     },
     "Cindra": {
@@ -2331,10 +2337,10 @@
       "human_wins": 0
     },
     "👤 Humano (Você)": {
-      "matches": 2,
-      "wins": 2,
+      "matches": 3,
+      "wins": 3,
       "losses": 0,
-      "elo": 1226,
+      "elo": 1236,
       "human_matches": 0,
       "human_wins": 0
     }
@@ -8275,9 +8281,35 @@
       "Teklovossen": 915,
       "Vynsett": 1151,
       "👤 Humano (Você)": 1226
+    },
+    {
+      "match": 371,
+      "Betsy": 1304,
+      "Cindra": 1458,
+      "Dash IO": 1002,
+      "Gravy Bones": 1465,
+      "Hala": 1266,
+      "Jarl": 1199,
+      "Kassai": 1191,
+      "Mario": 1157,
+      "Marlinn": 1104,
+      "Oscilio GIAF": 1152,
+      "Teklovossen": 915,
+      "Vynsett": 1151,
+      "👤 Humano (Você)": 1236
     }
   ],
   "recent_matches": [
+    {
+      "room": "7092",
+      "date": "22/09/2026 00:30:05",
+      "winner": "👤 Humano (Humano (Você))",
+      "p1_deck": "👤 Humano (Humano (Você))",
+      "p2_deck": "🤖 Bot (Betsy)",
+      "p1_health": 43,
+      "p2_health": 0,
+      "turns": 21
+    },
     {
       "room": "7091",
       "date": "21/09/2026 20:57:12",
@@ -8567,16 +8599,6 @@
       "p1_health": 32,
       "p2_health": -1,
       "turns": 10
-    },
-    {
-      "room": "Train_25cbcf09",
-      "date": "17/09/2026 07:53:03",
-      "winner": "🤖 Bot 2 (Gravy Bones)",
-      "p1_deck": "Oscilio GIAF",
-      "p2_deck": "Gravy Bones",
-      "p1_health": -2,
-      "p2_health": 24,
-      "turns": 14
     }
   ]
 }

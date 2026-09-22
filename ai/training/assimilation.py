@@ -152,10 +152,11 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
         }, STATUS_FILE)
 
 
-def trigger_human_match_assimilation(room_id: str, bot_player_id: int, winner_id: int):
+def trigger_human_match_assimilation(room_id: str, bot_player_id: int, winner_id: int, wait: bool = True):
     """
-    Dispara a assimilação da partida contra humano em uma thread daemon separada,
-    atualizando imediatamente o arquivo de status para o Dashboard.
+    Dispara a assimilação da partida contra humano.
+    Atualiza o arquivo de status para o Dashboard e executa a assimilação,
+    garantindo que o processo não seja finalizado abruptamente antes do término do treino.
     """
     atomic_json_save({
         "status": "assimilating",
@@ -168,7 +169,9 @@ def trigger_human_match_assimilation(room_id: str, bot_player_id: int, winner_id
     t = threading.Thread(
         target=_run_assimilation_job,
         args=(room_id, bot_player_id, winner_id),
-        daemon=True,
+        daemon=False,
         name=f"Assimilation-Room-{room_id}"
     )
     t.start()
+    if wait:
+        t.join(timeout=45.0)
