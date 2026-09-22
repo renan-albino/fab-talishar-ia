@@ -70,22 +70,73 @@ def render_tab_play(saved_decks=None, deck_options=None, fe_running=None, be_run
 
     assim_info = get_assimilation_status()
     is_assimilating = (assim_info.get("status") == "assimilating")
+    assim_room = assim_info.get("room_id", "")
 
     if is_assimilating:
-        st.warning(
-            "⏳ **A Rede Neural está assimilando sua partida recém-jogada!**\n\n"
-            "O motor de IA está realizando um mini-treinamento com prioridade amplificada (PER) para incorporar "
-            "suas jogadas e atualizar os pesos do modelo (`model_latest.pt`).\n\n"
-            "**Por favor, aguarde alguns instantes antes de criar um novo duelo** para que a IA jogue já utilizando este aprendizado!",
-            icon="🧠"
+        st.markdown(
+            f"""
+            <style>
+            @keyframes hourglass-spin {{
+                0% {{ transform: rotate(0deg); }}
+                50% {{ transform: rotate(180deg); }}
+                100% {{ transform: rotate(360deg); }}
+            }}
+            .hourglass-anim {{
+                display: inline-block;
+                animation: hourglass-spin 2s infinite ease-in-out;
+                font-size: 32px;
+            }}
+            .assim-card {{
+                background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+                border: 1px solid #4338ca;
+                border-left: 6px solid #fbbf24;
+                border-radius: 10px;
+                padding: 16px 20px;
+                margin-bottom: 18px;
+                color: #e0e7ff;
+            }}
+            </style>
+            <div class="assim-card">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="hourglass-anim">⏳</div>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0; color: #fbbf24; font-size: 17px;">
+                            Assimilação Neural em Tempo Real... (Sala #{assim_room})
+                        </h4>
+                        <p style="margin: 5px 0 0 0; font-size: 13.5px; color: #c7d2fe;">
+                            O motor de IA está executando um <b>mini-treinamento prioritário (PER) em GPU CUDA</b> com as jogadas da sua partida.<br/>
+                            Aguarde alguns segundos enquanto os novos pesos de decisão são gravados em <code>model_latest.pt</code>...
+                        </p>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
+        # Atualização em tempo real enquanto a assimilação estiver ativa
+        time.sleep(1.2)
+        st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+
     elif assim_info.get("status") == "completed":
         finished_at = assim_info.get("finished_at", 0)
         if time.time() - finished_at < 180:
-            st.success(
-                f"✅ **Partida assimilada com sucesso!** {assim_info.get('message', '')} "
-                "Você já pode iniciar o próximo duelo com a IA atualizada!",
-                icon="🎉"
+            loss_val = assim_info.get("final_loss", 0.0)
+            loss_str = f" (Loss final: <b>{loss_val:.4f}</b>)" if loss_val > 0 else ""
+            st.markdown(
+                f"""
+                <div style="background: #064e3b; border: 1px solid #059669; border-left: 6px solid #34d399; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; color: #d1fae5;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 26px;">🎉</span>
+                        <div>
+                            <h4 style="margin: 0; color: #34d399; font-size: 16px;">Partida #{assim_room} Assimilada com Sucesso!</h4>
+                            <p style="margin: 4px 0 0 0; font-size: 13px; color: #a7f3d0;">
+                                {assim_info.get('message', '')}{loss_str} A rede neural já incorporou suas decisões e está pronta para o próximo duelo!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
     # ── Dica de Heróis Recomendados para Treino ──

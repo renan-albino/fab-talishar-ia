@@ -133,6 +133,20 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
 
         logger.info(f"[Assimilation] ✓ Assimilação concluída! {steps} passos de treino. Loss final: {last_loss:.4f}")
 
+        # Notifica conclusão diretamente no log da sala do Talishar (se acessível)
+        try:
+            gamelog_path = os.path.join(BASE_DIR, "Talishar", "Games", str(room_id), "gamelog.txt")
+            if os.path.exists(gamelog_path):
+                done_msg = (
+                    f"<div style='background:#14532d;border-left:4px solid #4ade80;padding:3px 6px;margin:2px 0;border-radius:4px;color:#4ade80;font-size:12px;'>"
+                    f"✅ <b>[ASSIMILAÇÃO CONCLUÍDA!]</b> {steps} passos de treino finalizados (Loss: {last_loss:.4f}). "
+                    f"Pesos de decisão atualizados com sucesso em <code>model_latest.pt</code>!</div>\n"
+                )
+                with open(gamelog_path, "a", encoding="utf-8") as gf:
+                    gf.write(done_msg)
+        except Exception:
+            pass
+
         atomic_json_save({
             "status": "completed",
             "room_id": str(room_id),

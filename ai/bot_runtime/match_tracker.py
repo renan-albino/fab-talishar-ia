@@ -188,8 +188,12 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                 )
                 client.send_chat_log(
                     f"🧠 <b>[APRENDIZADO ACELERADO]</b> Partida contra Humano concluída! "
-                    f"Prioridade de {human_mult:.1f}x aplicada no Replay Buffer. A IA iniciou a assimilação pós-partida.",
+                    f"Prioridade de {human_mult:.1f}x aplicada no Replay Buffer.",
                     highlight=True, bg_color="#1e1b4b", text_color="#a5b4fc"
+                )
+                client.send_chat_log(
+                    "⏳ <b>[ASSIMILAÇÃO EM TEMPO REAL]</b> A Rede Neural está incorporando suas jogadas e otimizando os pesos em GPU CUDA... Aguarde alguns instantes.",
+                    highlight=True, bg_color="#312e81", text_color="#fbbf24"
                 )
             if b_stats.get("blunders", 0) > 0 or b_stats.get("brilliants", 0) > 0:
                 client.log(
