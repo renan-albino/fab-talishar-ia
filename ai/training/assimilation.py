@@ -70,7 +70,7 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
         import torch.nn.functional as F
         from config.settings import SETTINGS
         from ai.experience_collector import get_global_buffer
-        from ai.model import load_model, get_device
+        from ai.model import create_model, get_device
 
         dev = get_device()
         buffer = get_global_buffer(SETTINGS.buffer_capacity)
@@ -87,7 +87,7 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
             return
 
         logger.info(f"[Assimilation] Iniciando assimilação pós-partida (Sala #{room_id}, Dispositivo: {dev})...")
-        model, _ = load_model(device=dev)
+        model, _ = create_model(device=dev)
         model.train()
 
         steps = getattr(SETTINGS, "human_post_match_training_steps", 10)

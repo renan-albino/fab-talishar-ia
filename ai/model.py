@@ -490,3 +490,7 @@ def create_model(
 
     print(f"[Modelo] {model.model_info()}")
     return model, dev
+
+
+# Alias retrocompatível
+load_model = create_model
