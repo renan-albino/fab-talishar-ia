@@ -22,11 +22,14 @@ import shutil
 import subprocess
 import json
 import argparse
+from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 DECKS_DIR = os.path.join(BASE_DIR, "decks")
+DOCS_DIR = os.path.join(BASE_DIR, "docs")
+CHANGELOG_PATH = os.path.join(DOCS_DIR, "talishar_upstream_changelog.md")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "setup_templates")
 TALISHAR_DIR = os.path.join(BASE_DIR, "Talishar")
 TALISHAR_FE_DIR = os.path.join(BASE_DIR, "Talishar-FE")
@@ -449,6 +452,218 @@ fi
 
     log_success("Git hooks configurados com sucesso (pre-commit, post-commit e pre-push).")
 
+def get_git_commit_info(repo_dir: str):
+    """Retorna commit SHA, data curta e resumo da mensagem do HEAD de um repositório git."""
+    try:
+        sha = subprocess.check_output(["git", "-C", repo_dir, "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL).strip()
+        date = subprocess.check_output(["git", "-C", repo_dir, "log", "-1", "--format=%cd", "--date=short", "HEAD"], text=True, stderr=subprocess.DEVNULL).strip()
+        msg = subprocess.check_output(["git", "-C", repo_dir, "log", "-1", "--format=%s", "HEAD"], text=True, stderr=subprocess.DEVNULL).strip()
+        return sha, date, msg
+    except Exception:
+        return "desconhecido", "desconhecido", "desconhecido"
+
+def update_upstream_changelog(updates: list) -> None:
+    """Atualiza o documento docs/talishar_upstream_changelog.md com os novos commits e versões ativas."""
+    os.makedirs(DOCS_DIR, exist_ok=True)
+    
+    be_sha, be_date, _ = get_git_commit_info(TALISHAR_DIR)
+    fe_sha, fe_date, _ = get_git_commit_info(TALISHAR_FE_DIR)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    header = f"""# 📜 Talishar Upstream Changelog & Version Tracking
+
+Este documento registra o histórico de sincronização com os repositórios oficiais do Talishar (Backend e Frontend).
+Ele serve como referência para os agentes de IA entenderem exatamente quais mudanças foram introduzidas upstream, quais commits estão ativos e o que precisa de atenção técnica.
+
+---
+
+## 📌 Versões Atualmente Rastreadas
+
+| Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
+| :--- | :--- | :--- | :--- | :--- |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `{be_sha[:9]}` (`{be_sha}`) | {be_date} | ✅ Sincronizado + Patches Aplicados |
+| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `{fe_sha[:9]}` (`{fe_sha}`) | {fe_date} | ✅ Sincronizado + Patches Aplicados |
+
+---
+
+## 🤖 Guia para Agentes de IA
+
+Quando o Talishar oficial atualizar:
+1. **Patches de IA**: Sempre verifique se os arquivos em `setup_templates/` continuam compatíveis com as versões upstream.
+2. **Novas Mecânicas/Cartas**: Se houver novidades em `CardDictionaries/`, `extract_card_db.py` é executado automaticamente para atualizar `data/fab_cards_db.json`.
+3. **Frontend Vite**: Se novas páginas ou componentes forem adicionados upstream (ex: `AdRailLayout`), garanta que existam mocks adequados em `setup_templates/frontend/bannerUnit/` para compilação offline.
+
+---
+
+## 🕒 Histórico de Sincronizações
+"""
+
+    existing_history = ""
+    if os.path.exists(CHANGELOG_PATH):
+        try:
+            with open(CHANGELOG_PATH, "r", encoding="utf-8") as f:
+                content = f.read()
+            if "## 🕒 Histórico de Sincronizações" in content:
+                existing_history = content.split("## 🕒 Histórico de Sincronizações", 1)[1].strip()
+        except Exception:
+            pass
+
+    new_entry = f"### 🔄 Sincronização em {now_str}\n\n"
+    if not updates:
+        new_entry += "_Nenhum novo commit incorporado (ambos os repositórios já estavam atualizados)._\n\n"
+    else:
+        for up in updates:
+            new_entry += f"#### {up['name']}\n"
+            new_entry += f"- **Transição de Versão**: `{up['old_sha'][:9]}` ({up['old_date']}) ➔ `{up['new_sha'][:9]}` ({up['new_date']})\n"
+            new_entry += f"- **Novos commits incorporados**: {up['commits_count']}\n"
+            new_entry += f"- **Ações automáticas executadas**: {', '.join(up['actions'])}\n\n"
+            new_entry += "<details>\n<summary><b>Clique para ver a lista de commits incorporados</b></summary>\n\n"
+            new_entry += f"{up['commits_log']}\n\n"
+            new_entry += "</details>\n\n"
+            if up.get("changed_files"):
+                top_files = up["changed_files"][:20]
+                new_entry += "<details>\n<summary><b>Arquivos principais alterados upstream</b></summary>\n\n"
+                for tf in top_files:
+                    new_entry += f"- `{tf}`\n"
+                if len(up["changed_files"]) > 20:
+                    new_entry += f"- *(e mais {len(up['changed_files']) - 20} arquivos...)*\n"
+                new_entry += "\n</details>\n\n"
+
+    final_content = header + "\n" + new_entry + ("\n---\n\n" + existing_history if existing_history else "")
+    with open(CHANGELOG_PATH, "w", encoding="utf-8") as f:
+        f.write(final_content)
+    log_success("Changelog upstream registrado em docs/talishar_upstream_changelog.md")
+
+def sync_upstream_repositories(check_only: bool = False) -> bool:
+    """
+    Sincroniza os submódulos oficiais do Talishar com o upstream remoto.
+    Retorna True se foram detectadas/aplicadas atualizações, ou False caso contrário.
+    """
+    log("Verificando atualizações nos repositórios oficiais upstream do Talishar...")
+    repos = [
+        ("Talishar Backend", TALISHAR_DIR, "https://github.com/Talishar/Talishar.git"),
+        ("Talishar Frontend", TALISHAR_FE_DIR, "https://github.com/Talishar/Talishar-FE.git"),
+    ]
+
+    has_updates = False
+    updates_info = []
+    cards_modified = False
+    frontend_modified = False
+
+    for name, rdir, url in repos:
+        if not os.path.exists(os.path.join(rdir, ".git")):
+            log_warn(f"Repositório Git não encontrado em {rdir}. Ignorando sync.")
+            continue
+
+        try:
+            # Teste de conectividade com timeout seguro de 8 segundos
+            res = subprocess.run(["git", "-C", rdir, "fetch", "origin", "main"], timeout=10, capture_output=True, text=True)
+            if res.returncode != 0:
+                log_warn(f"Não foi possível conectar ao remoto de {name} ({res.stderr.strip()[:80]}).")
+                continue
+        except subprocess.TimeoutExpired:
+            log_warn(f"Timeout ao consultar remoto de {name}. Pulando verificação.")
+            continue
+        except Exception as e:
+            log_warn(f"Erro ao consultar remoto de {name}: {e}")
+            continue
+
+        try:
+            old_sha, old_date, _ = get_git_commit_info(rdir)
+            new_sha = subprocess.check_output(["git", "-C", rdir, "rev-parse", "origin/main"], text=True).strip()
+            new_date = subprocess.check_output(["git", "-C", rdir, "log", "-1", "--format=%cd", "--date=short", "origin/main"], text=True).strip()
+            
+            behind_str = subprocess.check_output(["git", "-C", rdir, "rev-list", "HEAD..origin/main", "--count"], text=True).strip()
+            commits_behind = int(behind_str) if behind_str.isdigit() else 0
+        except Exception as e:
+            log_warn(f"Falha ao comparar commits em {name}: {e}")
+            continue
+
+        if commits_behind > 0:
+            has_updates = True
+            log(f"[!] {name}: {commits_behind} novos commits disponíveis ({old_sha[:9]} -> {new_sha[:9]}).")
+
+            if check_only:
+                continue
+
+            # Modo atualização ativa
+            log(f"[*] Aplicando atualizações em {name}...")
+            try:
+                commits_log = subprocess.check_output(
+                    ["git", "-C", rdir, "log", "--pretty=format:* `%h` (%cd por **%an**) — %s", "--date=short", "HEAD..origin/main"],
+                    text=True
+                ).strip()
+                changed_files = subprocess.check_output(
+                    ["git", "-C", rdir, "diff", "--name-only", "HEAD", "origin/main"],
+                    text=True
+                ).strip().splitlines()
+
+                # 1. Descarta modificações locais decorrentes dos templates (nossa fonte única é setup_templates/)
+                subprocess.run(["git", "-C", rdir, "checkout", "--", "."], check=False, stderr=subprocess.DEVNULL)
+                
+                # 2. Fast-forward seguro para origin/main
+                subprocess.run(["git", "-C", rdir, "reset", "--hard", "origin/main"], check=True, stderr=subprocess.DEVNULL)
+                log_success(f"{name} atualizado com sucesso para {new_sha[:9]}.")
+
+                actions = ["Código upstream atualizado via fast-forward", "Templates customizados reaplicados"]
+
+                if name == "Talishar Backend":
+                    if any("CardDictionaries" in f or "Cards.php" in f for f in changed_files):
+                        cards_modified = True
+                        actions.append("Banco fab_cards_db.json reindexado")
+
+                if name == "Talishar Frontend":
+                    frontend_modified = True
+                    actions.append("Frontend Vite recompilado")
+
+                updates_info.append({
+                    "name": name,
+                    "url": url,
+                    "old_sha": old_sha,
+                    "old_date": old_date,
+                    "new_sha": new_sha,
+                    "new_date": new_date,
+                    "commits_count": commits_behind,
+                    "commits_log": commits_log,
+                    "changed_files": changed_files,
+                    "actions": actions
+                })
+            except Exception as e:
+                log_warn(f"Erro durante atualização de {name}: {e}")
+        else:
+            log_success(f"{name} já está na versão mais recente ({old_sha[:9]} - {old_date}).")
+
+    if check_only:
+        return has_updates
+
+    if updates_info:
+        log("Reaplicando patches customizados de setup_templates/ sobre o código atualizado...")
+        apply_custom_templates()
+        ensure_system_idempotence()
+        fix_permissions()
+
+        if cards_modified:
+            log("Novas cartas ou dicionários detectados. Sincronizando banco de cartas...")
+            sync_card_database()
+
+        if frontend_modified:
+            log("Recompilando Talishar-FE para garantir integridade do build...")
+            npx_cmd = shutil.which("npx") or "npx"
+            try:
+                subprocess.run([npx_cmd, "vite", "build"], cwd=TALISHAR_FE_DIR, check=False)
+                log_success("Frontend Talishar-FE recompilado com sucesso.")
+            except Exception as e:
+                log_warn(f"Aviso ao recompilar frontend: {e}")
+
+        # Grava o histórico detalhado
+        update_upstream_changelog(updates_info)
+    else:
+        # Se nenhuma atualização foi feita mas o changelog ainda não existe, cria a versão base inicial
+        if not os.path.exists(CHANGELOG_PATH):
+            update_upstream_changelog([])
+
+    return has_updates
+
 def sync_agents_environment_rules():
     """
     Inspeciona dinamicamente o ambiente de execução (WSL2 vs Linux Nativo vs Container)
@@ -594,11 +809,21 @@ def main():
     parser = argparse.ArgumentParser(description="Automação de Preparação de Ambiente do FaB Talishar AI")
     parser.add_argument("--export-templates", action="store_true", help="Salva os arquivos modificados em setup_templates/")
     parser.add_argument("--frontend-only", action="store_true", help="Prepara apenas o repositório Talishar-FE e sincroniza templates")
+    parser.add_argument("--update-upstream", action="store_true", help="Atualiza Talishar e Talishar-FE a partir dos repositórios oficiais upstream, reaplica patches e gera changelog")
+    parser.add_argument("--check-upstream", action="store_true", help="Verifica se há novos commits upstream (código 0 se houver atualizações, 1 se não)")
     args = parser.parse_args()
 
     print("==================================================")
     print("   FAB TALISHAR AI - PREPARAÇÃO DE AMBIENTE       ")
     print("==================================================")
+
+    if args.check_upstream:
+        has_updates = sync_upstream_repositories(check_only=True)
+        sys.exit(0 if has_updates else 1)
+
+    if args.update_upstream:
+        sync_upstream_repositories(check_only=False)
+        return
 
     if args.export_templates:
         export_active_to_templates()

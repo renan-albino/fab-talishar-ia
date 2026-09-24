@@ -12,6 +12,8 @@ cd "$PROJECT_ROOT"
 START_DOCKER=true
 START_DASHBOARD=true
 VERBOSE=false
+CHECK_UPDATES=true
+FORCE_UPDATE=false
 DASHBOARD_PORT=8501
 PID_FILE="$PROJECT_ROOT/.dashboard.pid"
 
@@ -49,12 +51,16 @@ Opções:
   -v, --verbose         Mostra logs detalhados durante a inicialização
   --no-docker           Não inicia os containers Docker (inicia apenas o Dashboard)
   --no-dashboard        Não inicia o Dashboard (inicia apenas o Docker Talishar)
+  --update              Força a verificação e atualização dos repositórios Talishar upstream antes de iniciar
+  --no-update           Não verifica atualizações do upstream (inicia imediatamente offline)
   --port <PORT>         Porta para o Streamlit Dashboard (padrão: 8501)
   --status              Exibe o status atual dos serviços sem iniciá-los
   -h, --help            Exibe esta mensagem de ajuda
 
 Exemplos:
-  ./start.sh                    # Inicia tudo em modo silencioso
+  ./start.sh                    # Inicia tudo com verificação inteligente de updates
+  ./start.sh --update           # Força a atualização do Talishar upstream e sobe os serviços
+  ./start.sh --no-update        # Inicia imediatamente sem verificar a internet/upstream
   ./start.sh -v                 # Inicia com saída detalhada
   ./start.sh --no-dashboard     # Inicia apenas o backend Talishar
   ./start.sh --status           # Verifica se os serviços estão rodando
@@ -109,6 +115,14 @@ while [[ $# -gt 0 ]]; do
             START_DASHBOARD=false
             shift
             ;;
+        --update)
+            FORCE_UPDATE=true
+            shift
+            ;;
+        --no-update)
+            CHECK_UPDATES=false
+            shift
+            ;;
         --port)
             DASHBOARD_PORT="$2"
             shift 2
@@ -126,6 +140,24 @@ while [[ $# -gt 0 ]]; do
 done
 
 mkdir -p "$PROJECT_ROOT/logs" "$PROJECT_ROOT/data"
+
+# ── Verificação e Sincronização Inteligente do Upstream Talishar ──────────
+VENV_PYTHON="$PROJECT_ROOT/venv/bin/python"
+if [ ! -f "$VENV_PYTHON" ]; then
+    VENV_PYTHON="python3"
+fi
+
+if [ "$FORCE_UPDATE" = true ]; then
+    echo -e "${BLUE}[+] Forçando sincronização com os repositórios oficiais do Talishar...${NC}"
+    "$VENV_PYTHON" scripts/prepare_environment.py --update-upstream
+elif [ "$CHECK_UPDATES" = true ]; then
+    # Verificação rápida e silenciosa (com timeout)
+    if "$VENV_PYTHON" scripts/prepare_environment.py --check-upstream >/dev/null 2>&1; then
+        echo -e "${BLUE}[!] Detectadas atualizações no Talishar upstream!${NC}"
+        echo -e "${BLUE}    Sincronizando código, reaplicando patches da IA e gerando changelog...${NC}"
+        "$VENV_PYTHON" scripts/prepare_environment.py --update-upstream
+    fi
+fi
 
 if [ "$START_DOCKER" = true ]; then
     if [ ! -d "$PROJECT_ROOT/Talishar" ] || [ ! -f "$PROJECT_ROOT/Talishar/docker-compose.yml" ]; then
