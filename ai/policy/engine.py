@@ -142,13 +142,13 @@ class PolicyEngine:
         """Calcula recursos flutuantes atuais e potencial total de pitch da mão."""
         return calculate_available_resources(state)
 
-    def is_teklovossen_ability_active(self, state: dict) -> bool:
-        """
-        Regra oficial FaB: Evos do Banish só ganham a opção de serem jogados como Instant
-        se a habilidade de Teklovossen ({r}{r}: Bane Evo da mão, compra carta) tiver sido ativada no turno.
-        Delega polimorficamente para self.strategy.is_hero_ability_active(state).
-        """
+    def is_hero_ability_active(self, state: dict) -> bool:
+        """Verifica polimorficamente se a habilidade ativa do herói atual está habilitada."""
         return self.strategy.is_hero_ability_active(state)
+
+    def is_teklovossen_ability_active(self, state: dict) -> bool:
+        """Alias para is_hero_ability_active (compatibilidade com versões anteriores)."""
+        return self.is_hero_ability_active(state)
 
     def select_best_attack(self, state: dict, unpayable_set: Optional[set] = None) -> Optional[Dict[str, Any]]:
         """Seleciona o melhor candidato de ataque coordenando podas e busca ISMCTS/MCTS."""

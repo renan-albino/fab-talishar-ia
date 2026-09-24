@@ -84,20 +84,31 @@ def generate_worlds(
     card_db = _get_card_db()
     class_cards = []
     if card_db and opp_hero:
+        opp_class = str(state.get("opponentClass", state.get("theirClass", ""))).lower()
+        if not opp_class:
+            opp_meta = card_db.get(opp_hero, {})
+            opp_class = str(opp_meta.get("class", "")).lower()
+
         for c_slug, meta in card_db.items():
             if not isinstance(meta, dict):
                 continue
             c_class = str(meta.get("class", "")).lower()
             c_slot = str(meta.get("slot", "")).lower()
             if c_slot == "deck" or not c_slot:
-                if any(ch in opp_hero for ch in ["bravo", "betsy", "victor", "valda", "guardian"]) and "guardian" in c_class:
-                    class_cards.append({"cardNumber": c_slug, "pitch": int(meta.get("pitch", 1)), "power": int(meta.get("power", 4)), "defense": int(meta.get("defense", 3)), "action": 27})
-                elif any(ch in opp_hero for ch in ["katsu", "fai", "ira", "zen", "ninja"]) and "ninja" in c_class:
-                    class_cards.append({"cardNumber": c_slug, "pitch": int(meta.get("pitch", 1)), "power": int(meta.get("power", 3)), "defense": int(meta.get("defense", 2)), "action": 27})
-                elif any(ch in opp_hero for ch in ["dash", "maxx", "mechanologist"]) and "mechanologist" in c_class:
-                    class_cards.append({"cardNumber": c_slug, "pitch": int(meta.get("pitch", 1)), "power": int(meta.get("power", 4)), "defense": int(meta.get("defense", 2)), "action": 27})
+                is_match = False
+                if opp_class and opp_class in c_class:
+                    is_match = True
                 elif "generic" in c_class:
-                    class_cards.append({"cardNumber": c_slug, "pitch": int(meta.get("pitch", 1)), "power": int(meta.get("power", 3)), "defense": int(meta.get("defense", 2)), "action": 27})
+                    is_match = True
+
+                if is_match:
+                    class_cards.append({
+                        "cardNumber": c_slug,
+                        "pitch": int(meta.get("pitch", 1) or 1),
+                        "power": int(meta.get("power", 3) or 3),
+                        "defense": int(meta.get("defense", 2) or 2),
+                        "action": 27
+                    })
 
     if class_cards:
         opp_deck_pool.extend(random.sample(class_cards, min(len(class_cards), 20)))

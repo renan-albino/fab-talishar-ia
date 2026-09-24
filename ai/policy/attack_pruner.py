@@ -90,7 +90,7 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
                     )
                     if has_ready_allies or has_other_attacks or has_grave_allies:
                         base_score += 30.0  # Prioridade máxima: jogar Avast Ye! antes do aliado/ataque!
-                elif ("gravy" in str(engine.hero_name).lower() or getattr(engine.strategy, "is_ally_hero", False)) and any(k in c_clean for k in ["call_to_the_grave", "portside_exchange", "tip_the_barkeep", "loot_the_hold"]):
+                elif (getattr(engine.strategy, "is_ally_hero", False) or bool(state.get("playerAllies"))) and any(k in c_clean for k in ["call_to_the_grave", "portside_exchange", "tip_the_barkeep", "loot_the_hold"]):
                     discard = state.get("playerDiscard", []) or state.get("playerGraveyard", [])
                     has_grave_allies = any(
                         isinstance(x, dict) and x.get("overlay") != 1 and str(x.get("facing", "")).upper() != "DOWN" and
@@ -148,11 +148,13 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
             eq_type = str(eq.get("type", "")).upper()
 
             # 1.3.1 Habilidade Ativa do Herói (Character Ability)
+            player_hero = str(state.get("playerHero", state.get("hero", ""))).lower()
             is_hero = (
                 eq_slot == "hero"
-                or eq_type == "C"
+                or eq_type in ("C", "HERO")
                 or str(eq.get("actionDataOverride", "")) == "0"
-                or any(h in eq_name for h in ["marlynn", "kassai", "bravo", "dash", "dorinthea", "rhinar", "kayo", "jarl", "azalea", "riptide", "teklovossen", "vynnset", "hala", "mario", "arakni"])
+                or bool(eq.get("isHero", False))
+                or (player_hero and player_hero in eq_name)
             )
             if is_hero:
                 hero_cost = engine.get_weapon_cost(eq_name, eq, state=state)
@@ -332,7 +334,7 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
                     play_score, is_instant, has_ga = zone_result
                     
                     if zone_name == "Graveyard":
-                        if getattr(engine.strategy, "is_ally_hero", False) or "gravy" in str(engine.hero_name).lower():
+                        if getattr(engine.strategy, "is_ally_hero", False) or bool(state.get("playerAllies")):
                             play_score += 15.0
                         db_entry = _load_cards_db().get(c_name, {})
                         c_type = str(c_info.get("type") or db_entry.get("type", "")).upper()
@@ -365,8 +367,8 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
                 if total_res >= ability_cost:
                     ally_power = a_info.get("power", 0) or int(_load_cards_db().get(a_name, {}).get("power", 0))
                     base_score = float(ally_power) * 2.0
-                    if getattr(engine.strategy, "is_ally_hero", False) or "gravy" in str(engine.hero_name).lower():
-                        base_score += 15.0  # Gravy Bones valoriza ataques de aliados agressivamente
+                    if getattr(engine.strategy, "is_ally_hero", False) or bool(state.get("playerAllies")):
+                        base_score += 15.0  # Estratégias de aliados valorizam ataques de aliados agressivamente
                         # Se temos Avast Ye! na mão e AP <= 1, jogue Avast Ye! PRIMEIRO para conceder Go Again ao aliado!
                         has_avast = any("avast_ye" in str(h.get("cardNumber") or h.get("name", "")).lower() for h in state.get("playerHand", []))
                         if player_ap <= 1 and has_avast:

@@ -543,6 +543,8 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 
 | Item | Descrição |
 |------|-----------|
+| **Fundamentos Competitivos de FaB** | Implementação das heurísticas estratégicas do meta de alto nível: OpponentTracker de ritmo de jogo, escalonamento dinâmico de risco ($c_{\text{puct}}$ via $V_{\text{root}}$), cálculo de conversão ofensiva/defensiva de mão, timing de cadeia de combate, preservação de Blade Break e bônus multi-ciclo de *Deck Damage* |
+| **Remoção de Hardcodes & Generalização Dinâmica** | Eliminação de amarras nominais e listas estáticas em favor de detecção por metadados de cartas (`fab_cards_db.json`), histórico em SQLite para sideboard (`get_average_match_length`) e mundos determinizados agnósticos à classe |
 | **Fronteira de Dados com Pydantic** | Transição completa da API para objetos Python estritamente tipados via `pydantic` em `ai/common/schemas.py`, eliminando a necessidade de conversores defensivos no runtime contra payloads nulos/caóticos do Talishar |
 | **Imutabilidade O(1) no Simulador MCTS** | Motor de combate transita estados via `ImmutableGameState` com operações `.replace()` ao invés de clones de dicionário na memória, garantindo integridade de árvore e aceleração massiva da simulação |
 | **Self-Play Headless & Hardware Probe** | Treinamento da IA agora usa ambiente Gymnasium-like local, ignorando tráfego de rede; o orquestrador analisa hardware (CUDA/CPU) e restringe VRAM ativamente antes das execuções |

@@ -177,12 +177,11 @@ def get_weapon_cost(
 
     # 2. Modificadores Dinâmicos de Custo Baseados em Estado
     if state:
-        # Passiva da Kassai: Se comprou carta no turno e ataca com Espada, reduz o custo em 1
-        h_name = str(hero_name or "").lower()
-        if "kassai" in h_name or "kassai" in str(state.get("playerHero", "")).lower():
-            num_drawn = int(state.get("cardsDrawnThisTurn", state.get("numCardsDrawn", state.get("num_drawn", state.get("numDrawn", 0)))))
-            if num_drawn >= 1 and any(s in clean for s in ["saber", "sword", "blade", "cintari"]):
-                cost = max(0, cost - 1)
+        num_drawn = int(state.get("cardsDrawnThisTurn", state.get("numCardsDrawn", state.get("num_drawn", state.get("numDrawn", 0)))))
+        h_name = str(hero_name or state.get("playerHero", "")).lower()
+        has_draw_discount = "kassai" in h_name or bool(state.get("weaponCostReductionOnDraw"))
+        if has_draw_discount and num_drawn >= 1 and any(s in clean for s in ["saber", "sword", "blade", "cintari"]):
+            cost = max(0, cost - 1)
 
     return cost
 

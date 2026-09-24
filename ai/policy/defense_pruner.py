@@ -109,16 +109,15 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     is_heavy_hero = getattr(engine.strategy, "is_heavy_hero", False)
     current_turn = int(state.get("turnNo", state.get("currentTurn", 1)))
 
-    # Contagem de cartas de ataque Runegate na mão para Vynnset
-    runegate_in_hand = 0
-    if "vynnset" in str(engine.hero_name).lower():
-        runegate_in_hand = sum(
-            1 for hc in hand
-            if any(rk in str(hc.get("cardNumber", "")).lower() for rk in [
-                "cull", "deathly_delight", "deathly_wail", "widespread_ruin",
-                "widespread_destruction", "widespread_annihilation", "oblivion", "eloquent_eulogy"
-            ])
-        )
+    # Contagem dinâmica de cartas Runegate na mão
+    runegate_in_hand = sum(
+        1 for hc in hand
+        if "runegate" in str(hc.get("keywords", [])).lower()
+        or any(rk in str(hc.get("cardNumber", "")).lower() for rk in [
+            "cull", "deathly_delight", "deathly_wail", "widespread_ruin",
+            "widespread_destruction", "widespread_annihilation", "oblivion", "eloquent_eulogy"
+        ])
+    )
 
     block_candidates = []
     for idx, c in enumerate(hand):
@@ -128,13 +127,12 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
 
         c_id = info["actionDataOverride"] or str(idx)
         c_action = info["action"] if info["action"] > 0 else 27
-        from ai.hero_strategies import VynnsetStrategy
-        if isinstance(engine.strategy, VynnsetStrategy):
+        try:
             score = engine.strategy.evaluate_block_card(
                 info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"],
                 runegate_in_hand=runegate_in_hand
             )
-        else:
+        except TypeError:
             score = engine.strategy.evaluate_block_card(
                 info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"]
             )

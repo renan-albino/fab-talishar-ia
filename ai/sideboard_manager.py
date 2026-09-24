@@ -29,8 +29,19 @@ def resolve_sideboard(
     Armas e Deck Principal vs Inventário (Sideboard).
     """
     is_cc = deck_format.lower() in ("cc", "compcc", "llcc", "compllcc", "futurecc", "futurell", "gage")
-    is_arcane = opp_class in ("wizard", "runeblade")
-    is_fatigue = opp_class in ("guardian", "assassin", "mechanologist")
+    is_arcane = "wizard" in opp_class or "runeblade" in opp_class
+
+    # Detecção dinâmica de fadiga baseada no histórico de turnos médios do oponente (SQLite)
+    is_fatigue = False
+    try:
+        from stats.db import get_average_match_length
+        avg_turns = get_average_match_length(opp_hero)
+        if avg_turns is not None:
+            is_fatigue = avg_turns >= 12.0
+        else:
+            is_fatigue = opp_class in ("guardian", "assassin", "mechanologist")
+    except Exception:
+        is_fatigue = opp_class in ("guardian", "assassin", "mechanologist")
 
     min_main = 60 if is_cc else 40
     if is_fatigue and is_cc:

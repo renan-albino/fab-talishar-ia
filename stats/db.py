@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from typing import Optional
 from contextlib import contextmanager
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -62,6 +63,24 @@ def get_connection():
         yield conn
     finally:
         conn.close()
+
+def get_average_match_length(hero_name: str) -> Optional[float]:
+    """Calcula a duração média (em turnos) de partidas envolvendo o herói especificado."""
+    if not hero_name:
+        return None
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT AVG(turns) as avg_turns FROM match_history
+                WHERE (p1_deck LIKE ? OR p2_deck LIKE ?) AND turns > 0
+            ''', (f"%{hero_name}%", f"%{hero_name}%"))
+            row = cursor.fetchone()
+            if row and row["avg_turns"] is not None:
+                return float(row["avg_turns"])
+    except Exception:
+        pass
+    return None
 
 # Initialize DB on load
 init_db()

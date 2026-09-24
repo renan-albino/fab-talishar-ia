@@ -136,6 +136,12 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: PUCT constante rígido, Exploração estática, Desespero aleatório.
 - **On-Hit Quantitative Valuation (`ai/policy/on_hit_evaluator.py`)**: Quantificação numérica de impacto de efeitos *on-hit* em relação ao custo de oportunidade de cartas ofensivas retidas para o contra-ataque.
   - _Avoid_: Bloqueio de pânico, Avaliação qualitativa de on-hit.
+- **Hand Conversion Potential (`calculate_hand_conversion` in `turn_planner.py`)**: Avaliação matemática comparativa do valor ofensivo total da mão versus seu valor defensivo acumulado para determinar a viabilidade de absorção de dano.
+  - _Avoid_: Estimativa empírica de mão, Julgamento subjetivo de ataque.
+- **Dynamic Sideboard Fatigue Detection (`stats/db.py`, `ai/sideboard_manager.py`)**: Detecção dinâmica de partidas propensas a fadiga consultando a média real de turnos do oponente no SQLite (`get_average_match_length`), substituindo listas estáticas de classes.
+  - _Avoid_: Tuplas fixas de classe, Suposição cega de arquétipo.
+- **Dynamic World Pool Sampling (`ai/mcts/world_generator.py`)**: Amostragem de cartas no determinizador do ISMCTS orientada pelo banco oficial `fab_cards_db.json` e correspondência de classe/talentos, sem listas nominais hardcoded de heróis.
+  - _Avoid_: Listas de nomes de heróis em if/else, Simulação restrita a heróis conhecidos.
 
 ---
 
