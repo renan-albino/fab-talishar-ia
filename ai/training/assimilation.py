@@ -24,6 +24,26 @@ def file_lock(path, timeout=5.0):
         with lock:
             yield
     except ImportError:
+        lock_file = f"{path}.lock"
+        start_t = time.time()
+        fd = None
+        while time.time() - start_t < timeout:
+            try:
+                fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+                break
+            except OSError:
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            if fd is not None:
+                try:
+                    os.close(fd)
+                    os.remove(lock_file)
+                except OSError:
+                    pass
+    except Exception as e:
+        logger.warning(f"[file_lock] Aviso ao obter lock em {path}: {e}")
         yield
 
 logger = get_logger("assimilation")
@@ -31,6 +51,16 @@ logger = get_logger("assimilation")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 STATUS_FILE = os.path.join(DATA_DIR, ".human_assimilation.json")
+
+
+def _atomic_json_save(data: Dict[str, Any], filepath: str, indent: int = 2) -> None:
+    temp_file = f"{filepath}.tmp"
+    with open(temp_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=indent)
+    os.replace(temp_file, filepath)
+
+
+atomic_json_save = _atomic_json_save
 
 
 def get_assimilation_status() -> Dict[str, Any]:

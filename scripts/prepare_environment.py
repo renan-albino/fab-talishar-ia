@@ -58,6 +58,7 @@ FRONTEND_MAPPINGS = [
     ("components/Header.tsx", "src/components/header/Header.tsx"),
     ("routes.tsx", "src/routes.tsx"),
     ("bannerUnit/AdUnit.tsx", "src/components/bannerUnit/AdUnit.tsx"),
+    ("bannerUnit/AdRailLayout.tsx", "src/components/bannerUnit/AdRailLayout.tsx"),
     ("bannerUnit/index.ts", "src/components/bannerUnit/index.ts"),
     ("vite.config.mts", "vite.config.mts"),
 ]
