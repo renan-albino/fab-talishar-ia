@@ -55,14 +55,29 @@ HOOK_EOF
     chmod +x "$HOOK_FILE"
     echo -e "${GREEN}[OK] Git pre-commit hook instalado com sucesso em .git/hooks/pre-commit!${NC}"
 
+    # Instala o hook pre-push para validação completa da esteira de CI antes do push
+    PRE_PUSH_HOOK="$ROOT_DIR/.git/hooks/pre-push"
+    cat << 'PUSH_EOF' > "$PRE_PUSH_HOOK"
+#!/usr/bin/env bash
+# Git pre-push hook gerado por scripts/sync_and_clean.sh
+set -e
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+if [ -f "$ROOT_DIR/scripts/verify_ci.sh" ]; then
+    bash "$ROOT_DIR/scripts/verify_ci.sh"
+fi
+PUSH_EOF
+    chmod +x "$PRE_PUSH_HOOK"
+    echo -e "${GREEN}[OK] Git pre-push hook instalado com sucesso em .git/hooks/pre-push!${NC}"
+
     # Instala o hook post-commit para sincronização de checkpoints
     PY_BIN="$ROOT_DIR/venv/bin/python"
     [ ! -f "$PY_BIN" ] && PY_BIN="python3"
     $PY_BIN "$ROOT_DIR/scripts/manage_state.py" --install-hook
 
-    echo -e "     Agora, a cada 'git commit':"
-    echo -e "       1. Pre-commit: limpa logs, exporta templates e valida sintaxe."
+    echo -e "     Agora, a cada ciclo do Git:"
+    echo -e "       1. Pre-commit: limpa logs, exporta templates e valida sintaxe/build."
     echo -e "       2. Post-commit: se houver novo checkpoint treinado, publica na GitHub Release automaticamente."
+    echo -e "       3. Pre-push: executa a esteira completa do CI (Pytest, ISMCTS dry-run, templates e Vite build) bloqueando pushes quebrados."
     exit 0
 }
 
@@ -73,6 +88,12 @@ function uninstall_hook() {
         echo -e "${GREEN}[OK] Git pre-commit hook removido com sucesso.${NC}"
     else
         echo -e "${YELLOW}[!] Nenhum hook pre-commit estava instalado.${NC}"
+    fi
+
+    PRE_PUSH_HOOK="$ROOT_DIR/.git/hooks/pre-push"
+    if [ -f "$PRE_PUSH_HOOK" ]; then
+        rm -f "$PRE_PUSH_HOOK"
+        echo -e "${GREEN}[OK] Git pre-push hook removido com sucesso.${NC}"
     fi
 
     PY_BIN="$ROOT_DIR/venv/bin/python"

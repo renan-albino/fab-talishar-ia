@@ -430,12 +430,24 @@ fi
 """
     with open(post_commit_file, "w", encoding="utf-8") as f:
         f.write(post_commit_content)
+    # 3. Pre-push hook -> scripts/verify_ci.sh
+    pre_push_file = os.path.join(hooks_dir, "pre-push")
+    pre_push_content = """#!/usr/bin/env bash
+# Git pre-push hook gerado por scripts/prepare_environment.py
+set -e
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+if [ -f "$ROOT_DIR/scripts/verify_ci.sh" ]; then
+    bash "$ROOT_DIR/scripts/verify_ci.sh"
+fi
+"""
+    with open(pre_push_file, "w", encoding="utf-8") as f:
+        f.write(pre_push_content)
     try:
-        os.chmod(post_commit_file, 0o755)
+        os.chmod(pre_push_file, 0o755)
     except Exception:
         pass
 
-    log_success("Git hooks configurados com sucesso (pre-commit e post-commit).")
+    log_success("Git hooks configurados com sucesso (pre-commit, post-commit e pre-push).")
 
 def sync_agents_environment_rules():
     """
