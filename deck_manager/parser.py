@@ -123,7 +123,7 @@ def parse_deck_text(deck_text: str, default_name: str = "Meu Deck") -> dict:
             continue
             
         # Skip section headers and footer lines
-        if re.match(r"^(hero|weapons?|equipment|arena cards|deck cards|pitch\s*\d|deck|sideboard|inventory|other|cards|format):?", line, re.IGNORECASE):
+        if re.match(r"^(hero|weapons?|equipment|arena cards|deck cards|pitch\s*\d|deck|sideboard|inventory|other|cards|format)\s*(:|(\(\d+\)))?\s*$", line, re.IGNORECASE):
             continue
         if line.startswith("#") or line.startswith("//") or "fabrary" in line.lower() or "see the full deck" in line.lower():
             continue

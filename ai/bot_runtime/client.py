@@ -10,7 +10,13 @@ from ai.equipment_learning import EquipmentTracker
 from ai.talishar_api import TalisharApiClient, DEFAULT_BACKEND_URL
 from ai.chat_badges import evaluate_board_state, format_html_line
 from ai.bot_runtime import lobby_manager, match_tracker, choice_handler, phase_decider
-from ai.common import safe_int, safe_list, safe_dict, safe_str
+from ai.common.schemas import GameState
+
+def safe_int(val, default=0):
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
 
 TALISHAR_API_URL = DEFAULT_BACKEND_URL
 
@@ -202,8 +208,10 @@ class FabBotClient:
                             else:
                                 turn_num = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
                                 if turn_num != last_logged_turn:
-                                    my_h = safe_int(state.get("playerHealth"), default=40)
-                                    opp_h = safe_int(state.get("opponentHealth"), default=40)
+                                    _fmt = getattr(self, "deck_format", "").lower()
+                                    _def_hp = 20 if _fmt in ("blitz", "compblitz") else 40
+                                    my_h = state.get("playerHealth", default=_def_hp)
+                                    opp_h = state.get("opponentHealth", default=_def_hp)
                                     p1_hp = my_h if self.player_id == 1 else opp_h
                                     p2_hp = opp_h if self.player_id == 1 else my_h
                                     p1_lbl = self.get_player_label(1)
@@ -353,13 +361,16 @@ class FabBotClient:
         active_chain = state.get("activeChainLink")
         if not isinstance(active_chain, dict):
             return ""
-        reactions = active_chain.get("reactions", [])
-        if not reactions:
-            return ""
-        first_card = reactions[0] if isinstance(reactions, list) and reactions else {}
-        card_name = first_card.get("cardNumber", "")
+        card_name = active_chain.get("cardNumber") or active_chain.get("name", "")
         if not card_name:
-            return ""
+            reactions = active_chain.get("reactions", [])
+            if not reactions:
+                return ""
+            first_card = reactions[0] if isinstance(reactions, list) and reactions else {}
+            card_name = first_card.get("cardNumber", "")
+            if not card_name:
+                return ""
+        
         pow_val = active_chain.get("totalPower", 0)
         def_val = active_chain.get("totalDefense", 0)
         extras = []
@@ -373,30 +384,36 @@ class FabBotClient:
     def handle_game_tick(self, state: dict):
         if not isinstance(state, dict):
             return
+            
+        try:
+            parsed_state = GameState(**state)
+            state.update(parsed_state.model_dump())
+        except Exception:
+            pass
 
-        opp_hand = safe_list(state.get("opponentHand"))
+        opp_hand = state.get("opponentHand")
         if "opponentHand" in state and "opponentHandCount" not in state:
             state["opponentHandCount"] = len(opp_hand)
 
         # Compatibilidade com backend Talishar (playerArse -> playerArsenal, theirArse -> theirArsenal)
         if "playerArse" in state and "playerArsenal" not in state:
-            state["playerArsenal"] = safe_list(state.get("playerArse"))
+            state["playerArsenal"] = state.get("playerArse")
         if "theirArse" in state and "theirArsenal" not in state:
-            state["theirArsenal"] = safe_list(state.get("theirArse"))
+            state["theirArsenal"] = state.get("theirArse")
         if "theirArsenal" in state and "opponentArsenal" not in state:
-            state["opponentArsenal"] = safe_list(state.get("theirArsenal"))
+            state["opponentArsenal"] = state.get("theirArsenal")
 
         # Normalização de zonas da arena adversária
         if "theirItems" in state and "opponentItems" not in state:
-            state["opponentItems"] = safe_list(state.get("theirItems"))
+            state["opponentItems"] = state.get("theirItems")
         if "theirAuras" in state and "opponentAuras" not in state:
-            state["opponentAuras"] = safe_list(state.get("theirAuras"))
+            state["opponentAuras"] = state.get("theirAuras")
         if "theirPermanents" in state and "opponentPermanents" not in state:
-            state["opponentPermanents"] = safe_list(state.get("theirPermanents"))
+            state["opponentPermanents"] = state.get("theirPermanents")
         if "theirEquipment" in state and "opponentEquipment" not in state:
-            state["opponentEquipment"] = safe_list(state.get("theirEquipment"))
+            state["opponentEquipment"] = state.get("theirEquipment")
         if "theirAllies" in state and "opponentAllies" not in state:
-            state["opponentAllies"] = safe_list(state.get("theirAllies"))
+            state["opponentAllies"] = state.get("theirAllies")
 
         my_h = safe_int(state.get("playerHealth"), default=40)
         opp_h = safe_int(state.get("opponentHealth"), default=40)
@@ -411,7 +428,7 @@ class FabBotClient:
         self.metrics["player_id"] = self.player_id
             
         tp_raw = state.get("turnPhase", "")
-        tp_name = tp_raw.get("turnPhase", "") if isinstance(tp_raw, dict) else safe_str(tp_raw)
+        tp_name = tp_raw.get("turnPhase", "") if isinstance(tp_raw, dict) else tp_raw
         self.metrics["phase"] = f"Turno {turn} ({tp_name})" if tp_name else f"Turno {turn}"
         self.metrics["status"] = "Jogando"
 
@@ -462,32 +479,38 @@ class FabBotClient:
     def decide_and_act(self, state: dict):
         if not isinstance(state, dict):
             return False
+            
+        try:
+            parsed_state = GameState(**state)
+            state.update(parsed_state.model_dump())
+        except Exception:
+            pass
 
         # Compatibilidade com backend Talishar (playerArse -> playerArsenal, theirArse -> theirArsenal)
         if "playerArse" in state and "playerArsenal" not in state:
-            state["playerArsenal"] = safe_list(state.get("playerArse"))
+            state["playerArsenal"] = state.get("playerArse")
         if "theirArse" in state and "theirArsenal" not in state:
-            state["theirArsenal"] = safe_list(state.get("theirArse"))
+            state["theirArsenal"] = state.get("theirArse")
         if "theirArsenal" in state and "opponentArsenal" not in state:
-            state["opponentArsenal"] = safe_list(state.get("theirArsenal"))
+            state["opponentArsenal"] = state.get("theirArsenal")
 
         # Normalização de zonas da arena adversária
         if "theirItems" in state and "opponentItems" not in state:
-            state["opponentItems"] = safe_list(state.get("theirItems"))
+            state["opponentItems"] = state.get("theirItems")
         if "theirAuras" in state and "opponentAuras" not in state:
-            state["opponentAuras"] = safe_list(state.get("theirAuras"))
+            state["opponentAuras"] = state.get("theirAuras")
         if "theirPermanents" in state and "opponentPermanents" not in state:
-            state["opponentPermanents"] = safe_list(state.get("theirPermanents"))
+            state["opponentPermanents"] = state.get("theirPermanents")
         if "theirEquipment" in state and "opponentEquipment" not in state:
-            state["opponentEquipment"] = safe_list(state.get("theirEquipment"))
+            state["opponentEquipment"] = state.get("theirEquipment")
         if "theirAllies" in state and "opponentAllies" not in state:
-            state["opponentAllies"] = safe_list(state.get("theirAllies"))
+            state["opponentAllies"] = state.get("theirAllies")
 
         tp_raw = state.get("turnPhase", "M")
         if isinstance(tp_raw, dict):
             turn_phase = safe_str(tp_raw.get("turnPhase", "M"), default="M")
         else:
-            turn_phase = safe_str(tp_raw, default="M") if tp_raw else "M"
+            turn_phase = tp_raw if tp_raw else "M"
             
         turn_num = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
         
@@ -499,15 +522,15 @@ class FabBotClient:
             self.reaction_attempts = {}
         unpayable_set = self.unpayable_cards_turn[turn_key]
 
-        popup = safe_dict(state.get("popup"))
+        popup = state.get("popup")
         prompt_buttons = []
         player_prompt = state.get("playerPrompt")
         if isinstance(player_prompt, dict):
-            prompt_buttons = safe_list(player_prompt.get("buttons")) or safe_list(player_prompt.get("promptButtons"))
+            prompt_buttons = player_prompt.get("buttons") or player_prompt.get("promptButtons")
         elif isinstance(state.get("promptButtons"), list):
-            prompt_buttons = safe_list(state.get("promptButtons"))
+            prompt_buttons = state.get("promptButtons")
         elif isinstance(state.get("buttons"), list):
-            prompt_buttons = safe_list(state.get("buttons"))
+            prompt_buttons = state.get("buttons")
 
         # 1. Anti-Loop
         if choice_handler.check_and_handle_anti_loop(self, state, turn_num, turn_phase, prompt_buttons, unpayable_set):

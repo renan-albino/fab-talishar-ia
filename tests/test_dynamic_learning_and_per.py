@@ -26,7 +26,6 @@ from ai.dynamic_rule_tuner import (
     get_multipliers_for_hero,
     sync_multipliers_with_stats,
     DEFAULT_MULTIPLIERS,
-    MULTIPLIERS_FILE,
 )
 from ai.hero_strategies.base import HeroStrategy
 
@@ -156,10 +155,35 @@ def test_blunder_reviewer():
     assert weights[-1] >= 2.0
 
 
-def test_dynamic_rule_tuner_and_hero_strategy(monkeypatch, tmp_path):
+def test_dynamic_rule_tuner_and_hero_strategy(monkeypatch):
     """Valida o auto-tuning dos multiplicadores por taxa de vitória e consumo no HeroStrategy."""
-    fake_mults_file = str(tmp_path / "hero_rule_multipliers.json")
-    monkeypatch.setattr("ai.dynamic_rule_tuner.MULTIPLIERS_FILE", fake_mults_file)
+    import sqlite3
+    from contextlib import contextmanager
+
+    shared_conn = sqlite3.connect("file::memory:?cache=shared", uri=True)
+    shared_conn.row_factory = sqlite3.Row
+    cursor = shared_conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS dynamic_rules (
+            hero_name TEXT PRIMARY KEY,
+            attack_weight REAL DEFAULT 1.0,
+            block_weight REAL DEFAULT 1.0,
+            pivot_bonus REAL DEFAULT 1.0,
+            arsenal_bonus REAL DEFAULT 1.0,
+            absorb_tempo_bonus REAL DEFAULT 1.0,
+            last_win_rate REAL DEFAULT 0.0,
+            human_wins INTEGER DEFAULT 0,
+            matches_evaluated INTEGER DEFAULT 0,
+            updated_at REAL DEFAULT 0.0
+        )
+    ''')
+    shared_conn.commit()
+
+    @contextmanager
+    def mock_get_conn():
+        yield shared_conn
+
+    monkeypatch.setattr("ai.dynamic_rule_tuner.get_connection", mock_get_conn)
 
     # Simula dados de partidas:
     # "Guardian Underperforming": 1 vitória, 9 derrotas (win rate 10%)

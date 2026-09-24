@@ -1,262 +1,16 @@
-"""
-ai/game_simulator.py
-====================
-Simulador determinístico de regras e transições de estado para Flesh and Blood.
+import sys
 
-Permite ao MCTS / ISMCTS projetar estados futuros reais nas folhas da árvore de busca,
-simulando com precisão:
-  - Consumo e geração de recursos (Pitch e Floating Resources)
-  - Consumo e restauração de Pontos de Ação (Action Points / Go Again)
-  - Resolução de combate (Poder de Ataque vs Bloqueio Esperado)
-  - Cálculo de dano não bloqueado e perda de vida
-  - Efeitos on-hit e redução de cartas na mão do oponente
-  - Zonas de jogo (Mão, Arsenal, Pitch, Descarte, Banidas)
-  - Vetorização do estado resultante (832 dimensões) para avaliação imediata pelo Value Head
-"""
+def patch():
+    with open('/home/renan/fab-talishar-ia/ai/game_simulator.py', 'r', encoding='utf-8') as f:
+        content = f.read()
 
-import os
-import json
-import numpy as np
-from typing import Dict, Any, Tuple, List, Optional
-from ai.model import FaBPolicyValueNetwork, STATE_DIM
+    # Find the methods
+    attack_start = content.find('    @classmethod\n    def simulate_attack')
+    defense_start = content.find('    @classmethod\n    def simulate_defense')
+    pitch_start = content.find('    @classmethod\n    def simulate_pitch')
+    step_start = content.find('    @classmethod\n    def simulate_step')
 
-_FAB_CARDS_DB: Optional[dict] = None
-_FAB_CARD_SEMANTICS: Optional[dict] = None
-
-
-def _get_cards_db() -> dict:
-    global _FAB_CARDS_DB
-    if _FAB_CARDS_DB is None:
-        try:
-            from config.settings import DATA_DIR
-            db_path = DATA_DIR / "fab_cards_db.json"
-            if db_path.exists():
-                with open(db_path, "r", encoding="utf-8") as f:
-                    _FAB_CARDS_DB = json.load(f)
-        except Exception:
-            pass
-        if _FAB_CARDS_DB is None:
-            _FAB_CARDS_DB = {}
-    return _FAB_CARDS_DB
-
-
-def _get_card_semantics() -> dict:
-    global _FAB_CARD_SEMANTICS
-    if _FAB_CARD_SEMANTICS is None:
-        try:
-            from config.settings import DATA_DIR
-            sem_path = DATA_DIR / "fab_card_semantics.json"
-            if sem_path.exists():
-                with open(sem_path, "r", encoding="utf-8") as f:
-                    _FAB_CARD_SEMANTICS = json.load(f)
-        except Exception:
-            pass
-        if _FAB_CARD_SEMANTICS is None:
-            _FAB_CARD_SEMANTICS = {}
-    return _FAB_CARD_SEMANTICS
-
-
-DANGEROUS_ON_HITS = {
-    "crippling", "crush", "command_and_conquer", "red_in_the_ledger",
-    "snatch", "mask_of_momentum", "bloodrot", "frailty", "inertia",
-    "leave_no_witnesses", "surgical_extraction", "erase_face",
-    "spitfire", "spinal_crush", "rightful_king", "hypothermia"
-}
-
-from ai.mcts.state import ImmutableGameState
-
-class GameSimulator:
-    """
-    Motor de transição determinística para rollouts e expansão de folhas do MCTS.
-    """
-
-    @staticmethod
-    def _safe_int(val, default=0):
-        try:
-            return int(val)
-        except (ValueError, TypeError):
-            return default
-
-    @classmethod
-    def extract_card_meta(cls, card: Any) -> dict:
-        """
-        Extrai metadados táticos e semânticos de uma carta consultando
-        data/fab_cards_db.json e data/fab_card_semantics.json.
-        Properly extracts base power, base defense, cost, pitch, and keywords:
-        (has_go_again, dominate, overpower, piercing, phantasm, on_hit_severity)
-        for any card in the database, with safe fallbacks only if absent.
-        """
-        if hasattr(card, "to_dict"):
-            card = card.to_dict()
-            
-        if isinstance(card, dict):
-            card_num = str(card.get("cardNumber") or card.get("name") or card.get("id") or "").lower().strip()
-        elif isinstance(card, str):
-            card_num = card.lower().strip()
-        else:
-            card_num = ""
-
-        db = _get_cards_db()
-        sem = _get_card_semantics()
-
-        # Resolução de chave no DB e Semântica
-        db_entry = db.get(card_num)
-        sem_entry = sem.get(card_num)
-
-        if db_entry is None or sem_entry is None:
-            # Tentar slug sem pontuação
-            slug = card_num.replace(" ", "_").replace("-", "_").replace("'", "").replace(",", "")
-            while "__" in slug:
-                slug = slug.replace("__", "_")
-            if db_entry is None:
-                db_entry = db.get(slug)
-            if sem_entry is None:
-                sem_entry = sem.get(slug)
-
-        # 1. Pitch
-        if isinstance(card, dict) and card.get("pitch") is not None and cls._safe_int(card.get("pitch", 0)) > 0:
-            pitch = cls._safe_int(card["pitch"])
-        elif db_entry and "pitch" in db_entry:
-            pitch = cls._safe_int(db_entry["pitch"])
-        elif "_blue" in card_num:
-            pitch = 3
-        elif "_yellow" in card_num:
-            pitch = 2
-        elif "_red" in card_num:
-            pitch = 1
-        else:
-            pitch = 1
-
-        # 2. Power
-        power = cls._safe_int(card.get("power", 0)) if isinstance(card, dict) else 0
-        if power == 0 and db_entry and "power" in db_entry:
-            power = cls._safe_int(db_entry["power"])
-        if power == 0 and not db_entry:
-            # Fallback seguro somente se carta completamente ausente da base
-            if any(k in card_num for k in ["zipper", "throttle", "zero_to_sixty", "fast_and_furious", "out_pace", "expedite", "snatch"]):
-                power = 4 if pitch == 1 else (3 if pitch == 2 else 2)
-            elif "pounder" in card_num or "trebuchet" in card_num:
-                power = 5
-            elif "harpoon" in card_num or "command_and_conquer" in card_num:
-                power = 6 if pitch == 1 else 4
-
-        # 3. Defense / Block
-        defense = cls._safe_int(card.get("defenseValue") or card.get("defense") or card.get("block") or 0) if isinstance(card, dict) else 0
-        if defense == 0 and db_entry and "defense" in db_entry:
-            defense = cls._safe_int(db_entry["defense"])
-        if defense == 0 and not db_entry:
-            # Fallback seguro somente se carta completamente ausente da base
-            if any(k in card_num for k in ["_red", "_yellow", "_blue"]) and not any(k in card_num for k in ["heart", "accelerator", "providence", "tunic"]):
-                defense = 3 if pitch == 3 else 2
-
-        # 4. Cost
-        cost = cls._safe_int(card.get("cost", 0)) if (isinstance(card, dict) and "cost" in card) else 0
-        if cost == 0 and db_entry and "cost" in db_entry:
-            cost = cls._safe_int(db_entry["cost"])
-        if cost == 0 and not db_entry:
-            # Fallback seguro somente se carta completamente ausente da base
-            if any(k in card_num for k in ["throttle", "pounder", "trebuchet", "staunch", "spinal", "pulverize", "buckling"]):
-                cost = 2 if "spinal" not in card_num and "pulverize" not in card_num else 4
-            elif any(k in card_num for k in ["zipper", "fast_and_furious", "out_pace", "expedite", "harpoon", "spark_of_genius", "command_and_conquer"]):
-                cost = 1
-            elif any(k in card_num for k in ["zero_to_sixty", "bios_update", "convection", "boom_grenade", "snatch", "leg_tap", "rising_knee"]):
-                cost = 0
-
-        # 5. Keywords e Propriedades de Combate
-        sem_keywords = sem_entry.get("keywords", []) if sem_entry else []
-        sem_evasion = sem_entry.get("evasion", {}) if sem_entry else {}
-
-        # has_go_again
-        has_go_again = False
-        if isinstance(card, dict) and (card.get("has_go_again") or card.get("go_again")):
-            has_go_again = True
-        elif db_entry and db_entry.get("has_go_again"):
-            has_go_again = True
-        elif sem_entry and ("go_again" in sem_keywords or "boost" in sem_keywords):
-            has_go_again = True
-        elif not db_entry:
-            has_go_again = any(k in card_num for k in [
-                "zero_to_sixty", "throttle", "zipper", "expedite", "out_pace", "fast_and_furious", "leg_tap", "snatch", "rising_knee", "fai"
-            ])
-
-        # dominate
-        card_dom = bool(card.get("dominate") or card.get("has_dominate")) if isinstance(card, dict) else False
-        sem_dom = bool(sem_evasion.get("dominate") or "dominate" in sem_keywords) if sem_entry else False
-        dominate = card_dom or sem_dom or (not sem_entry and "dominate" in card_num)
-
-        # overpower
-        card_op = bool(card.get("overpower") or card.get("has_overpower")) if isinstance(card, dict) else False
-        sem_op = bool(sem_evasion.get("overpower") or "overpower" in sem_keywords) if sem_entry else False
-        overpower = card_op or sem_op or (not sem_entry and "overpower" in card_num)
-
-        # piercing
-        card_pierce = int(card.get("piercing", 0)) if isinstance(card, dict) else 0
-        sem_pierce = int(sem_evasion.get("piercing", 0) or sem_entry.get("grants_piercing", 0) or (1 if "piercing" in sem_keywords else 0)) if sem_entry else 0
-        piercing = card_pierce if card_pierce > 0 else (sem_pierce if sem_entry else (1 if "piercing" in card_num else 0))
-
-        # phantasm
-        card_phan = bool(card.get("phantasm") or card.get("has_phantasm")) if isinstance(card, dict) else False
-        sem_phan = bool(sem_evasion.get("phantasm") or "phantasm" in sem_keywords) if sem_entry else False
-        phantasm = card_phan or sem_phan or (not sem_entry and "phantasm" in card_num)
-
-        # on_hit_severity
-        card_sev = float(card.get("on_hit_severity", 0.0)) if isinstance(card, dict) else 0.0
-        sem_sev = float(sem_entry.get("on_hit_severity", 0.0)) if sem_entry else 0.0
-        if card_sev > 0:
-            on_hit_severity = card_sev
-        elif sem_entry:
-            on_hit_severity = sem_sev
-        else:
-            on_hit_severity = 4.0 if any(oh in card_num for oh in DANGEROUS_ON_HITS) else 0.0
-
-        # has_on_hit
-        has_on_hit = False
-        if isinstance(card, dict) and card.get("has_on_hit"):
-            has_on_hit = True
-        elif on_hit_severity > 0.0:
-            has_on_hit = True
-        elif sem_entry and (int(sem_entry.get("extra_on_hit_damage", 0)) > 0 or sem_entry.get("on_hit_disruption") is not None):
-            has_on_hit = True
-        elif any(oh in card_num for oh in DANGEROUS_ON_HITS):
-            has_on_hit = True
-
-        # Intimidate
-        has_intimidate = False
-        if isinstance(card, dict) and (card.get("has_intimidate") or card.get("intimidate")):
-            has_intimidate = True
-        elif sem_entry and "intimidate" in sem_keywords:
-            has_intimidate = True
-        elif any(k in card_num for k in ["pack_hunt", "alpha_rampage", "barraging_beatdown", "intimidate"]):
-            has_intimidate = True
-
-        intimidate_count = 0
-        if has_intimidate:
-            raw_i = card.get("intimidate_count", card.get("intimidate", 1)) if isinstance(card, dict) else 1
-            intimidate_count = int(raw_i) if isinstance(raw_i, (int, float)) and not isinstance(raw_i, bool) else 1
-
-        return {
-            "name": card_num,
-            "pitch": pitch,
-            "power": power,
-            "defense": defense,
-            "cost": cost,
-            "has_go_again": has_go_again,
-            "has_on_hit": has_on_hit,
-            "has_intimidate": has_intimidate,
-            "intimidate_count": intimidate_count,
-            "dominate": dominate,
-            "has_dominate": dominate,
-            "overpower": overpower,
-            "has_overpower": overpower,
-            "piercing": piercing,
-            "has_piercing": piercing > 0,
-            "phantasm": phantasm,
-            "has_phantasm": phantasm,
-            "on_hit_severity": on_hit_severity,
-            "raw": card
-        }
-
-    @classmethod
+    new_attack = '''    @classmethod
     def simulate_attack(cls, state, action: dict):
         """
         Simula a execução de um ataque na fase principal (Phase M).
@@ -414,8 +168,9 @@ class GameSimulator:
         updates["theirHandCount"] = new_opp_hand
 
         return state.without("_simulated_projected_damage", "currentAttackBuff").replace(**updates)
+'''
 
-    @classmethod
+    new_defense = '''    @classmethod
     def simulate_defense(cls, state, block_action: dict):
         """
         Simula a decisão de bloqueio na fase defensiva (Phase B).
@@ -487,8 +242,9 @@ class GameSimulator:
         updates["_simulated_projected_damage"] = taken_damage
 
         return state.replace(**updates)
+'''
 
-    @classmethod
+    new_pitch = '''    @classmethod
     def simulate_pitch(cls, state, pitch_action: dict):
         """
         Simula a geração de recursos na fase de Pitch (Phase P / PDECK).
@@ -524,8 +280,9 @@ class GameSimulator:
             updates["playerResources"] = (floating + pitch_val, 0)
 
         return state.replace(**updates)
+'''
 
-    @classmethod
+    new_step = '''    @classmethod
     def simulate_step(cls, state, action: dict):
         """
         Ponto de entrada unificado para simulação de passo.
@@ -547,3 +304,10 @@ class GameSimulator:
 
         vec = FaBPolicyValueNetwork.extract_state_vector(next_state.to_dict())
         return next_state, vec
+'''
+
+    content = content[:attack_start] + new_attack + '\n' + new_defense + '\n' + new_pitch + '\n' + new_step
+    with open('/home/renan/fab-talishar-ia/ai/game_simulator.py', 'w', encoding='utf-8') as f:
+        f.write(content)
+
+patch()

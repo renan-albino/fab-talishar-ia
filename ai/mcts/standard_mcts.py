@@ -132,7 +132,7 @@ class MCTSEngine:
         leaf_nodes: List[MCTSNode] = []
         for sim_idx in range(num_simulations):
             self._progressive_widen(root, sim_idx)
-            node = self._select(root)
+            node = self._select(root, sim_idx)
             leaf_nodes.append(node)
 
         # ── 5. Batch Evaluation das folhas (1 forward pass) ───────
@@ -159,8 +159,10 @@ class MCTSEngine:
                 policy_dist[idx % 32] = 1.0 / max(len(active), 1)
         else:
             for idx, child in root.children.items():
-                if idx >= 0:
-                    policy_dist[idx % 32] += child.visit_count / total_visits
+                if idx >= 0 and idx < len(legal_actions):
+                    act_mode = legal_actions[idx].get("mode", 99)
+                    dist_idx = min(act_mode, 31)
+                    policy_dist[dist_idx] += child.visit_count / total_visits
 
         best_idx = self._select_action(root, legal_actions, training_mode)
         return best_idx, policy_dist
@@ -215,7 +217,8 @@ class MCTSEngine:
             for node in nodes:
                 if state is not None and legal_actions and 0 <= node.action_id < len(legal_actions):
                     try:
-                        _, leaf_vec = GameSimulator.simulate_step(state, legal_actions[node.action_id])
+                        next_state, leaf_vec = GameSimulator.simulate_step(state, legal_actions[node.action_id])
+                        node.state = next_state
                     except Exception:
                         rng = np.random.default_rng(seed=(node.action_id + 1 + world_seed * 1000) % (2**31))
                         noise = rng.normal(0.0, LEAF_PERTURB_SCALE, size=root_state_vec.shape).astype(np.float32)
@@ -368,16 +371,19 @@ class MCTSEngine:
 
     # ── Seleção PUCT ──────────────────────────────────────────────
 
-    def _select(self, root: MCTSNode) -> MCTSNode:
+    def _select(self, root: MCTSNode, sim_idx: int = 0) -> MCTSNode:
         """Desce a árvore por PUCT considerando apenas filhos ativos (chave ≥ 0)."""
         node = root
         path = [node]
         while node.is_expanded and any(k >= 0 for k in node.children):
             best_score, best_child = -float("inf"), None
+            parent_visits = node.visit_count
+            if node == root:
+                parent_visits += sim_idx
             for key, child in node.children.items():
                 if key < 0:
                     continue
-                score = child.ucb_score(self.c_puct, node.visit_count)
+                score = child.ucb_score(self.c_puct, parent_visits)
                 if score > best_score:
                     best_score = score
                     best_child = child
@@ -386,8 +392,7 @@ class MCTSEngine:
             node = best_child
             path.append(node)
         for n in path:
-            with n._lock:
-                n.virtual_loss += VIRTUAL_LOSS
+            n.virtual_loss += VIRTUAL_LOSS
         return node
 
     # ── Backpropagação ────────────────────────────────────
@@ -402,10 +407,9 @@ class MCTSEngine:
         curr = node
         sign = 1.0
         while curr is not None:
-            with curr._lock:
-                curr.virtual_loss = max(0, curr.virtual_loss - VIRTUAL_LOSS)
-                curr.visit_count += 1
-                curr.value_sum   += value * sign
+            curr.virtual_loss = max(0, curr.virtual_loss - VIRTUAL_LOSS)
+            curr.visit_count += 1
+            curr.value_sum   += value * sign
             if not self.single_player_tree:
                 sign *= -1.0
             curr = curr.parent

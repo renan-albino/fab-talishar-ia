@@ -34,6 +34,17 @@ from typing import Any, Dict, Optional
 
 _DEFAULT_LOG_PATH = os.path.join("logs", "ismcts_decisions.jsonl")
 
+import numpy as np
+def _json_numpy_default(obj):
+    if isinstance(obj, (np.floating, float)):
+        return float(obj)
+    if isinstance(obj, (np.integer, int)):
+        return int(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return str(obj)
+
+
 
 class ISMCTSLogger:
     """
@@ -90,7 +101,7 @@ class ISMCTSLogger:
 
         try:
             with open(self.log_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+                f.write(json.dumps(entry, default=_json_numpy_default, ensure_ascii=False) + "\n")
         except Exception as e:
             # Logging não deve nunca travar o bot — falha silenciosa
             print(f"[ISMCTSLogger] Aviso: falha ao escrever log — {e}")

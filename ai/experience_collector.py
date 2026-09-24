@@ -9,7 +9,6 @@ import random
 import numpy as np
 import torch
 from typing import List, Tuple, Dict, Any, Optional
-from ai.atomic_io import file_lock
 
 try:
     from config.settings import SETTINGS
@@ -17,6 +16,16 @@ try:
 except Exception:
     DEFAULT_STATE_DIM = 832
 
+import contextlib
+@contextlib.contextmanager
+def file_lock(path, timeout=5.0):
+    try:
+        from filelock import FileLock
+        lock = FileLock(f"{path}.lock", timeout=timeout)
+        with lock:
+            yield
+    except ImportError:
+        yield
 
 class SumTree:
     def __init__(self, capacity: int):
@@ -180,7 +189,7 @@ class ReplayBuffer:
                 is_weights = is_weights / np.max(is_weights)
         else:
             if self.current_size < batch_size:
-                indices = np.random.choice(self.current_size, self.current_size, replace=True)
+                indices = np.random.choice(self.current_size, batch_size, replace=True)
             else:
                 indices = np.random.choice(self.current_size, batch_size, replace=False)
             is_weights = np.ones(len(indices), dtype=np.float32)
@@ -279,49 +288,63 @@ class ReplayBuffer:
         if not os.path.exists(filepath):
             return False
         try:
-            data = np.load(filepath)
-            loaded_states = data["states"]
-            # Prevenção de Distribution Shift (Kumagai et al. 2021)
-            if loaded_states.ndim != 2 or loaded_states.shape[1] != self.state_dim:
-                print(f"[ReplayBuffer] ⚠ Shape incompatível detectado ({loaded_states.shape}, esperado {self.state_dim}). Reiniciando buffer.")
-                return False
+            with np.load(filepath) as data:
+                loaded_states = data["states"]
+                # Prevenção de Distribution Shift (Kumagai et al. 2021)
+                if loaded_states.ndim != 2 or loaded_states.shape[1] != self.state_dim:
+                    print(f"[ReplayBuffer] ⚠ Shape incompatível detectado ({loaded_states.shape}, esperado {self.state_dim}). Reiniciando buffer.")
+                    return False
 
-            loaded_policies = data["policies"]
-            loaded_values = data["values"]
-            loaded_weights = data["weights"] if "weights" in data.files else None
-            loaded_aux_delta = data["aux_delta_hp"] if "aux_delta_hp" in data.files else None
-            loaded_aux_dmg = data["aux_turn_dmg"] if "aux_turn_dmg" in data.files else None
+                loaded_policies = data["policies"]
+                loaded_values = data["values"]
+                loaded_weights = data["weights"] if "weights" in data.files else None
+                loaded_aux_delta = data["aux_delta_hp"] if "aux_delta_hp" in data.files else None
+                loaded_aux_dmg = data["aux_turn_dmg"] if "aux_turn_dmg" in data.files else None
 
-            n_loaded = len(loaded_states)
-            if n_loaded > self.max_capacity:
-                self.resize(n_loaded)
-            n = min(n_loaded, self.max_capacity)
-            self.states[:n] = loaded_states[:n]
-            self.policies[:n] = loaded_policies[:n]
-            self.values[:n] = loaded_values[:n]
-            
-            # Repopular SumTree
-            self.sum_tree = SumTree(self.max_capacity)
-            for i in range(n):
-                w = float(loaded_weights[i]) if (loaded_weights is not None and len(loaded_weights) > i) else 1.0
-                self.sum_tree.update(i, w)
+                n_loaded = len(loaded_states)
+                if n_loaded > self.max_capacity:
+                    self.resize(n_loaded)
+                n = min(n_loaded, self.max_capacity)
+                self.states[:n] = loaded_states[:n]
+                self.policies[:n] = loaded_policies[:n]
+                self.values[:n] = loaded_values[:n]
+                
+                # Repopular SumTree
+                self.sum_tree = SumTree(self.max_capacity)
+                for i in range(n):
+                    w = float(loaded_weights[i]) if (loaded_weights is not None and len(loaded_weights) > i) else 1.0
+                    self.sum_tree.update(i, w)
 
-            if loaded_aux_delta is not None and len(loaded_aux_delta) >= n:
-                self.aux_delta_hp[:n] = loaded_aux_delta[:n]
-            else:
-                self.aux_delta_hp[:n] = 0.0
+                if loaded_aux_delta is not None and len(loaded_aux_delta) >= n:
+                    self.aux_delta_hp[:n] = loaded_aux_delta[:n]
+                else:
+                    self.aux_delta_hp[:n] = 0.0
 
-            if loaded_aux_dmg is not None and len(loaded_aux_dmg) >= n:
-                self.aux_turn_dmg[:n] = loaded_aux_dmg[:n]
-            else:
-                self.aux_turn_dmg[:n] = 0.0
+                if loaded_aux_dmg is not None and len(loaded_aux_dmg) >= n:
+                    self.aux_turn_dmg[:n] = loaded_aux_dmg[:n]
+                else:
+                    self.aux_turn_dmg[:n] = 0.0
 
-            self.current_size = n
-            self.pointer = n % self.max_capacity
+                self.current_size = n
+                self.pointer = n % self.max_capacity
             return True
         except Exception as e:
             print(f"Erro ao carregar buffer {filepath}: {e}")
             return False
+
+    def ingest_from_memory(self, trajectories: List[Tuple[List[Any], int]]) -> int:
+        """
+        Recebe uma lista de trajetórias em memória (do HeadlessSelfPlayLoop) 
+        e insere diretamente no buffer sem I/O de disco.
+        Cada item deve ser (trajectory, winner_id).
+        """
+        ingested = 0
+        for traj, winner_player_id in trajectories:
+            weights = [1.0] * len(traj)
+            # Reaproveita a lógica robusta de cálculo de recompensas do add_trajectory
+            self.add_trajectory(traj, winner_player_id, weights, epoch_ratio=0.0)
+            ingested += len(traj)
+        return ingested
 
     def ingest_trajectories(self, trajectories_dir: str = "data/trajectories") -> int:
         """Carrega e remove arquivos compactos de trajetória gerados concorrentemente por bots."""
@@ -332,19 +355,20 @@ class ReplayBuffer:
             if fname.endswith(".npz") and not fname.endswith(".tmp.npz"):
                 fpath = os.path.join(trajectories_dir, fname)
                 try:
-                    data = np.load(fpath, allow_pickle=True)
-                    states = data["states"]
-                    policies = data["policies"]
-                    rewards = data["rewards"]
-                    weights = data["weights"]
-                    aux_delta = data["aux_delta_hp"]
-                    aux_dmg = data["aux_turn_dmg"]
-                    for s, p, r, w, ad, adm in zip(states, policies, rewards, weights, aux_delta, aux_dmg):
-                        self.add(s, p, r, w, ad, adm)
-                        ingested += 1
+                    with np.load(fpath, allow_pickle=True) as data:
+                        states = data["states"]
+                        policies = data["policies"]
+                        rewards = data["rewards"]
+                        weights = data["weights"]
+                        aux_delta = data.get("aux_delta_hp", np.zeros(len(states)))
+                        aux_dmg = data.get("aux_turn_dmg", np.zeros(len(states)))
+                        for s, p, r, w, ad, adm in zip(states, policies, rewards, weights, aux_delta, aux_dmg):
+                            self.add(s, p, r, w, ad, adm)
+                            ingested += 1
                     os.remove(fpath)
-                except Exception:
-                    pass
+                except Exception as e:
+                    import logging
+                    logging.warning(f"[ReplayBuffer] Erro ao ingerir trajetória {fpath}: {e}")
         return ingested
 
 

@@ -1,7 +1,6 @@
 import os
 import json
 import re
-from ai.atomic_io import atomic_json_save
 from .slugifier import load_fab_cards_db, BASE_DIR
 from .parser import enrich_deck_metadata, extract_hero_from_deck
 
@@ -27,17 +26,21 @@ def save_deck_to_workspace(deck_obj: dict, base_dir: str = None) -> dict:
     # Salva exclusivamente no diretório raiz decks/ (Project Rule 3) via atomic_json_save
     decks_dir = get_decks_dir(base_dir)
     file_path = os.path.join(decks_dir, f"{safe_slug}.json")
-    atomic_json_save(deck_obj, file_path, indent=2)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(deck_obj, f, indent=2)
     saved_files.append(file_path)
         
     # Também define como deck ativo atual
     for root in [base_dir, "."]:
         for main_file in [os.path.join(root, "Talishar", "deck.json"), os.path.join(root, "deck.json")]:
             try:
-                atomic_json_save(deck_obj, main_file, indent=2)
+                os.makedirs(os.path.dirname(main_file), exist_ok=True)
+                with open(main_file, "w", encoding="utf-8") as f:
+                    json.dump(deck_obj, f, indent=2)
                 saved_files.append(main_file)
             except Exception:
                 pass
+
         
     return {
         "slug": safe_slug,
@@ -81,7 +84,10 @@ def list_saved_decks(base_dir: str = None) -> list:
                     "class": d.get("class", "GENERIC"),
                     "talents": d.get("talents", []),
                     "format": d.get("format", "blitz"),
-                    "total_cards": sum(c.get("total", 1) for c in d.get("cards", [])),
+                    "total_cards": sum(
+                        int(c.get("total", c.get("count", 1))) if isinstance(c, dict) else 1
+                        for c in d.get("cards", [])
+                    ),
                     "data": d
                 })
         except Exception:
@@ -91,7 +97,11 @@ def list_saved_decks(base_dir: str = None) -> list:
 def delete_saved_deck(slug: str, base_dir: str = None) -> bool:
     """Remove o arquivo JSON do deck exclusivamente do diretório raiz decks/."""
     decks_dir = get_decks_dir(base_dir)
-    deck_path = os.path.join(decks_dir, f"{slug}.json")
+    import re as _re
+    safe_slug = _re.sub(r"[^a-zA-Z0-9_\-]+", "", slug)
+    deck_path = os.path.abspath(os.path.join(decks_dir, f"{safe_slug}.json"))
+    if not deck_path.startswith(os.path.abspath(decks_dir)):
+        return False
     if os.path.exists(deck_path):
         try:
             os.remove(deck_path)

@@ -118,6 +118,17 @@ def export_state(dest_path: str = None):
     print(f"  python scripts/manage_state.py --import {os.path.basename(target_tar)}")
     print("==================================================")
 
+def _safe_extractall(tar, path):
+    abs_path = os.path.abspath(path)
+    if hasattr(tarfile, 'data_filter'):
+        tar.extractall(path=path, filter='data')
+    else:
+        for member in tar.getmembers():
+            target = os.path.abspath(os.path.join(path, member.name))
+            if not target.startswith(abs_path + os.sep):
+                raise RuntimeError(f"Caminho inseguro no arquivo: {member.name}")
+        tar.extractall(path=path)
+
 def import_state(src_path: str):
     print("==================================================")
     print("   IMPORTANDO PACOTE DE ESTADO ESSENCIAL         ")
@@ -132,7 +143,7 @@ def import_state(src_path: str):
     with tarfile.open(src_path, "r:gz") as tar:
         members = tar.getmembers()
         print(f"Extraindo {len(members)} arquivos para {BASE_DIR}...")
-        tar.extractall(path=BASE_DIR)
+        _safe_extractall(tar, BASE_DIR)
         for m in members:
             print(f"  ✓ Restaurado: {m.name} ({format_size(m.size)})")
 

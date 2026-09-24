@@ -254,11 +254,12 @@ class FaBCardTransformerNetwork(nn.Module):
 
         return policy_logits, value
 
-    def predict_state(self, state_vector: np.ndarray, device: str = "cpu") -> Tuple[np.ndarray, float]:
+    def predict_state(self, state_vector: np.ndarray, device: Optional[str] = None) -> Tuple[np.ndarray, float]:
         """Avalia um estado único e retorna probabilidades e value escalar."""
         self.eval()
+        dev = torch.device(device) if device else next(self.parameters()).device
         with torch.no_grad():
-            x = torch.from_numpy(state_vector).unsqueeze(0).float().to(device)
+            x = torch.from_numpy(state_vector).unsqueeze(0).float().to(dev)
             logits, val = self(x)
             probs = F.softmax(logits, dim=-1).cpu().numpy()[0]
             value = float(val.cpu().numpy()[0][0])
@@ -344,7 +345,7 @@ class FaBCardTransformerNetwork(nn.Module):
             curr_atk = combat_chain[0] if isinstance(combat_chain[0], dict) else {}
             atk_power = float(curr_atk.get("attackPower", curr_atk.get("power", 4)))
             vec[15] = min(atk_power / 15.0, 1.0)
-            total_def = sum(float(c.get("defenseValue", 0)) for c in combat_chain[1:] if isinstance(c, dict))
+            total_def = sum(float(c.get("defenseValue") or 0) for c in combat_chain[1:] if isinstance(c, dict))
             vec[16] = min(total_def / 15.0, 1.0)
 
         # Janela de Letalidade e Diferencial de Vida
@@ -371,7 +372,7 @@ class FaBCardTransformerNetwork(nn.Module):
         runechants = float(state.get("playerRunechants", 0) or 0)
         for a in (state.get("playerAuras") or []):
             if isinstance(a, dict) and "runechant" in str(a.get("cardNumber", "")).lower():
-                runechants += max(1, int(a.get("counters", a.get("count", 1))))
+                runechants += max(1, int(a.get("counters") or a.get("count") or 1))
         vec[25] = min(runechants / 10.0, 1.0)
 
         # Heróis e Formato (Índice 26)

@@ -8,14 +8,9 @@ com base nas taxas de vitória empíricas registradas pelo stats_manager.py.
 """
 
 import os
-import json
 import time
 from typing import Dict, Any, Tuple
-from ai.atomic_io import atomic_json_save
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-MULTIPLIERS_FILE = os.path.join(DATA_DIR, "hero_rule_multipliers.json")
+from stats.db import get_connection
 
 DEFAULT_MULTIPLIERS = {
     "attack_weight": 1.0,
@@ -26,35 +21,38 @@ DEFAULT_MULTIPLIERS = {
 }
 
 def is_aggro_or_combo_hero(name: str) -> bool:
-    """Verifica se o herói pertence a um arquétipo aggro, combo ou de sinergia de mão/peças usando metadata oficial."""
-    from ai.game_simulator import _get_cards_db
-    db = _get_cards_db()
-    hero_data = db.get(name.lower().replace(" ", "-"), {})
-    aggro_classes = {"ninja", "mechanologist", "runeblade", "ranger", "wizard"}
-    return bool(aggro_classes & set(hero_data.get("classes", [])))
-
-
-_CACHE = {
-    "mtime": 0.0,
-    "data": {},
-}
+    """Retorna True se o herói pertence a uma classe aggro/combo."""
+    try:
+        from ai.game_simulator import GameSimulator
+        db = GameSimulator._get_cards_db() if hasattr(GameSimulator, '_get_cards_db') else {}
+    except Exception:
+        db = {}
+    slug = str(name).lower().strip().replace(" ", "_").replace("-", "_")
+    hero_data = db.get(slug) or db.get(slug.split("_")[0], {})
+    hero_class = str(hero_data.get("class", "")).lower()
+    aggro_classes = {"ninja", "mechanologist", "runeblade", "ranger", "wizard", "illusionist"}
+    return hero_class in aggro_classes
 
 
 def load_multipliers() -> Dict[str, Dict[str, float]]:
-    """Carrega o mapa de multiplicadores com cache em memória baseado em mtime."""
-    global _CACHE
-    if not os.path.exists(MULTIPLIERS_FILE):
-        return {}
-
-    try:
-        cur_mtime = os.path.getmtime(MULTIPLIERS_FILE)
-        if cur_mtime != _CACHE["mtime"]:
-            with open(MULTIPLIERS_FILE, "r", encoding="utf-8") as f:
-                _CACHE["data"] = json.load(f)
-            _CACHE["mtime"] = cur_mtime
-        return _CACHE["data"]
-    except Exception:
-        return _CACHE.get("data", {})
+    """Carrega o mapa de multiplicadores a partir do SQLite."""
+    res = {}
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM dynamic_rules")
+        for row in cursor.fetchall():
+            res[row["hero_name"]] = {
+                "attack_weight": row["attack_weight"],
+                "block_weight": row["block_weight"],
+                "pivot_bonus": row["pivot_bonus"],
+                "arsenal_bonus": row["arsenal_bonus"],
+                "absorb_tempo_bonus": row["absorb_tempo_bonus"],
+                "last_win_rate": row["last_win_rate"],
+                "human_wins": row["human_wins"],
+                "matches_evaluated": row["matches_evaluated"],
+                "updated_at": row["updated_at"],
+            }
+    return res
 
 
 def get_multipliers_for_hero(hero_name: str) -> Dict[str, float]:
@@ -94,10 +92,6 @@ def sync_multipliers_with_stats() -> Dict[str, Any]:
         Todos os multiplicadores são delimitados entre 0.70 e 1.40 para evitar
         comportamentos aberrantes ou travamento de ações.
     """
-    os.makedirs(DATA_DIR, exist_ok=True)
-    all_mults = load_multipliers()
-    modified = False
-
     try:
         from stats_manager import get_stats_data
         stats = get_stats_data()
@@ -107,82 +101,109 @@ def sync_multipliers_with_stats() -> Dict[str, Any]:
     deck_stats = stats.get("deck_stats", {})
     updates_summary = {}
 
-    for d_name, d_info in deck_stats.items():
-        if "Humano" in d_name:
-            continue
+    all_mults = load_multipliers()
+    
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        
+        for d_name, d_info in deck_stats.items():
+            if "Humano" in d_name:
+                continue
 
-        matches = d_info.get("matches", 0)
-        if matches < 3:
-            continue
+            matches = d_info.get("matches", 0)
+            if matches < 3:
+                continue
 
-        wins = d_info.get("wins", 0)
-        win_rate = wins / matches
+            wins = d_info.get("wins", 0)
+            win_rate = wins / matches
 
-        key = str(d_name).lower().strip().replace(" ", "_")
-        current = all_mults.get(key, dict(DEFAULT_MULTIPLIERS)).copy()
+            key = str(d_name).lower().strip().replace(" ", "_")
+            current = all_mults.get(key, dict(DEFAULT_MULTIPLIERS)).copy()
 
-        old_atk = current.get("attack_weight", 1.0)
-        old_blk = current.get("block_weight", 1.0)
-        old_piv = current.get("pivot_bonus", 1.0)
-        old_ars = current.get("arsenal_bonus", 1.0)
-        old_abs = current.get("absorb_tempo_bonus", 1.0)
+            old_atk = current.get("attack_weight", 1.0)
+            old_blk = current.get("block_weight", 1.0)
+            old_piv = current.get("pivot_bonus", 1.0)
+            old_ars = current.get("arsenal_bonus", 1.0)
+            old_abs = current.get("absorb_tempo_bonus", 1.0)
 
-        human_wins = d_info.get("human_wins", 0)
+            human_wins = d_info.get("human_wins", 0)
 
-        if win_rate < 0.45:
-            if is_aggro_or_combo_hero(key):
-                # Heróis aggro/combo/sinergia em dificuldade: NUNCA reduza ataque nem force bloqueio com peças de combo!
-                # Devem reforçar o timing de pivot, absorção de tempo e manter agressividade
-                new_atk = min(1.35, max(1.10, old_atk + 0.03))
-                new_blk = max(0.80, min(0.95, old_blk - 0.02))
-                new_piv = min(1.35, old_piv + 0.03)
-                new_ars = min(1.30, old_ars + 0.02)
-                new_abs = min(1.35, max(1.10, old_abs + 0.03))
+            if win_rate < 0.45:
+                if is_aggro_or_combo_hero(key):
+                    # Heróis aggro/combo/sinergia em dificuldade: NUNCA reduza ataque nem force bloqueio com peças de combo!
+                    # Devem reforçar o timing de pivot, absorção de tempo e manter agressividade
+                    new_atk = min(1.35, max(1.10, old_atk + 0.03))
+                    new_blk = max(0.80, min(0.95, old_blk - 0.02))
+                    new_piv = min(1.35, old_piv + 0.03)
+                    new_ars = min(1.30, old_ars + 0.02)
+                    new_abs = min(1.35, max(1.10, old_abs + 0.03))
+                else:
+                    # Herói defensivo / midrange clássico (Guardian, Brute/Warrior defensivo): reforçar postura defensiva
+                    new_blk = min(1.40, old_blk + 0.04)
+                    new_piv = min(1.35, old_piv + 0.03)
+                    new_atk = max(0.80, old_atk - 0.02)
+                    new_ars = min(1.25, old_ars + 0.02)
+                    new_abs = max(0.85, old_abs - 0.02)
+            elif win_rate > 0.60:
+                # Herói dominante: manter agressividade controlada e capacidade de absorver e punir
+                new_atk = min(1.35, old_atk + 0.03)
+                new_blk = max(0.85, old_blk - 0.01)
+                new_piv = max(0.90, old_piv)
+                new_ars = min(1.30, old_ars + 0.01)
+                new_abs = min(1.35, old_abs + 0.03)
             else:
-                # Herói defensivo / midrange clássico (Guardian, Brute/Warrior defensivo): reforçar postura defensiva
-                new_blk = min(1.40, old_blk + 0.04)
-                new_piv = min(1.35, old_piv + 0.03)
-                new_atk = max(0.80, old_atk - 0.02)
-                new_ars = min(1.25, old_ars + 0.02)
-                new_abs = max(0.85, old_abs - 0.02)
-        elif win_rate > 0.60:
-            # Herói dominante: manter agressividade controlada e capacidade de absorver e punir
-            new_atk = min(1.35, old_atk + 0.03)
-            new_blk = max(0.85, old_blk - 0.01)
-            new_piv = max(0.90, old_piv)
-            new_ars = min(1.30, old_ars + 0.01)
-            new_abs = min(1.35, old_abs + 0.03)
-        else:
-            # Equilíbrio (45% a 60%): decaimento suave em direção ao neutro (1.0)
-            new_atk = old_atk * 0.98 + 1.0 * 0.02
-            new_blk = old_blk * 0.98 + 1.0 * 0.02
-            new_piv = old_piv * 0.98 + 1.0 * 0.02
-            new_ars = old_ars * 0.98 + 1.0 * 0.02
-            new_abs = old_abs * 0.98 + 1.0 * 0.02
+                # Equilíbrio (45% a 60%): decaimento suave em direção ao neutro (1.0)
+                new_atk = old_atk * 0.98 + 1.0 * 0.02
+                new_blk = old_blk * 0.98 + 1.0 * 0.02
+                new_piv = old_piv * 0.98 + 1.0 * 0.02
+                new_ars = old_ars * 0.98 + 1.0 * 0.02
+                new_abs = old_abs * 0.98 + 1.0 * 0.02
 
-        # Bônus de prestígio por vitórias contra humanos
-        if human_wins > 0:
-            new_atk = min(1.40, new_atk + min(0.05, human_wins * 0.015))
-            new_abs = min(1.40, new_abs + min(0.05, human_wins * 0.02))
+            # Bônus de prestígio por vitórias contra humanos
+            if human_wins > 0:
+                new_atk = min(1.40, new_atk + min(0.05, human_wins * 0.015))
+                new_abs = min(1.40, new_abs + min(0.05, human_wins * 0.02))
 
-        updated = {
-            "attack_weight": round(float(new_atk), 3),
-            "block_weight": round(float(new_blk), 3),
-            "pivot_bonus": round(float(new_piv), 3),
-            "arsenal_bonus": round(float(new_ars), 3),
-            "absorb_tempo_bonus": round(float(new_abs), 3),
-            "last_win_rate": round(float(win_rate), 3),
-            "human_wins": human_wins,
-            "matches_evaluated": matches,
-            "updated_at": time.time(),
-        }
+            updated = {
+                "hero_name": key,
+                "attack_weight": round(float(new_atk), 3),
+                "block_weight": round(float(new_blk), 3),
+                "pivot_bonus": round(float(new_piv), 3),
+                "arsenal_bonus": round(float(new_ars), 3),
+                "absorb_tempo_bonus": round(float(new_abs), 3),
+                "last_win_rate": round(float(win_rate), 3),
+                "human_wins": human_wins,
+                "matches_evaluated": matches,
+                "updated_at": time.time(),
+            }
+            
+            # Check if really updated
+            is_modified = False
+            for k_field, v_field in updated.items():
+                if k_field != "hero_name" and k_field != "updated_at":
+                    if current.get(k_field) != v_field:
+                        is_modified = True
+                        break
 
-        if updated != all_mults.get(key):
-            all_mults[key] = updated
-            updates_summary[key] = updated
-            modified = True
-
-    if modified:
-        atomic_json_save(all_mults, MULTIPLIERS_FILE)
+            if is_modified or key not in all_mults:
+                cursor.execute('''
+                    INSERT INTO dynamic_rules 
+                    (hero_name, attack_weight, block_weight, pivot_bonus, arsenal_bonus, absorb_tempo_bonus, last_win_rate, human_wins, matches_evaluated, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(hero_name) DO UPDATE SET
+                    attack_weight=excluded.attack_weight,
+                    block_weight=excluded.block_weight,
+                    pivot_bonus=excluded.pivot_bonus,
+                    arsenal_bonus=excluded.arsenal_bonus,
+                    absorb_tempo_bonus=excluded.absorb_tempo_bonus,
+                    last_win_rate=excluded.last_win_rate,
+                    human_wins=excluded.human_wins,
+                    matches_evaluated=excluded.matches_evaluated,
+                    updated_at=excluded.updated_at
+                ''', (updated["hero_name"], updated["attack_weight"], updated["block_weight"], updated["pivot_bonus"], updated["arsenal_bonus"], updated["absorb_tempo_bonus"], updated["last_win_rate"], updated["human_wins"], updated["matches_evaluated"], updated["updated_at"]))
+                updates_summary[key] = updated
+        
+        conn.commit()
 
     return updates_summary
+

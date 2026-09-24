@@ -8,7 +8,13 @@ def score_choice_candidate(client, candidate, turn_phase: str = "", state: dict 
     c_override = ""
     c_label = ""
     if isinstance(candidate, dict):
-        c_name = str(candidate.get("buttonInput") or candidate.get("caption") or candidate.get("cardNumber") or candidate.get("name") or "").lower()
+        c_name = str(
+            candidate.get("cardNumber")
+            or candidate.get("name")
+            or candidate.get("caption")
+            or candidate.get("buttonInput")
+            or ""
+        ).lower()
         c_mode = int(candidate.get("mode", 0) or 0)
         c_override = str(candidate.get("actionDataOverride", "")).lower()
         c_label = str(candidate.get("label", "")).lower()
@@ -195,7 +201,7 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
     # 1. Tratar Decisões de Crank e YESNO / Modal Triggers
     if turn_phase in ("DOCRANK", "YESNO"):
         if turn_phase == "DOCRANK":
-            is_my_turn = state.get("amIActivePlayer", False) or (state.get("turnPlayer") == client.player_id)
+            is_my_turn = state.get("amIActivePlayer", False) or (str(state.get("turnPlayer", "")) == str(client.player_id))
             if is_my_turn:
                 choice = "YES" if random.random() < 0.75 else "NO"
                 reason = "Exploração de Tempo (+1 AP)" if choice == "YES" else "Estratégia de Setup (Manter Item)"
@@ -233,7 +239,7 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
         p_type = p_data.get("type", "")
         
         if p_type in ("YESNO", "DOCRANK"):
-            is_my_turn = state.get("amIActivePlayer", False) or (state.get("turnPlayer") == client.player_id)
+            is_my_turn = state.get("amIActivePlayer", False) or (str(state.get("turnPlayer", "")) == str(client.player_id))
             choice = "YES" if (is_my_turn and random.random() < 0.75) else "NO"
             client.log(f"[AÇÃO JOGADOR {client.player_id}] Popup {p_type} -> Respondeu {choice}")
             client.send_action(mode=20, button_input=choice)
@@ -404,8 +410,18 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
         return True
 
     if turn_phase in ("CHOOSETOP", "CHOOSEBOTTOM", "HANDTOPBOTTOM"):
-        hand = state.get("playerHand", [])
-        card_sel = hand[0].get("cardNumber", "") if hand else ""
+        opt_cards = popup.get("cardsArray", popup.get("cards", state.get("deckTop", [])))
+        if opt_cards:
+            best_score = -9999.0
+            card_sel = ""
+            for c in opt_cards:
+                sc = score_choice_candidate(client, c, turn_phase=turn_phase, state=state, popup=popup)
+                if sc > best_score:
+                    best_score = sc
+                    card_sel = str(c.get("actionDataOverride", c.get("cardNumber", "")))
+        else:
+            hand = state.get("playerHand", [])
+            card_sel = str(hand[0].get("cardNumber", "")) if hand else ""
         client.log(f"[AÇÃO JOGADOR {client.player_id}] Reordenação -> {turn_phase}")
         client.send_action(mode=12 if turn_phase == "CHOOSETOP" else 13, button_input=card_sel)
         time.sleep(0.002)

@@ -324,8 +324,11 @@ class ISMCTSEngine:
                 self._cached_cpu_model = None
 
         try:
-            import copy
-            self._cached_cpu_model = copy.deepcopy(self.model).to("cpu")
+            from ai.model import FaBCardTransformerNetwork
+            cpu_model = FaBCardTransformerNetwork()
+            cpu_state = {k: v.detach().cpu() for k, v in self.model.state_dict().items()}
+            cpu_model.load_state_dict(cpu_state)
+            self._cached_cpu_model = cpu_model
             return self._cached_cpu_model
         except Exception as e:
             logger.warning(f"Aviso ao preparar modelo CPU para worker direct_gpu: {e}")
@@ -466,6 +469,12 @@ class ISMCTSEngine:
                     if proc.is_alive():
                         proc.terminate()
                         proc.join(timeout=0.5)
+                        if proc.is_alive():
+                            proc.kill()
+                            proc.join(timeout=0.2)
+                        if proc.is_alive():
+                            proc.kill()
+                            proc.join(timeout=0.2)
                 for p in server_pipes:
                     try:
                         p.close()
@@ -537,6 +546,12 @@ class ISMCTSEngine:
                     if proc.is_alive():
                         proc.terminate()
                         proc.join(timeout=0.5)
+                        if proc.is_alive():
+                            proc.kill()
+                            proc.join(timeout=0.2)
+                        if proc.is_alive():
+                            proc.kill()
+                            proc.join(timeout=0.2)
                 for p in server_pipes:
                     try:
                         p.close()
@@ -605,9 +620,9 @@ class ISMCTSEngine:
                     act_mode = legal_actions[idx].get("mode", 99)
                     dist_idx = min(act_mode, 31) if act_mode < 32 else (act_mode % 32)
                     policy_dist[dist_idx] += votes / total_votes
-                if votes > best_votes:
-                    best_votes = votes
-                    best_idx = idx
+            
+            best_idx = max(vote_counts.keys(), key=lambda i: vote_counts[i] + 0.3 * (q_value_sums.get(i, 0.0) / max(1, vote_counts.get(i, 1))))
+            best_votes = vote_counts[best_idx]
         else:
             # Fallback: heurística de scores táticos
             scored = sorted(enumerate(legal_actions), key=lambda x: x[1].get("score", 0), reverse=True)
@@ -678,26 +693,19 @@ class ISMCTSEngine:
         if training_mode and root.children:
             self._mcts._add_dirichlet_noise(root, len(root.children) + len(root.pending))
 
-        # ── Phase 1: Selecionar todas as folhas ───────────────────
-        leaf_nodes: List[MCTSNode] = []
+        # ── Phase 1, 2, 3: Simulate, Evaluate, Backpropagate ──────
         for sim_idx in range(num_simulations):
             self._mcts._progressive_widen(root, sim_idx)
             node = self._mcts._select(root)
-            leaf_nodes.append(node)
-
-        # ── Phase 2: Batch evaluate (1 forward pass) ──────────────
-        leaf_values = self._mcts._batch_evaluate_leaves(
-            root_state_vec=state_vec,
-            nodes=leaf_nodes,
-            base_value=base_value,
-            state=world_state,
-            legal_actions=legal_actions,
-            world_seed=world_seed,
-        )
-
-        # ── Phase 3: Backpropagate ─────────────────────────────────
-        for node, lv in zip(leaf_nodes, leaf_values):
-            self._mcts._backpropagate(node, lv)
+            leaf_value = self._mcts._batch_evaluate_leaves(
+                root_state_vec=state_vec,
+                nodes=[node],
+                base_value=base_value,
+                state=world_state,
+                legal_actions=legal_actions,
+                world_seed=world_seed,
+            )[0]
+            self._mcts._backpropagate(node, leaf_value)
 
         best_idx = self._mcts._select_action(root, legal_actions, training_mode)
         return best_idx, root

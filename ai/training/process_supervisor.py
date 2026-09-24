@@ -50,6 +50,16 @@ def terminate_process_cleanly(proc: Any, timeout: float = 2.0) -> None:
         if proc.poll() is None:
             if hasattr(proc, "terminate"):
                 proc.terminate()
+                import sys, os, signal
+                if sys.platform != "win32":
+                    try:
+                        pgid = os.getpgid(proc.pid)
+                        # Só mata o grupo se o filho está em grupo diferente do processo atual
+                        # para não enviar SIGTERM ao próprio pytest/shell pai
+                        if pgid != os.getpgid(0):
+                            os.killpg(pgid, signal.SIGTERM)
+                    except (ProcessLookupError, PermissionError, OSError, AttributeError):
+                        pass
             is_alive = True
             try:
                 if hasattr(proc, "wait"):

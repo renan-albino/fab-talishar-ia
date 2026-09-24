@@ -13,6 +13,7 @@ from stats_manager import (
     reset_stats,
     sync_training_matches,
 )
+from stats.db import get_connection
 from ui.helpers import get_cached_stats_data, get_total_training_games
 
 
@@ -20,14 +21,16 @@ from ui.helpers import get_cached_stats_data, get_total_training_games
 def render_stats_leaderboard():
     """Fragmento que renderiza as tabelas, métricas e gráficos de ELO."""
     stats_data = get_cached_stats_data()
-    deck_stats = stats_data.get("deck_stats", {})
     tot_m = stats_data.get("total_matches", 0)
 
     # Obtém o total de partidas globais do motor (ex: 1.217)
     total_training_games = get_total_training_games()
     total_training_games = max(total_training_games, tot_m)
 
-    if deck_stats:
+    with get_connection() as conn:
+        df_dstats = pd.read_sql_query("SELECT * FROM hero_elo ORDER BY elo DESC", conn)
+
+    if not df_dstats.empty:
         col_hdr1, col_hdr2 = st.columns([2, 1])
         with col_hdr1:
             st.markdown("#### 🥇 Ranking de Competência por Deck / Herói")
@@ -54,10 +57,10 @@ def render_stats_leaderboard():
             )
 
         rows = []
-        for d_name, d_info in deck_stats.items():
-            matches = d_info.get("matches", 0)
-            wins = d_info.get("wins", 0)
-            elo = d_info.get("elo", 1200)
+        for _, row in df_dstats.iterrows():
+            matches = row["matches"]
+            wins = row["wins"]
+            elo = row["elo"]
             wr = (wins / matches * 100) if matches > 0 else 0.0
 
             if is_global_scope and scale_factor > 1.0:
@@ -67,19 +70,20 @@ def render_stats_leaderboard():
             else:
                 disp_matches = matches
                 disp_wins = wins
-                disp_losses = d_info.get("losses", matches - wins)
+                disp_losses = row["losses"]
 
             rows.append({
-                "Deck / Bot": d_name,
+                "Deck / Bot": row["deck_name"],
                 "Rating ELO": elo,
                 "Partidas": disp_matches,
                 "Vitórias": disp_wins,
                 "Derrotas": disp_losses,
                 "Win Rate %": round(wr, 1),
             })
-        df_dstats = pd.DataFrame(rows).sort_values(by="Rating ELO", ascending=False)
+        
+        df_display = pd.DataFrame(rows)
         st.dataframe(
-            df_dstats,
+            df_display,
             use_container_width=True,
             column_config={
                 "Win Rate %": st.column_config.NumberColumn(
@@ -93,7 +97,7 @@ def render_stats_leaderboard():
         # Opção de Excluir / Apagar Deck Específico do Ranking
         col_del1, col_del2 = st.columns([3, 1])
         with col_del1:
-            deck_to_del = st.selectbox("🗑️ Selecionar Deck para Limpar do Ranking:", list(deck_stats.keys()), key="del_deck_stat_sel")
+            deck_to_del = st.selectbox("🗑️ Selecionar Deck para Limpar do Ranking:", df_dstats["deck_name"].tolist(), key="del_deck_stat_sel")
         with col_del2:
             st.write("")
             if st.button("❌ Remover Deck do Ranking", use_container_width=True):
@@ -117,10 +121,10 @@ def render_stats_leaderboard():
     col_m1.metric("Partidas Totais (Motor)", f"{total_training_games:,}", "Treino / Auto-Play")
     col_m2.metric("Partidas Ranqueadas (ELO)", f"{tot_m:,}", "Telemetria Estrita")
 
-    human_info = deck_stats.get("👤 Humano (Você)", {})
-    h_m = human_info.get("matches", 0)
-    h_w = human_info.get("wins", 0)
-    h_elo = human_info.get("elo", 1200)
+    human_info = df_dstats[df_dstats["deck_name"] == "👤 Humano (Você)"].iloc[0] if not df_dstats.empty and "👤 Humano (Você)" in df_dstats["deck_name"].values else None
+    h_m = human_info["matches"] if human_info is not None else 0
+    h_w = human_info["wins"] if human_info is not None else 0
+    h_elo = human_info["elo"] if human_info is not None else 1200
     h_wr = (h_w / h_m * 100) if h_m > 0 else 0.0
 
     col_m3.metric("👤 Seu ELO (Humano)", h_elo, f"{h_wr:.1f}% WR ({h_m} jogos)")

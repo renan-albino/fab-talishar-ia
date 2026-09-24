@@ -76,6 +76,17 @@ def handle_block_phase(client, state: dict, turn_num: int, prompt_buttons: list)
         client.send_chat_log(plan_badge, highlight=True, bg_color="#0f172a", text_color="#38bdf8")
         client.log(f"[PLANO DE DEFESA] 🎯 Estratégia: {current_plan.plan_type} - {current_plan.reason}")
 
+    from ai.common.schemas import clean_int_value
+    active_chain = state.get("activeChainLink") or {}
+    opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0))) if isinstance(active_chain, dict) else 0
+    already_blocking = clean_int_value(active_chain.get("totalDefense", 0)) if isinstance(active_chain, dict) else 0
+    eff_opp_power = max(0, opp_power - already_blocking)
+    
+    # Inject into state so defense_pruner sees the reduced power
+    if isinstance(state.get("activeChainLink"), dict):
+        state["activeChainLink"]["totalPower"] = eff_opp_power
+    state["combatChainPower"] = eff_opp_power
+
     chosen_blocks = client.policy_engine.select_defense_blocks(state)
     unblocked = [b for b in chosen_blocks if (b[3], str(b[1])) not in client.declared_blocks_link]
     if unblocked:
@@ -197,6 +208,22 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
                 or "defense reaction" in c_type.lower()
                 or any(k in c_low for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable", "shelter", "take_cover"])
             )
+            is_instant = (
+                c_type in ("I", "INSTANT")
+                or "instant" in c_subtype
+                or "instant" in c_type.lower()
+            )
+            is_ar = (
+                c_type in ("AR", "ATTACK REACTION")
+                or "attack reaction" in c_subtype
+                or "attack reaction" in c_type.lower()
+                or any(k in c_low for k in ["razor_reflex", "ironsong_response", "pummel"])
+            )
+
+            if is_defending and not (is_dr or is_instant):
+                continue
+            if is_attacking and not (is_ar or is_instant):
+                continue
 
             # ── Regra Dominate (CR 7.4.2a, CR 8.3.4b) ──
             # Se o ataque tem Dominate e já houve defesa com carta da mão, NÃO permite jogar Defense Reaction da mão!
@@ -375,7 +402,7 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
                 return True
 
     pass_btn = None
-    for b in prompt_buttons:
+    for b in (prompt_buttons or []):
         cap = str(b.get("caption", "")).lower()
         if "pass" in cap or "ok" in cap or "done" in cap or b.get("mode") in (99, 100, 101):
             pass_btn = b
@@ -507,7 +534,8 @@ def handle_pass_buttons(client, prompt_buttons: list, turn_phase: str) -> bool:
     if prompt_buttons:
         for btn in prompt_buttons:
             cap = str(btn.get("caption", "")).lower()
-            if "pass" in cap or "done" in cap or "ok" in cap or "end" in cap:
+            cap_words = set(cap.split())
+            if "pass" in cap or cap_words & {"done", "ok", "end"} or cap in ("end turn", "pass priority", "end phase"):
                 client.log(f"[AÇÃO JOGADOR {client.player_id}] Clicou '{btn.get('caption')}'")
                 client.send_action(mode=btn.get("mode", 99), button_input=btn.get("buttonInput", ""))
                 time.sleep(0.002)

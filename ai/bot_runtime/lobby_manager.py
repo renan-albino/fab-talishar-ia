@@ -152,26 +152,33 @@ def wait_for_opponent_and_start(client) -> bool:
 def setup_game_room(client) -> bool:
     """Configura e conecta a sala para o bot (seja como Host ou Join)."""
     if client.role == "host":
+        for suffix in ["_game_id.txt", "_p2_ready.txt", "_summary.log"]:
+            stale = f"logs/{client.room_id}{suffix}"
+            try:
+                os.remove(stale)
+            except FileNotFoundError:
+                pass
+        
         target_deck = client.deck_url if client.deck_url else "deck.json"
         
         deck_data = None
         if os.path.exists(target_deck):
             try:
-                with open(target_deck, "r") as f:
+                with open(target_deck, "r", encoding="utf-8") as f:
                     deck_data = json.load(f)
                     client.deck_format = deck_data.get("format", "blitz")
             except Exception:
                 pass
         elif os.path.exists(f"decks/{target_deck}.json"):
             try:
-                with open(f"decks/{target_deck}.json", "r") as f:
+                with open(f"decks/{target_deck}.json", "r", encoding="utf-8") as f:
                     deck_data = json.load(f)
                     client.deck_format = deck_data.get("format", "blitz")
             except Exception:
                 pass
         elif os.path.exists("Talishar/deck.json"):
             try:
-                with open("Talishar/deck.json", "r") as f:
+                with open("Talishar/deck.json", "r", encoding="utf-8") as f:
                     deck_data = json.load(f)
                     client.deck_format = deck_data.get("format", "blitz")
             except Exception:
@@ -200,7 +207,7 @@ def setup_game_room(client) -> bool:
             client.player_id = data.get("playerID", 1)
             client.auth_key = data.get("authKey", "")
             
-            with open(f"logs/{client.room_id}_game_id.txt", "w") as f:
+            with open(f"logs/{client.room_id}_game_id.txt", "w", encoding="utf-8") as f:
                 f.write(client.game_id)
             client.log(f"[HOST SUCESSO] Partida ID #{client.game_id} criada ({client.deck_format.upper()}). AuthKey: {client.auth_key[:8]}...")
             
@@ -211,7 +218,7 @@ def setup_game_room(client) -> bool:
     else:
         id_file = f"logs/{client.room_id}_game_id.txt"
         if os.path.exists(id_file):
-            with open(id_file, "r") as f:
+            with open(id_file, "r", encoding="utf-8") as f:
                 client.game_id = f.read().strip()
         elif str(client.room_id).isdigit():
             client.game_id = str(client.room_id).strip()
@@ -222,7 +229,7 @@ def setup_game_room(client) -> bool:
                 waited += 1
             
             if os.path.exists(id_file):
-                with open(id_file, "r") as f:
+                with open(id_file, "r", encoding="utf-8") as f:
                     client.game_id = f.read().strip()
             else:
                 client.log(f"[ERRO JOIN] Timeout esperando o Host criar a partida.")
@@ -232,21 +239,21 @@ def setup_game_room(client) -> bool:
         deck_data = None
         if os.path.exists(target_deck):
             try:
-                with open(target_deck, "r") as f:
+                with open(target_deck, "r", encoding="utf-8") as f:
                     deck_data = json.load(f)
                     client.deck_format = deck_data.get("format", client.deck_format)
             except Exception:
                 pass
         elif os.path.exists(f"decks/{target_deck}.json"):
             try:
-                with open(f"decks/{target_deck}.json", "r") as f:
+                with open(f"decks/{target_deck}.json", "r", encoding="utf-8") as f:
                     deck_data = json.load(f)
                     client.deck_format = deck_data.get("format", client.deck_format)
             except Exception:
                 pass
         elif os.path.exists("Talishar/deck.json"):
             try:
-                with open("Talishar/deck.json", "r") as f:
+                with open("Talishar/deck.json", "r", encoding="utf-8") as f:
                     deck_data = json.load(f)
                     client.deck_format = deck_data.get("format", client.deck_format)
             except Exception:
@@ -273,7 +280,7 @@ def setup_game_room(client) -> bool:
                             os.path.join(base_root, "Talishar", "Games", str(client.game_id), "GameFile.txt")]:
                     if os.path.exists(gfp):
                         try:
-                            with open(gfp, "r") as gf:
+                            with open(gfp, "r", encoding="utf-8") as gf:
                                 lines = [l.strip() for l in gf.readlines()]
                                 if len(lines) >= 9 and len(lines[8]) > 10:
                                     client.auth_key = lines[8]
@@ -282,7 +289,7 @@ def setup_game_room(client) -> bool:
                             pass
             client.log(f"[JOIN SUCESSO] Entrou na partida #{client.game_id} como Jogador {client.player_id} (Auth: {str(client.auth_key)[:8]}...).")
             
-            with open(f"logs/{client.room_id}_p2_ready.txt", "w") as f:
+            with open(f"logs/{client.room_id}_p2_ready.txt", "w", encoding="utf-8") as f:
                 f.write("ready")
             
             return client.wait_in_lobby_and_start()

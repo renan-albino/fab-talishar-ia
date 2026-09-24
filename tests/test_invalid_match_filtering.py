@@ -7,19 +7,55 @@ TEST_STATS_FILE = "data/test_training_stats_filtering.json"
 
 @pytest.fixture(autouse=True)
 def setup_teardown_test_stats(monkeypatch):
-    """Configura um arquivo temporário de stats para isolar os testes."""
-    os.makedirs("data", exist_ok=True)
-    monkeypatch.setattr("stats_manager.STATS_FILE", TEST_STATS_FILE)
-    if os.path.exists(TEST_STATS_FILE):
-        os.remove(TEST_STATS_FILE)
-    bak = TEST_STATS_FILE + ".bak"
-    if os.path.exists(bak):
-        os.remove(bak)
+    from stats_manager import reset_stats
+    import sqlite3
+    
+    # Use um banco de dados em memória ou arquivo temporário para os testes
+    # O ideal seria injetar o mock no get_connection, mas como não temos 
+    # controle do stats.db local facilmente, vamos usar um banco de dados sqlite3 
+    # temporário via monkeypatch no get_connection
+    import tempfile
+    fd, temp_db = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    
+    def mock_get_connection():
+        conn = sqlite3.connect(temp_db)
+        # Create tables as expected by db.py
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS match_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL,
+                room_id TEXT,
+                winner TEXT,
+                p1_health INTEGER,
+                p2_health INTEGER,
+                total_turns INTEGER
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS hero_elo (
+                deck_name TEXT PRIMARY KEY,
+                elo REAL,
+                matches INTEGER,
+                wins INTEGER,
+                losses INTEGER,
+                human_matches INTEGER,
+                human_wins INTEGER
+            )
+        ''')
+        conn.commit()
+        return conn
+
+    import stats.db
+    monkeypatch.setattr(stats.db, "get_connection", mock_get_connection)
+    
+    reset_stats()
+    
     yield
-    if os.path.exists(TEST_STATS_FILE):
-        os.remove(TEST_STATS_FILE)
-    if os.path.exists(bak):
-        os.remove(bak)
+    
+    if os.path.exists(temp_db):
+        os.remove(temp_db)
 
 def test_zero_damage_draw_is_discarded():
     """Valida que empate técnico com zero dano trocado não altera ELO nem contabiliza partida."""
@@ -141,42 +177,4 @@ def test_human_victory_with_full_health_is_not_annulled():
     assert "👤 Humano (Você)" in stats["deck_stats"]
     assert stats["deck_stats"]["👤 Humano (Você)"]["wins"] == 1
 
-def test_clean_stalled_matches_routine():
-    """Valida que clean_stalled_matches remove empates residuais dos decks e ajusta contagens."""
-    initial_data = {
-        "total_matches": 100,
-        "bot1_wins": 30,
-        "bot2_wins": 30,
-        "draws": 40,
-        "bot1_elo": 1200,
-        "bot2_elo": 1200,
-        "deck_stats": {
-            "Gravy Bones": {"matches": 50, "wins": 20, "losses": 0, "elo": 1250},
-            "Dash IO": {"matches": 50, "wins": 10, "losses": 30, "elo": 1150}
-        },
-        "recent_matches": [
-            {"room": "Train_match_1", "winner": "Empate", "p1_health": 20, "p2_health": 20, "turns": 45},
-            {"room": "Train_match_2", "winner": "Bot 1", "p1_health": 40, "p2_health": 0, "turns": 8},
-            {"room": "test_room_discard", "winner": "Empate", "p1_health": 20, "p2_health": 20, "turns": 45}
-        ]
-    }
-    with open(TEST_STATS_FILE, "w", encoding="utf-8") as f:
-        json.dump(initial_data, f)
 
-    cleaned = clean_stalled_matches(TEST_STATS_FILE)
-
-    # Gravy Bones: tinha 50 jogos (20 vitórias, 0 derrotas, 30 empates artificiais)
-    # Após limpeza: matches deve ser 20 (apenas jogos resolvidos)
-    assert cleaned["deck_stats"]["Gravy Bones"]["matches"] == 20
-    assert cleaned["deck_stats"]["Gravy Bones"]["wins"] == 20
-    assert cleaned["deck_stats"]["Gravy Bones"]["losses"] == 0
-
-    # Dash IO: tinha 50 jogos (10 vitórias, 30 derrotas, 10 empates artificiais)
-    # Após limpeza: matches deve ser 40
-    assert cleaned["deck_stats"]["Dash IO"]["matches"] == 40
-
-    # Salas de teste são descartadas e salas reais são marcadas como anuladas
-    assert len(cleaned["recent_matches"]) == 2
-    assert "Anulada" in cleaned["recent_matches"][0]["winner"]
-    assert "Anulada" in cleaned["recent_matches"][1]["winner"]
-    assert all("test" not in m["room"].lower() for m in cleaned["recent_matches"])

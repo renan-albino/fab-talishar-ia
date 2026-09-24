@@ -6,7 +6,15 @@ para o chat in-game do Talishar.
 """
 
 from typing import Tuple, Dict, Any
-from ai.common import safe_int, safe_list
+
+def safe_int(v, default=0):
+    try:
+        return int(v) if v is not None else default
+    except (ValueError, TypeError):
+        return default
+
+def safe_list(v):
+    return v if isinstance(v, list) else []
 
 def evaluate_board_state(state: Dict[str, Any]) -> float:
     """

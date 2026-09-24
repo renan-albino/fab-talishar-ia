@@ -7,7 +7,7 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 ## 📌 Status Atual dos Marcos de Arquitetura & Testes
 
 - [x] **Modularização dos 9 Monólitos**: Todos os arquivos de lógica de negócio e interface decompostos em pacotes coesos abaixo de 500 linhas (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`).
-- [x] **Governança & ADRs**: ADR-0001 a ADR-0007 documentados em `docs/adr/`, `CONTEXT.md` com diretivas de vocabulário e domínio canônicos.
+- [x] **Governança & ADRs**: ADR-0001 a ADR-0008 documentados em `docs/adr/`, `CONTEXT.md` com diretivas de vocabulário e domínio canônicos.
 - [x] **Regras Oficiais de Combate (CR)**: Phantasm Popping (CR 7.4.4), Dominate (CR 7.4.2a), Overpower (CR 7.4.2b), Piercing (CR 8.5.21) e Intimidate (CR 8.5.8).
 - [x] **Resiliência & Concorrência**: Conversores universais seguros (`safe_int`, `safe_list`, `safe_dict`, `safe_str`), polling adaptativo, eliminação de processos zumbis Unix `<defunct>` e virtual loss simétrico no MCTS.
 - [x] **Ferramentas CLI de Automação**: Utilitários operacionais em `.agents/skills/automated-tasks/scripts/` (`validate_decks.py`, `benchmark_mcts.py`, `healthcheck_talishar.py` e `run_smoke_tests.py`).
@@ -93,7 +93,7 @@ Distribuição das 2.854 Linhas Faltantes (Miss):
 
 ```mermaid
 graph LR
-    A["Estado Atual: 67% (336 testes)"] --> B["Meta 1: ~74% (Passo 3: Heróis)"]
+    A["Estado Atual: 67% (427 testes)"] --> B["Meta 1: ~74% (Passo 3: Heróis)"]
     B --> C["Meta 2: ~78% (Passo 4: Simulador/Decks)"]
     C --> D["Meta 3: ~82% (Passo 5: Treino PyTorch)"]
     D --> E["Meta 4: ~92%+ (Passo 6: UI Streamlit)"]

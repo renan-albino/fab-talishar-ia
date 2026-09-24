@@ -14,7 +14,17 @@ import threading
 from typing import Dict, Any, Optional
 
 from ai.logger import get_logger
-from ai.atomic_io import atomic_json_save, file_lock
+
+import contextlib
+@contextlib.contextmanager
+def file_lock(path, timeout=5.0):
+    try:
+        from filelock import FileLock
+        lock = FileLock(f"{path}.lock", timeout=timeout)
+        with lock:
+            yield
+    except ImportError:
+        yield
 
 logger = get_logger("assimilation")
 
@@ -58,7 +68,8 @@ def get_assimilation_status() -> Dict[str, Any]:
 def clear_assimilation_status():
     """Reseta o status de assimilação para idle."""
     try:
-        atomic_json_save({"status": "idle", "timestamp": time.time()}, STATUS_FILE)
+        with open(STATUS_FILE, "w", encoding="utf-8") as f:
+            json.dump({"status": "idle", "timestamp": time.time()}, f, indent=2)
     except Exception as e:
         logger.warning(f"Erro ao resetar status de assimilação: {e}")
 
@@ -74,6 +85,13 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
 
         dev = get_device()
         buffer = get_global_buffer(SETTINGS.buffer_capacity)
+
+        trajectories_dir = os.path.join(DATA_DIR, "trajectories")
+        if os.path.exists(trajectories_dir):
+            try:
+                buffer.ingest_trajectories(trajectories_dir)
+            except Exception as e:
+                logger.warning(f"[Assimilation] Falha ao ingerir trajetórias: {e}")
 
         if len(buffer) < 8:
             logger.info("[Assimilation] Buffer insuficiente para treino imediato (< 8 amostras).")
@@ -130,6 +148,11 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
         ckpt_path = os.path.join(DATA_DIR, "model_latest.pt")
         with file_lock(ckpt_path, timeout=5.0):
             torch.save(model.state_dict(), ckpt_path)
+            
+            # Save to both paths so bot and orchestrator both see updated weights
+            teacher_ckpt = SETTINGS.teacher_checkpoint
+            os.makedirs(os.path.dirname(teacher_ckpt), exist_ok=True)
+            torch.save(model.state_dict(), teacher_ckpt)
 
         logger.info(f"[Assimilation] ✓ Assimilação concluída! {steps} passos de treino. Loss final: {last_loss:.4f}")
 
@@ -154,27 +177,30 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
                 with open(metrics_path, "r", encoding="utf-8") as mf:
                     mdata = json.load(mf)
                 mdata["samples_collected"] = len(buffer)
-                atomic_json_save(mdata, metrics_path)
+                with open(metrics_path, "w", encoding="utf-8") as f:
+                    json.dump(mdata, f, indent=2)
         except Exception:
             pass
 
-        atomic_json_save({
-            "status": "completed",
-            "room_id": str(room_id),
-            "finished_at": time.time(),
-            "message": f"Partida assimilada com sucesso ({steps} passos, loss: {last_loss:.4f}). Pesos neurais atualizados!",
-            "final_loss": round(last_loss, 4),
-        }, STATUS_FILE)
+        with open(STATUS_FILE, "w", encoding="utf-8") as f:
+            json.dump({
+                "status": "completed",
+                "room_id": str(room_id),
+                "finished_at": time.time(),
+                "message": f"Partida assimilada com sucesso ({steps} passos, loss: {last_loss:.4f}). Pesos neurais atualizados!",
+                "final_loss": round(last_loss, 4),
+            }, f, indent=2)
 
     except Exception as e:
         logger.error(f"[Assimilation] ❌ Falha na assimilação pós-partida: {e}", exc_info=True)
-        atomic_json_save({
-            "status": "error",
-            "room_id": str(room_id),
-            "finished_at": time.time(),
-            "message": f"Erro durante a assimilação: {e}",
-            "final_loss": 0.0,
-        }, STATUS_FILE)
+        with open(STATUS_FILE, "w", encoding="utf-8") as f:
+            json.dump({
+                "status": "error",
+                "room_id": str(room_id),
+                "finished_at": time.time(),
+                "message": f"Erro durante a assimilação: {e}",
+                "final_loss": 0.0,
+            }, f, indent=2)
 
 
 def trigger_human_match_assimilation(room_id: str, bot_player_id: int, winner_id: int, wait: bool = True):
@@ -183,14 +209,15 @@ def trigger_human_match_assimilation(room_id: str, bot_player_id: int, winner_id
     Atualiza o arquivo de status para o Dashboard e executa a assimilação,
     garantindo que o processo não seja finalizado abruptamente antes do término do treino.
     """
-    atomic_json_save({
+    status_data = {
         "status": "assimilating",
         "room_id": str(room_id),
         "started_at": time.time(),
         "message": f"A Rede Neural está assimilando as jogadas da Sala #{room_id} com treino prioritário...",
         "final_loss": 0.0,
-    }, STATUS_FILE)
-
+    }
+    with open(STATUS_FILE, "w", encoding="utf-8") as f:
+        json.dump(status_data, f, indent=2)
     t = threading.Thread(
         target=_run_assimilation_job,
         args=(room_id, bot_player_id, winner_id),

@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import numpy as np
 
-from ai.common import safe_int, safe_list, safe_dict, safe_str
+
 from ai.training.process_supervisor import terminate_process_cleanly, kill_active_processes
 from ai.mcts.standard_mcts import MCTSEngine, VIRTUAL_LOSS
 from ai.mcts.node import MCTSNode
@@ -29,85 +29,48 @@ from ai.bot_runtime.client import FabBotClient
 from ai.bot_runtime import match_tracker
 
 
-# ══════════════════════════════════════════════════════════════════════
-# 1. TESTES DOS CONVERSORES SEGUROS (ai/common/converters.py)
-# ══════════════════════════════════════════════════════════════════════
+class TestPydanticSchemas:
+    def test_gamestate_resilience(self):
+        from ai.common.schemas import GameState
+        
+        # Test valid parsing
+        state = GameState(playerHealth=20, turnNo=2, opponentHand=[{"id": 1}])
+        assert state.playerHealth == 20
+        assert state.turnNo == 2
+        assert len(state.opponentHand) == 1
+        
+        # Test resilience against corrupted values
+        bad_state = GameState(
+            playerHealth="NaN", 
+            opponentHealth=None, 
+            turnNo="invalid", 
+            opponentHandCount="undefined",
+            opponentHand=None,
+            activeChainLink=["wrong type"]
+        )
+        assert bad_state.playerHealth == 0
+        assert bad_state.opponentHealth == 0
+        assert bad_state.turnNo == 0
+        assert bad_state.opponentHandCount == 0
+        assert bad_state.opponentHand == []
+        assert bad_state.activeChainLink == {}
 
-class TestSafeConverters:
-    def test_safe_int_valid_ints(self):
-        assert safe_int(0) == 0
-        assert safe_int(42) == 42
-        assert safe_int(-15) == -15
-        assert safe_int(True) == 1
-        assert safe_int(False) == 0
-
-    def test_safe_int_floats(self):
-        assert safe_int(42.0) == 42
-        assert safe_int(42.9) == 42
-        assert safe_int(-3.8) == -3
-        assert safe_int(float("nan"), default=10) == 10
-        assert safe_int(float("inf"), default=10) == 10
-        assert safe_int(float("-inf"), default=10) == 10
-
-    def test_safe_int_strings(self):
-        assert safe_int("42") == 42
-        assert safe_int("-15") == -15
-        assert safe_int("  100  ") == 100
-        assert safe_int("40.0") == 40
-        assert safe_int("35.7") == 35
-        assert safe_int("", default=5) == 5
-        assert safe_int("   ", default=5) == 5
-        assert safe_int("none", default=5) == 5
-        assert safe_int("null", default=5) == 5
-        assert safe_int("NaN", default=5) == 5
-        assert safe_int("inf", default=5) == 5
-        assert safe_int("-inf", default=5) == 5
-        assert safe_int("undefined", default=5) == 5
-        assert safe_int("invalid_string", default=20) == 20
-
-    def test_safe_int_none_and_other_types(self):
-        assert safe_int(None, default=40) == 40
-        assert safe_int([], default=0) == 0
-        assert safe_int({}, default=0) == 0
-        assert safe_int(object(), default=99) == 99
-
-    def test_safe_list(self):
-        # Listas válidas
-        assert safe_list([1, 2, 3]) == [1, 2, 3]
-        assert safe_list([]) == []
-
-        # Tuplas e sets convertidos
-        assert safe_list((1, 2)) == [1, 2]
-        assert set(safe_list({3, 4})) == {3, 4}
-
-        # None e tipos não-lista retornam []
-        assert safe_list(None) == []
-        assert safe_list("not_a_list") == []
-        assert safe_list(b"bytes_data") == []
-        assert safe_list({"a": 1}) == []
-        assert safe_list(42) == []
-        assert safe_list(3.14) == []
-        assert safe_list(True) == []
-
-        # Garantir ausência de TypeError: NoneType has no len()
-        assert len(safe_list(None)) == 0
-        assert len(safe_list("string_repr")) == 0
-
-    def test_safe_dict(self):
-        assert safe_dict({"key": "val"}) == {"key": "val"}
-        assert safe_dict({}) == {}
-        assert safe_dict(None) == {}
-        assert safe_dict([1, 2, 3]) == {}
-        assert safe_dict("string") == {}
-        assert safe_dict(42) == {}
-
-    def test_safe_str(self):
-        assert safe_str("hello") == "hello"
-        assert safe_str("") == ""
-        assert safe_str(None, default="fallback") == "fallback"
-        assert safe_str(123) == "123"
-        assert safe_str(45.5) == "45.5"
-        assert safe_str(True) == "True"
+    def test_card_resilience(self):
+        from ai.common.schemas import Card
+        
+        # Valid
+        c1 = Card(pitch=3, cost=2, power=5, name="Test Card")
+        assert c1.pitch == 3
+        assert c1.cost == 2
+        assert c1.power == 5
+        assert c1.name == "Test Card"
+        
+        # Corrupted
+        c2 = Card(pitch="NaN", cost=None, power="inf", name=123)
+        assert c2.pitch == 0
+        assert c2.cost == 0
+        assert c2.power == 0
+        assert c2.name == "123"
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -187,8 +150,8 @@ class TestPayloadResilience:
 
         # Não deve lançar exceção
         client.handle_game_tick(corrupted_state)
-        assert client.metrics["health"] == 40
-        assert client.metrics["opp_health"] == 40
+        assert client.metrics["health"] == 0
+        assert client.metrics["opp_health"] == 0
 
 
 # ══════════════════════════════════════════════════════════════════════

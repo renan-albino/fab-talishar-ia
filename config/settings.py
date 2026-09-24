@@ -59,7 +59,7 @@ def _probe_gpu() -> Tuple[bool, float, int, str]:
         try:
             res = subprocess.run(
                 ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, timeout=0.8
+                capture_output=True, text=True, timeout=3.0
             )
             if res.returncode == 0 and res.stdout.strip():
                 line = res.stdout.strip().splitlines()[0]
@@ -67,7 +67,15 @@ def _probe_gpu() -> Tuple[bool, float, int, str]:
                 name = parts[0]
                 vram_mb = float(parts[1]) if len(parts) > 1 else 0.0
                 if vram_mb > 0:
-                    return True, vram_mb / 1000.0, 22, name
+                    try:
+                        import torch
+                        if torch.cuda.is_available():
+                            sm_count = torch.cuda.get_device_properties(0).multi_processor_count
+                        else:
+                            sm_count = 22
+                    except Exception:
+                        sm_count = 22
+                    return True, vram_mb / 1000.0, sm_count, name
         except Exception:
             pass
     try:

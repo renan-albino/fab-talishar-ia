@@ -13,7 +13,6 @@ import json
 import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
-from ai.atomic_io import atomic_json_save
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -22,6 +21,16 @@ METADATA_FILE = os.path.join(DATA_DIR, "equipment_metadata.json")
 
 _METADATA_CACHE: Optional[Dict[str, Any]] = None
 
+import contextlib
+@contextlib.contextmanager
+def file_lock(path, timeout=5.0):
+    try:
+        from filelock import FileLock
+        lock = FileLock(f"{path}.lock", timeout=timeout)
+        with lock:
+            yield
+    except ImportError:
+        yield
 
 def load_equipment_metadata() -> Dict[str, Any]:
     """Carrega os metadados mecânicos dos equipamentos com cache em memória."""
@@ -180,71 +189,73 @@ class EquipmentLearningEngine:
         if not events:
             return self.load_stats()
 
-        stats = dict(self.load_stats())
-        h_clean = str(hero_name or "generic").lower().strip().replace(" ", "_")
-        hero_stats = stats.setdefault(h_clean, {})
+        with file_lock(self.stats_path):
+            stats = dict(self.load_stats())
+            h_clean = str(hero_name or "generic").lower().strip().replace(" ", "_")
+            hero_stats = stats.setdefault(h_clean, {})
 
-        # Agrupa eventos únicos por equipamento por partida para não inflar wins/losses
-        seen_eqs = {}
-        for ev in events:
-            eq_clean = str(ev.eq_name).lower().strip()
-            if eq_clean not in seen_eqs:
-                seen_eqs[eq_clean] = {"activations": 0, "blocks": 0, "eval_deltas": []}
-            if ev.action_type == "ability":
-                seen_eqs[eq_clean]["activations"] += 1
-            elif ev.action_type == "block":
-                seen_eqs[eq_clean]["blocks"] += 1
-            delta = ev.post_eval - ev.pre_eval
-            if delta != 0.0:
-                seen_eqs[eq_clean]["eval_deltas"].append(delta)
+            # Agrupa eventos únicos por equipamento por partida para não inflar wins/losses
+            seen_eqs = {}
+            for ev in events:
+                eq_clean = str(ev.eq_name).lower().strip()
+                if eq_clean not in seen_eqs:
+                    seen_eqs[eq_clean] = {"activations": 0, "blocks": 0, "eval_deltas": []}
+                if ev.action_type == "ability":
+                    seen_eqs[eq_clean]["activations"] += 1
+                elif ev.action_type == "block":
+                    seen_eqs[eq_clean]["blocks"] += 1
+                delta = ev.post_eval - ev.pre_eval
+                if delta != 0.0:
+                    seen_eqs[eq_clean]["eval_deltas"].append(delta)
 
-        for eq_clean, data in seen_eqs.items():
-            eq_stat = hero_stats.setdefault(
-                eq_clean,
-                {
-                    "times_activated": 0,
-                    "times_blocked": 0,
-                    "wins": 0,
-                    "losses": 0,
-                    "win_rate": 0.5,
-                    "learned_multiplier": 1.0,
-                    "avg_eval_gain": 0.0,
-                    "total_matches": 0,
-                },
-            )
+            for eq_clean, data in seen_eqs.items():
+                eq_stat = hero_stats.setdefault(
+                    eq_clean,
+                    {
+                        "times_activated": 0,
+                        "times_blocked": 0,
+                        "wins": 0,
+                        "losses": 0,
+                        "win_rate": 0.5,
+                        "learned_multiplier": 1.0,
+                        "avg_eval_gain": 0.0,
+                        "total_matches": 0,
+                    },
+                )
 
-            eq_stat["times_activated"] += data["activations"]
-            eq_stat["times_blocked"] += data["blocks"]
-            eq_stat["total_matches"] += 1
-            if won:
-                eq_stat["wins"] += 1
-            else:
-                eq_stat["losses"] += 1
+                eq_stat["times_activated"] += data["activations"]
+                eq_stat["times_blocked"] += data["blocks"]
+                eq_stat["total_matches"] += 1
+                if won:
+                    eq_stat["wins"] += 1
+                else:
+                    eq_stat["losses"] += 1
 
-            total_m = eq_stat["wins"] + eq_stat["losses"]
-            if total_m > 0:
-                wr = float(eq_stat["wins"]) / float(total_m)
-                eq_stat["win_rate"] = round(wr, 4)
+                total_m = eq_stat["wins"] + eq_stat["losses"]
+                if total_m > 0:
+                    wr = float(eq_stat["wins"]) / float(total_m)
+                    eq_stat["win_rate"] = round(wr, 4)
 
-                # Avaliação de delta posicional
-                if data["eval_deltas"]:
-                    new_avg = sum(data["eval_deltas"]) / len(data["eval_deltas"])
-                    prev_avg = float(eq_stat.get("avg_eval_gain", 0.0))
-                    eq_stat["avg_eval_gain"] = round((prev_avg * 0.7) + (new_avg * 0.3), 4)
+                    # Avaliação de delta posicional
+                    if data["eval_deltas"]:
+                        new_avg = sum(data["eval_deltas"]) / len(data["eval_deltas"])
+                        prev_avg = float(eq_stat.get("avg_eval_gain", 0.0))
+                        eq_stat["avg_eval_gain"] = round((prev_avg * 0.7) + (new_avg * 0.3), 4)
 
-                # Calibração do multiplicador aprendido:
-                # Com poucas partidas, converge suavemente para baseline.
-                confidence = min(1.0, total_m / 10.0)
-                eval_bonus = max(-0.2, min(0.2, eq_stat.get("avg_eval_gain", 0.0) * 0.05))
-                raw_mult = 1.0 + ((wr - 0.5) * 1.0 * confidence) + (eval_bonus * confidence)
-                eq_stat["learned_multiplier"] = round(max(0.5, min(2.0, raw_mult)), 4)
+                    # Calibração do multiplicador aprendido:
+                    # Com poucas partidas, converge suavemente para baseline.
+                    confidence = min(1.0, total_m / 10.0)
+                    eval_bonus = max(-0.2, min(0.2, eq_stat.get("avg_eval_gain", 0.0) * 0.05))
+                    raw_mult = 1.0 + ((wr - 0.5) * 1.0 * confidence) + (eval_bonus * confidence)
+                    eq_stat["learned_multiplier"] = round(max(0.5, min(2.0, raw_mult)), 4)
 
-        try:
-            atomic_json_save(stats, self.stats_path)
-            self._stats_cache = stats
-            self._cache_mtime = time.time()
-        except Exception:
-            pass
+            try:
+                with open(self.stats_path, "w", encoding="utf-8") as f:
+                    json.dump(stats, f, indent=2)
+                self._stats_cache = stats
+                self._cache_mtime = time.time()
+            except Exception:
+                pass
 
         return stats
 

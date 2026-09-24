@@ -2,7 +2,7 @@ import os
 import json
 from ai.equipment_learning import get_equipment_learning_engine
 from ai.turn_order_learning import get_turn_order_learner
-from ai.common import safe_int, safe_list
+from ai.common.schemas import clean_int_value as safe_int, clean_list_value as safe_list
 
 def track_tick_health_and_damage(client, state: dict, my_h: int, opp_h: int):
     """Atualiza métricas de dano causado e recebido e dispara badge de avaliação no chat."""
@@ -117,7 +117,7 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
 
     # ── Identificação do tipo de partida (Humano vs Bot ou Bot vs Bot) ──
     is_vs_human = (getattr(client, "name", "") == "AIMaster_Bot" or "Human_vs_Bot" in str(client.room_id) or str(client.room_id).isdigit())
-    is_human_victory = is_vs_human and (winner_id == client.player_id)
+    is_human_victory = is_vs_human and winner_id not in (0, client.player_id)
 
     # ── Avaliação de Partida Inválida (Empate 0 Dano ou Bot Inerte / Punching Bag) ──
     p1_init_hp = client.initial_my_health if client.player_id == 1 else (client.initial_opp_health or 40)
@@ -152,7 +152,7 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                         is_invalid_match = True
                         invalid_reason = "Bot Inerte (Travou sem atacar / Punching Bag)"
             else:
-                if (5 <= turn <= 8) and getattr(client, "opp_attacks_count", 0) == 0:
+                if turn >= 5 and getattr(client, "opp_attacks_count", 0) == 0:
                     is_invalid_match = True
                     invalid_reason = "Bot Oponente Inerte (Punching Bag)"
 

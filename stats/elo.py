@@ -23,6 +23,7 @@ def expected_score(rating_a: float, rating_b: float) -> float:
 def calculate_k_factor(
     matches_played: int = 0,
     is_human_p1: bool = False,
+    is_human_p2: bool = False,
     winner_id: int = 0,
     base_k: int = 32,
 ) -> int:
@@ -31,7 +32,7 @@ def calculate_k_factor(
     - Recompensa acelerada de ELO (K=48) quando o bot vence um jogador humano.
     - K dinâmico baseado no volume de partidas para estabilização de rating.
     """
-    if is_human_p1 and winner_id == 2:
+    if (is_human_p1 and winner_id == 2) or (is_human_p2 and winner_id == 1):
         return 48
     if matches_played < 30:
         return base_k
@@ -68,6 +69,8 @@ def calculate_elo_ratings(
 
     new_r1 = round(float(r1) + k * (s1 - e1))
     new_r2 = round(float(r2) + k * (s2 - e2))
+    new_r1 = max(100, round(new_r1))
+    new_r2 = max(100, round(new_r2))
     return new_r1, new_r2
 
 

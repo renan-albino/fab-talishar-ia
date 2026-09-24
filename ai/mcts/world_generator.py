@@ -63,7 +63,10 @@ def generate_worlds(
         if isinstance(opp_hand, list) and len(opp_hand) > 0:
             opp_hand_count = len(opp_hand)
         else:
-            opp_hand_count = int(state.get("opponentHandCount", state.get("theirHandCount", 4)))
+            raw_count = state.get("opponentHandCount")
+            if raw_count is None:
+                raw_count = state.get("theirHandCount", 4)
+            opp_hand_count = int(raw_count) if raw_count is not None else 4
 
     if opp_hand_count == 0:
         return [dict(state)]
@@ -104,15 +107,24 @@ def generate_worlds(
         {"cardNumber": "generic_yellow", "pitch": 2, "power": 3, "defense": 3, "action": 27},
         {"cardNumber": "generic_blue",   "pitch": 3, "power": 2, "defense": 3, "action": 27},
     ]
-    while len(opp_deck_pool) < 9:
+    target_pool_size = max(opp_hand_count, 9)
+    while len(opp_deck_pool) < target_pool_size:
         opp_deck_pool.extend(generic_cards)
 
+    from ai.mcts.state import ImmutableGameState
     worlds = []
     for _ in range(num_worlds):
         sampled = random.sample(opp_deck_pool, min(opp_hand_count, len(opp_deck_pool)))
-        world = dict(state)
-        world["opponentHand"] = sampled
-        world["opponentHandCount"] = len(sampled)
+        
+        updates = {
+            "opponentHand": tuple(sampled),
+            "opponentHandCount": len(sampled)
+        }
+        
+        if isinstance(state, ImmutableGameState):
+            world = state.replace(**updates)
+        else:
+            world = ImmutableGameState(state).replace(**updates)
         worlds.append(world)
 
     return worlds

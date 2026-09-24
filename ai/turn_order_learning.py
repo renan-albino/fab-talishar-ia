@@ -15,7 +15,6 @@ import os
 import json
 import random
 from typing import Dict, Any, Tuple
-from .atomic_io import atomic_json_save
 from .logger import get_logger
 
 logger = get_logger("turn_order_learning")
@@ -58,7 +57,8 @@ class TurnOrderLearner:
     def _save_stats(self) -> None:
         try:
             os.makedirs(os.path.dirname(self.stats_file), exist_ok=True)
-            atomic_json_save(self.stats, self.stats_file)
+            with open(self.stats_file, 'w', encoding='utf-8') as f:
+                json.dump(self.stats, f, indent=4)
         except Exception as e:
             logger.warning(f"Erro ao salvar turn_order_stats.json: {e}")
 

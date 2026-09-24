@@ -8,7 +8,7 @@
     "last_win_rate": 0.405,
     "human_wins": 0,
     "matches_evaluated": 168,
-    "updated_at": 1790076380.1812189
+    "updated_at": 1790218988.7095857
   },
   "betsy": {
     "attack_weight": 1.35,
@@ -19,7 +19,7 @@
     "last_win_rate": 0.702,
     "human_wins": 0,
     "matches_evaluated": 94,
-    "updated_at": 1790076380.160566
+    "updated_at": 1790218988.7094247
   },
   "cindra": {
     "attack_weight": 1.35,
@@ -30,7 +30,7 @@
     "last_win_rate": 0.933,
     "human_wins": 0,
     "matches_evaluated": 120,
-    "updated_at": 1790076380.16058
+    "updated_at": 1790218988.7094328
   },
   "dash_io": {
     "attack_weight": 0.8,
@@ -41,7 +41,7 @@
     "last_win_rate": 0.276,
     "human_wins": 0,
     "matches_evaluated": 170,
-    "updated_at": 1790076380.1810727
+    "updated_at": 1790218988.7094488
   },
   "gravy_bones": {
     "attack_weight": 1.35,
@@ -52,7 +52,7 @@
     "last_win_rate": 0.975,
     "human_wins": 0,
     "matches_evaluated": 80,
-    "updated_at": 1790076380.1810968
+    "updated_at": 1790218988.7094827
   },
   "oscilio_giaf": {
     "attack_weight": 0.8,
@@ -63,7 +63,7 @@
     "last_win_rate": 0.398,
     "human_wins": 0,
     "matches_evaluated": 133,
-    "updated_at": 1790076380.181203
+    "updated_at": 1790218988.7095728
   },
   "hala": {
     "attack_weight": 1.35,
@@ -74,7 +74,7 @@
     "last_win_rate": 0.728,
     "human_wins": 0,
     "matches_evaluated": 92,
-    "updated_at": 1790076380.1811156
+    "updated_at": 1790218988.7094917
   },
   "jarl": {
     "attack_weight": 1.35,
@@ -85,7 +85,7 @@
     "last_win_rate": 0.654,
     "human_wins": 0,
     "matches_evaluated": 52,
-    "updated_at": 1790076380.1811268
+    "updated_at": 1790218988.7095032
   },
   "mario": {
     "attack_weight": 0.8,
@@ -96,7 +96,7 @@
     "last_win_rate": 0.4,
     "human_wins": 0,
     "matches_evaluated": 70,
-    "updated_at": 1790076380.1811826
+    "updated_at": 1790218988.7095182
   },
   "kassai": {
     "attack_weight": 1.024,
@@ -107,7 +107,7 @@
     "last_win_rate": 0.514,
     "human_wins": 0,
     "matches_evaluated": 35,
-    "updated_at": 1790076380.1811392
+    "updated_at": 1790218988.7095096
   },
   "teklovossen": {
     "attack_weight": 0.8,
@@ -118,7 +118,7 @@
     "last_win_rate": 0.023,
     "human_wins": 0,
     "matches_evaluated": 86,
-    "updated_at": 1790076380.1812112
+    "updated_at": 1790218988.709579
   },
   "marlinn": {
     "attack_weight": 0.8,
@@ -129,6 +129,6 @@
     "last_win_rate": 0.263,
     "human_wins": 0,
     "matches_evaluated": 118,
-    "updated_at": 1790076380.181194
+    "updated_at": 1790218988.7095652
   }
 }

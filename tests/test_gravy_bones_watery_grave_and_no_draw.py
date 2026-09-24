@@ -9,13 +9,41 @@ TEST_STATS_FILE = "data/test_gravy_bones_stats.json"
 
 @pytest.fixture(autouse=True)
 def setup_teardown_test_stats(monkeypatch):
-    os.makedirs("data", exist_ok=True)
-    monkeypatch.setattr("stats_manager.STATS_FILE", TEST_STATS_FILE)
-    if os.path.exists(TEST_STATS_FILE):
-        os.remove(TEST_STATS_FILE)
+    from stats_manager import reset_stats
+    import sqlite3
+    import tempfile
+    
+    fd, temp_db = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    
+    def mock_get_connection():
+        conn = sqlite3.connect(temp_db)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS match_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL, room_id TEXT, winner TEXT,
+                p1_health INTEGER, p2_health INTEGER, total_turns INTEGER
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS hero_elo (
+                deck_name TEXT PRIMARY KEY, elo REAL,
+                matches INTEGER, wins INTEGER, losses INTEGER,
+                human_matches INTEGER, human_wins INTEGER
+            )
+        ''')
+        conn.commit()
+        return conn
+
+    import stats.db
+    monkeypatch.setattr(stats.db, "get_connection", mock_get_connection)
+    reset_stats()
+    
     yield
-    if os.path.exists(TEST_STATS_FILE):
-        os.remove(TEST_STATS_FILE)
+    
+    if os.path.exists(temp_db):
+        os.remove(temp_db)
 
 
 def test_gravy_bones_ally_stock_tracking():

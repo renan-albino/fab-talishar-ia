@@ -10,9 +10,6 @@ from ui.helpers import (
     get_cached_services_status,
     get_cached_saved_decks,
 )
-import importlib
-import ui.tabs.tab_analytics
-importlib.reload(ui.tabs.tab_analytics)
 from ui.tabs import (
     render_tab_play,
     render_tab_arena,
@@ -55,7 +52,7 @@ with col_title3:
 # Carrega decks salvos (com cache)
 saved_decks = get_cached_saved_decks()
 deck_options = {
-    f"{d.get('name', d.get('slug'))} ({str(d.get('format', 'blitz')).upper()} - {d.get('total_cards', 0)} cartas)": d.get("slug")
+    f"{d.get('name', d.get('slug'))} [{d.get('slug', '')}] ({str(d.get('format', 'blitz')).upper()} - {d.get('total_cards', 0)} cartas)": d.get("slug")
     for d in saved_decks
 }
 

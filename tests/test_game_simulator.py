@@ -1,7 +1,8 @@
 import pytest
-from ai.game_simulator import GameSimulator, _shallow_clone_state
+from ai.game_simulator import GameSimulator
+from ai.mcts.state import ImmutableGameState
 
-def test_shallow_clone_state_isolation():
+def test_immutable_state_isolation():
     original_state = {
         "playerHealth": 20,
         "playerResources": [2, 0],
@@ -13,19 +14,23 @@ def test_shallow_clone_state_isolation():
         "activeChainLink": {"power": 4}
     }
     
-    cloned = _shallow_clone_state(original_state)
+    cloned = ImmutableGameState(original_state)
     
-    # Mutate cloned state
-    cloned["playerHealth"] = 15
-    cloned["playerHand"].append({"cardNumber": "throttle_blue"})
-    cloned["playerResources"][0] = 5
-    cloned["activeChainLink"]["power"] = 8
+    # Mutate state via replace
+    updated = cloned.replace(
+        playerHealth=15,
+        playerResources=[5, 0],
+        activeChainLink={"power": 8}
+    )
     
-    # Original must remain untouched
+    # Original dict must remain untouched
     assert original_state["playerHealth"] == 20
-    assert len(original_state["playerHand"]) == 1
     assert original_state["playerResources"][0] == 2
     assert original_state["activeChainLink"]["power"] == 4
+    
+    # Updated must reflect changes
+    assert updated["playerHealth"] == 15
+    assert updated["playerResources"][0] == 5
 
 def test_extract_card_meta_pitches_and_power():
     blue_card = {"cardNumber": "throttle_blue", "power": 4}
@@ -150,18 +155,19 @@ def test_extract_card_meta_from_db_and_semantics():
     assert meta_absent["power"] == 0
     assert meta_absent["defense"] == 3
 
-def test_shallow_clone_state_card_dict_mutation_isolation():
+def test_immutable_state_card_dict_mutation_isolation():
     original_state = {
         "playerHealth": 20,
         "playerHand": [{"cardNumber": "zero_to_sixty_red", "custom_tag": "original"}],
         "activeChainLink": {"power": 4, "metadata": {"origin": "active"}}
     }
-    cloned = _shallow_clone_state(original_state)
-    cloned["playerHand"][0]["custom_tag"] = "mutated"
-    cloned["playerHand"][0]["new_field"] = 999
-
-    assert original_state["playerHand"][0]["custom_tag"] == "original"
-    assert "new_field" not in original_state["playerHand"][0]
+    cloned = ImmutableGameState(original_state)
+    
+    # In ImmutableGameState, nested dicts are also immutable
+    assert cloned["playerHand"][0]["custom_tag"] == "original"
+    
+    with pytest.raises((TypeError, AttributeError)):
+        cloned["playerHand"][0]["custom_tag"] = "mutated"
 
 def test_simulate_attack_duplicate_hand_cards_pitch():
     # Hand with two identical throttle_blue cards (cost 2, pitch 3)

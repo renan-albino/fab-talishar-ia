@@ -121,11 +121,11 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 
 | Módulo | Responsabilidade Principal |
 | :--- | :--- |
-| [`ai/model.py`](ai/model.py) | Rede Neural Transformer Dual-Head (`FaBCardTransformerNetwork`) com Self/Cross-Attention e 800 entradas de estado. |
+| [`ai/model.py`](ai/model.py) | Rede Neural Transformer Dual-Head (`FaBCardTransformerNetwork`) com Self/Cross-Attention e 832 dimensões de estado. |
 | [`ai/policy/`](ai/policy/) & [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tático unificado modular (`constants`, `card_evaluator`, `attack_pruner`, `defense_pruner`, `pitch_pruner`, `arsenal_pruner`, `engine`). Alterna dinamicamente entre **ISMCTS** (mão oculta) e **MCTS clássico** (informação completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl`, quantifica ameaças On-Hit e resolve defesa por knapsack de breakpoint com fachada raiz retrocompatível. |
-| [`ai/mcts/`](ai/mcts/) & [`ai/mcts.py`](ai/mcts.py) | Motores `MCTSEngine` e `ISMCTSEngine` decompostos (`node`, `standard_mcts`, `world_generator`, `ismcts`). Amostragem de mundos (*Deck-Aware World Sampling*) e busca paralela multithread com `ThreadPoolExecutor`. |
+| [`ai/mcts/`](ai/mcts/) | Motores `MCTSEngine` e `ISMCTSEngine` decompostos (`node`, `standard_mcts`, `world_generator`, `ismcts`). Amostragem de mundos (*Deck-Aware World Sampling*) e busca paralela multithread com `ThreadPoolExecutor`. |
 | [`ai/bot_runtime/`](ai/bot_runtime/) & [`bot_client.py`](bot_client.py) | Runtime modular do bot (`lobby_manager`, `match_tracker`, `choice_handler`, `phase_decider`, `client`). Gerencia ciclo de vida de salas, anti-loop heurístico, tratamento de modais e modulação de fases de combate. |
-| [`ai/training/`](ai/training/) & [`ai/trainer.py`](ai/trainer.py) | Orquestrador de self-play e treino GPU decomposto (`matchup_engine`, `process_supervisor`, `orchestrator`). Distilação Assimétrica contra $\pi_{\text{MCTS}}$, Prioritized Experience Replay (PER), AMP FP16 e prioridade `nice 10`. |
+| [`ai/training/`](ai/training/) | Orquestrador de self-play e treino GPU decomposto (`matchup_engine`, `process_supervisor`, `orchestrator`). Distilação Assimétrica contra $\pi_{\text{MCTS}}$, Prioritized Experience Replay (PER), AMP FP16 e prioridade `nice 10`. |
 | [`deck_manager/`](deck_manager/) & [`deck_parser.py`](deck_parser.py) | Pacote desacoplado de baralhos (`slugifier`, `parser`, `validator`, `repository`). Validação estrita de formatos (Blitz/CC), limites de cópias, inventário de equipamentos e persistência atômica. |
 | [`stats/`](stats/) & [`stats_manager.py`](stats_manager.py) | Sistema de métricas e ranking (`elo`, `deck_names`, `storage`, `sync`). Cálculo dinâmico de K-factor, consolidação canônica de decks e sincronização com proteção de locks atômicos. |
 | [`ui/`](ui/) & [`dashboard.py`](dashboard.py) | Interface web Streamlit modular (`ui/helpers.py` e `ui/tabs/` com 7 abas dedicadas: Play, Arena, Treino, Torneios, Decks, Analytics e ISMCTS). |
@@ -199,7 +199,7 @@ Na aba **"⚡ Treinamento com GPU (Deep RL)"** do Dashboard, a IA adapta automat
 
 ## ⚔️ Resumo das Podas Táticas & Regras Oficiais FaB (CR)
 
-Para navegar a alta complexidade tática de Flesh and Blood e eliminar a explosão combinatória na busca MCTS/ISMCTS sem violar as regras oficiais (**Comprehensive Rules - CR** e **Tournament Rules - TR**), o motor [`ai/policy/`](ai/policy/) implementa **13 Podas Táticas e Regras Oficiais**.
+Para navegar a alta complexidade tática de Flesh and Blood e eliminar a explosão combinatória na busca MCTS/ISMCTS sem violar as regras oficiais (**Comprehensive Rules - CR** e **Tournament Rules - TR**), o motor [`ai/policy/`](ai/policy/) implementa **14 Podas Táticas e Regras Oficiais**.
 
 > [!TIP]
 > 📖 **Documentação Técnica Completa**: Consulte o guia aprofundado em [**`docs/tactical_rules.md`**](docs/tactical_rules.md) para a formulação matemática rigorosa, regras oficiais CR/TR, algoritmos de breakpoint (knapsack) e exemplos práticos de cada poda.
@@ -415,13 +415,12 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 │   ├── sync_and_clean.sh     # Automação de limpeza, exportação de templates e pré-commit
 │   ├── extract_equipment_metadata.py # Extração semântica de equipamentos
 │   ├── extract_ability_costs.py # Extração de custos de ativação
-│   ├── extract_card_db.py    # Extração de banco de dados de cartas
 │   ├── analyze_ismcts.py     # Analisador local ISMCTS (--dry-run sem servidor)
 │   ├── prepare_environment.sh # Script shell de setup automático
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
 │   ├── manage_state.py       # Gestão de checkpoints compactos e releases no GitHub
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 377 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 427 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -441,6 +440,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 │   └── training_metrics.json # Métricas de evolução, loss e épocas da rede neural
 ├── logs/                     # Logs detalhados de partidas e telemetria ISMCTS
 ├── pytest.ini                # Configuração do pytest isolando pastas do Talishar e venv
+├── extract_card_db.py        # Extração de banco de dados de cartas
 ├── bot_client.py             # Fachada retrocompatível para ai.bot_runtime.client
 ├── dashboard.py              # Orquestrador enxuto da interface Streamlit
 ├── frontend_manager.py       # Daemon de conexão automática do bot em novas salas
@@ -484,7 +484,7 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 * **Node 24 Moderno:** Forçado via `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'`, eliminando avisos de depreciação.
 * **Validação Sintática Total:** `python -m py_compile *.py ai/*.py scripts/*.py tests/*.py`.
 * **Simulação Dry-Run de ISMCTS:** Executa `python scripts/analyze_ismcts.py --dry-run` sem necessidade de servidor externo.
-* **Suíte de Testes Unitários de Regras:** Executa `python tests/test_arsenal_pruning.py` para validar a poda estrita de Arsenal (CR 3.1.5) e prioridades de Ranger.
+* **Suíte de Testes Unitários de Regras:** Executa `pytest tests/ -v --cov=ai/` para validar a poda estrita de Arsenal (CR 3.1.5) e prioridades de Ranger.
 * **Verificação de Templates:** Garante que `setup_templates/` está 100% sincronizado com modificações locais do frontend e backend.
 * **Compilação do Frontend Vite:** Validação completa de compilação do React no Node 22 com `npx vite build`.
 
@@ -524,8 +524,8 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Notificações Visuais de Assimilação em Tempo Real** | Ampulheta animada CSS e aviso de status na aba de Duelo Humano (`tab_play.py`) com injeção de logs estilizados no chat do Talishar durante a assimilação |
 
 ### 📋 Pendente
-
  
+1. **Suporte a Torneios Suíços Completos**: Integração de chaves suíças automatizadas com persistência no `stats/`.
 2. **Modelagem de Matchups**: Fine-tuning da rede para arquétipos específicos do meta competitivo.
 
 ---

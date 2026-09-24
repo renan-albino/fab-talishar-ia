@@ -28,6 +28,12 @@ from .arsenal_pruner import select_arsenal_card
 class PolicyEngine:
     """Motor de Decisão Híbrido (ISMCTS / MCTS + Rede Neural Policy-Value + Heurísticas de FaB)."""
 
+    @property
+    def cards_db(self) -> dict:
+        """Expõe o banco de cartas para módulos consumidores do bot runtime."""
+        from .constants import _get_cards_db
+        return _get_cards_db()
+
     def __init__(
         self,
         hero_name: str = "generic",

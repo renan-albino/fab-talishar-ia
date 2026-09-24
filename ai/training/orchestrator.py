@@ -207,7 +207,10 @@ class GPUTrainingOrchestrator:
         cfg = self.config
         device_str = cfg.get("device", SETTINGS.device)
         device = torch.device(device_str)
-        self.model, _ = create_model(device=str(device))
+        self.model, _ = create_model(
+            checkpoint_path=SETTINGS.teacher_checkpoint,
+            device=str(device)
+        )
 
         learning_rate = float(cfg.get("learning_rate", SETTINGS.learning_rate))
         optimizer = torch.optim.AdamW(
@@ -261,77 +264,112 @@ class GPUTrainingOrchestrator:
             bot_env = os.environ.copy()
             bot_env["TALISHAR_SKIP_GPU_PROBE"] = "1"
 
-            for _ in range(num_workers):
+            if cfg.get("headless"):
+                from ai.training.headless_env import HeadlessSelfPlayLoop
+                import concurrent.futures
+                
+                headless_env = HeadlessSelfPlayLoop(self.model, mcts_sims=mcts_sims_val, device=bot_device)
+                futures = []
+                with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+                    for _ in range(num_workers):
+                        if not self.is_running:
+                            break
+                        d1, d2 = self._next_deck_pair(decks_pool)
+                        room_id = f"Train_{uuid.uuid4().hex[:8]}"
+                        batch_rooms.append((room_id, d1, d2))
+                        futures.append(executor.submit(headless_env.play_game, d1, d2))
+                    
+                    if batch_rooms:
+                        r0 = batch_rooms[0]
+                        extra_label = f" (+{len(batch_rooms)-1} partidas)" if len(batch_rooms) > 1 else ""
+                        self.stats["active_matchup"] = f"{r0[1]} vs {r0[2]}{extra_label} (Headless)"
+                    
+                    # Espera a conclusão
+                    for future in concurrent.futures.as_completed(futures):
+                        try:
+                            traj, winner = future.result(timeout=SETTINGS.game_timeout_seconds)
+                            buffer.ingest_from_memory([(traj, winner)])
+                        except Exception as e:
+                            print(f"[Treinador] Erro no headless worker: {e}")
+                
+                num_finished = len(futures)
+                self.stats["total_games"] += num_finished
+                games_since_save += num_finished
+
+            else:
+                for _ in range(num_workers):
+                    if not self.is_running:
+                        break
+                    d1, d2 = self._next_deck_pair(decks_pool)
+                    room_id = f"Train_{uuid.uuid4().hex[:8]}"
+                    p1 = subprocess.Popen(
+                        [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
+                         "--room", room_id, "--deck", f"decks/{d1}.json",
+                         "--role", "host",  "--name", "Bot1",
+                         "--mcts-sims", str(mcts_sims_val),
+                         "--device", str(bot_device),
+                         "--buffer-capacity", str(buffer_cap),
+                         "--epoch-ratio", str(epoch_ratio),
+                         "--ismcts-concurrency", ismcts_concurrency_val],
+                        cwd=BASE_DIR,
+                        env=bot_env,
+                        stdout=subprocess.DEVNULL,
+                        stderr=open("logs/bot_client_err.log", "a"),
+                        preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
+                    )
+                    with self._proc_lock:
+                        self._active_procs.append((p1, None))
+                    time.sleep(0.2)
+                    p2 = subprocess.Popen(
+                        [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
+                         "--room", room_id, "--deck", f"decks/{d2}.json",
+                         "--role", "join",  "--name", "Bot2",
+                         "--mcts-sims", str(mcts_sims_val),
+                         "--device", str(bot_device),
+                         "--buffer-capacity", str(buffer_cap),
+                         "--epoch-ratio", str(epoch_ratio),
+                         "--ismcts-concurrency", ismcts_concurrency_val],
+                        cwd=BASE_DIR,
+                        env=bot_env,
+                        stdout=subprocess.DEVNULL,
+                        stderr=open("logs/bot_client_err.log", "a"),
+                        preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
+                    )
+                    with self._proc_lock:
+                        self._active_procs[-1] = (p1, p2)
+                    batch_rooms.append((room_id, d1, d2))
+                    # Espaçamento suave para não sobrecarregar o Apache/PHP
+                    time.sleep(0.3)
+    
                 if not self.is_running:
+                    self._kill_active_processes()
                     break
-                d1, d2 = self._next_deck_pair(decks_pool)
-                room_id = f"Train_{uuid.uuid4().hex[:8]}"
-                p1 = subprocess.Popen(
-                    [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
-                     "--room", room_id, "--deck", f"decks/{d1}.json",
-                     "--role", "host",  "--name", "Bot1",
-                     "--mcts-sims", str(mcts_sims_val),
-                     "--device", str(bot_device),
-                     "--buffer-capacity", str(buffer_cap),
-                     "--epoch-ratio", str(epoch_ratio),
-                     "--ismcts-concurrency", ismcts_concurrency_val],
-                    cwd=BASE_DIR,
-                    env=bot_env,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
+    
+                if batch_rooms:
+                    r0 = batch_rooms[0]
+                    extra_label = f" (+{len(batch_rooms)-1} partidas)" if len(batch_rooms) > 1 else ""
+                    self.stats["active_matchup"] = f"{r0[1]} vs {r0[2]}{extra_label}"
+    
+                # ── 2. Aguardar término das partidas (com timeout) ──────
+                timeout = SETTINGS.game_timeout_seconds
+                wait_for_processes(
+                    self._active_procs,
+                    timeout=timeout,
+                    is_running_check=lambda: self.is_running,
+                    check_interval=0.3,
+                    proc_lock=self._proc_lock,
                 )
-                time.sleep(0.2)
-                p2 = subprocess.Popen(
-                    [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
-                     "--room", room_id, "--deck", f"decks/{d2}.json",
-                     "--role", "join",  "--name", "Bot2",
-                     "--mcts-sims", str(mcts_sims_val),
-                     "--device", str(bot_device),
-                     "--buffer-capacity", str(buffer_cap),
-                     "--epoch-ratio", str(epoch_ratio),
-                     "--ismcts-concurrency", ismcts_concurrency_val],
-                    cwd=BASE_DIR,
-                    env=bot_env,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
-                )
-                with self._proc_lock:
-                    self._active_procs.append((p1, p2))
-                batch_rooms.append((room_id, d1, d2))
-                # Espaçamento suave para não sobrecarregar o Apache/PHP
-                time.sleep(0.3)
-
-            if not self.is_running:
+    
+                if not self.is_running:
+                    self._kill_active_processes()
+                    break
+    
+                # Garante que nenhum processo deste lote continue vivo
+                num_finished = len(self._active_procs)
                 self._kill_active_processes()
-                break
-
-            if batch_rooms:
-                r0 = batch_rooms[0]
-                extra_label = f" (+{len(batch_rooms)-1} partidas)" if len(batch_rooms) > 1 else ""
-                self.stats["active_matchup"] = f"{r0[1]} vs {r0[2]}{extra_label}"
-
-            # ── 2. Aguardar término das partidas (com timeout) ──────
-            timeout = SETTINGS.game_timeout_seconds
-            wait_for_processes(
-                self._active_procs,
-                timeout=timeout,
-                is_running_check=lambda: self.is_running,
-                check_interval=0.3,
-                proc_lock=self._proc_lock,
-            )
-
-            if not self.is_running:
-                self._kill_active_processes()
-                break
-
-            # Garante que nenhum processo deste lote continue vivo
-            num_finished = len(self._active_procs)
-            self._kill_active_processes()
-
-            self.stats["total_games"] += num_finished
-            games_since_save += num_finished
+    
+                self.stats["total_games"] += num_finished
+                games_since_save += num_finished
 
             # ── 3. Atualizar ELO com resultados das partidas ────────
             for room_id, d1_slug, d2_slug in batch_rooms:
@@ -475,7 +513,7 @@ class GPUTrainingOrchestrator:
     @staticmethod
     def _get_all_decks() -> List[str]:
         try:
-            from deck_parser import list_saved_decks
+            from deck_manager.repository import list_saved_decks
             return [d["slug"] for d in list_saved_decks()]
         except Exception:
             return []
@@ -514,3 +552,39 @@ class GPUTrainingOrchestrator:
         torch.save(model.state_dict(), versioned)
         buffer.save()
         print(f"[Treinador] 💾 Checkpoint salvo: {SETTINGS.teacher_checkpoint}")
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="GPUTrainingOrchestrator")
+    parser.add_argument("--headless", action="store_true", help="Run headless in-memory self-play loop bypassing Talishar API")
+    args = parser.parse_args()
+    
+    # Hardware Pre-flight Check
+    # (Usamos vram_gb * 1024 para obter vram_mb)
+    vram_mb = SETTINGS.vram_gb * 1024
+    sm_count = SETTINGS.sm_count
+    
+    # Exemplo: simulations * num_workers * 1.5MB
+    sims = SETTINGS.mcts_simulations
+    workers = SETTINGS.num_workers
+    footprint_mb = sims * workers * 1.5
+    
+    print(f"[Pre-flight] Detalhes GPU: {vram_mb:.0f}MB VRAM | {sm_count} SMs")
+    print(f"[Pre-flight] Footprint estimado: {footprint_mb:.0f}MB VRAM")
+    
+    if footprint_mb > vram_mb:
+        print("[Pre-flight] 🚨 AVISO: Footprint estimado excede a VRAM disponível. Abortando treinamento para evitar OOM.")
+        sys.exit(1)
+    
+    print("[Pre-flight] Hardware Check aprovado. Iniciando Orquestrador...")
+    
+    orchestrator = GPUTrainingOrchestrator()
+    orchestrator.start(custom_config={"headless": args.headless})
+    
+    try:
+        while orchestrator.is_running:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        orchestrator.stop()
+        print("Treinamento finalizado.")

@@ -6,7 +6,7 @@ Nó da árvore MCTS para busca AlphaZero / PUCT.
 
 import math
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 
 class MCTSNode:
@@ -29,7 +29,7 @@ class MCTSNode:
 
     __slots__ = (
         "prior", "visit_count", "value_sum", "virtual_loss",
-        "children", "pending", "is_expanded", "parent", "action_id", "action_name", "_lock"
+        "children", "pending", "is_expanded", "parent", "action_id", "action_name", "state"
     )
 
     def __init__(
@@ -38,6 +38,7 @@ class MCTSNode:
         parent: Optional["MCTSNode"] = None,
         action_id: int = 0,
         action_name: str = "",
+        state: Optional[Any] = None,
     ):
         self.prior        = float(prior)
         self.visit_count  = 0
@@ -49,7 +50,7 @@ class MCTSNode:
         self.parent       = parent
         self.action_id    = action_id
         self.action_name  = action_name
-        self._lock        = threading.Lock()
+        self.state        = state
 
     @property
     def q_value(self) -> float:
@@ -60,12 +61,8 @@ class MCTSNode:
 
     def ucb_score(self, c_puct: float, parent_visit_count: int) -> float:
         """PUCT(s,a) = Q(s,a) + c_puct × P(s,a) × √N(s) / (1 + N(s,a))"""
-        u = (
-            c_puct
-            * self.prior
-            * math.sqrt(max(parent_visit_count, 1))
-            / (1.0 + self.visit_count)
-        )
+        eff_n = self.visit_count + self.virtual_loss
+        u = c_puct * self.prior * math.sqrt(max(parent_visit_count, 1)) / (1.0 + eff_n)
         return self.q_value + u
 
     def __repr__(self) -> str:
