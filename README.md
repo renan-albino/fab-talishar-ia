@@ -375,18 +375,24 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 
 ---
 
-### 8. Validador Pré-Push & CI Local (`./scripts/verify_ci.sh`)
+### 8. Validador Pré-Push & CI Local Incremental (`./scripts/verify_ci.sh`)
 
 O Git Hook `pre-push` é executado automaticamente a cada `git push` para garantir que falhas nunca cheguem ao repositório remoto ou quebrem o GitHub Actions. Ele executa:
 1. **Sintaxe Completa Python** (`compileall`).
 2. **Dry-Run do ISMCTS** (`scripts/analyze_ismcts.py --dry-run`).
-3. **Execução Completa da Suíte de Testes** (`pytest tests/`, 414 testes).
+3. **Execução da Suíte de Testes** (`pytest tests/`, 414 testes) [Incremental: pula se apenas documentação foi alterada].
 4. **Verificação de Sincronização dos Templates** (`prepare_environment.py --export-templates` & diff).
-5. **Build de Produção do Frontend Vite** (`npx vite build`).
+5. **Build de Produção do Frontend Vite** (`npx vite build`) [Incremental: pula se não houve alterações no frontend].
 
-Você pode rodar a validação completa manualmente a qualquer momento:
+A validação inteligente detecta os arquivos modificados frente ao upstream remoto, economizando ~18 segundos ao evitar compilações desnecessárias do frontend Vite quando nenhum arquivo de frontend foi tocado.
+
+Você pode rodar a validação manualmente ou forçar todas as etapas:
 ```bash
+# Modo incremental inteligente (padrão)
 ./scripts/verify_ci.sh
+
+# Modo completo forçado (executa todas as 5 etapas)
+./scripts/verify_ci.sh --force
 ```
 
 ---
@@ -402,6 +408,15 @@ Para manter a compatibilidade quando os repositórios oficiais do Talishar (Back
 ./venv/bin/python scripts/prepare_environment.py --update-upstream
 ```
 Toda transição de versão é registrada automaticamente com os hashes de commit (`from_commit` ➔ `to_commit`), contagem de novos commits, diffs e arquivos principais alterados no documento [**`docs/talishar_upstream_changelog.md`**](docs/talishar_upstream_changelog.md).
+
+---
+
+### 10. Busca Rápida no Repositório & Anti-Grep Cego (`scripts/fast_search.py`)
+
+Para evitar travamento de processos e estouro de buffer causados por buscas recursivas cegas na raiz (`grep -r .`) sobre diretórios gigantescos (`node_modules/`, `venv/`, `Talishar/Games/`, `build/`, `logs/`, `data/`):
+- **1ª Escolha (Instantâneo):** `git grep -n "termo"` (pesquisa apenas arquivos versionados).
+- **2ª Escolha (Com poda de pastas pesadas):** `./venv/bin/python scripts/fast_search.py "termo" [pasta]` (ignora automaticamente pastas pesadas e arquivos binários).
+- **3ª Escolha (Direcionado):** `grep -rn "termo" ai/ tests/ scripts/ deck_manager/ stats/ ui/`.
 
 ---
 

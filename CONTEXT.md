@@ -168,8 +168,10 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Instalador manual, Setup script disperso.
 - **Pre-Commit Verification & Privacy Guard (`scripts/sync_and_clean.sh`)**: Hook pré-commit que valida sincronização de templates, compilação do frontend Vite (`npx vite build`) e sintaxe Python, bloqueando vazamento de caminhos pessoais.
   - _Avoid_: Script de git simples, Limpador de logs.
-- **Pré-Push CI Validator (`scripts/verify_ci.sh` & `.git/hooks/pre-push`)**: Validador executado automaticamente antes de cada `git push` que replica 100% da esteira do GitHub Actions (414 testes no Pytest, dry-run do ISMCTS, diff de templates e Vite build), bloqueando commits quebrados antes do envio remoto.
-  - _Avoid_: Validação manual remota, Bypass cego de testes, Push sem verificação.
+- **Pré-Push CI Validator (`scripts/verify_ci.sh` & `.git/hooks/pre-push`)**: Validador executado automaticamente antes de cada `git push` que replica 100% da esteira do GitHub Actions (414 testes no Pytest, dry-run do ISMCTS, diff de templates e Vite build). Opera em modo incremental inteligente por padrão, pulando compilação de frontend e testes de código quando arquivos correspondentes não foram alterados, com suporte a `--force`.
+  - _Avoid_: Validação manual remota, Bypass cego de testes, Push sem verificação, Recompilação desnecessária do Vite.
+- **Fast Search & Anti-Blind-Grep (`scripts/fast_search.py` & `.agents/rules/search_guidelines.md`)**: Ferramenta e diretiva obrigatória para agentes de IA para busca de padrões com poda automática de diretórios pesados (`node_modules/`, `venv/`, `Talishar/Games/`, `build/`, `logs/`, `data/`), priorizando `git grep -n` e prevenindo travamentos de processo.
+  - _Avoid_: Grep cego na raiz (`grep -r .`), Busca sem exclusão, Varredura recursiva de node_modules/venv.
 - **Upstream Sincronizador & Changelog (`scripts/prepare_environment.py --update-upstream` & `docs/talishar_upstream_changelog.md`)**: Sistema de atualização automatizada que sincroniza Talishar e Talishar-FE com o upstream oficial, reaplica patches customizados de IA, reindexa o banco de cartas e registra a transição de versões e commits em markdown para os agentes.
   - _Avoid_: Git pull manual cego, Sobrescrita acidental de patches, Upstream drift.
 - **Frontend Ads Proxy / BannerUnit Mock (`setup_templates/frontend/bannerUnit`)**: Mock headless do módulo de anúncios do Talishar-FE (`AdUnit.tsx` e `AdRailLayout.tsx`) para permitir compilações limpas e offline do frontend.

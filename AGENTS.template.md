@@ -30,6 +30,12 @@ Single-context layout: one `CONTEXT.md` at the repo root, ADRs in `docs/adr/`. S
    - Mantenha contadores e métricas (quantidade de testes unitários, heróis suportados, cartas no banco) 100% alinhados com o estado real do código.
    - Se introduzir novos conceitos arquiteturais, registre-os imediatamente em `CONTEXT.md`.
    - Se alterar frontend ou backend, exporte os templates (`prepare_environment.py --export-templates`) e valide que não há drift em `setup_templates/`.
+8. **Proibido Grep Cego na Raiz (`grep -r .`):** Nunca execute buscas recursivas a partir da raiz sem exclusão de diretórios (`grep -rn "termo" .`). Pastas gigantescas (`node_modules/`, `venv/`, `Talishar/Games/`, `build/`, `logs/`, `data/`) causam travamento de processos e estouro de buffer.
+   - **SEMPRE utilize:**
+     - **`git grep -n "termo"`**: Método prioritário ultra-rápido restrito a arquivos versionados.
+     - **`./venv/bin/python scripts/fast_search.py "termo" [pasta]`**: Script otimizado com poda automática de pastas pesadas.
+     - **Grep direto no subpacote**: `grep -rn "termo" ai/ tests/ scripts/ deck_manager/ stats/ ui/`.
+     - **Grep com exclusão obrigatória**: `grep -rn --exclude-dir={node_modules,venv,Talishar,Talishar-FE,logs,data,build,dist,.git,__pycache__} "termo" .`.
 
 ### Multi-Agent Workflow
 
