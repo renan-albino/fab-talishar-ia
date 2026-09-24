@@ -130,6 +130,12 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Partida desbalanceada comum, Vitória rápida legítima.
 - **Turn Planner & Survival Trigger (`ai/hero_strategies/turn_planner.py`)**: Módulo tático que formula o `TurnPlan` (modo ofensivo, pivot ou sobrevivência estrita quando dano letal é iminente).
   - _Avoid_: Planejador genérico de turno, Algoritmo ofensivo padrão.
+- **Opponent Tracking (`ai/policy/opponent_tracker.py`)**: Rastreamento da média ponderada de cartas jogadas e dano por turno do adversário para exploração tática de ineficiência de mão.
+  - _Avoid_: Leitura de mente do oponente, Rastreamento cego de cartas.
+- **Risk Profile PUCT Scaling (`ai/policy/risk_profile.py`)**: Escalonamento adaptativo do parâmetro $c_{\text{puct}}$ do ISMCTS baseado na avaliação do tabuleiro $Q(s)$ (amplia exploração quando atrás e consolida linhas sólidas quando à frente).
+  - _Avoid_: PUCT constante rígido, Exploração estática, Desespero aleatório.
+- **On-Hit Quantitative Valuation (`ai/policy/on_hit_evaluator.py`)**: Quantificação numérica de impacto de efeitos *on-hit* em relação ao custo de oportunidade de cartas ofensivas retidas para o contra-ataque.
+  - _Avoid_: Bloqueio de pânico, Avaliação qualitativa de on-hit.
 
 ---
 
@@ -148,7 +154,7 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - `stats/`: Cálculo de ELO com K-factor dinâmico, nomes canônicos e persistência transacional em SQLite3 WAL.
   - `ui/`: Interface gráfica Streamlit decomposta (`helpers.py` e 7 abas em `tabs/`).
   - _Avoid_: Monólito dividido, Pastas arbitrárias de código, Módulos dispersos.
-- **Retrocompatibility Facades**: Módulos raízes enxutos (`bot_client.py`, `dashboard.py`, `deck_parser.py`, `stats_manager.py`, `ai/trainer.py`, `ai/policy_engine.py`, `ai/mcts/__init__.py`) que re-exportam métodos e classes públicas dos subpacotes, preservando 100% de compatibilidade retroativa.
+- **Retrocompatibility Facades**: Módulos raízes enxutos (`bot_client.py`, `dashboard.py`, `deck_parser.py`, `stats_manager.py`, `ai/policy_engine.py`, `ai/mcts/__init__.py`) que re-exportam métodos e classes públicas dos subpacotes, preservando 100% de compatibilidade retroativa.
   - _Avoid_: Wrappers redundantes, Aliases soltos, Código duplicado.
 - **Setup Templates (`setup_templates/`)**: Repositório central de patches e arquivos customizados que são injetados em clones limpos do Talishar e Talishar-FE para viabilizar integração com IA sem dependência de submódulos Git.
   - _Avoid_: Git Submodules, Forks do Talishar, Patches temporários.
@@ -158,9 +164,13 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Barra de vida extra, Indicador genérico.
 - **Elo Rating**: Sistema de ranqueamento ponderado em `stats_manager.py` para avaliação do nível competitivo dos decks e agentes.
   - _Avoid_: Pontuação simples, Leaderboard estático.
-- **Environment Auto-Detection & Sanitizer (`scripts/prepare_environment.py`)**: Script de automação unificada que detecta o ambiente operacional (Linux vs WSL2), injeta templates e sanitiza permissões sem vazamento de dados privados.
+- **Environment Auto-Detection & Sanitizer (`scripts/prepare_environment.py`)**: Script de automação unificada que detecta o ambiente operacional (Linux vs WSL2), injeta templates, sincroniza upstream (`--update-upstream`) e sanitiza permissões sem vazamento de dados privados.
   - _Avoid_: Instalador manual, Setup script disperso.
 - **Pre-Commit Verification & Privacy Guard (`scripts/sync_and_clean.sh`)**: Hook pré-commit que valida sincronização de templates, compilação do frontend Vite (`npx vite build`) e sintaxe Python, bloqueando vazamento de caminhos pessoais.
   - _Avoid_: Script de git simples, Limpador de logs.
-- **Frontend Ads Proxy / BannerUnit Mock (`setup_templates/frontend/bannerUnit`)**: Mock headless do módulo de anúncios do Talishar-FE para permitir compilações limpas e offline do frontend.
+- **Pré-Push CI Validator (`scripts/verify_ci.sh` & `.git/hooks/pre-push`)**: Validador executado automaticamente antes de cada `git push` que replica 100% da esteira do GitHub Actions (414 testes no Pytest, dry-run do ISMCTS, diff de templates e Vite build), bloqueando commits quebrados antes do envio remoto.
+  - _Avoid_: Validação manual remota, Bypass cego de testes, Push sem verificação.
+- **Upstream Sincronizador & Changelog (`scripts/prepare_environment.py --update-upstream` & `docs/talishar_upstream_changelog.md`)**: Sistema de atualização automatizada que sincroniza Talishar e Talishar-FE com o upstream oficial, reaplica patches customizados de IA, reindexa o banco de cartas e registra a transição de versões e commits em markdown para os agentes.
+  - _Avoid_: Git pull manual cego, Sobrescrita acidental de patches, Upstream drift.
+- **Frontend Ads Proxy / BannerUnit Mock (`setup_templates/frontend/bannerUnit`)**: Mock headless do módulo de anúncios do Talishar-FE (`AdUnit.tsx` e `AdRailLayout.tsx`) para permitir compilações limpas e offline do frontend.
   - _Avoid_: Bloco de anúncio ativo, Bypass manual de dependências.

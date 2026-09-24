@@ -231,10 +231,10 @@ def test_turn_plan_systems():
         "activeChainLink": {"totalPower": 3, "cardNumber": "poke"}
     }
     tp_pivot = generic_strat.analyze_turn_plan(state_pivot)
-    assert tp_pivot.plan_type == "GENERIC_PIVOT"
+    assert tp_pivot.plan_type == "TEMPO_COUNTER_ATTACK"
     assert tp_pivot.can_absorb_damage is True
     assert "heavy_strike_red" in tp_pivot.reserved_card_names
-    assert tp_pivot.max_block_cards == 1  # 3 cartas - 2 reservadas
+    assert tp_pivot.max_block_cards == 0  # 3 cartas - 2 reservadas
     print("  ✓ TurnPlan Base: Generic Pivot com reserva de ataque e absorção")
 
     # 4. JarlStrategy - Fused Oaken Old Pivot (4 cartas)

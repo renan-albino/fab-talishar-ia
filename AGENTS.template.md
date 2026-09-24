@@ -25,6 +25,11 @@ Single-context layout: one `CONTEXT.md` at the repo root, ADRs in `docs/adr/`. S
    - Priorize disparar subagentes em paralelo para maximizar a velocidade de entrega e economizar a janela de contexto do agente principal.
    - Atribua papéis especializados e instruções cirúrgicas (ex: `Tooling Specialist`, `Refactor Specialist`, `Test Runner`, `Codebase Researcher`).
    - O agente principal atua como orquestrador: planeja a divisão de trabalho, dispara os subagentes em paralelo, aguarda reativamente as notificações de término (sem polling ativo), valida os resultados e consolida a entrega final.
+7. **Sincronização Obrigatória de Documentação (Zero Doc Drift):** Toda vez que alterar código, refatorar módulos, criar ferramentas/scripts, adicionar flags de CLI, atualizar modelos ou modificar regras táticas:
+   - **SEMPRE atualize proativamente a documentação `.md` correspondente** (`README.md`, `CONTEXT.md`, `docs/ROADMAP.md` e `docs/`) antes de concluir a resposta ou realizar commit/push.
+   - Mantenha contadores e métricas (quantidade de testes unitários, heróis suportados, cartas no banco) 100% alinhados com o estado real do código.
+   - Se introduzir novos conceitos arquiteturais, registre-os imediatamente em `CONTEXT.md`.
+   - Se alterar frontend ou backend, exporte os templates (`prepare_environment.py --export-templates`) e valide que não há drift em `setup_templates/`.
 
 ### Multi-Agent Workflow
 
@@ -47,14 +52,14 @@ O script `scripts/prepare_environment.py` detecta automaticamente se seu ambient
   - `ai/policy/`: Poda tática (ataque, defesa, pitch, arsenal) e motor de decisão unificado. Fachada: `ai/policy_engine.py`.
   - `ai/mcts/`: Motores MCTS e ISMCTS paralelo multithread (`ThreadPoolExecutor`). Fachada: `ai/mcts/`.
   - `ai/training/`: Orquestrador de treino GPU FP16, supervisor de processos e assimilação pós-partida (`assimilation.py`).
-  - `ai/hero_strategies/`: 139 heróis oficiais, `knapsack_solver.py`, `turn_planner.py`, `equipment_evaluator.py` e submódulos por classe.
+  - `ai/hero_strategies/`: 174 heróis oficiais, `knapsack_solver.py`, `turn_planner.py`, `equipment_evaluator.py` e submódulos por classe.
   - `ai/model.py`, `ai/game_simulator.py`, `ai/experience_collector.py`, `ai/equipment_learning.py`.
 - O gerenciamento de decks vive no pacote `deck_manager/` (fachada raiz: `deck_parser.py`).
-- O sistema de ranking e estatísticas vive no pacote `stats/` (recomendações de heróis, ELO e persistência). Fachada raiz: `stats_manager.py`.
+- O sistema de ranking e estatísticas vive no pacote `stats/` (recomendações de heróis, ELO e persistência transacional em SQLite3 `data/talishar_stats.db`). Fachada raiz: `stats_manager.py`.
 - O dashboard Streamlit é orquestrado por `dashboard.py` delegando para `ui/helpers.py` e `ui/tabs/` (7 abas).
 - Patches do Talishar e Talishar-FE ficam em `setup_templates/` e são aplicados por `scripts/prepare_environment.py`.
 - Banco de cartas oficial fica em `data/fab_cards_db.json` (extraído por `extract_card_db.py`).
-- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini`.
+- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini` (414 testes unitários).
 
 
 ### Ponytail Protocol

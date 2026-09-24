@@ -316,6 +316,8 @@ Para subir o backend Docker (Talishar PHP, MySQL, Redis) e o Dashboard Streamlit
 **Opções úteis do `./start.sh`:**
 * `./start.sh -v` : Exibe logs detalhados durante a inicialização.
 * `./start.sh --status` : Verifica se o backend Docker, Dashboard e processos de bots estão rodando.
+* `./start.sh --update` : Força a verificação e atualização dos repositórios oficiais upstream do Talishar antes de iniciar.
+* `./start.sh --no-update` : Pula a checagem remota e inicia instantaneamente offline.
 * `./start.sh --no-docker` : Inicia apenas o Streamlit Dashboard (se o Docker já estiver ativo).
 * `./start.sh --no-dashboard` : Inicia apenas o backend Docker do Talishar.
 * `./start.sh --port 8502` : Altera a porta do Streamlit Dashboard.
@@ -370,6 +372,36 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 # Apenas verificar integridade sem modificar arquivos:
 ./scripts/sync_and_clean.sh --check-only
 ```
+
+---
+
+### 8. Validador Pré-Push & CI Local (`./scripts/verify_ci.sh`)
+
+O Git Hook `pre-push` é executado automaticamente a cada `git push` para garantir que falhas nunca cheguem ao repositório remoto ou quebrem o GitHub Actions. Ele executa:
+1. **Sintaxe Completa Python** (`compileall`).
+2. **Dry-Run do ISMCTS** (`scripts/analyze_ismcts.py --dry-run`).
+3. **Execução Completa da Suíte de Testes** (`pytest tests/`, 414 testes).
+4. **Verificação de Sincronização dos Templates** (`prepare_environment.py --export-templates` & diff).
+5. **Build de Produção do Frontend Vite** (`npx vite build`).
+
+Você pode rodar a validação completa manualmente a qualquer momento:
+```bash
+./scripts/verify_ci.sh
+```
+
+---
+
+### 9. Sincronização Upstream do Talishar & Changelog Automatizado
+
+Para manter a compatibilidade quando os repositórios oficiais do Talishar (Backend PHP e Frontend React) recebem novas cartas, correções de regras ou mudanças de UI:
+```bash
+# Verifica se há novidades no upstream oficial (retorna código 0 se houver, 1 se não):
+./venv/bin/python scripts/prepare_environment.py --check-upstream
+
+# Atualiza os repositórios, reaplica os patches da IA, reindexa o banco de cartas e registra o changelog:
+./venv/bin/python scripts/prepare_environment.py --update-upstream
+```
+Toda transição de versão é registrada automaticamente com os hashes de commit (`from_commit` ➔ `to_commit`), contagem de novos commits, diffs e arquivos principais alterados no documento [**`docs/talishar_upstream_changelog.md`**](docs/talishar_upstream_changelog.md).
 
 ---
 

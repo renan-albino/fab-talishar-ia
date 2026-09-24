@@ -111,6 +111,8 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
                     "pitch": info["pitch"]
                 })
 
+    tracker = state.get("opponent_tracker")
+
     # ── 1.2 Poda Tática de Go Again (Evitar quebrar a cadeia prematuramente)
     # Se temos AP == 1 e múltiplos ataques na mão, e pelo menos um tem Go Again:
     # Penalizamos severamente iniciar o turno com um ataque SEM Go Again.
@@ -126,6 +128,12 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
             # Ataques rápidos ou de alto poder têm prioridade para garantir que o dano extra do item da arena converta
             if atk["has_go_again"] or atk["power"] >= 4 or atk["cost"] == 0:
                 atk["score"] += 3.0
+
+        # Opponent Inefficiency Exploitation
+        if tracker and tracker.avg_cards_played < 2.0:
+            c_info = engine.extract_card_info(hand[atk["idx"]])
+            if atk["power"] in (3, 4) and not c_info.get("has_on_hit", False):
+                atk["score"] -= 2.0
 
         candidates.append(atk)
 

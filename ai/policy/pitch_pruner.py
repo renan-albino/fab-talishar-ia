@@ -63,6 +63,12 @@ def select_best_pitch_card(engine: Any, state: dict, target_cost: int = 1) -> Op
             if info["pitch"] == 3:
                 score += 4.0
 
+        # Deck Damage: Se o deck está ficando vazio (< 15 cartas), estamos chegando ao segundo ciclo.
+        deck_count = int(state.get("playerDeckCount", state.get("deck_count", 30)))
+        if deck_count < 15:
+            fatigue_bonus = (info.get("power", 0) * 0.5 + info.get("defense", 0)) * 0.5
+            score += fatigue_bonus
+
         pitch_candidates.append({
             "type": "pitch",
             "idx": idx,

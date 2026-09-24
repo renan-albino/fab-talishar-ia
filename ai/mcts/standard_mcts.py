@@ -21,6 +21,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from ai.model import FaBPolicyValueNetwork
 from ai.game_simulator import GameSimulator
 from ai.logger import get_logger
+
 from .node import MCTSNode
 
 logger = get_logger("mcts")
@@ -372,7 +373,11 @@ class MCTSEngine:
     # ── Seleção PUCT ──────────────────────────────────────────────
 
     def _select(self, root: MCTSNode, sim_idx: int = 0) -> MCTSNode:
+        from ai.policy.risk_profile import get_risk_profile
         """Desce a árvore por PUCT considerando apenas filhos ativos (chave ≥ 0)."""
+        risk_profile = get_risk_profile(root.q_value)
+        eff_c_puct = self.c_puct * risk_profile.get("c_puct_scale", 1.0)
+
         node = root
         path = [node]
         while node.is_expanded and any(k >= 0 for k in node.children):
@@ -383,7 +388,7 @@ class MCTSEngine:
             for key, child in node.children.items():
                 if key < 0:
                     continue
-                score = child.ucb_score(self.c_puct, parent_visits)
+                score = child.ucb_score(eff_c_puct, parent_visits)
                 if score > best_score:
                     best_score = score
                     best_child = child

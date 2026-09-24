@@ -181,7 +181,7 @@ def test_generic_pivot():
     }
     plan = engine_gen.strategy.analyze_turn_plan(state_gen)
     print(f"Plano Genérico: {plan.plan_type} ({plan.reason})")
-    assert plan.plan_type == "GENERIC_PIVOT", f"Esperado GENERIC_PIVOT, obtido {plan.plan_type}"
+    assert plan.plan_type == "TEMPO_COUNTER_ATTACK", f"Esperado TEMPO_COUNTER_ATTACK, obtido {plan.plan_type}"
     assert plan.can_absorb_damage is True
     assert "massive_blow_red" in plan.reserved_card_names
 

@@ -39,6 +39,25 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     # ── Contexto Holístico da Arena e Ameaças Semânticas ──────────────
     arena_ctx = build_arena_threat_context(state, my_hp=my_hp)
     opp_power = max(base_chain_power, arena_ctx.total_effective_physical_damage)
+    
+    from .on_hit_evaluator import estimate_on_hit_value
+    on_hit_ev = estimate_on_hit_value(incoming_name, state)
+    if on_hit_ev > 0:
+        import math
+        cards_needed = math.ceil(opp_power / 3.0)
+        offensive_value_lost = cards_needed * 3.5
+        if offensive_value_lost > on_hit_ev + opp_power:
+            return []
+
+    opp_hand_count_eval = int(state.get("opponentHandCount", state.get("theirHandCount", 0)))
+    has_go_again = bool(active_chain.get("goAgain") or "go again" in incoming_text or "go again" in str(active_chain.get("keywords", [])).lower().replace("_", " "))
+    is_early_chain_no_onhit = (
+        int(state.get("currentChainLink", 1)) == 1
+        and opp_hand_count_eval >= 1
+        and has_go_again
+        and on_hit_ev == 0
+    )
+
     on_hit_threat = max(get_on_hit_threat(incoming_name, incoming_text), arena_ctx.composite_threat_score)
     has_dangerous_on_hit = (
         on_hit_threat >= 3.0
@@ -177,6 +196,9 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         if my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2 and not is_phantasm_popper:
             if info["power"] >= 4 and info["pitch"] == 1:
                 score -= 5.0
+
+        if is_early_chain_no_onhit:
+            score -= 4.0
 
         # ── Poda de Tempo Pivot e Reserva Estrita de Pitch Crítico:
         if (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
@@ -411,6 +433,8 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             eq_score += 5.0  # Temper sobrevive se defCounters < base_block - 1
             eq_cost = 2.5
         elif has_bb:
+            if is_early_chain_no_onhit:
+                eq_score -= 8.0
             if has_active_ability:
                 if my_hp <= 6 or (has_dangerous_on_hit and opp_power >= my_hp):
                     eq_score += 2.0  # Modo Sobrevivência: salva vida a qualquer custo

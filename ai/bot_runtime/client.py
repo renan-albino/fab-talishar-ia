@@ -53,7 +53,10 @@ class FabBotClient:
         self.use_gpu = (self.device != "cpu") if self.device else True
         self.log_file = f"logs/{self.room_id}_{self.player_name}_debug.log"
         self.match_log_file = f"logs/{self.room_id}_match_feed.log"
+        from ai.policy.opponent_tracker import OpponentTracker
+
         self.deck_format = "blitz"
+        self.opponent_tracker = OpponentTracker()
         self.policy_engine = PolicyEngine(
             model_path="data/model_latest.pt" if os.path.exists("data/model_latest.pt") else None,
             num_mcts_sims=self.mcts_sims,
@@ -420,6 +423,16 @@ class FabBotClient:
 
         match_tracker.track_tick_health_and_damage(self, state, my_h, opp_h)
 
+        turn_active_id = state.get("turnPlayer", 1)
+        prev_active_id = getattr(self, "_prev_turn_active_id", None)
+        if prev_active_id is not None and prev_active_id != self.player_id and turn_active_id == self.player_id:
+            if hasattr(self, "opponent_tracker"):
+                opp_cards_played = max(0, 4 - state.get("opponentHandCount", 4))
+                opp_damage_dealt = self.damage_taken - getattr(self, "_prev_opp_damage_taken_track", 0)
+                self._prev_opp_damage_taken_track = self.damage_taken
+                self.opponent_tracker.update(cards_played=opp_cards_played, damage_dealt=opp_damage_dealt)
+        self._prev_turn_active_id = turn_active_id
+
         turn = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
 
         self.metrics["health"] = my_h
@@ -485,6 +498,8 @@ class FabBotClient:
             state.update(parsed_state.model_dump())
         except Exception:
             pass
+
+        state["opponent_tracker"] = getattr(self, "opponent_tracker", None)
 
         # Compatibilidade com backend Talishar (playerArse -> playerArsenal, theirArse -> theirArsenal)
         if "playerArse" in state and "playerArsenal" not in state:

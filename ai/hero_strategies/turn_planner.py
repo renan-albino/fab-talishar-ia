@@ -11,6 +11,28 @@ from .knapsack_solver import (
     calculate_hand_conversion_potential,
 )
 
+def calculate_hand_conversion(hand_cards: List[dict], weapon_power: int) -> Tuple[float, float]:
+    offensive_value = float(weapon_power)
+    defensive_value = 0.0
+    total_cost = 0
+    total_pitch = 0
+    from ai.policy.constants import _get_cards_db
+    cards_db = _get_cards_db()
+    for c in hand_cards:
+        c_name = str(c.get("cardNumber") or c.get("name", "")).lower()
+        db_card = cards_db.get(c_name, {})
+        power = int(c.get("power", db_card.get("power", 0)))
+        cost = int(c.get("cost", db_card.get("cost", 0)))
+        pitch = int(c.get("pitch", db_card.get("pitch", 0)))
+        block = int(c.get("block", c.get("defense", db_card.get("block", 0))))
+        offensive_value += power
+        total_cost += cost
+        total_pitch += pitch
+        defensive_value += min(block, 3)
+    if total_cost > total_pitch:
+        offensive_value *= 0.7
+    return offensive_value, defensive_value
+
 
 @dataclass
 class TurnPlan:
@@ -179,22 +201,11 @@ def analyze_turn_plan(
         )
 
     # 2. Avaliação de Conversão Ofensiva da Mão (Hand Conversion vs Inefficient Block)
-    hand_conversion, key_cards = calculate_hand_conversion_potential(actual_hero, hand=hand, floating_res=floating_res)
-    from ai.policy.constants import _get_cards_db
-    cards_db = _get_cards_db()
-    block_values = [
-        int(c.get("block", c.get("defense", cards_db.get(str(c.get("cardNumber") or c.get("name", "")).lower(), {}).get("block", 0))) or 0)
-        for c in hand
-    ]
-    sorted_blocks = sorted([b for b in block_values if b > 0], reverse=True)
-    acc_block = 0
-    cards_needed_to_block = 0
-    for b in sorted_blocks:
-        acc_block += b
-        cards_needed_to_block += 1
-        if acc_block >= opp_power:
-            break
-
+    weapon_power = sum(int(eq.get("power", 0)) for eq in actual_state.get("playerEquipment", []) if isinstance(eq, dict) and str(eq.get("slot", "")).lower() == "weapon")
+    off_val, def_val = calculate_hand_conversion(hand, weapon_power)
+    
+    key_cards = set([str(c.get("cardNumber") or c.get("name", "")) for c in hand if int(c.get("power", 0)) > 0])
+    
     on_hit_penalty = 3.5 if has_dangerous_on_hit else 0.0
 
     absorb_mult = 1.0
@@ -209,9 +220,8 @@ def analyze_turn_plan(
             absorb_mult = 1.0
 
     # Condição de Absorção Inteligente (Início/Meio de jogo com vida saudável):
-    # Se bloquear consumiria 2 ou mais cartas da mão e a conversão ofensiva supera o dano
-    if my_hp > 12 and cards_needed_to_block >= 2 and opp_power > 0:
-        if (hand_conversion * absorb_mult) >= (float(opp_power) + on_hit_penalty):
+    if my_hp > 12 and opp_power > 0:
+        if (off_val * absorb_mult) > def_val + on_hit_penalty:
             max_allowed_blocks = max(0, len(hand) - len(key_cards))
             return TurnPlan(
                 plan_type="TEMPO_COUNTER_ATTACK",
@@ -219,8 +229,8 @@ def analyze_turn_plan(
                 key_cards=key_cards,
                 can_absorb_damage=True,
                 max_block_cards=min(1, max_allowed_blocks),
-                offensive_potential=hand_conversion,
-                reason=f"Hand offensive conversion ({hand_conversion:.1f}) exceeds inefficient block ({opp_power} dmg needing {cards_needed_to_block} cards); absorbing to counter-attack"
+                offensive_potential=off_val,
+                reason=f"Hand offensive conversion ({off_val:.1f}) exceeds defensive value ({def_val:.1f}); absorbing to counter-attack"
             )
 
     # 3. Generic Pivot Check
