@@ -15,14 +15,14 @@ Na versão 1 (v1) do motor de inteligência artificial, a rede neural (`FaBPolic
 
 ## Decision
 
-Migrar integralmente o motor neural e a camada de percepção tática para uma arquitetura baseada em **Card Transformer (800 dimensões)** e **Compreensão Semântica Orientada a Dados**, com eliminação completa e sem suporte retroativo aos modelos e artefatos legados da v1:
+Migrar integralmente o motor neural e a camada de percepção tática para uma arquitetura baseada em **Card Transformer (832 dimensões)** e **Compreensão Semântica Orientada a Dados**, com eliminação completa e sem suporte retroativo aos modelos e artefatos legados da v1:
 
 ### 1. Base Canônica de Conhecimento Semântico (`data/fab_card_semantics.json`)
 - Desenvolvido o extrator offline [`scripts/extract_card_semantics.py`](../../scripts/extract_card_semantics.py), compilando os dicionários oficiais em PHP da engine do Talishar.
 - Cataloga 5.087 cartas oficiais com atributos funcionais: palavras-chave de combate (Dominate, Piercing, Overpower, Phantasm, Go Again, etc.), bônus de dano extra em caso de acerto (*on-hit*), severidades numéricas de disrupção (0.0 a 10.0) e modificadores de arena concedidos a ataques.
 
 ### 2. Matriz Tensorial de Embeddings em $O(1)$ (`data/card_embeddings.pt` & `data/card_to_idx.json`)
-- O script [`scripts/generate_card_embeddings.py`](../../scripts/generate_card_embeddings.py) gera uma matriz PyTorch densa de dimensões `[5133, 48]` em FP32 (0.94 MB) e um índice hash `card_to_idx.json`.
+- O script [`scripts/generate_card_embeddings.py`](../../scripts/generate_card_embeddings.py) gera uma matriz PyTorch densa de dimensões `[5145, 48]` em FP32 (0.94 MB) e um índice hash `card_to_idx.json`.
 - Cada vetor de 48 floats codifica:
   - `[0:6]`: Custo, Pitch, Poder, Defesa, Vida e Tipo de Carta.
   - `[6:22]`: 16 classes canônicas de Rathe em one-hot.
@@ -32,8 +32,8 @@ Migrar integralmente o motor neural e a camada de percepção tática para uma a
 
 ### 3. Rede Neural `FaBCardTransformerNetwork` ([`ai/model.py`](../../ai/model.py))
 - **Vetor Flat-Packed de 800 Dimensões**:
-  - `[0:32]`: Contexto global da partida (HP dos jogadores, AP, recursos, cadeia de combate, fases do turno, ciclo de pitch e densidades de cores).
-  - `[32:800]`: 16 slots estruturados de cartas $\times$ 48 floats semânticos (8 mão, 4 equipamentos, 2 arsenal, 1 elo ativo da cadeia, 1 ameaça prioritária da arena adversária).
+  - `[0:64]`: Contexto global da partida (HP dos jogadores, AP, recursos, cadeia de combate, fases do turno, ciclo de pitch e densidades de cores).
+  - `[64:832]`: 16 slots estruturados de cartas $\times$ 48 floats semânticos (8 mão, 4 equipamentos, 2 arsenal, 1 elo ativo da cadeia, 1 ameaça prioritária da arena adversária).
 - **Mecanismo de Atenção Dual**:
   - **Self-Attention**: 2 camadas de Transformer Encoder com 4 cabeças de atenção e dimensão latente 384 operando sobre os slots de cartas ativas, garantindo invariância a permutações e aprendizado de sinergias.
   - **Cross-Attention Contextual**: Projeta o token de contexto global contra as representações refinadas das cartas, modulando o plano de ação de acordo com a vida e os recursos disponíveis.

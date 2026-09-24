@@ -9,10 +9,10 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 - [x] **Modularização dos 9 Monólitos**: Todos os arquivos de lógica de negócio e interface decompostos em pacotes coesos abaixo de 500 linhas (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`).
 - [x] **Governança & ADRs**: ADR-0001 a ADR-0008 documentados em `docs/adr/`, `CONTEXT.md` com diretivas de vocabulário e domínio canônicos.
 - [x] **Regras Oficiais de Combate (CR)**: Phantasm Popping (CR 7.4.4), Dominate (CR 7.4.2a), Overpower (CR 7.4.2b), Piercing (CR 8.5.21) e Intimidate (CR 8.5.8).
-- [x] **Resiliência & Concorrência**: Conversores universais seguros (`safe_int`, `safe_list`, `safe_dict`, `safe_str`), polling adaptativo, eliminação de processos zumbis Unix `<defunct>` e virtual loss simétrico no MCTS.
+- [x] **Arquitetura 2.0 (Resiliência & Alta Performance)**: Adoção do Pydantic na borda de dados, estados imutáveis $O(1)$ no Simulador/MCTS, Treino via Headless Self-Play na RAM, Profiling Ativo de VRAM/GPU e transição do atomic JSON IO para transações SQL em SQLite3. (ADR-0009)
 - [x] **Ferramentas CLI de Automação**: Utilitários operacionais em `.agents/skills/automated-tasks/scripts/` (`validate_decks.py`, `benchmark_mcts.py`, `healthcheck_talishar.py` e `run_smoke_tests.py`).
 - [x] **Rede Neural v2 (FaBCardTransformerNetwork - ADR-0007)**: Substituição completa do antigo MLP de 192 entradas por arquitetura Transformer com Self/Cross-Attention (4x dim_feedforward), alvos auxiliares KataGo e embeddings densos em $O(1)$.
-- [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.087 cartas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena e poda adaptativa sem hardcodes nominais (incluindo regra dinâmica aggro/combo via DB).
+- [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.132 cartas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena e poda adaptativa sem hardcodes nominais (incluindo regra dinâmica aggro/combo via DB).
 - [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando testes canônicos robustos e centralizados em `PROJECT_ROOT`.
 - [x] **Passo 3 (Especialização de Classes Não-Lineares & Auto-Tuning por Arquétipo)**: Auto-tuning consciente de arquétipo via banco de dados sem dependência estática.
 - [ ] **Passo 4 (Simulador Determinístico & Sideboard)**: Testes de casos de borda e transição de estados no simulador (agora otimizado com deepcopy seguro).
@@ -33,7 +33,7 @@ $$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{T
 |---|:---:|:---:|:---:|:---:|:---:|
 | **Baseline Inicial** | 143 testes | 4.850 / 8.680 | 3.830 | **55,8%** | 35% |
 | **Pós-Frentes A, B e C** | 168 testes | 5.101 / 8.680 | 3.579 | **58,8%** | 39% |
-| **Pós-Passos 1 e 2 (Atual)** | **427 testes** | **5.833 / 8.687** | **2.854** | **67,1%** | **88%** |
+| **Pós-Passos 1 e 2 (Atual)** | **414 testes** | **5.833 / 8.687** | **2.854** | **67,1%** | **88%** |
 
 ---
 
@@ -93,7 +93,7 @@ Distribuição das 2.854 Linhas Faltantes (Miss):
 
 ```mermaid
 graph LR
-    A["Estado Atual: 67% (427 testes)"] --> B["Meta 1: ~74% (Passo 3: Heróis)"]
+    A["Estado Atual: 67% (414 testes)"] --> B["Meta 1: ~74% (Passo 3: Heróis)"]
     B --> C["Meta 2: ~78% (Passo 4: Simulador/Decks)"]
     C --> D["Meta 3: ~82% (Passo 5: Treino PyTorch)"]
     D --> E["Meta 4: ~92%+ (Passo 6: UI Streamlit)"]

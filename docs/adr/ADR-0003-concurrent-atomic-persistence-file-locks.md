@@ -1,7 +1,7 @@
 # ADR-0003: Persistência Atômica Segura e Mutex Interprocessos Reentrante via atomic_io
 
-- **Status**: Accepted
-- **Date**: 2026-09-16
+- **Status**: Deprecated (Substituído pelo [ADR-0009](ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md))
+- **Date**: 2026-09-16 (Depreciado em 2026-09-24)
 - **Deciders**: Equipe FaB Talishar AI (Architecture Review)
 
 ## Context

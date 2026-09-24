@@ -4,7 +4,7 @@ tests/test_cr_comprehensive_rules.py
 Suíte de testes formais de conformidade com as Comprehensive Rules (CR) de Flesh and Blood:
   1. CR 7.4.2d & CR 7.5b: Reações de Defesa executáveis a partir do Arsenal
   2. CR 7.4.2a & CR 8.3.4b: Dominate restringe apenas cartas da mão na Reaction Step
-  3. CR 7.4.2b & CR 8.3.22: Overpower restringe apenas ações de mão (Ambush do Arsenal é legal)
+  3. CR 7.4.2b & CR 8.3.22: Overpower restringe a no máximo 1 carta de ação de qualquer zona (mão ou Arsenal)
   4. CR 4.3.2 & CR 4.4.3f: Modo Cavar calibrado dinamicamente pelo Intelecto real do herói
   5. CR 3.0 & CR 7: GameSimulator integrado à base canônica de dados de cartas
   6. CR 1.14.2: Ordem de pagamento de custos e pitch (Blue -> Yellow -> Red)
@@ -102,11 +102,11 @@ def test_cr_arsenal_reaction_allowed_under_dominate():
 # 2. CR 7.4.2b & CR 8.3.22: OVERPOWER COM CARTAS DO ARSENAL
 # ══════════════════════════════════════════════════════════════════
 
-def test_cr_overpower_allows_arsenal_action_block():
+def test_cr_overpower_restricts_action_from_any_zone():
     """
-    CR 7.4.2b: 'An attack with overpower cannot be defended by more than 1 action card from hand.'
-    Cartas de ação declaradas a partir do Arsenal (ex: com Ambush ou Down and Dirty)
-    NÃO violam a restrição de Overpower quando combinadas com 1 ação da mão.
+    CR 7.4.2b: 'An attack with overpower cannot be defended by more than 1 action card.'
+    Overpower restringe a defesa a no máximo 1 carta de ação de QUALQUER zona (mão, Arsenal, etc.),
+    diferente de Dominate que se restringe à mão.
     """
     pe = PolicyEngine(hero_name="generic")
 
@@ -133,8 +133,8 @@ def test_cr_overpower_allows_arsenal_action_block():
     assert isinstance(chosen_blocks, list)
     chosen_names = [b[2].lower() for b in chosen_blocks]
     assert any("down_and_dirty" in n for n in chosen_names), f"Down and Dirty do Arsenal deve ser aceito: {chosen_names}"
-    assert any("action_atk_1" in n for n in chosen_names), f"action_atk_1 da mão deve ser aceito: {chosen_names}"
-    assert len(chosen_blocks) == 2, f"Overpower deve permitir 1 ação da mão + 1 ação do Arsenal, obtido {len(chosen_blocks)}"
+    assert not any("action_atk_1" in n for n in chosen_names), f"action_atk_1 não pode bloquear junto com ação do Arsenal sob Overpower: {chosen_names}"
+    assert len(chosen_blocks) == 1, f"Overpower deve permitir no máximo 1 carta de ação no total, obtido {len(chosen_blocks)}"
 
 
 

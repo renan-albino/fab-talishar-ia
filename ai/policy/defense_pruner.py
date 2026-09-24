@@ -527,22 +527,21 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         max_hand_blocks = min(max_hand_blocks, 1)
 
     hand_blocks_count = 0
-    action_hand_blocks_count = 0
+    action_blocks_count = 0
     popped_phantasm = False
 
     for item in block_candidates:
         is_equip = item.get("is_equipment", False)
         is_hand = item.get("is_hand", not is_equip and not item.get("from_arsenal", False))
         is_action = item.get("is_action", False)
-        is_action_from_hand = is_action and is_hand and not item.get("is_arsenal", False)
         is_popper = item.get("is_phantasm_popper", False)
 
         # Regra Dominate (CR 7.4.2a): Não mais de 1 carta da mão
         if is_hand and hand_blocks_count >= max_hand_blocks:
             continue
 
-        # Regra Overpower (CR 7.4.2b, CR 8.3.22): Não mais de 1 carta de ação da mão
-        if has_overpower and is_action_from_hand and action_hand_blocks_count >= 1:
+        # Regra Overpower (CR 7.4.2b, CR 8.3.22): Não mais de 1 carta de ação de qualquer zona
+        if has_overpower and is_action and action_blocks_count >= 1:
             continue
 
         # Se já estouramos Phantasm neste elo, o ataque foi destruído: interrompe a defesa!
@@ -565,8 +564,8 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         current_blocked += item["block"]
         if is_hand:
             hand_blocks_count += 1
-        if is_action_from_hand:
-            action_hand_blocks_count += 1
+        if is_action:
+            action_blocks_count += 1
 
         # Phantasm Popping (CR 7.4.4):
         if is_popper:

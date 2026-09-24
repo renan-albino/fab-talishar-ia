@@ -29,17 +29,14 @@ def solve_knapsack_defense(
         for subset in itertools.combinations(block_candidates, r):
             tot_block = sum(item["block"] for item in subset)
             hand_count = sum(1 for item in subset if item.get("is_hand"))
-            action_hand_count = sum(
-                1 for item in subset
-                if item.get("is_action") and item.get("is_hand", True) and not item.get("is_arsenal", False)
-            )
+            action_count = sum(1 for item in subset if item.get("is_action", False))
             has_eq = any(item.get("is_equipment") for item in subset)
             req_power = (opp_power + 1) if (has_piercing and has_eq) else opp_power
 
             if has_dominate and hand_count > 1:
                 continue
 
-            if has_overpower and action_hand_count > 1:
+            if has_overpower and action_count > 1:
                 continue
 
             if has_piercing and has_eq and all(item.get("is_equipment") for item in subset):

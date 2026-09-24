@@ -132,7 +132,7 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 | [`ai/equipment_learning.py`](ai/equipment_learning.py) | Motor de aprendizado empírico de equipamentos por experiência pós-partida. Rastreia ativações e bloqueios por herói (`EquipmentTracker`), monitora taxas de vitória e calibra multiplicadores aprendidos dinâmicos $\in [0.5, 2.0]$ em `data/equipment_usage_stats.json`. |
 | [`ai/dynamic_rule_tuner.py`](ai/dynamic_rule_tuner.py) | Auto-tuner dinâmico de pesos heurísticos (ataque, bloqueio, pivot e arsenal) ajustados em tempo real com base nas taxas de vitória empíricas de cada herói em `data/hero_rule_multipliers.json`. |
 | [`ai/blunder_reviewer.py`](ai/blunder_reviewer.py) | Analisador automático de trajetórias para Prioritized Experience Replay (PER). Identifica e pondera blunders (-3.0), imprecisões e viradas brilhantes (+3.0) para acelerar o treinamento neural. |
-| [`ai/hero_strategies/`](ai/hero_strategies/) | Registro canônico de todos os 139 heróis oficiais e estratégias polimórficas por arquétipo/classe. Algoritmos pesados isolados em `knapsack_solver.py`, `turn_planner.py` e `equipment_evaluator.py`, com submódulos dedicados por classe (`guardian`, `warrior`, `brute`, `ninja`, `ranger`, `mechanologist`, `runeblade`, `wizard`, `illusionist`, `assassin`, `merchant`, `teklovossen`). |
+| [`ai/hero_strategies/`](ai/hero_strategies/) | Registro canônico de todos os 174 heróis oficiais e estratégias polimórficas por arquétipo/classe. Algoritmos pesados isolados em `knapsack_solver.py`, `turn_planner.py` e `equipment_evaluator.py`, com submódulos dedicados por classe (`guardian`, `warrior`, `brute`, `ninja`, `ranger`, `mechanologist`, `runeblade`, `wizard`, `illusionist`, `assassin`, `merchant`, `teklovossen`). |
 | [`ai/game_simulator.py`](ai/game_simulator.py) | Simulador determinístico de regras de FaB para expansão sintética nas folhas da árvore de busca. |
 | [`ai/experience_collector.py`](ai/experience_collector.py) | Replay Buffer circular em memória com amostragem priorizada por importância (PER), dense reward shaping e serialização compacta em `.npz`. |
 | [`ai/ismcts_logger.py`](ai/ismcts_logger.py) | Logger estruturado thread-safe que persiste diagnósticos de decisão ISMCTS (mundos amostrados, votos, confiança e $V_{root}$) em `logs/ismcts_decisions.jsonl`. |
@@ -150,7 +150,7 @@ Checkpoints de redes neurais e buffers de treino são binários volumosos (`.pt`
 * `data/model_latest.pt` (Rede neural ativa em produção)
 * `data/replay_buffer.npz` (Buffer de experiências de self-play compactado)
 * `data/training_metrics.json` (Métricas de loss e épocas concluídas)
-* `data/training_stats.json` (Histórico de partidas, ELO compilado e leaderboard)
+* `data/talishar_stats.db` (Histórico de partidas, ELO compilado e leaderboard)
 * `data/fab_cards_db.json` (Banco de cartas oficial do Talishar)
 
 ### Comandos da CLI:
@@ -303,7 +303,7 @@ Para garantir que todos os módulos de IA, simulador, ISMCTS, podas táticas e e
 ```bash
 ./venv/bin/pytest
 ```
-*(Todos os 427 testes automatizados executam e passam em ~3 segundos, isolados nativamente via `pytest.ini`).*
+*(Todos os 414 testes automatizados executam e passam em ~3 segundos, isolados nativamente via `pytest.ini`).*
 
 ---
 
@@ -391,7 +391,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 │   ├── policy/               # Poda tática, avaliação de cartas e motor de decisão unificado
 │   ├── mcts/                 # MCTS e ISMCTS paralelo multithread (ThreadPoolExecutor)
 │   ├── training/             # Orquestrador de treino GPU FP16 e supervisor de processos
-│   ├── hero_strategies/      # 139 heróis oficiais, knapsack solver, turn planner e classes
+│   ├── hero_strategies/      # 174 heróis oficiais, knapsack solver, turn planner e classes
 │   │   ├── base.py           # Classe base HeroStrategy e interfaces polimórficas
 │   │   ├── knapsack_solver.py # Solver DP 0-1 knapsack de turno e custo de oportunidade
 │   │   ├── turn_planner.py   # Dataclass TurnPlan, planos de ataque/defesa e survival trigger
@@ -420,7 +420,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
 │   ├── manage_state.py       # Gestão de checkpoints compactos e releases no GitHub
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 427 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 414 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -435,7 +435,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 ├── data/
 │   ├── equipment_metadata.json # Metadados semânticos de 624 equipamentos (custos, buffs, tokens)
 │   ├── ability_costs.json    # Custos dinâmicos de habilidades e armas extraídos do Talishar
-│   ├── fab_cards_db.json     # Banco oficial de 10.144 cartas do Talishar
+│   ├── fab_cards_db.json     # Banco oficial de 5.132 cartas do Talishar
 │   ├── training_stats.json   # Histórico de partidas e Leaderboard ELO compilado
 │   └── training_metrics.json # Métricas de evolução, loss e épocas da rede neural
 ├── logs/                     # Logs detalhados de partidas e telemetria ISMCTS
@@ -496,6 +496,10 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 
 | Item | Descrição |
 |------|-----------|
+| **Fronteira de Dados com Pydantic** | Transição completa da API para objetos Python estritamente tipados via `pydantic` em `ai/common/schemas.py`, eliminando a necessidade de conversores defensivos no runtime contra payloads nulos/caóticos do Talishar |
+| **Imutabilidade O(1) no Simulador MCTS** | Motor de combate transita estados via `ImmutableGameState` com operações `.replace()` ao invés de clones de dicionário na memória, garantindo integridade de árvore e aceleração massiva da simulação |
+| **Self-Play Headless & Hardware Probe** | Treinamento da IA agora usa ambiente Gymnasium-like local, ignorando tráfego de rede; o orquestrador analisa hardware (CUDA/CPU) e restringe VRAM ativamente antes das execuções |
+| **SQLite3 Transacional Local** | Eliminação completa das gravações atômicas em JSONs (e locks baseados em `fcntl`). Toda a telemetria, histórico de duelo e ELO de Heróis agora é gravada e consultada rapidamente do arquivo `talishar_stats.db` |
 | **Documentação Técnica de Podas Táticas & CR** | Criação de [`docs/tactical_rules.md`](docs/tactical_rules.md) com detalhamento matemático e regras oficiais (CR/TR) das 14 podas táticas e heurísticas da engine |
 | **Gestão de Checkpoints & GitHub Releases** | Utilitário `scripts/manage_state.py` com empacotamento compacto (~6.5 MB), comandos CLI de export/import e Git Hook `post-commit` automático que publica novos modelos treinados na release `checkpoint-latest` do GitHub |
 | **Perfis Dinâmicos de Treino (Equilibrado / Turbo)** | Calibração por hardware (GTX 1660 Super, CPUs, GPUs high-end), botão Turbo Máximo (~90% carga) com escalonamento de CPU em segundo plano (`nice 10`) garantindo estabilidade absoluta da interface web |
@@ -516,7 +520,7 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Imunidade a Adblockers (BannerUnit)** | Criação do módulo `bannerUnit` e alias Vite substituindo importações dinâmicas `/components/ads/`, eliminando quebras causadas por extensões de bloqueio de anúncios (uBlock Origin, Brave Shields) |
 | **Decomposição Modular Completa (9 Monólitos)** | Refatoração estrutural completa de 9 arquivos monolíticos (`dashboard.py`, `bot_client.py`, `policy_engine.py`, `mcts.py`, `trainer.py`, `deck_parser.py`, `stats_manager.py`, `hero_strategies/base.py`, `hero_strategies/other_classes.py`) em pacotes limpos e coesos (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`), preservando 100% de retrocompatibilidade em todas as fachadas raízes |
 | **Paralelização Multi-Thread do ISMCTS** | Busca paralela e thread-safe em mundos determinizados com `concurrent.futures.ThreadPoolExecutor` em `ai/mcts/ismcts.py`, acelerando a amostragem e a agregação ponderada de votos na árvore de decisão |
-| **Suíte de Testes Expandida (427 Testes Automatizados)** | Ampliação da cobertura de testes para 427 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks e orquestração de GPU, com isolamento via `pytest.ini` |
+| **Suíte de Testes Expandida (427 Testes Automatizados)** | Ampliação da cobertura de testes para 414 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks e orquestração de GPU, com isolamento via `pytest.ini` |
 | **Torneios Suíços Automatizados** | Implementado em `stats/tournament_manager.py` com ligas entre decks e persistência no `stats/`. |
 | **Aprendizado Acelerado com Humanos & Assimilação Pós-Partida** | Ponderação amplificada (4.0x a 7.0x no PER) para partidas contra humanos, assimilação imediata pós-jogo em background via `ai/training/assimilation.py` com atualização segura do modelo (`model_latest.pt`) e alertas visuais com bloqueio protetor no Dashboard (`tab_play.py`) |
 | **Recomendação Inteligente de Heróis (Analytics & ELO)** | Motor de diagnóstico tático em `stats/recommendations.py` que analisa a telemetria e sugere os heróis prioritários para treino humano (gargalos de ELO < 45% WR, alta incerteza amostral e matchups inéditos contra humanos) integrado nas abas 1 e 6 do Dashboard |

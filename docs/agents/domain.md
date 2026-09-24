@@ -8,7 +8,7 @@ How the engineering skills should consume this repo's domain documentation when 
 - **`docs/adr/`**: Read the Architectural Decision Records (ADRs) that touch the area you are about to work in:
   - [ADR-0001-modular-package-decomposition.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0001-modular-package-decomposition.md): Decomposição dos 9 monólitos em pacotes coesos (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/`) mantendo fachadas retrocompatíveis.
   - [ADR-0002-parallel-ismcts-multithreading.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0002-parallel-ismcts-multithreading.md): Paralelização do ISMCTS através de determinizações independentes de mundos concorrentes com `ThreadPoolExecutor`.
-  - [ADR-0003-concurrent-atomic-persistence-file-locks.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0003-concurrent-atomic-persistence-file-locks.md): Persistência atômica segura (`atomic_json_save`) e mutex interprocessos via `fcntl.flock` reentrante (`ai/atomic_io.py`).
+  - [ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md): Transição arquitetural para Pydantic, Imutabilidade no MCTS, Treinamento Headless in-memory e Banco de Dados SQLite3 transacional (Deprecia o ADR-0003).
   - [ADR-0004-arsenal-cr315-and-digging-mode.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0004-arsenal-cr315-and-digging-mode.md): Poda estrita de Arsenal conforme CR 3.1.5 e Heurística de Modo Cavar (CR 4.3.2) para desobstrução de mãos travadas.
   - [ADR-0005-setup-templates-vs-git-submodules.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0005-setup-templates-vs-git-submodules.md): Desacoplamento via `setup_templates/` contra forks/submódulos do Talishar para imunidade a quebras upstream.
   - [ADR-0006-asymmetric-distillation-mcts-visit-targets.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0006-asymmetric-distillation-mcts-visit-targets.md): Distilação assimétrica usando vetor de visitas ISMCTS ($\pi_{\text{MCTS}}$) e alvos auxiliares KataGo.
@@ -23,17 +23,16 @@ Single-context layout:
 ├── docs/adr/
 │   ├── ADR-0001-modular-package-decomposition.md
 │   ├── ADR-0002-parallel-ismcts-multithreading.md
-│   ├── ADR-0003-concurrent-atomic-persistence-file-locks.md
 │   ├── ADR-0004-arsenal-cr315-and-digging-mode.md
 │   ├── ADR-0005-setup-templates-vs-git-submodules.md
-│   └── ADR-0006-asymmetric-distillation-mcts-visit-targets.md
+│   ├── ADR-0006-asymmetric-distillation-mcts-visit-targets.md
+│   └── ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md
 ├── ai/
 │   ├── bot_runtime/         ← client, lobby, match tracker, choices, phases
 │   ├── policy/              ← attack, defense, pitch, arsenal pruners & engine
 │   ├── mcts/                ← node, standard_mcts, world_generator, ismcts
 │   ├── training/            ← orchestrator, matchup_engine, process_supervisor
 │   ├── hero_strategies/     ← 139 heróis, knapsack_solver, turn_planner
-│   └── atomic_io.py         ← atomic_json_save & file_lock
 ├── deck_manager/            ← parser, repository, slugifier, validator
 ├── stats/                   ← elo, storage, sync, deck_names
 └── ui/                      ← dashboard Streamlit decomposto (helpers e tabs/)

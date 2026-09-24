@@ -17,6 +17,10 @@ except Exception:
     DEFAULT_STATE_DIM = 832
 
 import contextlib
+import logging
+
+logger = logging.getLogger(__name__)
+
 @contextlib.contextmanager
 def file_lock(path, timeout=5.0):
     try:
@@ -25,6 +29,27 @@ def file_lock(path, timeout=5.0):
         with lock:
             yield
     except ImportError:
+        # Fallback para ambientes sem filelock usando arquivo exclusivo
+        lock_file = f"{path}.lock"
+        start_t = time.time()
+        fd = None
+        while time.time() - start_t < timeout:
+            try:
+                fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+                break
+            except OSError:
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            if fd is not None:
+                try:
+                    os.close(fd)
+                    os.remove(lock_file)
+                except OSError:
+                    pass
+    except Exception as e:
+        logger.warning("[file_lock] Aviso ao obter lock em %s: %s. Prosseguindo.", path, e)
         yield
 
 class SumTree:
@@ -329,7 +354,13 @@ class ReplayBuffer:
                 self.pointer = n % self.max_capacity
             return True
         except Exception as e:
-            print(f"Erro ao carregar buffer {filepath}: {e}")
+            print(f"[ReplayBuffer] Erro ao carregar buffer corrompido {filepath}: {e}. Reiniciando buffer vazio.")
+            self.current_size = 0
+            self.pointer = 0
+            self.states.fill(0)
+            self.policies.fill(0)
+            self.values.fill(0)
+            self.sum_tree = SumTree(self.max_capacity)
             return False
 
     def ingest_from_memory(self, trajectories: List[Tuple[List[Any], int]]) -> int:

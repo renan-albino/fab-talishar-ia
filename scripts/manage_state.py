@@ -28,6 +28,7 @@ ESSENTIAL_FILES = [
     ("checkpoints/teacher_latest.pt", True),
     ("model_latest.pt", False),
     ("replay_buffer.npz", False),
+    ("talishar_stats.db", False),
     ("training_metrics.json", False),
     ("training_stats.json", False),
     ("fab_cards_db.json", False),
@@ -49,6 +50,7 @@ def show_info():
     total_size = 0
     found_count = 0
     for rel_path, required in ESSENTIAL_FILES:
+        rel_path = rel_path[5:] if rel_path.startswith("data/") else rel_path
         full_path = os.path.join(DATA_DIR, rel_path)
         if os.path.exists(full_path):
             size = os.path.getsize(full_path)
@@ -98,6 +100,7 @@ def export_state(dest_path: str = None):
 
     with tarfile.open(target_tar, "w:gz") as tar:
         for rel_path, required in ESSENTIAL_FILES:
+            rel_path = rel_path[5:] if rel_path.startswith("data/") else rel_path
             full_path = os.path.join(DATA_DIR, rel_path)
             if os.path.exists(full_path):
                 arcname = os.path.join("data", rel_path)

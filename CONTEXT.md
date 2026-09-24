@@ -40,7 +40,7 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
 
 - **FaBCardTransformerNetwork (`ai/model.py`)**: Rede Neural Transformer Dual-Head com Self-Attention (entre 16 slots de cartas ativas) e Cross-Attention (com 64 tokens de contexto global), operando sobre vetor de estado flat-packed de 832 dimensões contínuas e cabeças auxiliares KataGo.
   - _Avoid_: MLP de cartas, Rede estática legada, ResNet v1 de 192 entradas, Rede de perceptron simples, Vetor legado de 800 dimensões.
-- **Matriz de Embeddings Tensoriais (`data/card_embeddings.pt` & `data/card_to_idx.json`)**: Matriz densa pré-compilada em PyTorch de dimensões `[5133, 48]` em FP32, indexada em $O(1)$ pelo identificador de carta. Codifica atributos canônicos, classes one-hot, keywords de combate e componentes semânticos textuais via decomposição SVD.
+- **Matriz de Embeddings Tensoriais (`data/card_embeddings.pt` & `data/card_to_idx.json`)**: Matriz densa pré-compilada em PyTorch de dimensões `[5145, 48]` em FP32, indexada em $O(1)$ pelo identificador de carta. Codifica atributos canônicos, classes one-hot, keywords de combate e componentes semânticos textuais via decomposição SVD.
   - _Avoid_: Extração de embeddings em tempo de execução, Regex na inferência, One-hot gigante esparso.
 - **Compreensão Semântica de Arena (`ai/policy/card_semantics.py` & `data/fab_card_semantics.json`)**: Sistema holístico de percepção que compila perfis funcionais (`CardSemanticProfile`) e sintetiza o contexto dinâmico de perigo (`ArenaThreatContext`), interpretando modificadores de combate concedidos por itens, auras e gatilhos de dano concorrentes sem dependência de hardcodes nominais.
   - _Avoid_: Hardcode nominal de itens, Lista estática de cartas de arena, Checagem cega por nome.
@@ -66,9 +66,9 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Buffer prioritário simples, Replay balanceado por heurística, Amostragem sem peso de importância.
 - **Blunder Reviewer (`ai/blunder_reviewer.py`)**: Módulo de análise pós-jogo que inspeciona a trajetória da partida recém-terminada, detectando oscilações severas de avaliação de tabuleiro ($\Delta\text{eval} \le -3.0$ para blunders, $\le -1.5$ para imprecisões) e gerando pesos proporcionais para o PER.
   - _Avoid_: Revisor de erros manual, Log de exceções táticas, Detector de derrotas.
-- **Dynamic Rule Tuner (`ai/dynamic_rule_tuner.py`)**: Sistema de auto-calibração em runtime que ajusta dinamicamente os multiplicadores de regras táticas (ataque, bloqueio, pivot, arsenal) em `data/hero_rule_multipliers.json` com base no histórico de taxas de vitória empíricas de cada herói.
+- **Dynamic Rule Tuner (`ai/dynamic_rule_tuner.py`)**: Sistema de auto-calibração em runtime que ajusta dinamicamente os multiplicadores de regras táticas (ataque, bloqueio, pivot, arsenal) em `banco SQLite talishar_stats.db` com base no histórico de taxas de vitória empíricas de cada herói.
   - _Avoid_: Calibrador manual, Afinador de constantes estático, Script de balanceamento avulso.
-- **Atomic File Lock (`ai/atomic_io.py`)**: Protocolo de persistência concorrente seguro para ambientes multiprocesso Linux que combina exclusão mútua interprocessos via `fcntl.flock` reentrante com substituição atômica de arquivos no nível POSIX (*write-to-tmp + rename* via `os.replace`).
+- **Banco de Dados Relacional (SQLite3)**: Persistência nativa, segura e transacional configurada em `stats/db.py`, substituindo os antigos locks atômicos no sistema de arquivos para lidar simultaneamente com ELOs (`hero_elo`), históricos (`match_history`) e hiperparâmetros de poda.
   - _Avoid_: Lock de thread em memória, Trava de arquivo sem timeout, Gravação direta com open.
 - **Modo Cavar (Digging Mode)**: Heurística tática ativada em `ai/policy/arsenal_pruner.py` quando o bot possui 3 ou mais cartas na mão no fim de turno e nenhuma opção alcança score positivo. Deposita deliberadamente a melhor carta de ação jogável no Arsenal para liberar a mão e forçar a compra de cartas novas do topo do baralho até o Intelecto no End of Turn Step (CR 4.3.2).
   - _Avoid_: Modo Escavação, Descarte voluntário, Arsenal forçado cego, Ciclo passivo.
@@ -145,7 +145,7 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - `ai/mcts/`: Motores de busca MCTS/ISMCTS concorrentes multithread.
   - `ai/training/`: Supervisão de processos e orquestrador de GPU com FP16/AMP.
   - `deck_manager/`: Slugificação, parsing, validação de formatos e repositório atômico de baralhos.
-  - `stats/`: Cálculo de ELO com K-factor dinâmico, nomes canônicos e persistência com lock.
+  - `stats/`: Cálculo de ELO com K-factor dinâmico, nomes canônicos e persistência transacional em SQLite3 WAL.
   - `ui/`: Interface gráfica Streamlit decomposta (`helpers.py` e 7 abas em `tabs/`).
   - _Avoid_: Monólito dividido, Pastas arbitrárias de código, Módulos dispersos.
 - **Retrocompatibility Facades**: Módulos raízes enxutos (`bot_client.py`, `dashboard.py`, `deck_parser.py`, `stats_manager.py`, `ai/trainer.py`, `ai/policy_engine.py`, `ai/mcts/__init__.py`) que re-exportam métodos e classes públicas dos subpacotes, preservando 100% de compatibilidade retroativa.

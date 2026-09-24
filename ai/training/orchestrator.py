@@ -13,6 +13,7 @@ import time
 import json
 import threading
 import subprocess
+import shutil
 import uuid
 import math
 from collections import defaultdict
@@ -302,38 +303,41 @@ class GPUTrainingOrchestrator:
                         break
                     d1, d2 = self._next_deck_pair(decks_pool)
                     room_id = f"Train_{uuid.uuid4().hex[:8]}"
+                    cmd_prefix = ["nice", "-n", "10"] if (os.name != "nt" and shutil.which("nice")) else []
                     p1 = subprocess.Popen(
-                        [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
-                         "--room", room_id, "--deck", f"decks/{d1}.json",
-                         "--role", "host",  "--name", "Bot1",
-                         "--mcts-sims", str(mcts_sims_val),
-                         "--device", str(bot_device),
-                         "--buffer-capacity", str(buffer_cap),
-                         "--epoch-ratio", str(epoch_ratio),
-                         "--ismcts-concurrency", ismcts_concurrency_val],
+                        cmd_prefix + [
+                            py_bin, os.path.join(BASE_DIR, "bot_client.py"),
+                            "--room", room_id, "--deck", f"decks/{d1}.json",
+                            "--role", "host",  "--name", "Bot1",
+                            "--mcts-sims", str(mcts_sims_val),
+                            "--device", str(bot_device),
+                            "--buffer-capacity", str(buffer_cap),
+                            "--epoch-ratio", str(epoch_ratio),
+                            "--ismcts-concurrency", ismcts_concurrency_val,
+                        ],
                         cwd=BASE_DIR,
                         env=bot_env,
                         stdout=subprocess.DEVNULL,
                         stderr=open("logs/bot_client_err.log", "a"),
-                        preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
                     )
                     with self._proc_lock:
                         self._active_procs.append((p1, None))
                     time.sleep(0.2)
                     p2 = subprocess.Popen(
-                        [py_bin, os.path.join(BASE_DIR, "bot_client.py"),
-                         "--room", room_id, "--deck", f"decks/{d2}.json",
-                         "--role", "join",  "--name", "Bot2",
-                         "--mcts-sims", str(mcts_sims_val),
-                         "--device", str(bot_device),
-                         "--buffer-capacity", str(buffer_cap),
-                         "--epoch-ratio", str(epoch_ratio),
-                         "--ismcts-concurrency", ismcts_concurrency_val],
+                        cmd_prefix + [
+                            py_bin, os.path.join(BASE_DIR, "bot_client.py"),
+                            "--room", room_id, "--deck", f"decks/{d2}.json",
+                            "--role", "join",  "--name", "Bot2",
+                            "--mcts-sims", str(mcts_sims_val),
+                            "--device", str(bot_device),
+                            "--buffer-capacity", str(buffer_cap),
+                            "--epoch-ratio", str(epoch_ratio),
+                            "--ismcts-concurrency", ismcts_concurrency_val,
+                        ],
                         cwd=BASE_DIR,
                         env=bot_env,
                         stdout=subprocess.DEVNULL,
                         stderr=open("logs/bot_client_err.log", "a"),
-                        preexec_fn=lambda: os.nice(10) if hasattr(os, "nice") else None,
                     )
                     with self._proc_lock:
                         self._active_procs[-1] = (p1, p2)

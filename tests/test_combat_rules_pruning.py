@@ -230,13 +230,13 @@ def test_intimidate_reduces_opponent_hand_in_simulator():
 # 6. Overpower com Ação no Arsenal (CR 7.4.2b, CR 8.3.22)
 # =====================================================================
 
-def test_overpower_allows_action_from_arsenal_with_action_from_hand():
+def test_overpower_restricts_action_cards_from_any_zone():
     """
     Overpower (CR 7.4.2b, CR 8.3.22):
-    "This can't be defended by more than one action card from hand".
-    Cartas defendidas do Arsenal (com Ambush / Down and Dirty) são cartas de ação,
-    mas NÃO vêm da mão (is_hand=False, is_arsenal=True).
-    Portanto, defender com 1 ação da mão + 1 ação do Arsenal é 100% legal sob Overpower!
+    "This can't be defended by more than one action card."
+    Diferente de Dominate (CR 7.4.2a) que restringe apenas cartas da mão,
+    Overpower restringe cartas de ação de QUALQUER zona (mão, Arsenal via Ambush, etc.).
+    Portanto, a IA não pode bloquear com 1 ação da mão + 1 ação do Arsenal simultaneamente.
     """
     pe = PolicyEngine(hero_name="generic")
 
@@ -263,8 +263,8 @@ def test_overpower_allows_action_from_arsenal_with_action_from_hand():
     chosen_blocks = pe.select_defense_blocks(state)
     chosen_names = [b[2].lower() for b in chosen_blocks]
     assert any("down_and_dirty" in n for n in chosen_names), f"Esperado Down and Dirty do Arsenal, obtido: {chosen_names}"
-    assert any("action_atk_1" in n for n in chosen_names), f"Esperado action_atk_1 da mão, obtido: {chosen_names}"
-    assert len(chosen_blocks) == 2, f"Overpower deve permitir 1 ação da mão + 1 ação do Arsenal, obtido {len(chosen_blocks)}"
+    assert not any("action_atk_1" in n for n in chosen_names), f"action_atk_1 não pode ser aceito com ação do Arsenal sob Overpower: {chosen_names}"
+    assert len(chosen_blocks) == 1, f"Overpower deve permitir no máximo 1 carta de ação de qualquer zona, obtido {len(chosen_blocks)}"
 
 
 # =====================================================================

@@ -110,6 +110,17 @@ def delete_saved_deck(slug: str, base_dir: str = None) -> bool:
             print(f"Erro ao remover {deck_path}: {e}")
     return False
 
+def _atomic_json_save(obj: dict, file_path: str, indent: int = 2) -> None:
+    dir_name = os.path.dirname(file_path)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+    temp_file = f"{file_path}.tmp"
+    with open(temp_file, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=indent)
+    os.replace(temp_file, file_path)
+
+atomic_json_save = _atomic_json_save
+
 def set_active_deck(deck_data: dict, base_dir: str = None):
     """Define o deck ativo no Talishar (deck.json) usando atomic_json_save."""
     if base_dir is None:
@@ -117,7 +128,7 @@ def set_active_deck(deck_data: dict, base_dir: str = None):
     for root in [base_dir, "."]:
         for main_file in [os.path.join(root, "Talishar", "deck.json"), os.path.join(root, "deck.json")]:
             try:
-                atomic_json_save(deck_data, main_file, indent=2)
+                _atomic_json_save(deck_data, main_file, indent=2)
             except Exception:
                 pass
 
@@ -150,7 +161,7 @@ def normalize_all_saved_decks(base_dir: str = None) -> list[str]:
                     with open(fpath, "r", encoding="utf-8") as f:
                         d = json.load(f)
                     enriched = enrich_deck_metadata(d, db=db)
-                    atomic_json_save(enriched, fpath, indent=2)
+                    _atomic_json_save(enriched, fpath, indent=2)
                     normalized.append(df)
                 except Exception as e:
                     print(f"Erro ao normalizar deck {df}: {e}")
