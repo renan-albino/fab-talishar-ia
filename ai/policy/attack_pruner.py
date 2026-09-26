@@ -215,6 +215,11 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
                     evos_equipped = sum(1 for e in equip_list if isinstance(e, dict) and ("evo" in str(e.get("cardNumber", "")).lower() or "evo" in str(e.get("subtype", "")).lower()))
 
                 # Armas convencionais de ataque
+                hand_pitch = sum(engine.extract_card_info(c)['pitch'] for c in hand)
+                total_payable = floating_res + hand_pitch
+                if total_payable < weapon_cost:
+                    continue
+
                 if total_res >= weapon_cost:
                     eq_info = engine.extract_card_info(eq)
                     weapon_power = eq_info.get("power", 0) or int(eq.get("power", 0))

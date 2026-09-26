@@ -165,7 +165,7 @@ def get_weapon_cost(
         cost = KNOWN_WEAPON_COSTS[clean]
     else:
         for kw, kw_cost in [
-            ("hammer", 3), ("anvilheim", 3), ("titans_fist", 3), ("pile_driver", 3), ("anothos", 3), ("rok", 3), ("club", 2),
+            ("hammer", 3), ("anvilheim", 3), ("titans_fist", 3), ("pile_driver", 4), ("anothos", 3), ("rok", 3), ("club", 2),
             ("flail", 2), ("scythe", 2), ("staff", 2), ("meteor", 2), ("symbiosis", 2), ("zenith", 2),
             ("saber", 1), ("sword", 1), ("dagger", 1), ("blade", 1), ("claw", 1), ("kodachi", 1), ("pistol", 1), ("bow", 1)
         ]:

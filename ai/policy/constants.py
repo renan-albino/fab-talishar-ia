@@ -197,7 +197,7 @@ WEAPON_KEYWORDS = [
 # Custo de ativação de recursos para armas conhecidas no Flesh and Blood
 KNOWN_WEAPON_COSTS = {
     "hammerhead_harpoon_cannon": 4,
-    "anothos": 3, "sledge_of_anvilheim": 3, "titans_fist": 3, "pile_driver": 3, "rok": 3,
+    "anothos": 3, "sledge_of_anvilheim": 3, "titans_fist": 3, "pile_driver": 4, "rok": 3,
     "hell_hammer": 3, "hammer_of_havenhold": 3, "redwood_hammer": 3, "ball_breaker": 3,
     "romping_club": 2, "flail_of_agony": 2, "dread_scythe": 2, "reaping_blade": 2,
     "zenith_blade": 2, "harmonious_pipe": 2, "claw_of_vynserakai": 2, "hunters_klaive": 2,

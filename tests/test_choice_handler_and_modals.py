@@ -518,6 +518,39 @@ class TestHandlePopupAndChoices:
         assert handled is True
         assert client.sent_actions[0] == {"mode": 17, "button_input": "trigger_1"}
 
+    def test_button_input_from_player_input_popup(self, client):
+        state = {
+            "playerInputPopUp": {
+                "buttons": [
+                    {"mode": 17, "buttonInput": "2", "caption": "2"}
+                ]
+            }
+        }
+        handled = choice_handler.handle_popup_and_choices(
+            client, state=state, turn_phase="BUTTONINPUT", popup={}, prompt_buttons=[], unpayable_set=set()
+        )
+        assert handled is True
+        assert client.sent_actions[0] == {"mode": 17, "button_input": "2"}
+
+    def test_button_input_anti_loop_forces_button_not_pass(self, client):
+        state = {
+            "playerInputPopUp": {
+                "buttons": [
+                    {"mode": 17, "buttonInput": "1", "caption": "1"},
+                    {"mode": 17, "buttonInput": "2", "caption": "2"}
+                ]
+            }
+        }
+        client.last_attempted_play = ""
+        client.recent_phases = ["BUTTONINPUT_"] * 5
+        handled = choice_handler.check_and_handle_anti_loop(
+            client, state=state, turn_num=1, turn_phase="BUTTONINPUT", prompt_buttons=[], unpayable_set=set()
+        )
+        assert handled is True
+        # Em vez de mode 99 (Pass inválido), envia o botão válido
+        assert client.sent_actions[0]["mode"] == 17
+        assert client.sent_actions[0]["button_input"] in ("1", "2")
+
     def test_choose_card_with_popup_data(self, client):
         popup = {
             "data": {

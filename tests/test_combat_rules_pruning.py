@@ -431,3 +431,47 @@ def test_reaction_phase_dominate_prohibits_hand_dr_when_combat_chain_has_hand_ca
     assert len(client.sent_actions) == 1
     assert client.sent_actions[0]["mode"] == 99, f"Deveria ter passado prioridade, obtido: {client.sent_actions[0]}"
 
+
+def test_pile_driver_cost_and_weapon_pruning():
+    """
+    Valida que pile_driver possui custo de ativação 4 e que a poda
+    de armas rejeita a ativação se floating_res + hand_pitch < 4.
+    """
+    pe = PolicyEngine(hero_name="generic")
+    cost = pe.get_weapon_cost("pile_driver")
+    assert cost == 4, f"Esperado custo 4 para pile_driver, obtido: {cost}"
+
+    # Estado onde o jogador possui pile_driver equipado e apenas 3 recursos totais (1 azul na mão = 3 pitch, 0 flutuante)
+    state_unpayable = {
+        "playerAP": 1,
+        "playerResources": [0, 0],
+        "playerEquipment": [
+            {"cardNumber": "pile_driver", "slot": "weapon", "action": 25, "actionDataOverride": "pile_driver"}
+        ],
+        "playerHand": [
+            {"cardNumber": "card_blue", "cost": 0, "action": 0}
+        ]
+    }
+    atk_action = pe.select_best_attack(state_unpayable)
+    assert atk_action is None or atk_action.get("name") != "pile_driver", (
+        f"pile_driver não deveria ser ativável com apenas 3 recursos disponíveis (custo=4), obtido: {atk_action}"
+    )
+
+    # Estado onde o jogador possui 4 recursos (1 azul + 1 vermelho = 4 pitch)
+    state_payable = {
+        "playerAP": 1,
+        "playerResources": [0, 0],
+        "playerEquipment": [
+            {"cardNumber": "pile_driver", "slot": "weapon", "action": 25, "actionDataOverride": "pile_driver"}
+        ],
+        "playerHand": [
+            {"cardNumber": "card_blue", "cost": 0, "action": 0},
+            {"cardNumber": "card_red", "cost": 0, "action": 0}
+        ]
+    }
+    atk_payable = pe.select_best_attack(state_payable)
+    assert atk_payable is not None and atk_payable.get("name") == "pile_driver", (
+        f"pile_driver deveria ser ativável com 4 recursos viáveis, obtido: {atk_payable}"
+    )
+
+

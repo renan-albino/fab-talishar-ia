@@ -1,6 +1,82 @@
 import time
 from ai.chat_badges import format_attack_chat_message
 
+def should_play_defensive_instant(client, state: dict, card_item: dict, c_info: dict, is_defending: bool) -> tuple:
+    """
+    Avalia adaptativamente se um Instant/Aura deve ser jogado no turno do oponente (defesa).
+    Retorna (deve_jogar: bool, motivo: str).
+    """
+    if not is_defending:
+        return True, "Turno Ofensivo"
+
+    c_name = str(card_item.get("cardNumber", "")).lower()
+    c_subtype = str(card_item.get("subtype", "")).lower()
+    cards_db = getattr(client.policy_engine, "cards_db", {}) or {}
+    c_db = cards_db.get(c_name, {})
+    c_text = str(c_db.get("text", "")).lower()
+
+    # 1. Defesa / Prevenção / Vida / Ward (Sempre Válido)
+    is_damage_prevention_or_life = (
+        any(k in c_name for k in ["sigil_of_solace", "oasis_respite", "shelter_from_the_storm", "peace_of_mind"])
+        or any(k in c_text for k in ["prevent", "gain", "life", "ward", "arcane barrier"])
+    )
+    if is_damage_prevention_or_life:
+        return True, "Prevenção/Vida Defensiva"
+
+    # 2. Análise da Ameaça do Ataque Adversário (On-Hits Destrutivos)
+    active_chain = state.get("activeChainLink") or {}
+    atk_card = active_chain.get("attackingCard") or {}
+    atk_name = str(atk_card.get("cardNumber") or active_chain.get("cardNumber", "")).lower()
+    atk_text = str(atk_card.get("text") or active_chain.get("text", "")).lower()
+
+    opp_power = int(active_chain.get("totalPower", state.get("combatChainPower", 0)))
+    total_def = int(active_chain.get("totalDefense", 0))
+    eff_opp_power = max(0, opp_power - total_def)
+
+    has_hand_threat = any(k in (atk_name + " " + atk_text) for k in [
+        "command_and_conquer", "pummel", "leave_no_witnesses", "eradicate",
+        "shake_down", "wreck_havoc", "humble", "righteous_cleansing", "discard",
+        "banish", "destroy", "bloodrot"
+    ])
+
+    # Se o ataque tem ameaça destrutiva e vai romper o bloqueio:
+    # Ativar o Instant salva a carta de ser perdida de graça!
+    if has_hand_threat and eff_opp_power > 0:
+        return True, f"Evasão de On-Hit (Salvando carta contra {atk_name or 'ataque'})"
+
+    # 3. Setup de Valor Persistente para o Próximo Turno
+    creates_persistent_token = any(k in (c_name + " " + c_text) for k in [
+        "wager agility", "wager might", "wager vigor", "wager gold",
+        "agility token", "might token", "vigor token", "gold token", "quicken"
+    ])
+    is_persistent_aura = "aura" in c_subtype and "destroy" not in c_text and "end of turn" not in c_text
+
+    if creates_persistent_token or is_persistent_aura:
+        my_hp = int(state.get("playerHealth", 20))
+        model = getattr(getattr(client, "policy_engine", None), "model", None)
+        if model is not None:
+            try:
+                from ai.model import FaBPolicyValueNetwork
+                state_vec = FaBPolicyValueNetwork.extract_state_vector(state)
+                _, val = model.predict_state(state_vec, str(client.policy_engine.device))
+                if val > -0.6 and eff_opp_power < my_hp - 2:
+                    return True, f"Setup Persistente Validado pela Rede Neural (Val: {val:.2f})"
+            except Exception:
+                pass
+        if eff_opp_power < my_hp - 2:
+            return True, "Setup Persistente para Próximo Turno"
+
+    # 4. Poda de Buffs Efêmeros de Ataque que expiram 'este turno'
+    is_ephemeral_buff = any(k in (c_name + " " + c_text) for k in [
+        "next attack", "this turn", "+1", "+2", "+3", "go again", "buff",
+        "slap_happy", "tension_in_the_air", "edge_of_their_seats", "act_of_glory",
+        "astral_bridge", "thunderous_retort", "lightning_press", "second_strike"
+    ])
+    if is_ephemeral_buff:
+        return False, "Buff efêmero sem ataque próprio no turno do oponente"
+
+    return False, "Instant sem valor tático imediato na defesa"
+
 def handle_pitch_phase(client, state: dict, turn_phase: str, prompt_buttons: list, unpayable_set: set) -> bool:
     """Gerencia a fase de pitch: PDECK, seleção ótima via policy_engine ou cancelamento seguro (mode 10000)."""
     if turn_phase not in ("P", "PDECK", "PAYGOLDORPITCH", "CHOOSEHANDCANCEL"):
@@ -132,8 +208,12 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
     if turn_phase not in ("A", "D", "INSTANT"):
         return False
 
+    turn_player = state.get("turnPlayer", 1)
+    is_defending = (turn_player != client.player_id)
+    is_attacking = (turn_player == client.player_id)
+
     chain_desc = client.get_combat_chain_desc(state)
-    if chain_desc and getattr(client, "last_logged_combat_attack", None) != (turn_num, chain_desc):
+    if is_defending and chain_desc and getattr(client, "last_logged_combat_attack", None) != (turn_num, chain_desc):
         client.last_logged_combat_attack = (turn_num, chain_desc)
         client.log(f"[COMBAT CHAIN] ⚔️ Ataque em Andamento: {chain_desc}")
 
@@ -150,10 +230,6 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
     if current_chain_id and current_chain_id != client._last_chain_link_id:
         client.reaction_attempts = {}
         client._last_chain_link_id = current_chain_id
-
-    turn_player = state.get("turnPlayer", 1)
-    is_defending = (turn_player != client.player_id)
-    is_attacking = (turn_player == client.player_id)
     incoming_text = str(active_chain.get("text", "")).lower()
     incoming_name = str(active_chain.get("cardNumber", "")).lower()
 
@@ -233,19 +309,13 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
                 client.log(f"[DOMINATE] ⚠️ Bloqueado jogar Defense Reaction da mão ({c_name}) sob Dominate.")
                 continue
 
-            # ── Poda Estrita de Instants Ofensivos na Defesa ──
-            # Cartas de ataque puro, setup ou buffs ofensivos (ex: Astral Bridge, Thunderous Retort, Lightning Press)
-            # NUNCA devem ser disparadas cegamente no turno do oponente enquanto ele ataca/ativa habilidades!
-            if is_defending:
-                is_offensive_instant = any(k in c_low for k in [
-                    "astral_bridge", "thunderous_retort", "lightning_press",
-                    "flowstate", "consign_to_cosmos", "comet_storm", "second_strike",
-                    "razor_reflex", "ironsong_response", "pummel", "ancestral"
-                ])
-                if is_offensive_instant:
-                    continue
-
             info = client.policy_engine.extract_card_info(c)
+
+            # ── Poda Adaptativa / Neural de Instants na Defesa ──
+            if is_defending and is_instant:
+                should_play, reason = should_play_defensive_instant(client, state, c, info, is_defending)
+                if not should_play:
+                    continue
             floating_res, total_res = client.policy_engine.calculate_available_resources(state)
             remaining_pitch = total_res - info["pitch"]
             if remaining_pitch >= info["cost"]:
@@ -305,21 +375,17 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
             or any(k in c_low for k in ["razor_reflex", "ironsong_response", "pummel"])
         )
 
+        info = client.policy_engine.extract_card_info(c)
         if is_defending:
             if not (is_dr or is_instant):
                 continue
-            is_offensive_instant = any(k in c_low for k in [
-                "astral_bridge", "thunderous_retort", "lightning_press",
-                "flowstate", "consign_to_cosmos", "comet_storm", "second_strike",
-                "razor_reflex", "ironsong_response", "pummel", "ancestral"
-            ])
-            if is_offensive_instant:
-                continue
+            if is_instant:
+                should_play, reason = should_play_defensive_instant(client, state, c, info, is_defending)
+                if not should_play:
+                    continue
         elif is_attacking:
             if not (is_ar or is_instant):
                 continue
-
-        info = client.policy_engine.extract_card_info(c)
         floating_res, total_res = client.policy_engine.calculate_available_resources(state)
         # Cartas do Arsenal não contam para pitch da mão; todos os recursos totais estão disponíveis
         if total_res >= info["cost"]:
@@ -521,6 +587,8 @@ def handle_main_action_phase(client, state: dict, turn_num: int, turn_phase: str
                     if raw_type == "hero_ability" and "teklo" in str(client.hero_name).lower():
                         client.teklo_ability_active_turn = turn_num
                     client.log(f"[AÇÃO JOGADOR {client.player_id}] Ativou -> {atk_name} (Tipo: {atk_type}, Custo: {atk_cost})")
+                elif atk_power <= 0 and raw_type not in ("weapon", "attack action", "aa"):
+                    client.log(f"[AÇÃO JOGADOR {client.player_id}] Jogou Ação/Aura -> {atk_name} (Tipo: {atk_type}, Custo: {atk_cost})")
                 else:
                     client.attacks_made += 1
                     client.log(f"[AÇÃO JOGADOR {client.player_id}] Atacou com -> {atk_name} (Tipo: {atk_type}, Poder: {atk_power}, Custo: {atk_cost})")

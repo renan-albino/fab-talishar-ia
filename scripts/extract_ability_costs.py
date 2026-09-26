@@ -76,6 +76,28 @@ def extract_ability_costs(talishar_root: str = "Talishar") -> dict:
                 for c in cards:
                     ability_db[c] = val
 
+    # 2. Escaneia recursivamente Talishar/Classes/CardObjects/*.php
+    card_objects_dir = os.path.join(talishar_root, "Classes", "CardObjects")
+    if os.path.exists(card_objects_dir):
+        for root, _, files in os.walk(card_objects_dir):
+            for f in sorted(files):
+                if f.endswith(".php"):
+                    path = os.path.join(root, f)
+                    try:
+                        with open(path, "r", encoding="utf-8", errors="ignore") as fp:
+                            content = fp.read()
+                    except Exception:
+                        continue
+                    cls_matches = list(re.finditer(r"class\s+([a-zA-Z0-9_]+)\s+extends\s+[a-zA-Z0-9_]+", content))
+                    for i, cm in enumerate(cls_matches):
+                        cname = cm.group(1)
+                        start = cm.end()
+                        end = cls_matches[i + 1].start() if i + 1 < len(cls_matches) else len(content)
+                        block = content[start:end]
+                        ac_match = re.search(r"function\s+AbilityCost\s*\([^)]*\)[^{]*\{[^}]*?return\s+(-?\d+)\s*;", block, re.DOTALL)
+                        if ac_match:
+                            ability_db[cname] = max(0, int(ac_match.group(1)))
+
     return ability_db
 
 
@@ -88,7 +110,7 @@ def main():
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(costs, f, indent=2)
     print(f"Extraídos {len(costs)} custos de habilidade com sucesso em {output_path}!")
-    for test_card in ["hammerhead_harpoon_cannon", "romping_club", "tectonic_plating", "cintari_saber", "high_riser"]:
+    for test_card in ["hammerhead_harpoon_cannon", "romping_club", "tectonic_plating", "cintari_saber", "high_riser", "pile_driver"]:
         print(f"  • {test_card}: {costs.get(test_card, 'N/A')}")
 
 if __name__ == "__main__":

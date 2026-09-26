@@ -162,6 +162,29 @@ def check_and_handle_anti_loop(client, state: dict, turn_num: int, turn_phase: s
             time.sleep(0.15)
             return True
 
+        # BUTTONINPUT / BUTTONINPUTNOPASS: O servidor NÃO aceita PASS (mode=99); deve-se escolher um botão válido.
+        if turn_phase in ("BUTTONINPUT", "BUTTONINPUTNOPASS"):
+            avail_buttons = prompt_buttons or []
+            if not avail_buttons and isinstance(state.get("playerInputPopUp"), dict):
+                avail_buttons = state["playerInputPopUp"].get("buttons") or []
+            elif not avail_buttons and isinstance(state.get("playerInputPopup"), dict):
+                avail_buttons = state["playerInputPopup"].get("buttons") or []
+
+            chosen_val = "1"
+            chosen_mode = 17
+            if avail_buttons:
+                idx = min(client.consecutive_same_state - 2, len(avail_buttons) - 1) if client.consecutive_same_state > 2 else 0
+                chosen_btn = avail_buttons[max(0, idx)]
+                chosen_val = str(chosen_btn.get("buttonInput", "1"))
+                chosen_mode = chosen_btn.get("mode", 17)
+
+            client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) -> Forçando Botão ({chosen_val}, Mode {chosen_mode})")
+            client.send_action(mode=chosen_mode, button_input=chosen_val)
+            client.recent_phases.clear()
+            client.consecutive_same_state = 0
+            time.sleep(0.15)
+            return True
+
         fallback_mode = 10000 if turn_phase in ("P", "PAYGOLDORPITCH") else 99
         chosen_btn = None
         if prompt_buttons:
@@ -194,8 +217,10 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
     """Trata modais, popups, inputs de nome, multichoose e escolhas de zona/texto."""
     # 0. Tratar INPUTCARDNAME
     if turn_phase == "INPUTCARDNAME":
-        client.log(f"[AÇÃO JOGADOR {client.player_id}] Nomeou carta (INPUTCARDNAME) -> 'Sink Below'")
-        client.send_action(mode=30, input_text="Sink Below")
+        from ai.bot_runtime.card_name_oracle import get_learned_card_name_target
+        chosen_card_name = get_learned_card_name_target(client, state)
+        client.log(f"[AÇÃO JOGADOR {client.player_id}] Nomeou carta (INPUTCARDNAME) -> '{chosen_card_name}'")
+        client.send_action(mode=30, input_text=chosen_card_name)
         time.sleep(0.002)
         return True
 
@@ -282,9 +307,18 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
 
     # 3. Tratar Escolhas de Zonas / Gatilhos (CHOOSECARD, CHOOSETRIGGERS, BUTTONINPUT, etc.)
     if turn_phase in ("BUTTONINPUT", "BUTTONINPUTNOPASS", "CHOOSEARCANE", "CHOOSEFIRSTPLAYER", "CHOOSETRIGGERS"):
-        btn_input = prompt_buttons[0].get("buttonInput", "0") if prompt_buttons else "0"
-        client.log(f"[AÇÃO JOGADOR {client.player_id}] Gatilho/Escolha -> {turn_phase}")
-        client.send_action(mode=17, button_input=str(btn_input))
+        avail_buttons = prompt_buttons or []
+        if not avail_buttons and isinstance(popup, dict):
+            avail_buttons = popup.get("buttons") or popup.get("promptButtons") or (popup.get("popup", {}) or {}).get("buttons") or []
+        if not avail_buttons and isinstance(state.get("playerInputPopUp"), dict):
+            avail_buttons = state["playerInputPopUp"].get("buttons") or []
+
+        btn_obj = avail_buttons[0] if avail_buttons else {}
+        default_val = "1" if turn_phase in ("BUTTONINPUT", "BUTTONINPUTNOPASS") else "0"
+        btn_input = btn_obj.get("buttonInput", default_val)
+        btn_mode = btn_obj.get("mode", 17)
+        client.log(f"[AÇÃO JOGADOR {client.player_id}] Gatilho/Escolha -> {turn_phase} (Valor: {btn_input}, Modo: {btn_mode})")
+        client.send_action(mode=btn_mode, button_input=str(btn_input))
         time.sleep(0.002)
         return True
 

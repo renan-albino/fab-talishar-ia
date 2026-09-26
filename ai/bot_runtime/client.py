@@ -442,13 +442,17 @@ class FabBotClient:
         active_chain = state.get("activeChainLink")
         if not isinstance(active_chain, dict):
             return ""
-        card_name = active_chain.get("cardNumber") or active_chain.get("name", "")
+        # 1. No Talishar, a carta atacante oficial reside em attackingCard
+        atk_card = active_chain.get("attackingCard")
+        card_name = ""
+        if isinstance(atk_card, dict):
+            card_name = atk_card.get("cardNumber") or atk_card.get("name", "")
+        if not card_name:
+            card_name = active_chain.get("cardNumber") or active_chain.get("name", "")
         if not card_name:
             reactions = active_chain.get("reactions", [])
-            if not reactions:
-                return ""
             first_card = reactions[0] if isinstance(reactions, list) and reactions else {}
-            card_name = first_card.get("cardNumber", "")
+            card_name = first_card.get("cardNumber", "") if isinstance(first_card, dict) else ""
             if not card_name:
                 return ""
         
@@ -617,15 +621,18 @@ class FabBotClient:
             self.reaction_attempts = {}
         unpayable_set = self.unpayable_cards_turn[turn_key]
 
-        popup = state.get("popup")
+        popup = state.get("popup") or state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
         prompt_buttons = []
         player_prompt = state.get("playerPrompt")
         if isinstance(player_prompt, dict):
-            prompt_buttons = player_prompt.get("buttons") or player_prompt.get("promptButtons")
+            prompt_buttons = player_prompt.get("buttons") or player_prompt.get("promptButtons") or []
         elif isinstance(state.get("promptButtons"), list):
             prompt_buttons = state.get("promptButtons")
         elif isinstance(state.get("buttons"), list):
             prompt_buttons = state.get("buttons")
+
+        if not prompt_buttons and isinstance(popup, dict):
+            prompt_buttons = popup.get("buttons") or popup.get("promptButtons") or (popup.get("popup", {}) or {}).get("buttons") or []
 
         # 1. Anti-Loop
         if choice_handler.check_and_handle_anti_loop(self, state, turn_num, turn_phase, prompt_buttons, unpayable_set):

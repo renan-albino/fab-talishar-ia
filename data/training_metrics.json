@@ -1,6 +1,6 @@
 {
   "total_games": 5,
-  "samples_collected": 40,
+  "samples_collected": 20,
   "epochs_completed": 0,
   "policy_loss": 0.0,
   "value_loss": 0.0,

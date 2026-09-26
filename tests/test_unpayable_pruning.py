@@ -130,7 +130,8 @@ def test_weapon_power_and_cost():
         "playerAP": 1,
         "playerPitchCount": 0,
         "playerHand": [
-            {"cardNumber": "sink_below_blue", "action": 0, "actionDataOverride": "0"}
+            {"cardNumber": "sink_below_blue", "action": 0, "actionDataOverride": "0"},
+            {"cardNumber": "sink_below_red", "action": 0, "actionDataOverride": "1"}
         ],
         "playerEquipment": [
             {"cardNumber": "pile_driver", "action": 27, "actionDataOverride": "W1", "slot": "Weapon"}
@@ -141,7 +142,7 @@ def test_weapon_power_and_cost():
     assert atk is not None
     assert atk["name"] == "pile_driver"
     assert atk["power"] == 6, f"Esperado poder 6 para pile_driver, obteve {atk['power']}"
-    assert atk["cost"] == 3
+    assert atk["cost"] == 4
 
 def test_ranger_arrow_hand_pruning():
     pe = make_policy_engine()

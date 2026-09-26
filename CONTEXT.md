@@ -88,6 +88,8 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Superdefesa, Bloqueio seguro excessivo, Bloco redundante.
 - **GameSimulator (`ai/game_simulator.py`)**: Simulador determinístico de transições de regras e estados futuros de combate sem dependência do Talishar PHP.
   - _Avoid_: Mock de jogo, Emulador arbitrário, Test dummy.
+- **Card Name Oracle (`ai/bot_runtime/card_name_oracle.py`)**: Oráculo dinâmico em 3 níveis (Memória da Partida Atual, Histórico no SQLite e Avaliador Algorítmico do Cards DB com fallback seguro) para predição e escolha inteligente de alvos no prompt `INPUTCARDNAME` sem listas estáticas.
+  - _Avoid_: Hardcoded card names, Lista fixa de nomes, Chute cego em INPUTCARDNAME.
 - **Replay Buffer (`ai/experience_collector.py`)**: Buffer circular de experiências que armazena estados, políticas ISMCTS e recompensas de partidas para treino off-policy com salvamento atômico em disco.
   - _Avoid_: Histórico de logs, Banco de dados de partidas, Fila temporária.
 - **Batch Leaf Evaluation**: Agrupamento simultâneo de múltiplos nós folhas gerados pelo MCTS em um único lote matricial de forward pass na GPU/PyTorch, reduzindo a latência de $O(N)$ para $O(1)$.

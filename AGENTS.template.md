@@ -65,7 +65,7 @@ O script `scripts/prepare_environment.py` detecta automaticamente se seu ambient
 - O dashboard Streamlit é orquestrado por `dashboard.py` delegando para `ui/helpers.py` e `ui/tabs/` (7 abas).
 - Patches do Talishar e Talishar-FE ficam em `setup_templates/` e são aplicados por `scripts/prepare_environment.py`.
 - Banco de cartas oficial fica em `data/fab_cards_db.json` (extraído por `extract_card_db.py`).
-- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini` (414 testes unitários).
+- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini` (443 testes unitários).
 
 
 ### Ponytail Protocol
