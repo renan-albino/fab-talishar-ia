@@ -1,0 +1,175 @@
+{
+  "name": "Ira",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "ira_scarlet_revenger",
+      "total": 1
+    },
+    {
+      "identifier": "blazen_yoroi",
+      "total": 1
+    },
+    {
+      "identifier": "double_cross_strap",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "gloves_of_astral_sanctuary",
+      "total": 1
+    },
+    {
+      "identifier": "harmonized_kodachi",
+      "total": 2
+    },
+    {
+      "identifier": "mask_of_momentum",
+      "total": 1
+    },
+    {
+      "identifier": "mask_of_the_swarming_claw",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_gloves",
+      "total": 1
+    },
+    {
+      "identifier": "pouncing_paws",
+      "total": 1
+    },
+    {
+      "identifier": "amnesia_red",
+      "total": 2
+    },
+    {
+      "identifier": "bittering_thorns_red",
+      "total": 3
+    },
+    {
+      "identifier": "censor_red",
+      "total": 2
+    },
+    {
+      "identifier": "command_and_conquer_red",
+      "total": 3
+    },
+    {
+      "identifier": "cut_through_red",
+      "total": 3
+    },
+    {
+      "identifier": "erase_face_red",
+      "total": 3
+    },
+    {
+      "identifier": "fate_foreseen_red",
+      "total": 3
+    },
+    {
+      "identifier": "flic_flak_red",
+      "total": 3
+    },
+    {
+      "identifier": "gravekeeping_red",
+      "total": 3
+    },
+    {
+      "identifier": "looking_for_a_scrap_red",
+      "total": 2
+    },
+    {
+      "identifier": "pain_in_the_backside_red",
+      "total": 3
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "sigil_of_solace_red",
+      "total": 3
+    },
+    {
+      "identifier": "sink_below_red",
+      "total": 3
+    },
+    {
+      "identifier": "sound_the_alarm_red",
+      "total": 3
+    },
+    {
+      "identifier": "the_weakest_link_red",
+      "total": 3
+    },
+    {
+      "identifier": "torrent_of_tempo_red",
+      "total": 1
+    },
+    {
+      "identifier": "dual_threat_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "aspect_of_tiger_mind_blue",
+      "total": 2
+    },
+    {
+      "identifier": "back_heel_kick_blue",
+      "total": 1
+    },
+    {
+      "identifier": "crane_dance_blue",
+      "total": 1
+    },
+    {
+      "identifier": "legacy_of_ikaru_blue",
+      "total": 1
+    },
+    {
+      "identifier": "one_two_punch_blue",
+      "total": 1
+    },
+    {
+      "identifier": "overcrowded_blue",
+      "total": 2
+    },
+    {
+      "identifier": "pouncing_qi_blue",
+      "total": 3
+    },
+    {
+      "identifier": "recoil_blue",
+      "total": 1
+    },
+    {
+      "identifier": "rising_knee_thrust_blue",
+      "total": 1
+    },
+    {
+      "identifier": "rotten_remains_blue",
+      "total": 1
+    },
+    {
+      "identifier": "rushing_river_blue",
+      "total": 2
+    },
+    {
+      "identifier": "warmongers_diplomacy_blue",
+      "total": 3
+    },
+    {
+      "identifier": "whelming_gustwave_blue",
+      "total": 2
+    }
+  ],
+  "hero": "ira_scarlet_revenger",
+  "hero_name": "Ira, Scarlet Revenger",
+  "class": "NINJA",
+  "talents": [],
+  "is_young": false
+}

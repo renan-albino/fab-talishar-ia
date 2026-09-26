@@ -7,12 +7,18 @@ from ai.hero_strategies import get_hero_strategy, TeklovossenStrategy
 from bot_client import FabBotClient
 from ai.policy_engine import PolicyEngine
 
+import stats.db
+
 TEST_STATS_FILE = "data/test_training_stats_normalization.json"
 
 @pytest.fixture(autouse=True)
-def setup_teardown_test_stats(monkeypatch):
+def setup_teardown_test_stats(monkeypatch, tmp_path):
     os.makedirs("data", exist_ok=True)
-    monkeypatch.setattr("stats_manager.STATS_FILE", TEST_STATS_FILE)
+    test_db = str(tmp_path / "test_stats.db")
+    monkeypatch.setattr("stats.db.DB_FILE", test_db)
+    monkeypatch.setattr("stats.storage.STATS_FILE", test_db)
+    monkeypatch.setattr("stats_manager.STATS_FILE", test_db)
+    stats.db.init_db()
     if os.path.exists(TEST_STATS_FILE):
         os.remove(TEST_STATS_FILE)
     yield
@@ -95,7 +101,7 @@ def test_teklovossen_sideboard_equips_all_four_slots():
     client.mcts_sims = 10
     client.use_gpu = False
     client.session = type("MockSession", (), {"post": lambda self, url, json: type("Res", (), {"status_code": 200, "json": lambda: {"status": "OK"}})()})()
-    client.log = lambda msg: None
+    client.log = lambda msg, *a, **kw: None
     client._card_db = json.load(open("data/fab_cards_db.json"))
     client.get_card_meta = lambda cid: client._card_db.get(cid, {})
     client.get_opponent_info = lambda: ("kassai", "warrior")

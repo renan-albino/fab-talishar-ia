@@ -1,0 +1,163 @@
+{
+  "name": "Boltyn",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "ser_boltyn_breaker_of_dawn",
+      "total": 1
+    },
+    {
+      "identifier": "circlet_of_eternal_end",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "helm_of_halos_grace",
+      "total": 1
+    },
+    {
+      "identifier": "ironsong_versus",
+      "total": 1
+    },
+    {
+      "identifier": "kabuto_of_imperial_authority",
+      "total": 1
+    },
+    {
+      "identifier": "longsword_leggings",
+      "total": 1
+    },
+    {
+      "identifier": "raydn_duskbane",
+      "total": 1
+    },
+    {
+      "identifier": "solforge_gauntlet",
+      "total": 1
+    },
+    {
+      "identifier": "soulbond_resolve",
+      "total": 1
+    },
+    {
+      "identifier": "warband_of_bellona",
+      "total": 1
+    },
+    {
+      "identifier": "warpath_of_winged_grace",
+      "total": 1
+    },
+    {
+      "identifier": "beaming_bravado_red",
+      "total": 3
+    },
+    {
+      "identifier": "bolt_of_courage_red",
+      "total": 3
+    },
+    {
+      "identifier": "bravery_of_the_blade_red",
+      "total": 3
+    },
+    {
+      "identifier": "duty_bound_blitz_red",
+      "total": 3
+    },
+    {
+      "identifier": "edict_of_steel_red",
+      "total": 2
+    },
+    {
+      "identifier": "spirit_of_war_red",
+      "total": 3
+    },
+    {
+      "identifier": "banneret_of_swordsmanship_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "battlefield_beacon_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "beacon_of_victory_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "beaming_bravado_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "blessing_of_aegis_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "blessing_of_bellona_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "blessing_of_suraya_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "blessing_of_themis_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "bolt_of_courage_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "celestial_cataclysm_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "duty_bound_blitz_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "lumina_ascension_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "prayer_of_bellona_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "roaring_beam_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "saving_grace_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "soul_shield_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "spirit_of_eirina_yellow",
+      "total": 1
+    },
+    {
+      "identifier": "tenacity_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "v_of_the_vanguard_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "war_cry_of_bellona_yellow",
+      "total": 2
+    }
+  ],
+  "hero": "ser_boltyn_breaker_of_dawn",
+  "hero_name": "Ser Boltyn, Breaker of Dawn",
+  "class": "WARRIOR",
+  "talents": [],
+  "is_young": false
+}

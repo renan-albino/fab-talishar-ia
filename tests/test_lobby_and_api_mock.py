@@ -629,7 +629,7 @@ class TestLobbyManagerWaitInLobbyAndStart:
         gs_dir = tmp_path / "Talishar" / "Games" / "5050"
         gs_dir.mkdir(parents=True, exist_ok=True)
         gs_file = gs_dir / "gamestate.txt"
-        gs_file.write_text("turn=1&active=1")
+        gs_file.write_text("turn=1&active=1\n" + "x" * 250)
 
         mock_resp = MagicMock(spec=requests.Response)
         mock_resp.status_code = 200
@@ -650,7 +650,7 @@ class TestLobbyManagerWaitInLobbyAndStart:
         gs_dir = tmp_path / "Games" / "5051"
         gs_dir.mkdir(parents=True, exist_ok=True)
         gs_file = gs_dir / "gamestate.txt"
-        gs_file.write_text("turn=1")
+        gs_file.write_text("turn=1\n" + "x" * 250)
 
         mock_resp = MagicMock(spec=requests.Response)
         mock_resp.status_code = 200
@@ -739,7 +739,7 @@ class TestLobbyManagerWaitForOpponentAndStart:
         monkeypatch.chdir(tmp_path)
         gs_dir = tmp_path / "Talishar" / "Games" / "6062"
         gs_dir.mkdir(parents=True, exist_ok=True)
-        (gs_dir / "gamestate.txt").write_text("state=active")
+        (gs_dir / "gamestate.txt").write_text("state=active\n" + "x" * 250)
 
         client = DummyBotClient(room_id="room_status", game_id="6062", player_id=1)
         mock_resp = MagicMock(spec=requests.Response)
@@ -757,7 +757,7 @@ class TestLobbyManagerWaitForOpponentAndStart:
         monkeypatch.chdir(tmp_path)
         gs_dir = tmp_path / "Games" / "6063"
         gs_dir.mkdir(parents=True, exist_ok=True)
-        (gs_dir / "gamestate.txt").write_text("state=active")
+        (gs_dir / "gamestate.txt").write_text("state=active\n" + "x" * 250)
 
         client = DummyBotClient(room_id="room_status2", game_id="6063", player_id=1)
         mock_resp = MagicMock(spec=requests.Response)
@@ -1122,9 +1122,9 @@ class TestLobbyManagerSetupGameRoomJoin:
     def test_setup_join_game_file_too_short(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "logs").mkdir(exist_ok=True)
-        (tmp_path / "logs" / "short_gf_room_game_id.txt").write_text("8008")
+        (tmp_path / "logs" / "short_gf_room_game_id.txt").write_text("999988")
 
-        gf_dir = tmp_path / "Talishar" / "Games" / "8008"
+        gf_dir = tmp_path / "Talishar" / "Games" / "999988"
         gf_dir.mkdir(parents=True, exist_ok=True)
         (gf_dir / "GameFile.txt").write_text("line0\nline1")
 

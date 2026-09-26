@@ -1,0 +1,155 @@
+{
+  "name": "Spellcilio",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "oscilio_constella_intelligence",
+      "total": 1
+    },
+    {
+      "identifier": "balance_of_justice",
+      "total": 1
+    },
+    {
+      "identifier": "crown_of_providence",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "metacarpus_node",
+      "total": 1
+    },
+    {
+      "identifier": "stonewall_gauntlet",
+      "total": 1
+    },
+    {
+      "identifier": "storm_striders",
+      "total": 1
+    },
+    {
+      "identifier": "volzar_meteor_storm",
+      "total": 1
+    },
+    {
+      "identifier": "aether_flare_red",
+      "total": 3
+    },
+    {
+      "identifier": "aethersling_red",
+      "total": 3
+    },
+    {
+      "identifier": "chromatic_refinement_red",
+      "total": 3
+    },
+    {
+      "identifier": "cloud_cover_red",
+      "total": 2
+    },
+    {
+      "identifier": "comet_collision_red",
+      "total": 3
+    },
+    {
+      "identifier": "comet_storm__shock_red",
+      "total": 3
+    },
+    {
+      "identifier": "cosmic_flare_red",
+      "total": 2
+    },
+    {
+      "identifier": "fate_foreseen_red",
+      "total": 3
+    },
+    {
+      "identifier": "flash_bolt_red",
+      "total": 2
+    },
+    {
+      "identifier": "kindle_red",
+      "total": 3
+    },
+    {
+      "identifier": "meteoric_impact_red",
+      "total": 3
+    },
+    {
+      "identifier": "save_the_thought_red",
+      "total": 1
+    },
+    {
+      "identifier": "shelter_from_the_storm_red",
+      "total": 3
+    },
+    {
+      "identifier": "sigil_of_solace_red",
+      "total": 3
+    },
+    {
+      "identifier": "sink_below_red",
+      "total": 2
+    },
+    {
+      "identifier": "snapback_red",
+      "total": 3
+    },
+    {
+      "identifier": "strike_twice_red",
+      "total": 3
+    },
+    {
+      "identifier": "turn_to_mindfire_red",
+      "total": 3
+    },
+    {
+      "identifier": "consign_to_cosmos__shock_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "constella_contemplation_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "echoflash_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "amulet_of_echoes_blue",
+      "total": 2
+    },
+    {
+      "identifier": "mental_block_blue",
+      "total": 3
+    },
+    {
+      "identifier": "meteoric_impact_blue",
+      "total": 3
+    },
+    {
+      "identifier": "scour_blue",
+      "total": 2
+    },
+    {
+      "identifier": "sigil_of_aether_blue",
+      "total": 3
+    },
+    {
+      "identifier": "will_of_arcana_blue",
+      "total": 1
+    },
+    {
+      "identifier": "burn_bare",
+      "total": 2
+    }
+  ],
+  "hero": "oscilio_constella_intelligence",
+  "hero_name": "Oscilio, Constella Intelligence",
+  "class": "WIZARD",
+  "talents": [],
+  "is_young": false
+}

@@ -79,12 +79,12 @@ def wait_in_lobby_and_start(client) -> bool:
                     continue
 
                 # 2. Se o bot ainda não submeteu sideboard ou o sideboard foi resetado
-                if not data.get("mySideboardSubmitted", True):
+                if not data.get("mySideboardSubmitted", False):
                     client.submit_sideboard()
                     time.sleep(0.2)
 
                 # 3. Verificar se a partida começou ou ambos os jogadores confirmaram
-                if data.get("isMainGameReady") or data.get("gameStarted"):
+                if data.get("isMainGameReady") or data.get("gameStarted") or data.get("gameStatus", 0) >= 5:
                     client.log(f"[LOBBY] Ambos os jogadores confirmaram! Partida #{client.game_id} iniciando...")
                     return True
 
@@ -93,7 +93,7 @@ def wait_in_lobby_and_start(client) -> bool:
                     f"Talishar/Games/{client.game_id}/gamestate.txt",
                     f"Games/{client.game_id}/gamestate.txt"
                 ]:
-                    if os.path.exists(gsp) and os.path.getsize(gsp) > 0:
+                    if os.path.exists(gsp) and os.path.getsize(gsp) > 200:
                         client.log(f"[LOBBY] Gamestate detectado. Partida #{client.game_id} iniciada!")
                         return True
         except Exception as e:
@@ -136,12 +136,12 @@ def wait_for_opponent_and_start(client) -> bool:
                         client.submit_sideboard()
                         sideboard_sent = True
 
-                    if ldata.get("isMainGameReady") or ldata.get("gameStarted"):
+                    if ldata.get("isMainGameReady") or ldata.get("gameStarted") or ldata.get("gameStatus", 0) >= 5:
                         client.log(f"[HOST] Partida #{client.game_id} pronta para começar!")
                         return True
 
                     for gsp in [f"Talishar/Games/{client.game_id}/gamestate.txt", f"Games/{client.game_id}/gamestate.txt"]:
-                        if os.path.exists(gsp) and os.path.getsize(gsp) > 0:
+                        if os.path.exists(gsp) and os.path.getsize(gsp) > 200:
                             client.log(f"[HOST] Partida #{client.game_id} iniciada (gamestate detectado).")
                             return True
         except Exception:

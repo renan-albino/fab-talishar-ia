@@ -31,11 +31,19 @@
       "total": 1
     },
     {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
       "identifier": "kunai_of_retribution",
       "total": 2
     },
     {
       "identifier": "mask_of_momentum",
+      "total": 1
+    },
+    {
+      "identifier": "mask_of_the_pouncing_lynx",
       "total": 1
     },
     {
@@ -47,11 +55,15 @@
       "total": 3
     },
     {
-      "identifier": "art_of_the_dragon_scale_red",
+      "identifier": "art_of_the_dragon_fire_red",
       "total": 2
     },
     {
       "identifier": "blaze_headlong_red",
+      "total": 3
+    },
+    {
+      "identifier": "brand_with_cinderclaw_red",
       "total": 3
     },
     {
@@ -63,20 +75,16 @@
       "total": 3
     },
     {
-      "identifier": "demonstrate_devotion_red",
-      "total": 3
-    },
-    {
       "identifier": "display_loyalty_red",
       "total": 3
     },
     {
       "identifier": "draco_fire_red",
-      "total": 3
+      "total": 2
     },
     {
-      "identifier": "enflame_the_firebrand_red",
-      "total": 2
+      "identifier": "fate_foreseen_red",
+      "total": 1
     },
     {
       "identifier": "fire_tenet_strike_first_red",
@@ -87,23 +95,19 @@
       "total": 3
     },
     {
-      "identifier": "ignite_red",
+      "identifier": "hunt_the_hunter_red",
       "total": 3
     },
     {
-      "identifier": "imperial_seal_of_command_red",
-      "total": 1
+      "identifier": "ignite_red",
+      "total": 3
     },
     {
       "identifier": "lava_burst_red",
       "total": 3
     },
     {
-      "identifier": "loyalty_beyond_the_grave_red",
-      "total": 2
-    },
-    {
-      "identifier": "march_of_loyalty_red",
+      "identifier": "oath_of_loyalty_red",
       "total": 3
     },
     {
@@ -127,8 +131,8 @@
       "total": 3
     },
     {
-      "identifier": "smoke_out_red",
-      "total": 2
+      "identifier": "sink_below_red",
+      "total": 3
     },
     {
       "identifier": "snatch_red",
@@ -136,7 +140,7 @@
     },
     {
       "identifier": "throw_dagger_blue",
-      "total": 3
+      "total": 2
     },
     {
       "identifier": "warmongers_diplomacy_blue",

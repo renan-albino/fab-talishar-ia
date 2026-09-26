@@ -34,11 +34,12 @@ def handle_pitch_phase(client, state: dict, turn_phase: str, prompt_buttons: lis
         unpayable_set.add(client.last_attempted_play)
 
     cancel_btn = None
-    for b in prompt_buttons:
-        cap = str(b.get("caption", "")).lower()
-        if "cancel" in cap or b.get("mode") == 10000:
-            cancel_btn = b
-            break
+    if prompt_buttons:
+        for b in prompt_buttons:
+            cap = str(b.get("caption", "")).lower()
+            if "cancel" in cap or b.get("mode") == 10000:
+                cancel_btn = b
+                break
 
     if cancel_btn:
         client.log(f"[AÇÃO JOGADOR {client.player_id}] Botão Pitch/Cancel -> {cancel_btn.get('caption')} (Mode {cancel_btn.get('mode')})")
@@ -110,11 +111,12 @@ def handle_block_phase(client, state: dict, turn_num: int, prompt_buttons: list)
 
     client.declared_blocks_link = set()
     pass_btn = None
-    for b in prompt_buttons:
-        cap = str(b.get("caption", "")).lower()
-        if ("pass" in cap or b.get("mode") in (99, 101)) and "undo" not in cap:
-            pass_btn = b
-            break
+    if prompt_buttons:
+        for b in prompt_buttons:
+            cap = str(b.get("caption", "")).lower()
+            if ("pass" in cap or b.get("mode") in (99, 101)) and "undo" not in cap:
+                pass_btn = b
+                break
 
     if pass_btn:
         client.log(f"[AÇÃO JOGADOR {client.player_id}] Passou Bloqueio ({pass_btn.get('caption', 'Pass')})")

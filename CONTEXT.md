@@ -44,6 +44,8 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Extração de embeddings em tempo de execução, Regex na inferência, One-hot gigante esparso.
 - **Compreensão Semântica de Arena (`ai/policy/card_semantics.py` & `data/fab_card_semantics.json`)**: Sistema holístico de percepção que compila perfis funcionais (`CardSemanticProfile`) e sintetiza o contexto dinâmico de perigo (`ArenaThreatContext`), interpretando modificadores de combate concedidos por itens, auras e gatilhos de dano concorrentes sem dependência de hardcodes nominais.
   - _Avoid_: Hardcode nominal de itens, Lista estática de cartas de arena, Checagem cega por nome.
+- **Caixa Preta de Erros / Error Dump (`logs/exceptions/`)**: Dicionário serializado JSON salvo instantaneamente contendo o *Traceback*, *Turn Phase* e *Game State* cru sempre que a AI submete seletores (`MULTICHOOSE`) inválidos ou crasha na simulação, usado para podas manuais da rede.
+  - _Avoid_: Log de texto de erro, print de console, crash log genérico.
 - **ISMCTS (Information Set Monte Carlo Tree Search)**: Variante de MCTS especializada em jogos de informação imperfeita. Amostra múltiplos mundos determinizados preenchendo as cartas ocultas do oponente a partir de um pool consistente com a classe do herói rival.
   - _Avoid_: MCTS determinístico simples, Alpha-Beta minimax, Monte Carlo cego, Árvore de decisão comum.
 - **World / Determinization**: Uma instância hipotética e completa do estado da partida onde todas as variáveis ocultas (mão e arsenal do oponente) são simuladas com cartas plausíveis.

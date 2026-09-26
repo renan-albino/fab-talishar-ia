@@ -1,0 +1,171 @@
+{
+  "name": "Rhinar",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "rhinar_reckless_rampage",
+      "total": 1
+    },
+    {
+      "identifier": "beaten_trackers",
+      "total": 1
+    },
+    {
+      "identifier": "crown_of_providence",
+      "total": 1
+    },
+    {
+      "identifier": "gauntlets_of_tyrannical_rex",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_gloves",
+      "total": 1
+    },
+    {
+      "identifier": "ravenous_meataxe",
+      "total": 1
+    },
+    {
+      "identifier": "savage_sash",
+      "total": 1
+    },
+    {
+      "identifier": "scabskin_leathers",
+      "total": 1
+    },
+    {
+      "identifier": "scowling_flesh_bag",
+      "total": 1
+    },
+    {
+      "identifier": "skull_crushers",
+      "total": 1
+    },
+    {
+      "identifier": "skullhorn",
+      "total": 1
+    },
+    {
+      "identifier": "aggressive_pounce_red",
+      "total": 3
+    },
+    {
+      "identifier": "amnesia_red",
+      "total": 1
+    },
+    {
+      "identifier": "bare_destruction_red",
+      "total": 1
+    },
+    {
+      "identifier": "bare_fangs_red",
+      "total": 2
+    },
+    {
+      "identifier": "blanch_red",
+      "total": 2
+    },
+    {
+      "identifier": "clash_of_agility_red",
+      "total": 1
+    },
+    {
+      "identifier": "erase_face_red",
+      "total": 2
+    },
+    {
+      "identifier": "pulping_red",
+      "total": 3
+    },
+    {
+      "identifier": "savage_feast_red",
+      "total": 3
+    },
+    {
+      "identifier": "show_of_strength_red",
+      "total": 3
+    },
+    {
+      "identifier": "splatter_skull_red",
+      "total": 3
+    },
+    {
+      "identifier": "swing_big_red",
+      "total": 3
+    },
+    {
+      "identifier": "wild_ride_red",
+      "total": 3
+    },
+    {
+      "identifier": "agile_windup_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "apex_buster_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "assault_and_battery_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "beast_within_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "bloodrush_bellow_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "feral_instinct_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "sea_legs_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "send_packing_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "song_of_sinew_yellow",
+      "total": 1
+    },
+    {
+      "identifier": "thick_hide_hunter_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "vigorous_smashup_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "alpha_instinct_blue",
+      "total": 3
+    },
+    {
+      "identifier": "reckless_swing_blue",
+      "total": 1
+    },
+    {
+      "identifier": "sand_sketched_plan_blue",
+      "total": 3
+    },
+    {
+      "identifier": "tear_limb_from_limb_blue",
+      "total": 1
+    },
+    {
+      "identifier": "wrecker_romp_blue",
+      "total": 3
+    }
+  ],
+  "hero": "rhinar_reckless_rampage",
+  "hero_name": "Rhinar, Reckless Rampage",
+  "class": "BRUTE",
+  "talents": [],
+  "is_young": false
+}

@@ -2,6 +2,7 @@ import os
 import time
 import json
 import requests
+import traceback
 from typing import Optional
 from datetime import datetime
 
@@ -15,6 +16,12 @@ from ai.common.schemas import GameState
 def safe_int(val, default=0):
     try:
         return int(val)
+    except (ValueError, TypeError):
+        return default
+
+def safe_str(val, default=""):
+    try:
+        return str(val)
     except (ValueError, TypeError):
         return default
 
@@ -74,6 +81,14 @@ class FabBotClient:
         self.initial_opp_health = None
         self.execution_exceptions_count = 0
         self.clean_deck = os.path.basename(self.deck_url).replace(".json", "") if self.deck_url else "default_deck"
+        
+        # Log level: DEBUG=0, INFO=1, WARNING=2, ERROR=3
+        # Control via FAB_BOT_LOG_LEVEL env var (0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR)
+        log_level_env = os.environ.get("FAB_BOT_LOG_LEVEL", "1")
+        try:
+            self.log_level = int(log_level_env)
+        except ValueError:
+            self.log_level = 1  # Default INFO
         
         # Identificar nome do Herói e Nome do Deck
         self.hero_name = ""
@@ -164,7 +179,42 @@ class FabBotClient:
         else:
             return f"Jogador 2 ({p2_deck})"
 
-    def log(self, message):
+    def dump_error_state(self, reason: str, state: dict, exception_trace: str = None):
+        """Salva o estado do jogo e o contexto quando a IA realiza uma acao invalida."""
+        try:
+            os.makedirs("logs/exceptions", exist_ok=True)
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            turn = state.get("turnNo", state.get("currentTurn", "X"))
+            dump_path = f"logs/exceptions/err_{self.room_id}_turn{turn}_{ts}.json"
+            
+            def json_default(obj):
+                # Handle OpponentTracker specifically
+                if obj.__class__.__name__ == "OpponentTracker":
+                    return {"_type": "OpponentTracker", "data": obj.__dict__}
+                if hasattr(obj, '__dict__'):
+                    return obj.__dict__
+                return str(obj)
+
+            dump_data = {
+                "reason": reason,
+                "traceback": exception_trace,
+                "turn_phase": state.get("turnPhase", ""),
+                "player_name": self.player_name,
+                "hero": getattr(self, "hero_name", ""),
+                "state": state
+            }
+            with open(dump_path, "w", encoding="utf-8") as f:
+                json.dump(dump_data, f, indent=2, default=json_default)
+            self.error(f"[ERRO GRAVADO] Dump de estado salvo em: {dump_path}")
+        except Exception as e:
+            self.error(f"[FALHA AO GRAVAR DUMP] {e}")
+
+    def log(self, message, level: int = 1):
+        """Log message with level filtering.
+        level: 0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR
+        """
+        if level < self.log_level:
+            return
         t_str = datetime.now().strftime("%H:%M:%S")
         formatted = f"[{t_str}] {message}"
         with open(self.log_file, "a", encoding="utf-8") as f:
@@ -174,10 +224,36 @@ class FabBotClient:
                 mf.write(formatted + "\n")
         except Exception:
             pass
-        print(formatted, flush=True)
+        # Only print to stdout for WARNING and ERROR to reduce console spam
+        if level >= 2:
+            print(formatted, flush=True)
+
+    def debug(self, message):
+        try:
+            self.log(message, level=0)
+        except TypeError:
+            self.log(message)
+
+    def info(self, message):
+        try:
+            self.log(message, level=1)
+        except TypeError:
+            self.log(message)
+
+    def warning(self, message):
+        try:
+            self.log(message, level=2)
+        except TypeError:
+            self.log(message)
+
+    def error(self, message):
+        try:
+            self.log(message, level=3)
+        except TypeError:
+            self.log(message)
 
     def run_loop(self):
-        self.log(f"[*] Iniciando Bot HTTP para a sala {self.room_id} (Role: {self.role})")
+        self.info(f"[*] Iniciando Bot HTTP para a sala {self.room_id} (Role: {self.role})")
         if not lobby_manager.setup_game_room(self):
             return
 
@@ -198,7 +274,7 @@ class FabBotClient:
                     text = res_state.text.strip()
                     if not text or text == "0":
                         if not waiting_logged:
-                            self.log(f"[AGUARDANDO] Aguardando início do Turno 1 na sala #{self.game_id}...")
+                            self.debug(f"[AGUARDANDO] Aguardando início do Turno 1 na sala #{self.game_id}...")
                             waiting_logged = True
                         self.metrics["phase"] = "Aguardando Início"
                         self.metrics["status"] = "Aguardando"
@@ -207,14 +283,16 @@ class FabBotClient:
                         try:
                             state = res_state.json()
                             if "errorMessage" in state:
-                                self.log(f"[AVISO MESA] {state['errorMessage']}")
+                                err_msg = state['errorMessage']
+                                self.warning(f"[AVISO MESA] {err_msg}")
+                                self.dump_error_state(f"Server Validation Error: {err_msg}", state)
                             else:
                                 turn_num = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
                                 if turn_num != last_logged_turn:
                                     _fmt = getattr(self, "deck_format", "").lower()
                                     _def_hp = 20 if _fmt in ("blitz", "compblitz") else 40
-                                    my_h = state.get("playerHealth", default=_def_hp)
-                                    opp_h = state.get("opponentHealth", default=_def_hp)
+                                    my_h = state.get("playerHealth", _def_hp)
+                                    opp_h = state.get("opponentHealth", _def_hp)
                                     p1_hp = my_h if self.player_id == 1 else opp_h
                                     p2_hp = opp_h if self.player_id == 1 else my_h
                                     p1_lbl = self.get_player_label(1)
@@ -224,7 +302,7 @@ class FabBotClient:
 
                                     # O Host (Player 1) loga no feed compartilhado para evitar linhas duplicadas e invertidas
                                     if self.player_id == 1:
-                                        self.log(f"[TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}")
+                                        self.debug(f"[TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}")
                                     else:
                                         with open(self.log_file, "a", encoding="utf-8") as lf:
                                             lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}\n")
@@ -233,16 +311,16 @@ class FabBotClient:
                                 self.handle_game_tick(state)
                                 waiting_logged = False
                                 if self.metrics.get("status") == "Finalizada":
-                                    self.log(f"[*] Bot {self.player_name} finalizou a partida #{self.game_id}.")
+                                    self.info(f"[*] Bot {self.player_name} finalizou a partida #{self.game_id}.")
                                     break
                         except json.JSONDecodeError:
-                            self.log(f"[ALERTA] Resposta inesperada do servidor: {res_state.text[:400]}")
+                            self.warning(f"[ALERTA] Resposta inesperada do servidor: {res_state.text[:400]}")
                 else:
-                    self.log(f"[ALERTA] Servidor retornou HTTP {res_state.status_code}")
+                    self.warning(f"[ALERTA] Servidor retornou HTTP {res_state.status_code}")
                 
             except Exception as e:
                 self.execution_exceptions_count += 1
-                self.log(f"[ERRO DE CONEXÃO] {e}")
+                self.error(f"[ERRO DE CONEXÃO] {e}")
 
             # Polling adaptativo: 0.03s quando tem prioridade / ações pendentes, 0.25s com backoff quando aguarda oponente
             if has_priority:
@@ -316,7 +394,7 @@ class FabBotClient:
         try:
             data = res.json()
             if "error" in data or data.get("status") == "FAIL":
-                self.log(f"[ERRO NO SIDEBOARD] {data.get('error') or data.get('deckError')}")
+                self.error(f"[ERRO NO SIDEBOARD] {data.get('error') or data.get('deckError')}")
                 return False
         except Exception:
             pass
@@ -345,7 +423,7 @@ class FabBotClient:
             use_gpu=self.use_gpu
         )
         self.policy_engine.update_room_id(room_id=self.room_id, hero_name=hero)
-        self.log(f"[SIDEBOARD CONFIRMADO] Jogador {self.player_id}: Hero={hero} | Equip: [H:{head}, C:{chest}, A:{arms}, L:{legs}, W:{weapons}] | Deck={len(flat_deck)} cartas | Inv={len(inv)} itens.")
+        self.info(f"[SIDEBOARD CONFIRMADO] Jogador {self.player_id}: Hero={hero} | Equip: [H:{head}, C:{chest}, A:{arms}, L:{legs}, W:{weapons}] | Deck={len(flat_deck)} cartas | Inv={len(inv)} itens.")
         return True
 
     def send_chat_log(self, text: str, highlight: bool = False, bg_color: str = "#1e293b", text_color: str = "#38bdf8"):
@@ -462,7 +540,9 @@ class FabBotClient:
                 self.decide_and_act(state)
             except Exception as e:
                 self.execution_exceptions_count += 1
-                self.log(f"[ERRO DECIDE_AND_ACT] {e}")
+                tb = traceback.format_exc()
+                self.error(f"[ERRO DECIDE_AND_ACT] {e}")
+                self.dump_error_state("Exception in decide_and_act", state, tb)
                 try:
                     self.send_action(mode=99, button_input="")
                 except Exception:

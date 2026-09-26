@@ -1,6 +1,7 @@
 <?php
 
 include_once __DIR__ . '/../Assets/AllAltArtVariations.php';
+include_once __DIR__ . '/FormatCodes.php';
 
 $SET_AlwaysHoldPriority = 0;
 $SET_TryUI2 = 1;
@@ -47,6 +48,7 @@ $SET_GemsOffByDefault = 34; //Should gems start switched off instead of using ea
 $SET_HideGamesFromFriends = 35; //Hide your games from your friends in the open game and spectate lists
 $SET_AutoPassTurn = 36; //Pass button held down: auto-pass this player's windows for the rest of the turn
 $SET_DisableHoldToAutoPass = 37; //Accessibility: turn off the hold space/PASS gesture that arms auto-pass
+$SET_AutoPitchForced = 38; //Force auto-pitch when forced by game rules
 
 // Deliberately absent from SaveSettingInDatabase: this is an in-game state
 // StartTurnAbilities clears it, so it can never outlive the turn it was set in.
@@ -64,6 +66,14 @@ function HoldToAutoPassDisabled($player)
   if ($player != 1 && $player != 2) return false;
   $settings = GetSettings($player);
   return ($settings[$SET_DisableHoldToAutoPass] ?? "1") == "1";
+}
+
+function AutoPitchForcedSetting($player)
+{
+  global $SET_AutoPitchForced;
+  if ($player != 1 && $player != 2) return 0;
+  $settings = GetSettings($player);
+  return ($settings[$SET_AutoPitchForced] ?? "0") == "1" ? 1 : 0;
 }
 
 function HoldPrioritySetting($player)
@@ -688,73 +698,30 @@ function SaveSettingInDatabase($setting)
     global $SET_StreamerMode, $SET_AutotargetArcane, $SET_Playmat, $SET_AlwaysAllowUndo, $SET_DisableAltArts, $SET_AlwaysShowCounters;
     global $SET_ManualTunic, $SET_DisableFabInsights, $SET_DisableHeroIntro, $SET_MirroredBoardLayout, $SET_MirroredPlayerBoardLayout, $SET_HideHandFromFriends;
     global $SET_HideGamesFromFriends;
-    global $SET_GemsOffByDefault, $SET_DisableHoldToAutoPass;
+    global $SET_GemsOffByDefault, $SET_DisableHoldToAutoPass, $SET_AutoPitchForced;
     $persistable = array_fill_keys([
       $SET_DarkMode, $SET_ColorblindMode, $SET_Mute, $SET_Cardback, $SET_DisableStats,
       $SET_Language, $SET_Format, $SET_FavoriteDeckIndex, $SET_GameVisibility, $SET_AlwaysHoldPriority,
       $SET_ManualMode, $SET_StreamerMode, $SET_AutotargetArcane, $SET_Playmat, $SET_AlwaysAllowUndo,
       $SET_DisableAltArts, $SET_ManualTunic, $SET_DisableFabInsights, $SET_DisableHeroIntro,
       $SET_MirroredBoardLayout, $SET_MirroredPlayerBoardLayout, $SET_AlwaysShowCounters, $SET_HideHandFromFriends,
-      $SET_GemsOffByDefault, $SET_HideGamesFromFriends, $SET_DisableHoldToAutoPass,
+      $SET_GemsOffByDefault, $SET_HideGamesFromFriends, $SET_DisableHoldToAutoPass, $SET_AutoPitchForced,
     ], true);
   }
   return isset($persistable[$setting]);
 }
 
-function FormatCode($format)
-{
-  static $formatMap = [
-    "cc" => 0,
-    "compcc" => 1,
-    "blitz" => 2,
-    "compblitz" => 3,     //Currently not used
-    "futurecc" => 4,
-    "commoner" => 5,
-    "sealed" => 6,
-    "draft" => 7,
-    "llcc" => 8,
-    "llblitz" => 9,       //Currently not used
-    "openformatblitz" => 10, //Currently not used
-    "clash" => -1,
-    "futurell" => 11,     //Currently not used
-    "openformatllblitz" => 12, //Currently not used
-    "compllcc" => 13,
-    "sage" => 14,
-    "compsage" => 15,
-    "futuresage" => 16,
-    "open" => 17,
-    "gage" => 18,
-    "precon" => -2,
-  ];
-  return $formatMap[$format] ?? -1;
-}
-
-function FormatName($formatCode)
-{
-  static $nameMap = [
-    0 => "cc",
-    1 => "compcc",
-    2 => "blitz",
-    3 => "compblitz",     //Currently not used
-    4 => "futurecc",
-    5 => "commoner",
-    6 => "sealed",
-    7 => "draft",
-    8 => "llcc",
-    9 => "llblitz",       //Currently not used
-    10 => "openformatblitz",
-    -1 => "clash",
-    11 => "futurell",
-    12 => "openformatllblitz", //Currently not used
-    13 => "compllcc",
-    14 => "sage",
-    15 => "compsage",
-    16 => "futuresage",
-    17 => "open",
-    18 => "gage",
-    -2 => "precon",
-  ];
-  return $nameMap[$formatCode] ?? "-";
-}
-
 //Campaign supporter rosters live in PatreonDictionary.php
+function ManualDynamoSetting($player)
+{
+  global $SET_ManualTunic;
+  $settings = GetSettings($player);
+  return $settings[$SET_ManualTunic] ?? 0;
+}
+
+function ManualValdaSetting($player)
+{
+  global $SET_ManualTunic;
+  $settings = GetSettings($player);
+  return $settings[$SET_ManualTunic] ?? 0;
+}

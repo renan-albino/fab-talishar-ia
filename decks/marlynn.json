@@ -1,13 +1,9 @@
 {
-  "name": "Marlinn",
+  "name": "Marlynn",
   "format": "cc",
   "cards": [
     {
       "identifier": "marlynn_treasure_hunter",
-      "total": 1
-    },
-    {
-      "identifier": "arcanite_skullcap",
       "total": 1
     },
     {
@@ -39,7 +35,27 @@
       "total": 1
     },
     {
+      "identifier": "honing_hood",
+      "total": 1
+    },
+    {
+      "identifier": "new_horizon",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_boots",
+      "total": 1
+    },
+    {
+      "identifier": "quickdodge_flexors",
+      "total": 1
+    },
+    {
       "identifier": "quiver_of_abyssal_depths",
+      "total": 1
+    },
+    {
+      "identifier": "quiver_of_rustling_leaves",
       "total": 1
     },
     {
@@ -51,7 +67,7 @@
       "total": 1
     },
     {
-      "identifier": "battering_bolt_red",
+      "identifier": "trench_of_watery_depths",
       "total": 1
     },
     {
@@ -59,7 +75,7 @@
       "total": 3
     },
     {
-      "identifier": "endless_arrow_red",
+      "identifier": "fire_in_the_hole_red",
       "total": 3
     },
     {
@@ -71,14 +87,6 @@
       "total": 3
     },
     {
-      "identifier": "shelter_from_the_storm_red",
-      "total": 2
-    },
-    {
-      "identifier": "take_cover_red",
-      "total": 2
-    },
-    {
       "identifier": "three_of_a_kind_red",
       "total": 3
     },
@@ -87,28 +95,20 @@
       "total": 3
     },
     {
-      "identifier": "boulder_trap_yellow",
-      "total": 2
-    },
-    {
       "identifier": "codex_of_frailty_yellow",
       "total": 3
     },
     {
-      "identifier": "riches_of_tropal_dhani_yellow",
-      "total": 1
+      "identifier": "favorable_winds_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "gold_the_tip_yellow",
+      "total": 3
     },
     {
       "identifier": "shallow_water_shark_harpoon_yellow",
       "total": 3
-    },
-    {
-      "identifier": "tarpit_trap_yellow",
-      "total": 3
-    },
-    {
-      "identifier": "authority_of_ataya_blue",
-      "total": 1
     },
     {
       "identifier": "blue_fin_harpoon_blue",
@@ -116,19 +116,19 @@
     },
     {
       "identifier": "burdens_of_the_past_blue",
-      "total": 2
+      "total": 1
     },
     {
       "identifier": "catch_of_the_day_blue",
       "total": 3
     },
     {
-      "identifier": "murderous_rabble_blue",
+      "identifier": "echoing_trap_blue",
       "total": 3
     },
     {
-      "identifier": "pilfer_the_tomb_blue",
-      "total": 1
+      "identifier": "golden_tipple_blue",
+      "total": 3
     },
     {
       "identifier": "portside_exchange_blue",
@@ -140,22 +140,18 @@
     },
     {
       "identifier": "red_lure_harpoon_blue",
-      "total": 2
+      "total": 3
     },
     {
       "identifier": "sea_floor_salvage_blue",
       "total": 3
     },
     {
-      "identifier": "sunken_treasure_blue",
+      "identifier": "shifting_tides_blue",
       "total": 3
     },
     {
-      "identifier": "throw_caution_to_the_wind_blue",
-      "total": 1
-    },
-    {
-      "identifier": "tip_the_barkeep_blue",
+      "identifier": "sunken_treasure_blue",
       "total": 3
     },
     {

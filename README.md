@@ -78,6 +78,9 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
   - Avalia a melhor linha defensiva prevenindo *overblocking* e preservando a mão de contra-ataque (*Tempo Pivot*).
 - **Cache LRU de Heurísticas e Sistema de TurnPlan (`ai/hero_strategies/`)**:
   - Memoização de alta velocidade para scores estáticos de cartas e planos táticos unificados (`TurnPlan`).
+- **Caixa Preta de Rastreamento de Erros (Error Dumps)**:
+  - Hooks nativos no client para interceptação de `Exception` da IA ou falhas de `errorMessage` do backend (ex: erro de `MULTICHOOSE`).
+  - Dumps completos de estado injetados em `logs/exceptions/` registrando *Turn Phase* e *Traceback* exatos para guiar podas de treinamento na rede neural.
 
 ### 2. ♟️ Avaliação Tática Estilo Xadrez (Stockfish / Chess.com)
 - **Barra de Vantagem Dinâmica no Frontend (`ChessAdvantageTracker.tsx`)**:

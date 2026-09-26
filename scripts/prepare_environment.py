@@ -45,6 +45,7 @@ BACKEND_MAPPINGS = [
     ("APIs/APIParseGamefile.php", "APIs/APIParseGamefile.php"),
     ("APIs/SubmitSideboard.php", "APIs/SubmitSideboard.php"),
     ("AI/CombatDummy.php", "AI/CombatDummy.php"),
+    ("Libraries/FormatCodes.php", "Libraries/FormatCodes.php"),
     ("Libraries/HTTPLibraries.php", "Libraries/HTTPLibraries.php"),
     ("Libraries/PlayerSettings.php", "Libraries/PlayerSettings.php"),
     ("ProcessInput.php", "ProcessInput.php"),

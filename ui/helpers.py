@@ -353,3 +353,37 @@ def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> d
                 "buffer_capacity": 500000,
                 "description": f"⚖️ {gpu_name_str} (~80% carga) • {safe_workers} workers • Batch 2048 • Capacidade extrema sem travar o desktop.",
             }
+
+def clear_replay_buffer() -> bool:
+    """Remove o arquivo do replay buffer e as métricas."""
+    import os
+    buffer_file = os.path.join("data", "replay_buffer.npz")
+    metrics_file = os.path.join("data", "training_metrics.json")
+    success = True
+    
+    if os.path.exists(buffer_file):
+        try:
+            os.remove(buffer_file)
+        except Exception:
+            success = False
+            
+    if os.path.exists(metrics_file):
+        try:
+            os.remove(metrics_file)
+        except Exception:
+            success = False
+            
+    # Reset in-memory stats
+    orch = get_orchestrator()
+    orch.stats["total_games"] = 0
+    orch.stats["samples_collected"] = 0
+    orch.stats["epochs_completed"] = 0
+    orch.stats["policy_loss"] = 0.0
+    orch.stats["value_loss"] = 0.0
+    orch.stats["total_loss"] = 0.0
+    orch.stats["history"] = []
+    orch.stats["policy_entropy"] = 0.0
+    orch.stats["value_mean"] = 0.0
+    orch.stats["last_summary"] = "Nenhuma partida concluída nesta sessão."
+    
+    return success

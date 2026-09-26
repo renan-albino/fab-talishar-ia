@@ -1,0 +1,173 @@
+{
+  "name": "Levia",
+  "format": "cc",
+  "cards": [
+    {
+      "identifier": "levia_shadowborn_abomination",
+      "total": 1
+    },
+    {
+      "identifier": "boneseer_skullcap",
+      "total": 1
+    },
+    {
+      "identifier": "carrion_husk",
+      "total": 1
+    },
+    {
+      "identifier": "embraforged_gauntlet",
+      "total": 1
+    },
+    {
+      "identifier": "fyendals_spring_tunic",
+      "total": 1
+    },
+    {
+      "identifier": "hex_gauntlet",
+      "total": 1
+    },
+    {
+      "identifier": "hexagore_the_death_hydra",
+      "total": 1
+    },
+    {
+      "identifier": "levia_redeemed",
+      "total": 1
+    },
+    {
+      "identifier": "nullrune_gloves",
+      "total": 1
+    },
+    {
+      "identifier": "ravenous_meataxe",
+      "total": 1
+    },
+    {
+      "identifier": "savage_sash",
+      "total": 1
+    },
+    {
+      "identifier": "scabskin_leathers",
+      "total": 1
+    },
+    {
+      "identifier": "skullhorn",
+      "total": 1
+    },
+    {
+      "identifier": "beckoning_hunger_red",
+      "total": 3
+    },
+    {
+      "identifier": "cleave_the_heavens_red",
+      "total": 3
+    },
+    {
+      "identifier": "dam_the_shadowake_red",
+      "total": 2
+    },
+    {
+      "identifier": "dread_screamer_red",
+      "total": 3
+    },
+    {
+      "identifier": "endless_maw_red",
+      "total": 1
+    },
+    {
+      "identifier": "feeding_frenzy_red",
+      "total": 3
+    },
+    {
+      "identifier": "rumbling_hunger_red",
+      "total": 1
+    },
+    {
+      "identifier": "shadowrealm_horror_red",
+      "total": 3
+    },
+    {
+      "identifier": "beast_within_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "bloodrush_bellow_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "consuming_lash_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "engulfing_shadows_yellow",
+      "total": 2
+    },
+    {
+      "identifier": "fallen_herald_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "vigorous_smashup_yellow",
+      "total": 3
+    },
+    {
+      "identifier": "back_alley_breakline_blue",
+      "total": 1
+    },
+    {
+      "identifier": "call_to_the_grave_blue",
+      "total": 3
+    },
+    {
+      "identifier": "chains_of_mephetis_blue",
+      "total": 2
+    },
+    {
+      "identifier": "cleave_the_heavens_blue",
+      "total": 3
+    },
+    {
+      "identifier": "deadwood_rumbler_blue",
+      "total": 3
+    },
+    {
+      "identifier": "diabolic_offering_blue",
+      "total": 3
+    },
+    {
+      "identifier": "doomsday_blue",
+      "total": 1
+    },
+    {
+      "identifier": "goremass_summoning_blue",
+      "total": 3
+    },
+    {
+      "identifier": "pull_from_beyond_blue",
+      "total": 3
+    },
+    {
+      "identifier": "rockyard_rodeo_blue",
+      "total": 3
+    },
+    {
+      "identifier": "soul_harvest_blue",
+      "total": 1
+    },
+    {
+      "identifier": "wrecker_romp_blue",
+      "total": 3
+    },
+    {
+      "identifier": "blood_harvest",
+      "total": 3
+    }
+  ],
+  "hero": "levia_shadowborn_abomination",
+  "hero_name": "Levia, Shadowborn Abomination",
+  "class": "BRUTE",
+  "talents": [
+    "SHADOW"
+  ],
+  "is_young": false
+}

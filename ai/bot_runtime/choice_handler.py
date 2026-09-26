@@ -164,17 +164,18 @@ def check_and_handle_anti_loop(client, state: dict, turn_num: int, turn_phase: s
 
         fallback_mode = 10000 if turn_phase in ("P", "PAYGOLDORPITCH") else 99
         chosen_btn = None
-        if turn_phase in ("P", "PAYGOLDORPITCH"):
-            for b in prompt_buttons:
-                if "cancel" in str(b.get("caption", "")).lower() or b.get("mode") == 10000:
-                    chosen_btn = b
-                    break
-        else:
-            for b in prompt_buttons:
-                cap = str(b.get("caption", "")).lower()
-                if ("pass" in cap or "done" in cap or "ok" in cap or b.get("mode") in (99, 101)) and "undo" not in cap:
-                    chosen_btn = b
-                    break
+        if prompt_buttons:
+            if turn_phase in ("P", "PAYGOLDORPITCH"):
+                for b in prompt_buttons:
+                    if "cancel" in str(b.get("caption", "")).lower() or b.get("mode") == 10000:
+                        chosen_btn = b
+                        break
+            else:
+                for b in prompt_buttons:
+                    cap = str(b.get("caption", "")).lower()
+                    if ("pass" in cap or "done" in cap or "ok" in cap or b.get("mode") in (99, 101)) and "undo" not in cap:
+                        chosen_btn = b
+                        break
 
         if chosen_btn:
             client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) -> {chosen_btn.get('caption', 'Pass')}")

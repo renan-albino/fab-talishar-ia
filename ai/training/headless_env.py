@@ -15,6 +15,8 @@ from ai.mcts.standard_mcts import MCTSEngine
 from ai.game_simulator import GameSimulator
 from ai.model import FaBPolicyValueNetwork
 from config.settings import SETTINGS
+from ai.mcts.state import ImmutableGameState
+
 
 class HeadlessSelfPlayLoop:
     """
@@ -38,28 +40,28 @@ class HeadlessSelfPlayLoop:
             "type": "action"
         } for i in range(40)]
 
-    def _init_state(self, deck1: str, deck2: str) -> Dict[str, Any]:
-        return {
+    def _init_state(self, deck1: str, deck2: str) -> ImmutableGameState:
+        return ImmutableGameState({
             "playerHealth": 40,
             "opponentHealth": 40,
             "theirHealth": 40,
             "yourHealth": 40,
-            "playerHand": self._generate_dummy_deck(deck1)[:4],
-            "opponentHand": self._generate_dummy_deck(deck2)[:4],
-            "playerPitch": [],
-            "playerDiscard": [],
+            "playerHand": tuple(self._generate_dummy_deck(deck1)[:4]),
+            "opponentHand": tuple(self._generate_dummy_deck(deck2)[:4]),
+            "playerPitch": tuple(),
+            "playerDiscard": tuple(),
             "turnPhase": "M",
             "phase": "M",
             "actionPoints": 1,
             "playerAP": 1,
-            "playerResources": [0, 0],
+            "playerResources": (0, 0),
             "opponentHandCount": 4,
             "theirHandCount": 4
-        }
+        })
 
-    def _get_legal_actions(self, state: Dict[str, Any], current_player: int) -> List[Dict[str, Any]]:
+    def _get_legal_actions(self, state: ImmutableGameState, current_player: int) -> List[Dict[str, Any]]:
         actions = []
-        phase = state.get("turnPhase", state.get("phase", "M"))
+        phase = str(state.get("turnPhase", state.get("phase", "M")))
         if phase in ("M", "MAIN"):
             if state.get("playerAP", 1) > 0:
                 for card in state.get("playerHand", []):
@@ -78,32 +80,50 @@ class HeadlessSelfPlayLoop:
             actions.append({"type": "pass_priority"})
         return actions
 
+    def _swap_players(self, state: ImmutableGameState) -> ImmutableGameState:
+        """Troca a perspectiva dos jogadores (para quando passa a prioridade)."""
+        updates = {
+            "playerHealth": state.get("opponentHealth", 40),
+            "opponentHealth": state.get("playerHealth", 40),
+            "yourHealth": state.get("opponentHealth", 40),
+            "theirHealth": state.get("playerHealth", 40),
+            "playerHand": state.get("opponentHand", tuple()),
+            "opponentHand": state.get("playerHand", tuple()),
+            "playerAP": 1,
+            "actionPoints": 1,
+            "turnPhase": "M",
+            "phase": "M",
+            "opponentHandCount": len(state.get("playerHand", tuple())),
+            "theirHandCount": len(state.get("opponentHand", tuple())),
+        }
+        return state.replace(**updates)
+
     def play_game(self, deck1: str, deck2: str) -> Tuple[List[Any], int]:
         state = self._init_state(deck1, deck2)
         
         # MCTSEngine configurado
-        mcts1 = MCTSEngine(self.model, n_simulations=self.mcts_sims, device=self.device)
-        mcts2 = MCTSEngine(self.model, n_simulations=self.mcts_sims, device=self.device)
+        mcts1 = MCTSEngine(self.model, device=self.device)
+        mcts2 = MCTSEngine(self.model, device=self.device)
         
         trajectory = []
         turn = 0
         current_player = 1
         
         # Limite de turnos de segurança
-        while state["playerHealth"] > 0 and state["opponentHealth"] > 0 and turn < 150:
+        while state.get("playerHealth", 40) > 0 and state.get("opponentHealth", 40) > 0 and turn < 150:
             turn += 1
             legal_actions = self._get_legal_actions(state, current_player)
             mcts = mcts1 if current_player == 1 else mcts2
             
-            policy_probs = mcts.search(state, legal_actions)
+            best_idx, policy_probs = mcts.search(state.to_dict(), legal_actions, num_simulations=self.mcts_sims)
             
-            if not policy_probs or sum(policy_probs) == 0:
-                policy_probs = [1.0 / len(legal_actions)] * len(legal_actions)
+            if not policy_probs.any() or sum(policy_probs) == 0:
+                policy_probs = np.ones(32, dtype=np.float32) / 32.0
                 
-            action_idx = np.random.choice(len(legal_actions), p=policy_probs)
+            action_idx = best_idx if best_idx < len(legal_actions) else 0
             action = legal_actions[action_idx]
             
-            vec = FaBPolicyValueNetwork.extract_state_vector(state)
+            vec = FaBPolicyValueNetwork.extract_state_vector(state.to_dict())
             
             full_policy = np.zeros(32, dtype=np.float32)
             for i, p in enumerate(policy_probs):
@@ -118,17 +138,8 @@ class HeadlessSelfPlayLoop:
             
             # Se for pass, troca a perspectiva
             if action.get("type") == "pass_priority":
+                state = self._swap_players(state)
                 current_player = 2 if current_player == 1 else 1
-                state["playerAP"] = 1
-                state["actionPoints"] = 1
-                state["turnPhase"] = "M"
-                
-                # Inverte a saude no dicionario
-                tmp_hp = state["playerHealth"]
-                state["playerHealth"] = state["opponentHealth"]
-                state["opponentHealth"] = tmp_hp
-                state["yourHealth"] = state["playerHealth"]
-                state["theirHealth"] = state["opponentHealth"]
 
-        winner = 1 if state["opponentHealth"] <= 0 else (2 if state["playerHealth"] <= 0 else 0)
+        winner = 1 if state.get("opponentHealth", 40) <= 0 else (2 if state.get("playerHealth", 40) <= 0 else 0)
         return trajectory, winner

@@ -9,8 +9,8 @@ Ele serve como referência para os agentes de IA entenderem exatamente quais mud
 
 | Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
 | :--- | :--- | :--- | :--- | :--- |
-| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `fb56266f3` (`fb56266f3d9574e28939429240c26da473682efe`) | 2026-09-24 | ✅ Sincronizado + Patches Aplicados |
-| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `13afdb7b3` (`13afdb7b3ac1214f9c8c13562ebb6192816deaf1`) | 2026-09-24 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `d0c5671f7` (`d0c5671f7027e029054cbdaadce2d01dcec12cce`) | 2026-09-25 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `5ceae0ea0` (`5ceae0ea098923ff232ea73d028d5287833c060e`) | 2026-09-25 | ✅ Sincronizado + Patches Aplicados |
 
 ---
 
@@ -24,6 +24,66 @@ Quando o Talishar oficial atualizar:
 ---
 
 ## 🕒 Histórico de Sincronizações
+
+### 🔄 Sincronização em 2026-09-26 02:29:04
+
+#### Talishar Backend
+- **Transição de Versão**: `fb56266f3` (2026-09-24) ➔ `d0c5671f7` (2026-09-25)
+- **Novos commits incorporados**: 7
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Banco fab_cards_db.json reindexado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `d0c5671f7` (2026-09-25 por **Paul Gibby**) — fix viserai and runic reaving
+* `07eb2f7b2` (2026-09-25 por **Paul Gibby**) — better fix for blocking cards against allies
+* `5f539eec4` (2026-09-25 por **Paul Gibby**) — fix barbed barrage bugs
+* `97de6dc6b` (2026-09-25 por **PvtVoid**) — Update logs
+* `59f4f53dd` (2026-09-25 por **PvtVoid**) — Remove Rise to the challenge effect from CC on chain close
+* `ddcd926c2` (2026-09-25 por **PvtVoid**) — More performance improvements
+* `bcf355302` (2026-09-25 por **PvtVoid**) — Another run at php performance improvements
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `BuildGameState.php`
+- `CardDictionary.php`
+- `CharacterAbilities.php`
+- `Classes/Banish.php`
+- `Classes/CardObjects/IARCards.php`
+- `CoreLogic.php`
+- `Libraries/NetworkingLibraries.php`
+- `ParseGamestate.php`
+
+</details>
+
+#### Talishar Frontend
+- **Transição de Versão**: `13afdb7b3` (2026-09-24) ➔ `5ceae0ea0` (2026-09-25)
+- **Novos commits incorporados**: 1
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Frontend Vite recompilado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `5ceae0e` (2026-09-25 por **PvtVoid**) — frontend performance improvements
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `src/routes/game/components/elements/cardDisplay/CardDisplay.tsx`
+- `src/routes/game/components/elements/chatBox/GameLogMessages.tsx`
+- `src/routes/game/components/elements/playerInputPopUp/subcardOverflow.ts`
+- `src/routes/game/components/zones/permanentsZone/PermanentsZone.tsx`
+- `src/routes/game/components/zones/playerHand/PlayerHand.tsx`
+
+</details>
+
+
+---
 
 ### 🔄 Sincronização em 2026-09-24 18:58:46
 
@@ -847,4 +907,3 @@ Quando o Talishar oficial atualizar:
 - *(e mais 191 arquivos...)*
 
 </details>
-

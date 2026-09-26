@@ -5,6 +5,7 @@ Painel de controle para treinamento autônomo por Deep Reinforcement Learning co
 seleção de perfis de hardware (Equilibrado vs Turbo Máximo) e telemetria em tempo real.
 """
 
+import os
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -15,6 +16,7 @@ from ui.helpers import (
     get_cached_saved_decks,
     get_gpu_info,
     get_replay_buffer_sample_count,
+    clear_replay_buffer,
 )
 
 
@@ -179,6 +181,43 @@ def render_tab_training(deck_options=None, gpu_available=None):
             if force_direct_gpu:
                 selected_concurrency = "direct_gpu"
 
+        # Nível de Log dos Bots de Treino
+        st.markdown("---")
+        st.markdown("#### 📝 Nível de Log dos Bots de Treino")
+        log_level_options = {
+            "0 - DEBUG (Tudo, incluindo scores de turno)": 0,
+            "1 - INFO (Padrão - Fluxo de jogo, sideboard, ações)": 1,
+            "2 - WARNING (Alertas, HTTP errors, respostas inesperadas)": 2,
+            "3 - ERROR (Apenas erros - conexão, sideboard, decide_and_act)": 3,
+        }
+        current_log_level = os.environ.get("FAB_BOT_LOG_LEVEL", "1")
+        try:
+            current_log_level = int(current_log_level)
+        except ValueError:
+            current_log_level = 1
+        
+        log_level_labels = list(log_level_options.keys())
+        log_level_values = list(log_level_options.values())
+        default_index = log_level_values.index(current_log_level) if current_log_level in log_level_values else 1
+        
+        col_log_1, col_log_2 = st.columns([2, 1])
+        with col_log_1:
+            selected_log_label = st.selectbox(
+                "Nível de Verbosidade dos Logs dos Bots:",
+                log_level_labels,
+                index=default_index,
+                key="train_bot_log_level",
+                help="Controla a verbosidade dos logs salvos em logs/Train_*_Bot*_debug.log. DEBUG=0 mostra scores de turno e espera; INFO=1 mostra fluxo normal; WARNING=2 mostra alertas; ERROR=3 mostra apenas erros críticos.",
+            )
+        with col_log_2:
+            st.write("")
+            st.write("")
+            if st.button("Aplicar Nível de Log", use_container_width=True):
+                os.environ["FAB_BOT_LOG_LEVEL"] = str(log_level_options[selected_log_label])
+                st.success(f"Nível de log definido para: {selected_log_label}")
+                st.toast(f"Log level: {selected_log_label}", icon="📝")
+                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+
         from config.settings import SETTINGS
         est_vram = SETTINGS.estimate_vram_usage(
             num_rooms=workers_count,
@@ -235,6 +274,25 @@ def render_tab_training(deck_options=None, gpu_available=None):
         if st.button("💾 Salvar Checkpoint Manual do Modelo", use_container_width=True):
             orchestrator.save_metrics()
             st.toast("Checkpoint manual e Replay Buffer salvos!", icon="💾")
+            
+        if st.button("🗑️ Limpar Replay Buffer", use_container_width=True):
+            st.session_state.confirm_clear_buffer = True
+
+        if st.session_state.get("confirm_clear_buffer", False):
+            st.warning("⚠️ Tem certeza que deseja limpar o Replay Buffer? Isso não pode ser desfeito.")
+            col_c1, col_c2 = st.columns(2)
+            with col_c1:
+                if st.button("✔️ Sim, limpar", use_container_width=True):
+                    if clear_replay_buffer():
+                        st.success("Buffer limpo!")
+                    else:
+                        st.error("Falha ao limpar.")
+                    st.session_state.confirm_clear_buffer = False
+                    st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+            with col_c2:
+                if st.button("❌ Cancelar", use_container_width=True):
+                    st.session_state.confirm_clear_buffer = False
+                    st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
     # Fragmento de Atualização em Tempo Real (a cada 4 segundos durante treino)
     @st.fragment(run_every="4s")

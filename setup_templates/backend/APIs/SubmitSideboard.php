@@ -206,7 +206,7 @@ if($p1SideboardSubmitted == "1" && $p2SideboardSubmitted == "1" && $gameStatus <
   fwrite($handler, "\r\n"); //Landmarks
   fwrite($handler, "0\r\n"); //Game winner (0=none, else player ID)
   fwrite($handler, "$firstPlayer\r\n"); //First Player
-  fwrite($handler, "1\r\n"); //Current Player
+  fwrite($handler, "$firstPlayer\r\n"); //Current Player
   fwrite($handler, "0\r\n"); //Current Turn
   fwrite($handler, "M 1\r\n"); //What phase/player is active
   fwrite($handler, "1\r\n"); //Action points
@@ -220,7 +220,7 @@ if($p1SideboardSubmitted == "1" && $p2SideboardSubmitted == "1" && $gameStatus <
   fwrite($handler, "0 - - -\r\n"); //Decision Queue State
   fwrite($handler, "\r\n"); //Layers
   fwrite($handler, "\r\n"); //Layer Priority
-  fwrite($handler, "1\r\n"); //What player's turn it is
+  fwrite($handler, "$firstPlayer\r\n"); //What player's turn it is
   fwrite($handler, "\r\n"); //Last Played Card
   fwrite($handler, "0\r\n"); //Number of prior chain links this turn
   fwrite($handler, "\r\n"); //Chain Link Summaries
