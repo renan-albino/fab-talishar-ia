@@ -288,7 +288,20 @@ def render_tab_arena(deck_options=None):
 
     if btn_kill:
         subprocess.run(["pkill", "-9", "-f", "bot_client.py"])
-        st.warning("Processos de bots finalizados. Os logs e histórico foram preservados para análise!")
+        if os.path.exists("logs"):
+            for f in os.listdir("logs"):
+                if f.endswith("_Bot1.json") or f.endswith("_Bot2.json"):
+                    fp = os.path.join("logs", f)
+                    try:
+                        with open(fp, "r", encoding="utf-8") as jf:
+                            jd = json.load(jf)
+                        jd.setdefault("metrics", {})["status"] = "Interrompida manualmente"
+                        jd["metrics"]["phase"] = "Interrompida"
+                        with open(fp, "w", encoding="utf-8") as jf:
+                            json.dump(jd, jf, indent=2)
+                    except Exception:
+                        pass
+        st.warning("🛑 Partidas interrompidas! Todos os processos de bots foram finalizados.")
         st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
     if btn_clean:

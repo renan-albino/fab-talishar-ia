@@ -132,9 +132,9 @@ def wait_for_opponent_and_start(client) -> bool:
                         first_player_chosen = True
                         time.sleep(0.2)
 
-                    if not sideboard_sent:
+                    if not ldata.get("mySideboardSubmitted", False):
                         client.submit_sideboard()
-                        sideboard_sent = True
+                        time.sleep(0.2)
 
                     if ldata.get("isMainGameReady") or ldata.get("gameStarted") or ldata.get("gameStatus", 0) >= 5:
                         client.log(f"[HOST] Partida #{client.game_id} pronta para começar!")

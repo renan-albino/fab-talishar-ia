@@ -302,7 +302,7 @@ class FabBotClient:
 
                                     # O Host (Player 1) loga no feed compartilhado para evitar linhas duplicadas e invertidas
                                     if self.player_id == 1:
-                                        self.debug(f"[TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}")
+                                        self.info(f"[TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}")
                                     else:
                                         with open(self.log_file, "a", encoding="utf-8") as lf:
                                             lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}\n")

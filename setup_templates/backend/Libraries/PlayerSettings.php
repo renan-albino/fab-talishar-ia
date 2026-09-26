@@ -48,7 +48,56 @@ $SET_GemsOffByDefault = 34; //Should gems start switched off instead of using ea
 $SET_HideGamesFromFriends = 35; //Hide your games from your friends in the open game and spectate lists
 $SET_AutoPassTurn = 36; //Pass button held down: auto-pass this player's windows for the rest of the turn
 $SET_DisableHoldToAutoPass = 37; //Accessibility: turn off the hold space/PASS gesture that arms auto-pass
-$SET_AutoPitchForced = 38; //Force auto-pitch when forced by game rules
+$SET_ManualDynamo = 38; //Do you want to manually refresh Valiant Dynamo
+$SET_DisableParticles = 39;
+$SET_DisableCardTilt = 40;
+$SET_TapToPreviewPlay = 41;
+$SET_DisableEquipmentGemButtons = 42;
+$SET_CardSize = 43;
+$SET_HoverImageSize = 44;
+$SET_TransparencyIntensity = 45;
+$SET_PlaymatIntensity = 46;
+$SET_HideLayerGoAgain = 47; //Hide the go again icon on cards in the active layers window
+$SET_ManualValda = 48; //Do you want to manually create Valda's Seismic Surge tokens
+$SET_AutoPitchForced = 49; //Automatically pitch a sole hand card when it pays the remaining cost
+
+function SettingsPieces()
+{
+  static $pieces = null;
+  if ($pieces === null) $pieces = max(SettingsIdMap()) + 1;
+  return $pieces;
+}
+
+function IsUnsetAwareSetting($setting)
+{
+  static $unsetAware = null;
+  if ($unsetAware === null) {
+    global $SET_DisableParticles, $SET_DisableCardTilt, $SET_TapToPreviewPlay, $SET_DisableEquipmentGemButtons;
+    global $SET_CardSize, $SET_HoverImageSize, $SET_TransparencyIntensity, $SET_PlaymatIntensity;
+    $unsetAware = array_fill_keys([
+      $SET_DisableParticles, $SET_DisableCardTilt, $SET_TapToPreviewPlay, $SET_DisableEquipmentGemButtons,
+      $SET_CardSize, $SET_HoverImageSize, $SET_TransparencyIntensity, $SET_PlaymatIntensity,
+    ], true);
+  }
+  return isset($unsetAware[$setting]);
+}
+
+function SettingValue($player, $setting, $default = 0, $playerGuard = null)
+{
+  if ($playerGuard !== null && $player != 1 && $player != 2) return $playerGuard;
+  $settings = GetSettings($player);
+  if (!is_array($settings)) return $default;
+  return $settings[$setting] ?? $default;
+}
+
+function SavedSettingValue($savedSettings, $setting)
+{
+  $count = count($savedSettings);
+  for ($i = 0; $i + 1 < $count; $i += 2) {
+    if ($savedSettings[$i] == $setting) return $savedSettings[$i + 1];
+  }
+  return "";
+}
 
 // Deliberately absent from SaveSettingInDatabase: this is an in-game state
 // StartTurnAbilities clears it, so it can never outlive the turn it was set in.
@@ -56,40 +105,27 @@ function AutoPassTurnSetting($player)
 {
   global $SET_AutoPassTurn;
   if ($player != 1 && $player != 2) return 0;
-  $settings = GetSettings($player);
-  return ($settings[$SET_AutoPassTurn] ?? "0") == "1";
+  return SettingValue($player, $SET_AutoPassTurn, "0") == "1";
 }
 
 function HoldToAutoPassDisabled($player)
 {
   global $SET_DisableHoldToAutoPass;
   if ($player != 1 && $player != 2) return false;
-  $settings = GetSettings($player);
-  return ($settings[$SET_DisableHoldToAutoPass] ?? "1") == "1";
-}
-
-function AutoPitchForcedSetting($player)
-{
-  global $SET_AutoPitchForced;
-  if ($player != 1 && $player != 2) return 0;
-  $settings = GetSettings($player);
-  return ($settings[$SET_AutoPitchForced] ?? "0") == "1" ? 1 : 0;
+  return SettingValue($player, $SET_DisableHoldToAutoPass, "1") == "1";
 }
 
 function HoldPrioritySetting($player)
 {
   global $SET_AlwaysHoldPriority;
-  $settings = GetSettings($player);
-  return $settings[$SET_AlwaysHoldPriority] ?? 0;
+  return SettingValue($player, $SET_AlwaysHoldPriority, 0);
 }
 
 function GemsOffByDefaultSetting($player)
 {
   global $SET_GemsOffByDefault;
   if ($player != 1 && $player != 2) return 0;
-  $settings = GetSettings($player);
-  if ($settings == null) return 0;
-  return ($settings[$SET_GemsOffByDefault] ?? 0) == 1 ? 1 : 0;
+  return SettingValue($player, $SET_GemsOffByDefault, 0) == 1 ? 1 : 0;
 }
 
 function ApplyGemsOffDefault($state, $player)
@@ -100,16 +136,31 @@ function ApplyGemsOffDefault($state, $player)
 function ManualTunicSetting($player)
 {
   global $SET_ManualTunic;
-  $settings = GetSettings($player);
-  return $settings[$SET_ManualTunic] ?? 0;
+  return SettingValue($player, $SET_ManualTunic, 0);
+}
+
+function ManualDynamoSetting($player)
+{
+  global $SET_ManualDynamo;
+  return SettingValue($player, $SET_ManualDynamo, 0);
+}
+
+function ManualValdaSetting($player)
+{
+  global $SET_ManualValda;
+  return SettingValue($player, $SET_ManualValda, 0, 0);
+}
+
+function AutoPitchForcedSetting($player)
+{
+  global $SET_AutoPitchForced;
+  return SettingValue($player, $SET_AutoPitchForced, "1", false) == "1";
 }
 
 function IsPatron($player)
 {
   global $SET_IsPatron;
-  $settings = GetSettings($player);
-  if (!is_array($settings)) return false;
-  return ($settings[$SET_IsPatron] ?? "0") == "1";
+  return SettingValue($player, $SET_IsPatron, "0") == "1";
 }
 
 function ResetFavoriteDeckCosmeticOverrideCache()
@@ -328,8 +379,7 @@ function GetPlaymat($player)
   if ($override !== null && $override['playmat'] !== '0') {
     return $override['playmat'];
   }
-  $settings = GetSettings($player);
-  return $settings[$SET_Playmat] ?? 0;
+  return SettingValue($player, $SET_Playmat, 0);
 }
 
 function GetCardBack($player)
@@ -488,15 +538,13 @@ function GetCardBack($player)
 function ShouldSkipARs($player)
 {
   global $SET_SkipARs;
-  $settings = GetSettings($player);
-  return $settings[$SET_SkipARs] ?? 0;
+  return SettingValue($player, $SET_SkipARs, 0);
 }
 
 function ShouldSkipDRs($player)
 {
   global $SET_SkipDRs, $SET_PassDRStep;
-  $settings = GetSettings($player);
-  $skip = ($settings[$SET_SkipDRs] ?? false) || ($settings[$SET_PassDRStep] ?? false);
+  $skip = SettingValue($player, $SET_SkipDRs, false) || SettingValue($player, $SET_PassDRStep, false);
   ChangeSetting($player, $SET_PassDRStep, 0);
   return $skip;
 }
@@ -505,8 +553,7 @@ function ShouldAutotargetOpponent($player)
 {
   //this is going to break in replays
   global $SET_AutotargetArcane;
-  $settings = GetSettings($player);
-  return ($settings[$SET_AutotargetArcane] ?? "0") == "1";
+  return SettingValue($player, $SET_AutotargetArcane, "0") == "1";
 }
 
 /**
@@ -519,104 +566,74 @@ function LoadViewerColorblindMode($viewerUserId)
   global $SET_ColorblindMode;
   if (!is_numeric($viewerUserId) || !function_exists("LoadSavedSettings")) return false;
   $flat = LoadSavedSettings((string)$viewerUserId);
-  $count = count($flat);
-  for ($i = 0; $i + 1 < $count; $i += 2) {
-    if (intval($flat[$i]) === $SET_ColorblindMode) return $flat[$i + 1] == "1";
-  }
-  return false;
+  return SavedSettingValue($flat, $SET_ColorblindMode) == "1";
 }
 
 function IsColorblindMode($player)
 {
   global $SET_ColorblindMode;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return ($settings[$SET_ColorblindMode] ?? "0") == "1";
+  return SettingValue($player, $SET_ColorblindMode, "0") == "1";
 }
 
 function ShortcutAttackThreshold($player)
 {
   global $SET_ShortcutAttackThreshold;
-  $settings = GetSettings($player);
-  if (count($settings) < $SET_ShortcutAttackThreshold) return "0";
-  return $settings[$SET_ShortcutAttackThreshold];
+  return SettingValue($player, $SET_ShortcutAttackThreshold, "0");
 }
 
 function AreStatsDisabled($player)
 {
   global $SET_DisableStats;
   if (IsReplay() || IsPlayerAI(2) || IsPlayerAI(1)) return true;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return ($settings[$SET_DisableStats] ?? "0") == "1";
+  return SettingValue($player, $SET_DisableStats, "0") == "1";
 }
 
 function AreGlobalStatsDisabled($player)
 {
   global $SET_DisableFabInsights;
   if (IsReplay() || IsPlayerAI(2) || IsPlayerAI(1)) return true;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return ($settings[$SET_DisableFabInsights] ?? "0") == "1";
+  return SettingValue($player, $SET_DisableFabInsights, "0") == "1";
 }
 
 function IsCasterMode()
 {
   global $SET_CasterMode;
-  $settings1 = GetSettings(1);
-  $settings2 = GetSettings(2);
-  if ($settings1 == null || $settings2 == null) return false;
-  return ($settings1[$SET_CasterMode] ?? "0") == "1" && ($settings2[$SET_CasterMode] ?? "0") == "1";
+  return SettingValue(1, $SET_CasterMode, "0") == "1" && SettingValue(2, $SET_CasterMode, "0") == "1";
 }
 
 function IsHideHandFromFriends($player)
 {
   global $SET_HideHandFromFriends;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return isset($settings[$SET_HideHandFromFriends]) && $settings[$SET_HideHandFromFriends] == "1";
+  return SettingValue($player, $SET_HideHandFromFriends, "0") == "1";
 }
 
 function IsStreamerMode($player)
 {
   global $SET_StreamerMode;
-  $settings = GetSettings($player);
-  if ($settings == null) return false;
-  return $settings[$SET_StreamerMode] == "1";
+  return SettingValue($player, $SET_StreamerMode, "0") == "1";
 }
 
 function AlwaysAllowUndo($player)
 {
   global $SET_AlwaysAllowUndo;
-  $settings = GetSettings($player);
-  if($settings == null) return false;
-  return $settings[$SET_AlwaysAllowUndo] == "1";
-}
-
-$UNDO_REASON_LABELS = [
-  1 => "Misclick",
-  2 => "Passed too fast",
-  3 => "Forgot a trigger",
-  4 => "Wrong target"
-];
-
-function NormalizeUndoReason($reason)
-{
-  global $UNDO_REASON_LABELS;
-  $code = intval($reason);
-  return isset($UNDO_REASON_LABELS[$code]) ? $code : 0;
+  return SettingValue($player, $SET_AlwaysAllowUndo, "0") == "1";
 }
 
 function AltArtsDisabled($player)
 {
   global $SET_DisableAltArts;
   if ($player > 2) return true; //spectators
-  $settings = GetSettings($player);
-  if($settings == null || count($settings) <= $SET_DisableAltArts) return false;
-  return $settings[$SET_DisableAltArts] == "1";
+  return SettingValue($player, $SET_DisableAltArts, "0") == "1";
 }
 
-function ParseSettingsStringValueToIdInt(string $value)
+function ShowLayerGoAgain($player)
+{
+  global $SET_HideLayerGoAgain;
+  if ($player != 1 && $player != 2) return true; //spectators keep the icon
+  return SettingValue($player, $SET_HideLayerGoAgain, "0") != "1";
+}
+
+function SettingsIdMap()
 {
   static $settingsToId = [
     "HoldPrioritySetting" => 0,
@@ -649,8 +666,25 @@ function ParseSettingsStringValueToIdInt(string $value)
     "HideGamesFromFriends" => 35,
     "AutoPassTurn" => 36,
     "DisableHoldToAutoPass" => 37,
+    "ManualDynamo" => 38,
+    "DisableParticles" => 39,
+    "DisableCardTilt" => 40,
+    "TapToPreviewPlay" => 41,
+    "DisableEquipmentGemButtons" => 42,
+    "CardSize" => 43,
+    "HoverImageSize" => 44,
+    "TransparencyIntensity" => 45,
+    "PlaymatIntensity" => 46,
+    "HideLayerGoAgain" => 47,
+    "ManualValda" => 48,
+    "AutoPitchForced" => 49,
   ];
-  return $settingsToId[$value];
+  return $settingsToId;
+}
+
+function ParseSettingsStringValueToIdInt(string $value)
+{
+  return SettingsIdMap()[$value];
 }
 
 function ChangeSetting($player, $setting, $value, $playerId = "")
@@ -698,30 +732,23 @@ function SaveSettingInDatabase($setting)
     global $SET_StreamerMode, $SET_AutotargetArcane, $SET_Playmat, $SET_AlwaysAllowUndo, $SET_DisableAltArts, $SET_AlwaysShowCounters;
     global $SET_ManualTunic, $SET_DisableFabInsights, $SET_DisableHeroIntro, $SET_MirroredBoardLayout, $SET_MirroredPlayerBoardLayout, $SET_HideHandFromFriends;
     global $SET_HideGamesFromFriends;
-    global $SET_GemsOffByDefault, $SET_DisableHoldToAutoPass, $SET_AutoPitchForced;
+    global $SET_GemsOffByDefault, $SET_DisableHoldToAutoPass, $SET_ManualDynamo;
+    global $SET_DisableParticles, $SET_DisableCardTilt, $SET_TapToPreviewPlay, $SET_DisableEquipmentGemButtons;
+    global $SET_CardSize, $SET_HoverImageSize, $SET_TransparencyIntensity, $SET_PlaymatIntensity;
+    global $SET_HideLayerGoAgain, $SET_ManualValda, $SET_AutoPitchForced;
     $persistable = array_fill_keys([
       $SET_DarkMode, $SET_ColorblindMode, $SET_Mute, $SET_Cardback, $SET_DisableStats,
       $SET_Language, $SET_Format, $SET_FavoriteDeckIndex, $SET_GameVisibility, $SET_AlwaysHoldPriority,
       $SET_ManualMode, $SET_StreamerMode, $SET_AutotargetArcane, $SET_Playmat, $SET_AlwaysAllowUndo,
       $SET_DisableAltArts, $SET_ManualTunic, $SET_DisableFabInsights, $SET_DisableHeroIntro,
       $SET_MirroredBoardLayout, $SET_MirroredPlayerBoardLayout, $SET_AlwaysShowCounters, $SET_HideHandFromFriends,
-      $SET_GemsOffByDefault, $SET_HideGamesFromFriends, $SET_DisableHoldToAutoPass, $SET_AutoPitchForced,
+      $SET_GemsOffByDefault, $SET_HideGamesFromFriends, $SET_DisableHoldToAutoPass, $SET_ManualDynamo,
+      $SET_DisableParticles, $SET_DisableCardTilt, $SET_TapToPreviewPlay, $SET_DisableEquipmentGemButtons,
+      $SET_CardSize, $SET_HoverImageSize, $SET_TransparencyIntensity, $SET_PlaymatIntensity,
+      $SET_HideLayerGoAgain, $SET_ManualValda, $SET_AutoPitchForced,
     ], true);
   }
   return isset($persistable[$setting]);
 }
 
 //Campaign supporter rosters live in PatreonDictionary.php
-function ManualDynamoSetting($player)
-{
-  global $SET_ManualTunic;
-  $settings = GetSettings($player);
-  return $settings[$SET_ManualTunic] ?? 0;
-}
-
-function ManualValdaSetting($player)
-{
-  global $SET_ManualTunic;
-  $settings = GetSettings($player);
-  return $settings[$SET_ManualTunic] ?? 0;
-}

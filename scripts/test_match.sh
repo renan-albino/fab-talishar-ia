@@ -11,16 +11,12 @@ PID2=$!
 echo "PIDs: $PID1 $PID2"
 echo "Aguardando 3min..."
 
-for i in $(seq 1 36); do
+for i in $(seq 1 60); do
   sleep 5
   echo "--- t=${i}x5s ---"
   tail -4 logs/${ROOM}_Bot1_debug.log 2>/dev/null
-  if grep -q "Finaliz" logs/${ROOM}_Bot1_debug.log 2>/dev/null; then
-    echo "PARTIDA FINALIZADA!"
-    break
-  fi
-  if [ "$i" -eq 12 ] && ! grep -q "TURNO" logs/${ROOM}_Bot1_debug.log 2>/dev/null; then
-    echo "TRAVADO - sem turnos após 1min"
+  if grep -q "finalizou a partida" logs/${ROOM}_Bot1_debug.log 2>/dev/null || grep -q "Vencedor" logs/${ROOM}_summary.log 2>/dev/null; then
+    echo "PARTIDA FINALIZADA COM SUCESSO!"
     break
   fi
 done
