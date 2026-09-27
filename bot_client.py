@@ -20,11 +20,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--buffer-capacity', type=int, default=None)
     parser.add_argument('--epoch-ratio', type=float, default=0.0)
     parser.add_argument('--ismcts-concurrency', choices=['threads', 'multiprocessing', 'direct_gpu', 'sequential'], default=None)
+    parser.add_argument('--torch-threads', type=int, default=None)
     return parser
 
 if __name__ == '__main__':
     parser = build_parser()
     args = parser.parse_args()
+
+    torch_threads = args.torch_threads or int(os.environ.get("TORCH_NUM_THREADS", "0")) or None
+    if torch_threads:
+        import torch
+        torch.set_num_threads(torch_threads)
 
     os.makedirs('logs', exist_ok=True)
     with open(f'logs/{args.room}_{args.name}_debug.log', 'a') as f:

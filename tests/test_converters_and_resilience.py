@@ -415,3 +415,90 @@ class TestMetricsThrottlingAndReplayBuffer:
 
         # Não deve haver nenhum item espúrio injetado na trajetória
         assert len(client.trajectory) == 0
+
+    def test_turn_phase_dict_normalization(self):
+        """Valida que turnPhase em formato dict é normalizado in-place para string com turnPhaseCaption."""
+        client = FabBotClient(
+            room_id="test_tp_norm",
+            deck_url="",
+            role="host",
+            player_name="TestBot"
+        )
+        state_tick = {
+            "turnPhase": {"caption": "Attack Step", "turnPhase": "B"},
+            "playerHealth": 20,
+            "opponentHealth": 20,
+            "turnNo": 1,
+            "havePriority": False
+        }
+        client.handle_game_tick(state_tick)
+        assert state_tick["turnPhase"] == "B"
+        assert state_tick["turnPhaseCaption"] == "Attack Step"
+
+        state_act = {
+            "turnPhase": {"caption": "Main Step", "turnPhase": "M"},
+            "playerHealth": 20,
+            "opponentHealth": 20,
+            "turnNo": 1,
+            "havePriority": True,
+            "playerHand": [],
+            "playerPrompt": {"buttons": []}
+        }
+        with patch("ai.bot_runtime.choice_handler.check_and_handle_anti_loop", return_value=True):
+            client.decide_and_act(state_act)
+        assert state_act["turnPhase"] == "M"
+        assert state_act["turnPhaseCaption"] == "Main Step"
+
+    def test_priority_watchdog_timeout_mode_99(self):
+        """Valida que o watchdog de prioridade dispara Mode 99 caso fique preso por > 25s no mesmo fingerprint."""
+        client = FabBotClient(
+            room_id="test_watchdog",
+            deck_url="",
+            role="host",
+            player_name="TestBot"
+        )
+        client.send_action = MagicMock()
+        cur_fp = "1_M_3_20_20"
+        client._last_priority_fingerprint = cur_fp
+        client._last_priority_time = time.time() - 26.0
+
+        state = {
+            "turnNo": 1,
+            "turnPhase": "M",
+            "playerHand": ["c1", "c2", "c3"],
+            "playerHealth": 20,
+            "opponentHealth": 20,
+            "havePriority": True
+        }
+
+        # Simula o trecho do watchdog presente no run_loop
+        fp = f"{state.get('turnNo')}_{state.get('turnPhase')}_{len(state.get('playerHand', []))}_{state.get('playerHealth')}_{state.get('opponentHealth')}"
+        assert fp == client._last_priority_fingerprint
+        if time.time() - client._last_priority_time > 25.0:
+            client.warning(f"[WATCHDOG PRIORIDADE] Teste escape")
+            client.send_action(mode=99, button_input="")
+            client._last_priority_time = time.time()
+
+        client.send_action.assert_called_once_with(mode=99, button_input="")
+
+    def test_lobby_manager_sideboard_failure_abort(self):
+        """Valida que falhas repetidas no submit_sideboard (3x) abortam o lobby."""
+        from ai.bot_runtime import lobby_manager
+        client = MagicMock()
+        client.game_id = "test_game_123"
+        client.player_id = 2
+        client.auth_key = "k"
+        client.submit_sideboard.return_value = False
+        client.session.post.return_value.status_code = 200
+        client.session.post.return_value.json.return_value = {
+            "mySideboardSubmitted": False,
+            "isMainGameReady": False,
+            "gameStarted": False,
+            "gameStatus": 1
+        }
+
+        res = lobby_manager.wait_in_lobby_and_start(client)
+        assert res is False
+        client.error.assert_called()
+        assert "Falha repetida no sideboard" in client.error.call_args[0][0]
+

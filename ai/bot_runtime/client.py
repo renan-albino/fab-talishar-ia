@@ -80,6 +80,8 @@ class FabBotClient:
         self.initial_my_health = None
         self.initial_opp_health = None
         self.execution_exceptions_count = 0
+        self._last_priority_time = 0.0
+        self._last_priority_fingerprint = ""
         self.clean_deck = os.path.basename(self.deck_url).replace(".json", "") if self.deck_url else "default_deck"
         
         # Log level: DEBUG=0, INFO=1, WARNING=2, ERROR=3
@@ -309,6 +311,21 @@ class FabBotClient:
                                             lf.write(f"[{datetime.now().strftime('%H:%M:%S')}] [TURNO {turn_num}] 📊 Placar: {p1_lbl} [{p1_hp} HP] vs {p2_lbl} [{p2_hp} HP] | Vez de: {active_lbl}\n")
                                     last_logged_turn = turn_num
                                 has_priority = bool(state.get("havePriority", False))
+                                if not hasattr(self, "_last_priority_time"):
+                                    self._last_priority_time = 0.0
+                                if not hasattr(self, "_last_priority_fingerprint"):
+                                    self._last_priority_fingerprint = ""
+
+                                if has_priority:
+                                    cur_fp = f"{state.get('turnNo')}_{state.get('turnPhase')}_{len(state.get('playerHand', []))}_{state.get('playerHealth')}_{state.get('opponentHealth')}"
+                                    if cur_fp == self._last_priority_fingerprint:
+                                        if time.time() - self._last_priority_time > 25.0:
+                                            self.warning(f"[WATCHDOG PRIORIDADE] Prioridade sem progresso por mais de 25s em {cur_fp}. Forçando ação de escape (Mode 99)!")
+                                            self.send_action(mode=99, button_input="")
+                                            self._last_priority_time = time.time()
+                                    else:
+                                        self._last_priority_fingerprint = cur_fp
+                                        self._last_priority_time = time.time()
                                 self.handle_game_tick(state)
                                 waiting_logged = False
                                 if self.metrics.get("status") == "Finalizada":
@@ -471,6 +488,11 @@ class FabBotClient:
         if not isinstance(state, dict):
             return
             
+        tp_raw = state.get("turnPhase", "M")
+        if isinstance(tp_raw, dict):
+            state["turnPhaseCaption"] = tp_raw.get("caption", "")
+            state["turnPhase"] = str(tp_raw.get("turnPhase", "M"))
+
         try:
             parsed_state = GameState(**state)
             state.update(parsed_state.model_dump())
@@ -620,9 +642,9 @@ class FabBotClient:
 
         tp_raw = state.get("turnPhase", "M")
         if isinstance(tp_raw, dict):
-            turn_phase = safe_str(tp_raw.get("turnPhase", "M"), default="M")
-        else:
-            turn_phase = tp_raw if tp_raw else "M"
+            state["turnPhaseCaption"] = tp_raw.get("caption", "")
+            state["turnPhase"] = str(tp_raw.get("turnPhase", "M"))
+        turn_phase = str(state.get("turnPhase", "M"))
             
         turn_num = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
         

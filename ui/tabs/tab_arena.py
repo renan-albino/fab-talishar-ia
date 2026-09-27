@@ -407,7 +407,16 @@ def render_tab_arena(deck_options=None):
             st.session_state["rooms"].append(room_id)
             out1 = open(f"logs/{room_id}_Bot1_terminal.log", "w")
             subprocess.Popen(
-                ["./venv/bin/python", "-u", "bot_client.py", "--room", room_id, "--deck", f"decks/{bot1_deck_slug}.json", "--role", "host", "--name", "Bot1"],
+                [
+                    "./venv/bin/python", "-u", "bot_client.py",
+                    "--room", room_id,
+                    "--deck", f"decks/{bot1_deck_slug}.json",
+                    "--role", "host",
+                    "--name", "Bot1",
+                    "--mcts-sims", "10",
+                    "--device", "cpu",
+                    "--torch-threads", "1"
+                ],
                 stdout=out1,
                 stderr=out1,
                 start_new_session=True,
@@ -415,7 +424,16 @@ def render_tab_arena(deck_options=None):
             time.sleep(0.1)
             out2 = open(f"logs/{room_id}_Bot2_terminal.log", "w")
             subprocess.Popen(
-                ["./venv/bin/python", "-u", "bot_client.py", "--room", room_id, "--deck", f"decks/{bot2_deck_slug}.json", "--role", "join", "--name", "Bot2"],
+                [
+                    "./venv/bin/python", "-u", "bot_client.py",
+                    "--room", room_id,
+                    "--deck", f"decks/{bot2_deck_slug}.json",
+                    "--role", "join",
+                    "--name", "Bot2",
+                    "--mcts-sims", "10",
+                    "--device", "cpu",
+                    "--torch-threads", "1"
+                ],
                 stdout=out2,
                 stderr=out2,
                 start_new_session=True,

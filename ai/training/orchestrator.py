@@ -312,6 +312,17 @@ class GPUTrainingOrchestrator:
                 games_since_save += num_finished
 
             else:
+                cpu_cores = os.cpu_count() or 4
+                total_active_bots = max(1, num_workers * 2)
+                if torch.cuda.is_available() and (bot_device == "cuda" or str(bot_device).startswith("cuda")):
+                    torch_threads = 1
+                else:
+                    torch_threads = max(1, cpu_cores // total_active_bots)
+
+                bot_env["OMP_NUM_THREADS"] = str(torch_threads)
+                bot_env["MKL_NUM_THREADS"] = str(torch_threads)
+                bot_env["TORCH_NUM_THREADS"] = str(torch_threads)
+
                 for _ in range(num_workers):
                     if not self.is_running:
                         break
@@ -328,6 +339,7 @@ class GPUTrainingOrchestrator:
                             "--buffer-capacity", str(buffer_cap),
                             "--epoch-ratio", str(epoch_ratio),
                             "--ismcts-concurrency", ismcts_concurrency_val,
+                            "--torch-threads", str(torch_threads),
                         ],
                         cwd=BASE_DIR,
                         env=bot_env,
@@ -347,6 +359,7 @@ class GPUTrainingOrchestrator:
                             "--buffer-capacity", str(buffer_cap),
                             "--epoch-ratio", str(epoch_ratio),
                             "--ismcts-concurrency", ismcts_concurrency_val,
+                            "--torch-threads", str(torch_threads),
                         ],
                         cwd=BASE_DIR,
                         env=bot_env,
@@ -388,6 +401,7 @@ class GPUTrainingOrchestrator:
                     check_interval=0.3,
                     proc_lock=self._proc_lock,
                     on_item_finished=_on_room_finished,
+                    room_ids=[r[0] for r in batch_rooms],
                 )
     
                 # Garante que nenhum processo deste lote continue vivo

@@ -306,7 +306,7 @@ Para garantir que todos os módulos de IA, simulador, ISMCTS, podas táticas e e
 ```bash
 ./venv/bin/pytest
 ```
-*(Todos os 414 testes automatizados executam e passam em ~3 segundos, isolados nativamente via `pytest.ini`).*
+*(Todos os 443 testes automatizados executam e passam em ~40 segundos, isolados nativamente via `pytest.ini`).*
 
 ---
 
@@ -383,7 +383,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 O Git Hook `pre-push` é executado automaticamente a cada `git push` para garantir que falhas nunca cheguem ao repositório remoto ou quebrem o GitHub Actions. Ele executa:
 1. **Sintaxe Completa Python** (`compileall`).
 2. **Dry-Run do ISMCTS** (`scripts/analyze_ismcts.py --dry-run`).
-3. **Execução da Suíte de Testes** (`pytest tests/`, 414 testes) [Incremental: pula se apenas documentação foi alterada].
+3. **Execução da Suíte de Testes** (`pytest tests/`, 443 testes) [Incremental: pula se apenas documentação foi alterada].
 4. **Verificação de Sincronização dos Templates** (`prepare_environment.py --export-templates` & diff).
 5. **Build de Produção do Frontend Vite** (`npx vite build`) [Incremental: pula se não houve alterações no frontend].
 
@@ -470,7 +470,7 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
 │   ├── manage_state.py       # Gestão de checkpoints compactos e releases no GitHub
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 414 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 443 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -572,7 +572,7 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Imunidade a Adblockers (BannerUnit)** | Criação do módulo `bannerUnit` e alias Vite substituindo importações dinâmicas `/components/ads/`, eliminando quebras causadas por extensões de bloqueio de anúncios (uBlock Origin, Brave Shields) |
 | **Decomposição Modular Completa (9 Monólitos)** | Refatoração estrutural completa de 9 arquivos monolíticos (`dashboard.py`, `bot_client.py`, `policy_engine.py`, `mcts.py`, `trainer.py`, `deck_parser.py`, `stats_manager.py`, `hero_strategies/base.py`, `hero_strategies/other_classes.py`) em pacotes limpos e coesos (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`), preservando 100% de retrocompatibilidade em todas as fachadas raízes |
 | **Paralelização Multi-Thread do ISMCTS** | Busca paralela e thread-safe em mundos determinizados com `concurrent.futures.ThreadPoolExecutor` em `ai/mcts/ismcts.py`, acelerando a amostragem e a agregação ponderada de votos na árvore de decisão |
-| **Suíte de Testes Expandida (427 Testes Automatizados)** | Ampliação da cobertura de testes para 414 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks e orquestração de GPU, com isolamento via `pytest.ini` |
+| **Suíte de Testes Expandida (443 Testes Automatizados)** | Ampliação da cobertura de testes para 443 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks, alocação adaptativa de CPU/threads e orquestração de GPU, com isolamento via `pytest.ini` |
 | **Torneios Suíços Automatizados** | Implementado em `stats/tournament_manager.py` com ligas entre decks e persistência no `stats/`. |
 | **Aprendizado Acelerado com Humanos & Assimilação Pós-Partida** | Ponderação amplificada (4.0x a 7.0x no PER) para partidas contra humanos, assimilação imediata pós-jogo em background via `ai/training/assimilation.py` com atualização segura do modelo (`model_latest.pt`) e alertas visuais com bloqueio protetor no Dashboard (`tab_play.py`) |
 | **Recomendação Inteligente de Heróis (Analytics & ELO)** | Motor de diagnóstico tático em `stats/recommendations.py` que analisa a telemetria e sugere os heróis prioritários para treino humano (gargalos de ELO < 45% WR, alta incerteza amostral e matchups inéditos contra humanos) integrado nas abas 1 e 6 do Dashboard |

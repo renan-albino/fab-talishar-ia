@@ -26,9 +26,9 @@ Single-context layout: one `CONTEXT.md` at the repo root, ADRs in `docs/adr/`. S
    - Atribua papéis especializados e instruções cirúrgicas (ex: `Tooling Specialist`, `Refactor Specialist`, `Test Runner`, `Codebase Researcher`).
    - O agente principal atua como orquestrador: planeja a divisão de trabalho, dispara os subagentes em paralelo, aguarda reativamente as notificações de término (sem polling ativo), valida os resultados e consolida a entrega final.
 7. **Sincronização Obrigatória de Documentação (Zero Doc Drift):** Toda vez que alterar código, refatorar módulos, criar ferramentas/scripts, adicionar flags de CLI, atualizar modelos ou modificar regras táticas:
-   - **SEMPRE atualize proativamente a documentação `.md` correspondente** (`README.md`, `CONTEXT.md`, `docs/ROADMAP.md` e `docs/`) antes de concluir a resposta ou realizar commit/push.
+   - **SEMPRE compare e atualize proativamente a documentação no diretório `docs/` (incluindo ADRs) e na raiz** (`README.md`, `CONTEXT.md`, `docs/ROADMAP.md`) antes de concluir a resposta ou realizar commit/push. Crie novos arquivos em `docs/` se necessário ou altere os existentes para refletir as mudanças realizadas.
    - Mantenha contadores e métricas (quantidade de testes unitários, heróis suportados, cartas no banco) 100% alinhados com o estado real do código.
-   - Se introduzir novos conceitos arquiteturais, registre-os imediatamente em `CONTEXT.md`.
+   - Se introduzir novos conceitos arquiteturais, registre-os imediatamente em `CONTEXT.md` e crie um ADR em `docs/adr/`.
    - Se alterar frontend ou backend, exporte os templates (`prepare_environment.py --export-templates`) e valide que não há drift em `setup_templates/`.
 8. **Proibido Grep Cego na Raiz (`grep -r .`):** Nunca execute buscas recursivas a partir da raiz sem exclusão de diretórios (`grep -rn "termo" .`). Pastas gigantescas (`node_modules/`, `venv/`, `Talishar/Games/`, `build/`, `logs/`, `data/`) causam travamento de processos e estouro de buffer.
    - **SEMPRE utilize:**
@@ -65,7 +65,7 @@ O script `scripts/prepare_environment.py` detecta automaticamente se seu ambient
 - O dashboard Streamlit é orquestrado por `dashboard.py` delegando para `ui/helpers.py` e `ui/tabs/` (7 abas).
 - Patches do Talishar e Talishar-FE ficam em `setup_templates/` e são aplicados por `scripts/prepare_environment.py`.
 - Banco de cartas oficial fica em `data/fab_cards_db.json` (extraído por `extract_card_db.py`).
-- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini` (438 testes unitários).
+- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini` (443 testes unitários).
 
 
 ### Ponytail Protocol

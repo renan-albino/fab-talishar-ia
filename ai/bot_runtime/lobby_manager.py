@@ -55,6 +55,7 @@ def wait_in_lobby_and_start(client) -> bool:
     client.submit_sideboard()
 
     first_player_chosen = False
+    sideboard_fail_count = 0
     start_time = time.time()
     timeout_seconds = 600  # 10 minutos para o jogador humano preparar o deck no lobby
 
@@ -80,7 +81,11 @@ def wait_in_lobby_and_start(client) -> bool:
 
                 # 2. Se o bot ainda não submeteu sideboard ou o sideboard foi resetado
                 if not data.get("mySideboardSubmitted", False):
-                    client.submit_sideboard()
+                    if not client.submit_sideboard():
+                        sideboard_fail_count += 1
+                        if sideboard_fail_count >= 3:
+                            client.error(f"[LOBBY ERRO] Falha repetida no sideboard ({sideboard_fail_count}x). Abortando lobby da sala #{client.game_id}.")
+                            return False
                     time.sleep(0.2)
 
                 # 3. Verificar se a partida começou ou ambos os jogadores confirmaram
@@ -110,6 +115,7 @@ def wait_for_opponent_and_start(client) -> bool:
     p2_flag = f"logs/{client.room_id}_p2_ready.txt"
     first_player_chosen = False
     sideboard_sent = False
+    sideboard_fail_count = 0
     start_time = time.time()
 
     while time.time() - start_time < 300:
@@ -133,7 +139,11 @@ def wait_for_opponent_and_start(client) -> bool:
                         time.sleep(0.2)
 
                     if not ldata.get("mySideboardSubmitted", False):
-                        client.submit_sideboard()
+                        if not client.submit_sideboard():
+                            sideboard_fail_count += 1
+                            if sideboard_fail_count >= 3:
+                                client.error(f"[LOBBY ERRO] Falha repetida no sideboard ({sideboard_fail_count}x). Abortando lobby da sala #{client.game_id}.")
+                                return False
                         time.sleep(0.2)
 
                     if ldata.get("isMainGameReady") or ldata.get("gameStarted") or ldata.get("gameStatus", 0) >= 5:

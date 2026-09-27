@@ -5,6 +5,7 @@ Funções e utilitários para supervisão, monitoramento e encerramento de proce
 de bots em treinamento paralelo.
 """
 
+import os
 import subprocess
 import threading
 import time
@@ -134,13 +135,20 @@ def wait_for_processes(
     check_interval: float = 0.3,
     proc_lock: Optional[threading.Lock] = None,
     on_item_finished: Optional[Callable[[int, Any], None]] = None,
+    room_ids: Optional[List[str]] = None,
+    stagnant_timeout: float = 60.0,
 ) -> bool:
     """
     Aguarda o término de todos os processos monitorados ou até atingir timeout.
+    Rastreia atividade de logs por sala e encerra individualmente processos estagnados.
     Retorna True se todos terminaram normalmente, False se atingiu timeout ou cancelado.
     """
     finished_indices = set()
-    deadline = time.time() + timeout
+    last_activity_time = {idx: time.time() for idx in range(len(active_procs))}
+    last_log_sizes = {idx: 0 for idx in range(len(active_procs))}
+    max_overall_timeout = max(timeout, 1800.0) if room_ids else timeout
+    deadline = time.time() + max_overall_timeout
+
     while time.time() < deadline:
         if is_running_check is not None and not is_running_check():
             return False
@@ -154,8 +162,17 @@ def wait_for_processes(
         if not procs_snapshot:
             return True
 
+        now = time.time()
+        for idx in range(len(procs_snapshot)):
+            if idx not in last_activity_time:
+                last_activity_time[idx] = now
+                last_log_sizes[idx] = 0
+
         all_done = True
         for idx, item in enumerate(procs_snapshot):
+            if idx in finished_indices:
+                continue
+
             if isinstance(item, (list, tuple)):
                 item_done = all(p.poll() is not None for p in item if p is not None)
             elif hasattr(item, "poll"):
@@ -164,12 +181,38 @@ def wait_for_processes(
                 item_done = True
 
             if item_done:
-                if idx not in finished_indices:
+                finished_indices.add(idx)
+                if on_item_finished:
+                    on_item_finished(idx, item)
+                continue
+
+            # Processo ainda ativo: verificar atividade por logs se room_ids informado
+            if room_ids and idx < len(room_ids):
+                r_id = room_ids[idx]
+                curr_size = 0
+                for log_file in (f"logs/{r_id}_match_feed.log", f"logs/{r_id}_Bot1_debug.log"):
+                    if os.path.exists(log_file):
+                        try:
+                            curr_size += os.path.getsize(log_file)
+                        except OSError:
+                            pass
+                if curr_size > last_log_sizes.get(idx, 0):
+                    last_activity_time[idx] = now
+                    last_log_sizes[idx] = curr_size
+
+                if now - last_activity_time[idx] > stagnant_timeout:
+                    # Esta sala específica travou! Encerrar cirurgicamente apenas os processos desta sala
+                    if isinstance(item, (list, tuple)):
+                        for p in item:
+                            terminate_process_cleanly(p)
+                    else:
+                        terminate_process_cleanly(item)
                     finished_indices.add(idx)
                     if on_item_finished:
                         on_item_finished(idx, item)
-            else:
-                all_done = False
+                    continue
+
+            all_done = False
 
         if all_done:
             return True

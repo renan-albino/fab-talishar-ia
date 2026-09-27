@@ -175,3 +175,60 @@ def test_batch_rooms_cleanup_guarantee():
     GPUTrainingOrchestrator.reset_instance()
 
 
+def test_bot_client_parser_torch_threads():
+    from bot_client import build_parser
+    parser = build_parser()
+    args = parser.parse_args([
+        "--room", "TestRoom",
+        "--deck", "decks/test.json",
+        "--role", "host",
+        "--name", "Bot1",
+        "--torch-threads", "4",
+    ])
+    assert args.torch_threads == 4
+
+
+def test_wait_for_processes_stagnant_timeout_surgical_kill():
+    from ai.training.process_supervisor import wait_for_processes
+    import time
+
+    p1 = MagicMock()
+    p2 = MagicMock()
+    p3 = MagicMock()
+    p4 = MagicMock()
+
+    # Room 0: processes active but stagnant (never poll done on their own)
+    p1.poll.return_value = None
+    p2.poll.return_value = None
+    # Room 1: finishes on second poll
+    p3_calls = [0]
+    p4_calls = [0]
+    p3.poll.side_effect = lambda: 0 if p3_calls[0] >= 1 else (p3_calls.__setitem__(0, p3_calls[0] + 1) or None)
+    p4.poll.side_effect = lambda: 0 if p4_calls[0] >= 1 else (p4_calls.__setitem__(0, p4_calls[0] + 1) or None)
+
+    active_procs = [(p1, p2), (p3, p4)]
+    finished_rooms = []
+
+    def on_finished(idx, item):
+        finished_rooms.append((idx, item))
+
+    # Stagnant timeout = 0.05s, room 0 has no log growth
+    res = wait_for_processes(
+        active_procs,
+        timeout=1.0,
+        check_interval=0.01,
+        on_item_finished=on_finished,
+        room_ids=["room_stagnant", "room_normal"],
+        stagnant_timeout=0.05,
+    )
+    assert res is True
+    # Verify p1 and p2 were terminated
+    p1.terminate.assert_called()
+    p2.terminate.assert_called()
+    assert len(finished_rooms) == 2
+    # Verify room 1 (normal) and room 0 (stagnant) were both marked finished
+    finished_indices = {r[0] for r in finished_rooms}
+    assert finished_indices == {0, 1}
+
+
+

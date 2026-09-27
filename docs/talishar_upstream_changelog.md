@@ -9,7 +9,7 @@ Ele serve como referência para os agentes de IA entenderem exatamente quais mud
 
 | Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
 | :--- | :--- | :--- | :--- | :--- |
-| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `30281e6a9` (`30281e6a9bd696d4fd7b4f3e21d29c62cb5f64bd`) | 2026-09-26 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `d617d6758` (`d617d67585fbdb1a7892e6fa2a85d79d2855009e`) | 2026-09-26 | ✅ Sincronizado + Patches Aplicados |
 | **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `5ceae0ea0` (`5ceae0ea098923ff232ea73d028d5287833c060e`) | 2026-09-25 | ✅ Sincronizado + Patches Aplicados |
 
 ---
@@ -24,6 +24,52 @@ Quando o Talishar oficial atualizar:
 ---
 
 ## 🕒 Histórico de Sincronizações
+
+### 🔄 Sincronização em 2026-09-27 00:21:43
+
+#### Talishar Backend
+- **Transição de Versão**: `30281e6a9` (2026-09-26) ➔ `d617d6758` (2026-09-26)
+- **Novos commits incorporados**: 12
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Banco fab_cards_db.json reindexado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `d617d6758` (2026-09-26 por **Paul Gibby**) — full fix for cosmo ward
+* `6d5a8c726` (2026-09-26 por **Paul Gibby**) — only mark ward if it has an amount
+* `714d7a552` (2026-09-26 por **Paul Gibby**) — cosmo doesn't have ward
+* `84fc9d930` (2026-09-26 por **Paul Gibby**) — refactor confidence
+* `dd4867649` (2026-09-26 por **Paul Gibby**) — clean up SAT cards
+* `c0f976a26` (2026-09-26 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `586a02281` (2026-09-26 por **Paul Gibby**) — Add a parallel CardCodeGenerator that pulls from cardvault
+* `d5952d0ed` (2026-09-26 por **Paul Gibby**) — Merge pull request #1420 from QWYNG/auto-target-dagger-draconic-reaction
+* `28dd5aa13` (2026-09-26 por **Paul Gibby**) — add basic rarity to clash legality
+* `b00f6aa12` (2026-09-26 por **Paul Gibby**) — fix rarity legality check
+* `819b4ee09` (2026-09-27 por **QWYNG**) — use ShouldAutoTargetOpponent
+* `fede83345` (2026-09-26 por **QWYNG**) — Auto-target the attacking dagger for draconic dagger attack reactions
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `APIs/JoinGame.php`
+- `AuraAbilities.php`
+- `BuildPlayerInputPopup.php`
+- `CardDictionaries/Hunted/HNTShared.php`
+- `CardDictionaries/SuperSlam/SUPShared.php`
+- `CardDictionary.php`
+- `CardLogic.php`
+- `Classes/CardObjects/IARCards.php`
+- `Classes/CardObjects/SUPCards.php`
+- `GeneratedCode/GeneratedCardDictionaries.php`
+- `Libraries/NetworkingLibraries.php`
+- `zzCardCodeGeneratorCSV.php`
+
+</details>
+
+
+---
 
 ### 🔄 Sincronização em 2026-09-26 20:13:45
 
