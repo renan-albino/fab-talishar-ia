@@ -11,8 +11,10 @@ import json
 import uuid
 import html
 import subprocess
+import pandas as pd
 import streamlit as st
 from ui.helpers import get_cached_saved_decks, read_text_tail
+from stats_manager import get_stats_data, update_match_result
 
 
 @st.cache_data(ttl=2)
@@ -288,6 +290,85 @@ def render_tab_arena(deck_options=None):
 
     if btn_kill:
         subprocess.run(["pkill", "-9", "-f", "bot_client.py"])
+        active_rooms = set(st.session_state.get("rooms", []))
+        st.session_state["rooms"] = []
+        if os.path.exists("logs"):
+            for f in os.listdir("logs"):
+                if f.endswith("_Bot1.json"):
+                    r_candidate = f[:-len("_Bot1.json")]
+                    try:
+                        with open(os.path.join("logs", f), "r", encoding="utf-8") as jf:
+                            jd = json.load(jf)
+                        if jd.get("metrics", {}).get("status") == "Jogando":
+                            active_rooms.add(r_candidate)
+                    except Exception:
+                        pass
+
+        for r_id in active_rooms:
+            if not r_id:
+                continue
+            m1_path = os.path.join("logs", f"{r_id}_Bot1.json")
+            m2_path = os.path.join("logs", f"{r_id}_Bot2.json")
+            m1, m2 = {}, {}
+            if os.path.exists(m1_path):
+                try:
+                    with open(m1_path, "r", encoding="utf-8") as f:
+                        m1 = json.load(f).get("metrics", {})
+                except Exception:
+                    pass
+            if os.path.exists(m2_path):
+                try:
+                    with open(m2_path, "r", encoding="utf-8") as f:
+                        m2 = json.load(f).get("metrics", {})
+                except Exception:
+                    pass
+
+            turn = max(m1.get("turn", 0), m2.get("turn", 0))
+            if turn == 0:
+                for m in (m1, m2):
+                    ph = str(m.get("phase", ""))
+                    if "Turno" in ph:
+                        try:
+                            turn = max(turn, int(ph.split("Turno")[1].split()[0]))
+                        except Exception:
+                            pass
+
+            if turn >= 1:
+                h1 = m1.get("health", 40)
+                h2 = m2.get("health", 40)
+                d1 = bot1_deck_slug
+                d2 = bot2_deck_slug
+                p1_d_file = os.path.join("logs", f"{r_id}_host_deck.txt")
+                p2_d_file = os.path.join("logs", f"{r_id}_join_deck.txt")
+                if os.path.exists(p1_d_file):
+                    try:
+                        with open(p1_d_file, "r", encoding="utf-8") as f:
+                            c = f.read().strip()
+                            if c: d1 = c
+                    except Exception:
+                        pass
+                if os.path.exists(p2_d_file):
+                    try:
+                        with open(p2_d_file, "r", encoding="utf-8") as f:
+                            c = f.read().strip()
+                            if c: d2 = c
+                    except Exception:
+                        pass
+                try:
+                    update_match_result(
+                        room_id=r_id,
+                        p1_deck=d1,
+                        p2_deck=d2,
+                        p1_health=h1,
+                        p2_health=h2,
+                        total_turns=turn,
+                        winner_id=0,
+                        is_invalid_match=True,
+                        invalid_reason="Interrompida pelo Usuário"
+                    )
+                except Exception:
+                    pass
+
         if os.path.exists("logs"):
             for f in os.listdir("logs"):
                 if f.endswith("_Bot1.json") or f.endswith("_Bot2.json"):
@@ -343,3 +424,12 @@ def render_tab_arena(deck_options=None):
 
     st.divider()
     render_arena_board()
+
+    stats_data = get_stats_data()
+    recent = stats_data.get("recent_matches", [])
+    if recent:
+        st.divider()
+        st.markdown("#### 📜 Histórico Recente de Confrontos")
+        df_recent = pd.DataFrame(recent)
+        df_recent.columns = ["Sala", "Data/Hora", "Vencedor", "Deck Bot 1", "Deck Bot 2", "Vida B1", "Vida B2", "Turnos"]
+        st.dataframe(df_recent, use_container_width=True)

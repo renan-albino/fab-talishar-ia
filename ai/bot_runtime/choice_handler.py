@@ -32,7 +32,11 @@ def score_choice_candidate(client, candidate, turn_phase: str = "", state: dict 
 
     # Contexto de Sinking / Bottom / Discard
     is_sink = any(k in p_title or k in p_prompt for k in ["sink", "bottom", "providence"])
-    is_self_discard = ("DISCARD" in turn_phase and "HAND" in turn_phase) or "discard" in p_title or "discard" in p_prompt
+    is_self_discard = (
+        ("DISCARD" in turn_phase and turn_phase not in ("CHOOSEDISCARD", "MAYCHOOSEDISCARD"))
+        or "discard" in p_title
+        or "discard" in p_prompt
+    )
 
     # Identificar se o candidato é do Arsenal
     arsenal = state.get("playerArsenal") or state.get("playerArse") or []
@@ -130,7 +134,7 @@ def check_and_handle_anti_loop(client, state: dict, turn_num: int, turn_phase: s
             time.sleep(0.15)
             return True
 
-        if turn_phase in ("MAYCHOOSEMULTIZONE", "MAYMULTICHOOSETEXT"):
+        if turn_phase == "MAYMULTICHOOSETEXT":
             client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) -> Pass (Mode 99)")
             client.send_action(mode=99, button_input="PASS")
             client.recent_phases.clear()
@@ -138,15 +142,13 @@ def check_and_handle_anti_loop(client, state: dict, turn_num: int, turn_phase: s
             time.sleep(0.15)
             return True
 
-        if turn_phase in ("CHOOSEMULTIZONE", "MULTICHOOSE", "MULTICHOOSEHAND"):
-            # Se já falhou submeter vazio consecutivamente, força seleção do índice 0
-            if client._anti_loop_streak >= 3:
+        if any(k in turn_phase for k in ("MULTICHOOSE", "CHOOSEMULTI")) and turn_phase not in ("MULTICHOOSETEXT", "MAYMULTICHOOSETEXT"):
+            if "MAY" in turn_phase:
+                client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) -> Pass (Mode 99)")
+                client.send_action(mode=99, button_input="PASS")
+            else:
                 client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) -> Forçando índice 0 (Mode 19)")
                 client.send_action(mode=19, chk_count=1, chk_input=["0"])
-                client._anti_loop_streak = 0
-            else:
-                client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) -> Submetendo vazio (Mode 19)")
-                client.send_action(mode=19, chk_count=0, chk_input=[])
             client.recent_phases.clear()
             client.consecutive_same_state = 0
             time.sleep(0.15)
@@ -346,27 +348,53 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
         time.sleep(0.002)
         return True
 
-    if turn_phase in ("MAYCHOOSEMULTIZONE", "CHOOSEMULTIZONE", "MULTICHOOSE", "MULTICHOOSEHAND"):
+    if any(k in turn_phase for k in ("MULTICHOOSE", "CHOOSEMULTI")) and turn_phase not in ("MULTICHOOSETEXT", "MAYMULTICHOOSETEXT"):
         p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
         cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
         hand = state.get("playerHand", [])
-        
+        target_list = cards_arr if cards_arr else hand
         form_opts = popup.get("formOptions", {}) if isinstance(popup, dict) else {}
-        max_cnt = form_opts.get("maxCount", len(cards_arr) if cards_arr else len(hand))
-        
-        if max_cnt == 0 or (not cards_arr and not hand):
-            if turn_phase == "MAYCHOOSEMULTIZONE":
-                client.log(f"[AÇÃO JOGADOR {client.player_id}] Escolha Opcional ({turn_phase}) Sem opções -> Pass (Mode 99)")
-                client.send_action(mode=99, button_input="PASS")
+
+        max_cnt = form_opts.get("maxCount", len(target_list))
+        if not target_list or max_cnt == 0:
+            if turn_phase.startswith("MAY") or form_opts.get("minCount", 0) == 0:
+                if turn_phase.startswith("MAY"):
+                    client.log(f"[AÇÃO JOGADOR {client.player_id}] Escolha Opcional ({turn_phase}) Sem opções -> Pass (Mode 99)")
+                    client.send_action(mode=99, button_input="PASS")
+                else:
+                    client.log(f"[AÇÃO JOGADOR {client.player_id}] Multi-Seleção (Sem opções / Min 0) -> Confirmar vazio (Mode 19)")
+                    client.send_action(mode=19, chk_count=0, chk_input=[])
             else:
                 client.log(f"[AÇÃO JOGADOR {client.player_id}] Multi-Seleção (Sem opções / Max 0) -> Confirmar vazio (Mode 19)")
                 client.send_action(mode=19, chk_count=0, chk_input=[])
             time.sleep(0.002)
             return True
 
+        btn_inp = "0"
+        if prompt_buttons:
+            for b in prompt_buttons:
+                if b.get("mode") == 19 or "submit" in str(b.get("caption", "")).lower() or "ok" in str(b.get("caption", "")).lower():
+                    btn_inp = str(b.get("buttonInput", "0"))
+                    break
+
+        if "DISCARD" in turn_phase:
+            count_to_pick = int(form_opts.get("maxCount", form_opts.get("count", form_opts.get("minCount", 1))))
+            if count_to_pick > len(target_list):
+                count_to_pick = len(target_list)
+
+            scored_indices = sorted(
+                range(len(target_list)),
+                key=lambda idx: score_choice_candidate(client, target_list[idx], turn_phase=turn_phase, state=state, popup=popup),
+                reverse=True
+            )
+            chk_inp = [str(idx) for idx in scored_indices[:count_to_pick]]
+            client.log(f"[AÇÃO JOGADOR {client.player_id}] Descarte Multi-Seleção -> {turn_phase} (Mode: 19, Count: {len(chk_inp)}, Pick: {chk_inp})")
+            client.send_action(mode=19, chk_count=len(chk_inp), chk_input=chk_inp, button_input=btn_inp)
+            time.sleep(0.002)
+            return True
+
         # Heurística Tática: Selecionar a melhor carta de primeira tentativa
         best_idx = 0
-        target_list = cards_arr if cards_arr else hand
         if len(target_list) > 1:
             best_score = -9999.0
             for c_idx, c_item in enumerate(target_list):
@@ -378,12 +406,6 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
         chk_cnt = 1
         chk_inp = [str(best_idx)]
 
-        btn_inp = "0"
-        if prompt_buttons:
-            for b in prompt_buttons:
-                if b.get("mode") == 19 or "submit" in str(b.get("caption", "")).lower() or "ok" in str(b.get("caption", "")).lower():
-                    btn_inp = str(b.get("buttonInput", "0"))
-                    break
         client.log(f"[AÇÃO JOGADOR {client.player_id}] Multi-Seleção -> {turn_phase} (Mode: 19, Count: {chk_cnt}, Pick: {chk_inp})")
         client.send_action(mode=19, button_input=btn_inp, chk_count=chk_cnt, chk_input=chk_inp)
         time.sleep(0.002)

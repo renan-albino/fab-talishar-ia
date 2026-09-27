@@ -174,6 +174,16 @@ class TestScoreChoiceCandidate:
         )
         assert score_discard == -29.0  # -(4 + 25)
 
+    def test_self_discard_multichoose_discard_phase(self, client):
+        state = {"playerHand": [{"cardNumber": "leave_no_witnesses"}]}
+        client.policy_engine.extract_card_info.return_value = {"power": 4, "pitch": 1, "has_go_again": False}
+        cand = {"cardNumber": "leave_no_witnesses"}
+        # MULTICHOOSEDISCARD não tem "HAND" na phase, mas deve ativar is_self_discard e inverter o score
+        score = choice_handler.score_choice_candidate(
+            client, cand, turn_phase="MULTICHOOSEDISCARD", state=state, popup={}
+        )
+        assert score == -29.0  # -(4 + 25)
+
     def test_pitch_and_go_again_bonuses(self, client):
         # Carta sem sinergia especial, mas com pitch 1 (+6.0)
         client.policy_engine.extract_card_info.return_value = {"power": 3, "pitch": 1, "has_go_again": False}
@@ -292,28 +302,24 @@ class TestCheckAndHandleAntiLoop:
         assert escaped is True
         assert client.sent_actions[0] == {"mode": 99, "button_input": "PASS"}
 
-    def test_anti_loop_multichoose_escalation_empty_then_index_zero(self, client):
+    def test_anti_loop_mandatory_multichoose_forces_index_zero(self, client):
         state = {"playerHand": [1], "playerHealth": 20, "opponentHealth": 20}
         unpayable = set()
         client.consecutive_same_state = 5
         client.last_state_sig = (1, "CHOOSEMULTIZONE", 1, 20, 20)
 
-        # Streak < 3 -> submete vazio
-        client._anti_loop_streak = 1
-        choice_handler.check_and_handle_anti_loop(
-            client, state, turn_num=1, turn_phase="CHOOSEMULTIZONE", prompt_buttons=[], unpayable_set=unpayable
-        )
-        assert client.sent_actions[-1] == {"mode": 19, "chk_count": 0, "chk_input": []}
-
-        # Streak >= 3 -> força seleção do índice 0
-        client.consecutive_same_state = 5
-        client.last_state_sig = (1, "CHOOSEMULTIZONE", 1, 20, 20)
-        client._anti_loop_streak = 3
         choice_handler.check_and_handle_anti_loop(
             client, state, turn_num=1, turn_phase="CHOOSEMULTIZONE", prompt_buttons=[], unpayable_set=unpayable
         )
         assert client.sent_actions[-1] == {"mode": 19, "chk_count": 1, "chk_input": ["0"]}
-        assert client._anti_loop_streak == 0
+
+        # Também testa MULTICHOOSEDISCARD obrigatório
+        client.consecutive_same_state = 5
+        client.last_state_sig = (1, "MULTICHOOSEDISCARD", 1, 20, 20)
+        choice_handler.check_and_handle_anti_loop(
+            client, state, turn_num=1, turn_phase="MULTICHOOSEDISCARD", prompt_buttons=[], unpayable_set=unpayable
+        )
+        assert client.sent_actions[-1] == {"mode": 19, "chk_count": 1, "chk_input": ["0"]}
 
     def test_anti_loop_multichoosetext_mandatory_index_zero(self, client):
         state = {"playerHand": [], "playerHealth": 20, "opponentHealth": 20}
@@ -627,6 +633,39 @@ class TestHandlePopupAndChoices:
             "chk_count": 1,
             "chk_input": ["1"],
         }
+
+    def test_multichoose_discard_save_the_thought(self, client):
+        # Simula Save the Thought exigindo descarte de 2 cartas da mão via Mode 19
+        state = {
+            "playerHand": [
+                {"cardNumber": "sink_below"},         # defensiva nobre (+15.0) -> invertido para -15.0
+                {"cardNumber": "codex_of_frailty"},   # peça central (+25.0) -> invertido para -25.0
+                {"cardNumber": "weak_card_a"},        # carta fraca (+0.0) -> invertido para 0.0
+                {"cardNumber": "weak_card_b"},        # carta fraca (+0.0) -> invertido para 0.0
+            ]
+        }
+        popup = {
+            "title": "Save the Thought",
+            "formOptions": {"minCount": 2, "maxCount": 2},
+        }
+        prompt_buttons = [{"mode": 19, "caption": "Submit", "buttonInput": "btn_discard"}]
+
+        handled = choice_handler.handle_popup_and_choices(
+            client,
+            state=state,
+            turn_phase="MULTICHOOSEDISCARD",
+            popup=popup,
+            prompt_buttons=prompt_buttons,
+            unpayable_set=set(),
+        )
+        assert handled is True
+        assert len(client.sent_actions) == 1
+        action = client.sent_actions[0]
+        assert action["mode"] == 19
+        assert action["button_input"] == "btn_discard"
+        assert action["chk_count"] == 2
+        # As piores cartas (índices 2 e 3) devem ser selecionadas para descarte, preservando as cartas nobres (índices 0 e 1)
+        assert set(action["chk_input"]) == {"2", "3"}
 
     def test_multichoosetext_optional_and_empty(self, client):
         popup = {"formOptions": {"minNo": 0, "maxNo": 1}}

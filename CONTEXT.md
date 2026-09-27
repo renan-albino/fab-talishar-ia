@@ -128,8 +128,8 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: Leitura cega estática de métricas, Polling bloqueante de disco, Descompasso de amostras.
 - **Notificação e Ampulheta em Tempo Real da Assimilação (`ui/tabs/tab_play.py`, `Talishar/Games/.../gamelog.txt`)**: Indicador visual dinâmico com ampulheta animada CSS na aba de Duelo e injeção de balões de status no chat oficial do Talishar avisando o progresso da assimilação em background e prevenindo o início precipitado de novas partidas enquanto os pesos neurais estão sendo sincronizados.
   - _Avoid_: Trava cega de tela, Pop-up modal intrusivo.
-- **Invalid Match Filtering**: Algoritmo que invalida e expurga partidas espúrias (empates sem dano trocado $< 4$ HP ou bots inertes *Punching Bag*), mantendo a integridade dos dados de treino e rankings.
-  - _Avoid_: Limpeza cega de partidas, Exclusão manual de dados.
+- **Invalid Match Filtering**: Algoritmo que invalida e expurga partidas espúrias (empates sem dano trocado $< 4$ HP, bots inertes *Punching Bag*, timeouts de treino com turnos $\ge 2$ ou interrupções manuais na Arena com turnos $\ge 1$), preservando o histórico com placar de vida real no SQLite sem alterar o ELO nem poluir o ReplayBuffer.
+  - _Avoid_: Limpeza cega de partidas, Exclusão manual de dados, Timeout desconsiderado.
 - **Punching Bag / Inert Stall**: Anomalia técnica onde um bot perdedor passa $\ge 6$ turnos sem desferir ataques ou dano enquanto o adversário permanece intacto (100% HP), exigindo anulação da partida.
   - _Avoid_: Partida desbalanceada comum, Vitória rápida legítima.
 - **Turn Planner & Survival Trigger (`ai/hero_strategies/turn_planner.py`)**: Módulo tático que formula o `TurnPlan` (modo ofensivo, pivot ou sobrevivência estrita quando dano letal é iminente).

@@ -117,8 +117,9 @@ class FabBotClient:
 
         os.makedirs("logs", exist_ok=True)
         try:
-            with open(f"logs/{self.room_id}_{self.role}_deck.txt", "w", encoding="utf-8") as f:
-                f.write(self.deck_name or self.clean_deck)
+            deck_file = f"logs/{self.room_id}_host_deck.txt" if (self.role == "host" or self.player_id == 1) else f"logs/{self.room_id}_join_deck.txt" if (self.role == "join" or self.player_id == 2) else f"logs/{self.room_id}_{self.role}_deck.txt"
+            with open(deck_file, "w", encoding="utf-8") as f:
+                f.write(self.clean_deck)
         except Exception:
             pass
 
@@ -515,12 +516,24 @@ class FabBotClient:
                 self.opponent_tracker.update(cards_played=opp_cards_played, damage_dealt=opp_damage_dealt)
         self._prev_turn_active_id = turn_active_id
 
+        opp_hero = state.get("theirHero") or state.get("opponentHero")
+        if opp_hero:
+            target_opp_file = f"logs/{self.room_id}_join_deck.txt" if (self.role == "host" or self.player_id == 1) else f"logs/{self.room_id}_host_deck.txt"
+            if not os.path.exists(target_opp_file):
+                try:
+                    opp_hero_str = opp_hero.get("name", "") if isinstance(opp_hero, dict) else str(opp_hero)
+                    with open(target_opp_file, "w", encoding="utf-8") as f:
+                        f.write(opp_hero_str.strip())
+                except Exception:
+                    pass
+
         turn = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
 
         self.metrics["health"] = my_h
         self.metrics["opp_health"] = opp_h
         self.metrics["deck_url"] = self.deck_url
         self.metrics["player_id"] = self.player_id
+        self.metrics["turn"] = turn
             
         tp_raw = state.get("turnPhase", "")
         tp_name = tp_raw.get("turnPhase", "") if isinstance(tp_raw, dict) else tp_raw

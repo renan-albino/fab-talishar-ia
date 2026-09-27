@@ -535,13 +535,23 @@ class GPUTrainingOrchestrator:
                 m2 = json.load(f2).get("metrics", {})
             h1 = m1.get("health", 40)
             h2 = m2.get("health", 40)
+            from stats_manager import update_match_result
             if h1 <= 0 or h2 <= 0:
                 w_id = 1 if h2 <= 0 else 2
-                from stats_manager import update_match_result
+                turn = max(m1.get("turn", 15), m2.get("turn", 15))
                 update_match_result(
                     room_id, d1_slug, d2_slug,
-                    h1, h2, m1.get("turn", 15), w_id
+                    h1, h2, turn, w_id
                 )
+            elif h1 > 0 and h2 > 0:
+                turn = max(m1.get("turn", 0), m2.get("turn", 0))
+                if turn >= 2:
+                    update_match_result(
+                        room_id, d1_slug, d2_slug,
+                        h1, h2, turn, 0,
+                        is_invalid_match=True,
+                        invalid_reason="Tempo Esgotado / Timeout"
+                    )
         except Exception:
             pass
 

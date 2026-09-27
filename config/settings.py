@@ -560,7 +560,7 @@ def _build_settings() -> FaBSettings:
     min_to_train = max(batch_size, 512)
 
     # ── 4.8 Parâmetros derivados de batch e workers ───────────────
-    game_timeout   = int(os.environ.get("FAB_MATCH_TIMEOUT", 120))
+    game_timeout   = int(os.environ.get("FAB_MATCH_TIMEOUT", max(360, int(480 * max(1.0, num_workers * 0.25)))))
     save_interval  = max(5, num_workers * 3)
 
     lr_step  = 50
@@ -613,7 +613,7 @@ def _build_settings() -> FaBSettings:
     dashboard_port = int(os.environ.get("FAB_DASHBOARD_PORT", 8501))
     mock_fabrary_port = int(os.environ.get("FAB_MOCK_PORT", 9000))
     elo_k_factor = int(os.environ.get("FAB_ELO_K", 32))
-    match_timeout_s = int(os.environ.get("FAB_MATCH_TIMEOUT", 120))
+    match_timeout_s = game_timeout
 
     default_ismcts_concurrency = os.environ.get("FAB_ISMCTS_CONCURRENCY", "threads").lower()
     if default_ismcts_concurrency not in ("threads", "multiprocessing", "direct_gpu", "sequential"):

@@ -9,7 +9,7 @@ Ele serve como referência para os agentes de IA entenderem exatamente quais mud
 
 | Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
 | :--- | :--- | :--- | :--- | :--- |
-| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `d0c5671f7` (`d0c5671f7027e029054cbdaadce2d01dcec12cce`) | 2026-09-25 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `30281e6a9` (`30281e6a9bd696d4fd7b4f3e21d29c62cb5f64bd`) | 2026-09-26 | ✅ Sincronizado + Patches Aplicados |
 | **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `5ceae0ea0` (`5ceae0ea098923ff232ea73d028d5287833c060e`) | 2026-09-25 | ✅ Sincronizado + Patches Aplicados |
 
 ---
@@ -24,6 +24,58 @@ Quando o Talishar oficial atualizar:
 ---
 
 ## 🕒 Histórico de Sincronizações
+
+### 🔄 Sincronização em 2026-09-26 20:13:45
+
+#### Talishar Backend
+- **Transição de Versão**: `d0c5671f7` (2026-09-25) ➔ `30281e6a9` (2026-09-26)
+- **Novos commits incorporados**: 12
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Banco fab_cards_db.json reindexado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `30281e6a9` (2026-09-26 por **Paul Gibby**) — better place to put exp_may's pass
+* `d16409d75` (2026-09-26 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `354f9bffc` (2026-09-26 por **Paul Gibby**) — partially revert last change
+* `57338743d` (2026-09-26 por **Paul Gibby**) — Merge pull request #1421 from mpetason/patch-1
+* `73223f80e` (2026-09-26 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `eee9b8170` (2026-09-26 por **Paul Gibby**) — add exp_pass option to ChooseMultiZoneAwait
+* `0938fc6e6` (2026-09-26 por **Mike Petersen**) — Update warmongers from bluee to blue in IraCC.txt
+* `360a65637` (2026-09-26 por **PvtVoid**) — Fix bots with shuko, tiger and bravo
+* `b01dd6a14` (2026-09-26 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `0ee2836ba` (2026-09-26 por **Paul Gibby**) — fix dread scythe triggering when hitting an ally
+* `e1516442d` (2026-09-26 por **PvtVoid**) — Php performance improvements
+* `d532d563b` (2026-09-26 por **Paul Gibby**) — refactor dread scythe
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `AI/BotLogic.php`
+- `AI/EncounterPriorityLogic.php`
+- `AI/PlayerMacros.php`
+- `Assets/IraCC.txt`
+- `BuildGameState.php`
+- `CardDictionaries/Dynasty/DYNShared.php`
+- `CardDictionaries/Everfest/EVRShared.php`
+- `CardDictionaries/HighSeas/SEAShared.php`
+- `CardDictionaries/Monarch/MONRuneblade.php`
+- `CardDictionaries/Monarch/MONShared.php`
+- `CardDictionary.php`
+- `CardLogic.php`
+- `Classes/CardObjects/DYNCards.php`
+- `Classes/CardObjects/MONCards.php`
+- `CoreLogic.php`
+- `DecisionQueue/AwaitEffects.php`
+- `Libraries/PlayerSettings.php`
+- `ParseGamestate.php`
+
+</details>
+
+
+---
 
 ### 🔄 Sincronização em 2026-09-26 02:29:04
 

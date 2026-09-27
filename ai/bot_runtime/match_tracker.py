@@ -266,6 +266,20 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
             if os.path.exists(p2_d_file):
                 with open(p2_d_file, encoding="utf-8") as f2:
                     p2_d = f2.read().strip()
+
+            if not is_vs_human and p2_d == p1_d:
+                opp_hero_raw = (
+                    state.get("theirHero")
+                    or getattr(client, "opponent_hero_name", "")
+                    or state.get("opponentHero")
+                )
+                if opp_hero_raw:
+                    resolved_opp = opp_hero_raw.get("name", "") if isinstance(opp_hero_raw, dict) else str(opp_hero_raw).strip()
+                    if resolved_opp:
+                        if client.role == "host" or client.player_id == 1:
+                            p2_d = resolved_opp
+                        else:
+                            p1_d = resolved_opp
             
             from stats_manager import update_match_result
             update_match_result(
