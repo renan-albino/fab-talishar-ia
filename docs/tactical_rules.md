@@ -179,8 +179,8 @@ Em regras de torneio de FaB, uma partida pode atingir um estado em que nenhum jo
 3. **Ações Anti-Loop em Modais**:
    Rastreia assinaturas de estado $(\text{turn}, \text{phase}, |\text{hand}|, HP_1, HP_2)$. Se o bot passar pelo mesmo estado $> 4$ vezes seguidas ou cair em loop cíclico:
    - `DOCRANK` / `YESNO` $\to$ Força resposta `NO` (Mode 20).
-   - `MAYCHOOSEMULTIZONE` $\to$ Força `PASS` (Mode 99).
-   - `CHOOSEMULTIZONE` $\to$ Se travar consecutivamente, submete seleção do índice 0 (Mode 19).
+   - `MAYCHOOSEMULTIZONE`, `MAYMULTICHOOSETEXT`, `CHOOSEHANDCANCEL` $\to$ Força `PASS` (Mode 99).
+   - `CHOOSEMULTIZONE` $\to$ Se for formulário multi-seleção (`is_multi_form`), submete índice 0 (Mode 19); se for seleção única de alvo (ex: Flick Knives), submete alvo via `mode=16` com `card_id=target_id` (nunca Mode 19).
 4. **Finalização Limpa**: Registra `winner_id = 0` no ELO ($S = 0.5$) e desliga os subprocessos imediatamente.
 
 ---

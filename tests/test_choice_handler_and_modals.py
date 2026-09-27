@@ -303,7 +303,12 @@ class TestCheckAndHandleAntiLoop:
         assert client.sent_actions[0] == {"mode": 99, "button_input": "PASS"}
 
     def test_anti_loop_mandatory_multichoose_forces_index_zero(self, client):
-        state = {"playerHand": [1], "playerHealth": 20, "opponentHealth": 20}
+        state = {
+            "playerHand": [1],
+            "playerHealth": 20,
+            "opponentHealth": 20,
+            "playerInputPopUp": {"formOptions": {"mode": 19, "maxCount": 2}},
+        }
         unpayable = set()
         client.consecutive_same_state = 5
         client.last_state_sig = (1, "CHOOSEMULTIZONE", 1, 20, 20)
@@ -320,6 +325,28 @@ class TestCheckAndHandleAntiLoop:
             client, state, turn_num=1, turn_phase="MULTICHOOSEDISCARD", prompt_buttons=[], unpayable_set=unpayable
         )
         assert client.sent_actions[-1] == {"mode": 19, "chk_count": 1, "chk_input": ["0"]}
+
+    def test_anti_loop_choosemultizone_single_forces_mode_16(self, client):
+        state = {
+            "playerHand": [],
+            "playerHealth": 20,
+            "opponentHealth": 20,
+            "playerInputPopUp": {
+                "cardsMultiZone": [
+                    {"cardNumber": "flick_knives", "action": 16, "actionDataOverride": "MYCHAR-1"}
+                ]
+            }
+        }
+        unpayable = set()
+        client.consecutive_same_state = 5
+        client.last_state_sig = (1, "CHOOSEMULTIZONE", 0, 20, 20)
+
+        escaped = choice_handler.check_and_handle_anti_loop(
+            client, state, turn_num=1, turn_phase="CHOOSEMULTIZONE", prompt_buttons=[], unpayable_set=unpayable
+        )
+        assert escaped is True
+        assert len(client.sent_actions) == 1
+        assert client.sent_actions[0] == {"mode": 16, "card_id": "MYCHAR-1", "button_input": "MYCHAR-1"}
 
     def test_anti_loop_multichoosetext_mandatory_index_zero(self, client):
         state = {"playerHand": [], "playerHealth": 20, "opponentHealth": 20}
@@ -614,6 +641,47 @@ class TestHandlePopupAndChoices:
         )
         assert handled_mand is True
         assert client.sent_actions[-1] == {"mode": 19, "chk_count": 0, "chk_input": []}
+
+    def test_choosemultizone_single_choice_sends_mode_16(self, client):
+        popup = {
+            "data": {
+                "cardsArray": [
+                    {"cardNumber": "flick_knives", "action": 16, "actionDataOverride": "MYCHAR-1"}
+                ]
+            }
+        }
+        handled = choice_handler.handle_popup_and_choices(
+            client, state={}, turn_phase="CHOOSEMULTIZONE", popup=popup, prompt_buttons=[], unpayable_set=set()
+        )
+        assert handled is True
+        assert len(client.sent_actions) == 1
+        assert client.sent_actions[0] == {"mode": 16, "card_id": "MYCHAR-1", "button_input": "MYCHAR-1"}
+
+    def test_choosemultizone_multi_form_sends_mode_19(self, client):
+        popup = {
+            "formOptions": {"maxCount": 2, "mode": 19},
+            "data": {
+                "cardsArray": [
+                    {"cardNumber": "card_a"},
+                    {"cardNumber": "card_b"},
+                ]
+            }
+        }
+        handled = choice_handler.handle_popup_and_choices(
+            client, state={}, turn_phase="CHOOSEMULTIZONE", popup=popup, prompt_buttons=[], unpayable_set=set()
+        )
+        assert handled is True
+        assert len(client.sent_actions) == 1
+        assert client.sent_actions[0]["mode"] == 19
+        assert "chk_input" in client.sent_actions[0]
+
+    def test_maychoosemultizone_empty_passes(self, client):
+        handled = choice_handler.handle_popup_and_choices(
+            client, state={}, turn_phase="MAYCHOOSEMULTIZONE", popup={}, prompt_buttons=[], unpayable_set=set()
+        )
+        assert handled is True
+        assert len(client.sent_actions) == 1
+        assert client.sent_actions[0] == {"mode": 99, "button_input": "PASS"}
 
     def test_multichoose_selects_best_with_prompt_button(self, client):
         state = {

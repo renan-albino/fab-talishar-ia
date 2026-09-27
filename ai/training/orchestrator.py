@@ -77,6 +77,8 @@ class GPUTrainingOrchestrator:
         self.model: Optional[FaBPolicyValueNetwork] = None
         self._active_procs: List[tuple] = []
         self._proc_lock = threading.Lock()
+        self._current_batch_rooms: List[tuple] = []
+        self._recorded_rooms: set = set()
 
         # Stats expostos ao dashboard (via polling)
         self.stats: Dict[str, Any] = {
@@ -198,6 +200,15 @@ class GPUTrainingOrchestrator:
         self.is_running = False
         self._kill_active_processes()
         self._kill_orphan_bots()
+
+        # Garantir que salas ativas sejam processadas com _update_elo
+        for room_info in list(getattr(self, "_current_batch_rooms", [])):
+            room_id, d1_slug, d2_slug = room_info[0], room_info[1], room_info[2]
+            if room_id not in getattr(self, "_recorded_rooms", set()):
+                self._update_elo(room_id, d1_slug, d2_slug)
+                if hasattr(self, "_recorded_rooms"):
+                    self._recorded_rooms.add(room_id)
+
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=1.5)
         print("[Treinador] ⏸ Treinamento pausado e processos limpos.")
@@ -249,6 +260,9 @@ class GPUTrainingOrchestrator:
             decks_pool = training_decks or self._get_all_decks()
 
             batch_rooms: List[tuple] = []
+            recorded_rooms = set()
+            self._current_batch_rooms = batch_rooms
+            self._recorded_rooms = recorded_rooms
             with self._proc_lock:
                 self._active_procs = []
 
@@ -347,12 +361,23 @@ class GPUTrainingOrchestrator:
     
                 if not self.is_running:
                     self._kill_active_processes()
+                    for room_id, d1_slug, d2_slug in batch_rooms:
+                        if room_id not in recorded_rooms:
+                            self._update_elo(room_id, d1_slug, d2_slug)
+                            recorded_rooms.add(room_id)
                     break
     
                 if batch_rooms:
                     r0 = batch_rooms[0]
                     extra_label = f" (+{len(batch_rooms)-1} partidas)" if len(batch_rooms) > 1 else ""
                     self.stats["active_matchup"] = f"{r0[1]} vs {r0[2]}{extra_label}"
+
+                def _on_room_finished(idx: int, item: Any):
+                    if idx < len(batch_rooms):
+                        r_id, d1, d2 = batch_rooms[idx]
+                        if r_id not in recorded_rooms:
+                            self._update_elo(r_id, d1, d2)
+                            recorded_rooms.add(r_id)
     
                 # ── 2. Aguardar término das partidas (com timeout) ──────
                 timeout = SETTINGS.game_timeout_seconds
@@ -362,11 +387,8 @@ class GPUTrainingOrchestrator:
                     is_running_check=lambda: self.is_running,
                     check_interval=0.3,
                     proc_lock=self._proc_lock,
+                    on_item_finished=_on_room_finished,
                 )
-    
-                if not self.is_running:
-                    self._kill_active_processes()
-                    break
     
                 # Garante que nenhum processo deste lote continue vivo
                 num_finished = len(self._active_procs)
@@ -377,7 +399,12 @@ class GPUTrainingOrchestrator:
 
             # ── 3. Atualizar ELO com resultados das partidas ────────
             for room_id, d1_slug, d2_slug in batch_rooms:
-                self._update_elo(room_id, d1_slug, d2_slug)
+                if room_id not in recorded_rooms:
+                    self._update_elo(room_id, d1_slug, d2_slug)
+                    recorded_rooms.add(room_id)
+
+            if not self.is_running:
+                break
 
             # ── 4. Carregar último sumário de partida ───────────────
             if batch_rooms:
@@ -522,8 +549,7 @@ class GPUTrainingOrchestrator:
         except Exception:
             return []
 
-    @staticmethod
-    def _update_elo(room_id: str, d1_slug: str, d2_slug: str):
+    def _update_elo(self, room_id: str, d1_slug: str, d2_slug: str):
         m1_path = os.path.join(BASE_DIR, "logs", f"{room_id}_Bot1.json")
         m2_path = os.path.join(BASE_DIR, "logs", f"{room_id}_Bot2.json")
         if not (os.path.exists(m1_path) and os.path.exists(m2_path)):
@@ -550,7 +576,7 @@ class GPUTrainingOrchestrator:
                         room_id, d1_slug, d2_slug,
                         h1, h2, turn, 0,
                         is_invalid_match=True,
-                        invalid_reason="Tempo Esgotado / Timeout"
+                        invalid_reason="Tempo Esgotado / Timeout" if self.is_running else "Interrompida pelo Usuário"
                     )
         except Exception:
             pass

@@ -133,11 +133,13 @@ def wait_for_processes(
     is_running_check: Optional[Callable[[], bool]] = None,
     check_interval: float = 0.3,
     proc_lock: Optional[threading.Lock] = None,
+    on_item_finished: Optional[Callable[[int, Any], None]] = None,
 ) -> bool:
     """
     Aguarda o término de todos os processos monitorados ou até atingir timeout.
     Retorna True se todos terminaram normalmente, False se atingiu timeout ou cancelado.
     """
+    finished_indices = set()
     deadline = time.time() + timeout
     while time.time() < deadline:
         if is_running_check is not None and not is_running_check():
@@ -153,15 +155,21 @@ def wait_for_processes(
             return True
 
         all_done = True
-        for item in procs_snapshot:
+        for idx, item in enumerate(procs_snapshot):
             if isinstance(item, (list, tuple)):
-                if not all(p.poll() is not None for p in item if p is not None):
-                    all_done = False
-                    break
+                item_done = all(p.poll() is not None for p in item if p is not None)
             elif hasattr(item, "poll"):
-                if item.poll() is None:
-                    all_done = False
-                    break
+                item_done = (item.poll() is not None)
+            else:
+                item_done = True
+
+            if item_done:
+                if idx not in finished_indices:
+                    finished_indices.add(idx)
+                    if on_item_finished:
+                        on_item_finished(idx, item)
+            else:
+                all_done = False
 
         if all_done:
             return True

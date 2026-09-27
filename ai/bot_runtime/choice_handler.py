@@ -134,9 +134,43 @@ def check_and_handle_anti_loop(client, state: dict, turn_num: int, turn_phase: s
             time.sleep(0.15)
             return True
 
-        if turn_phase == "MAYMULTICHOOSETEXT":
+        if turn_phase in ("MAYCHOOSEMULTIZONE", "MAYMULTICHOOSETEXT", "CHOOSEHANDCANCEL"):
             client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) -> Pass (Mode 99)")
             client.send_action(mode=99, button_input="PASS")
+            client.recent_phases.clear()
+            client.consecutive_same_state = 0
+            time.sleep(0.15)
+            return True
+
+        if turn_phase == "CHOOSEMULTIZONE":
+            popup = state.get("popup") or state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
+            form_opts = popup.get("formOptions", {}) if isinstance(popup, dict) else {}
+            is_multi_form = (
+                form_opts.get("mode") == 19
+                or form_opts.get("maxCount", 0) >= 2
+                or form_opts.get("maxNo", 0) >= 2
+                or "MULTICHOOSEDISCARD" in turn_phase
+                or turn_phase in ("MULTICHOOSE", "MULTICHOOSEHAND")
+            )
+            if is_multi_form:
+                client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) Multi-Form -> Forçando índice 0 (Mode 19)")
+                client.send_action(mode=19, chk_count=1, chk_input=["0"])
+            else:
+                p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
+                cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
+                if not cards_arr and isinstance(popup, dict) and isinstance(popup.get("popup"), dict):
+                    cards_arr = popup["popup"].get("cardsArray", [])
+                if not cards_arr and isinstance(state, dict):
+                    pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
+                    if isinstance(pip, dict):
+                        cards_arr = pip.get("cardsMultiZone", []) or pip.get("cardsArray", [])
+                if not cards_arr and isinstance(popup, dict):
+                    cards_arr = popup.get("cardsMultiZone", [])
+
+                c0 = cards_arr[0] if cards_arr else {}
+                target_id = str(c0.get("actionDataOverride") or "0") if isinstance(c0, dict) else "0"
+                client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) Seleção Única -> Mode 16, Target {target_id}")
+                client.send_action(mode=16, card_id=target_id, button_input=target_id)
             client.recent_phases.clear()
             client.consecutive_same_state = 0
             time.sleep(0.15)
@@ -296,8 +330,15 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
             c_action = best_card.get("action", 16)
             c_id = best_card.get("actionDataOverride", best_card.get("cardNumber", str(best_idx)))
             
-            form_opts = popup.get("formOptions", {})
-            if form_opts.get("mode") == 19 or p_type in ("CHOOSEMULTIZONE", "MAYCHOOSEMULTIZONE"):
+            form_opts = popup.get("formOptions", {}) if isinstance(popup, dict) else {}
+            is_multi_form = (
+                form_opts.get("mode") == 19
+                or form_opts.get("maxCount", 0) >= 2
+                or form_opts.get("maxNo", 0) >= 2
+                or "MULTICHOOSEDISCARD" in turn_phase
+                or turn_phase in ("MULTICHOOSE", "MULTICHOOSEHAND")
+            )
+            if is_multi_form:
                 client.log(f"[AÇÃO JOGADOR {client.player_id}] Escolheu {best_card.get('cardNumber')} no Deck (Mode 19 / Index {best_idx})")
                 client.send_action(mode=19, chk_count=1, chk_input=[str(best_idx)])
             else:
@@ -349,11 +390,59 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
         return True
 
     if any(k in turn_phase for k in ("MULTICHOOSE", "CHOOSEMULTI")) and turn_phase not in ("MULTICHOOSETEXT", "MAYMULTICHOOSETEXT"):
+        form_opts = popup.get("formOptions", {}) if isinstance(popup, dict) else {}
+        is_multi_form = (
+            form_opts.get("mode") == 19
+            or form_opts.get("maxCount", 0) >= 2
+            or form_opts.get("maxNo", 0) >= 2
+            or "MULTICHOOSEDISCARD" in turn_phase
+            or turn_phase in ("MULTICHOOSE", "MULTICHOOSEHAND")
+        )
+
         p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
         cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
+        if not cards_arr and isinstance(popup, dict) and isinstance(popup.get("popup"), dict):
+            cards_arr = popup["popup"].get("cardsArray", [])
+        if not cards_arr and isinstance(state, dict):
+            pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
+            if isinstance(pip, dict):
+                cards_arr = pip.get("cardsMultiZone", []) or pip.get("cardsArray", [])
+        if not cards_arr and isinstance(popup, dict):
+            cards_arr = popup.get("cardsMultiZone", [])
+
+        if turn_phase in ("CHOOSEMULTIZONE", "MAYCHOOSEMULTIZONE") and not is_multi_form:
+            if turn_phase == "MAYCHOOSEMULTIZONE" and not cards_arr:
+                client.log(f"[AÇÃO JOGADOR {client.player_id}] Escolha Opcional ({turn_phase}) Sem opções -> Pass (Mode 99)")
+                client.send_action(mode=99, button_input="PASS")
+                time.sleep(0.002)
+                return True
+
+            if not cards_arr:
+                if form_opts.get("minCount", 0) == 0 or form_opts.get("maxCount", 0) == 0:
+                    client.log(f"[AÇÃO JOGADOR {client.player_id}] Multi-Seleção (Sem opções / Max 0) -> Confirmar vazio (Mode 19)")
+                    client.send_action(mode=19, chk_count=0, chk_input=[])
+                else:
+                    client.log(f"[AÇÃO JOGADOR {client.player_id}] {turn_phase} Sem opções -> Pass (Mode 99)")
+                    client.send_action(mode=99, button_input="PASS")
+                time.sleep(0.002)
+                return True
+
+            best_card = cards_arr[0]
+            best_idx = 0
+            if len(cards_arr) > 1:
+                ranked = rank_choice_candidates(client, cards_arr, turn_phase=turn_phase, state=state, popup=popup)
+                best_card = ranked[0]
+                best_idx = cards_arr.index(best_card) if best_card in cards_arr else 0
+
+            best_card_id = str(best_card.get("actionDataOverride") or best_card.get("cardNumber") or best_idx) if isinstance(best_card, dict) else str(best_card)
+            action_mode = int(best_card.get("action", 16) or 16) if isinstance(best_card, dict) else 16
+            client.log(f"[AÇÃO JOGADOR {client.player_id}] Seleção Única Alvo ({turn_phase}) -> Mode {action_mode}, ID {best_card_id}")
+            client.send_action(mode=action_mode, card_id=best_card_id, button_input=best_card_id)
+            time.sleep(0.002)
+            return True
+
         hand = state.get("playerHand", [])
         target_list = cards_arr if cards_arr else hand
-        form_opts = popup.get("formOptions", {}) if isinstance(popup, dict) else {}
 
         max_cnt = form_opts.get("maxCount", len(target_list))
         if not target_list or max_cnt == 0:
