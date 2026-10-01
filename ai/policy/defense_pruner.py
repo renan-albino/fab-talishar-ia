@@ -40,9 +40,12 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     arena_ctx = build_arena_threat_context(state, my_hp=my_hp)
     opp_power = max(base_chain_power, arena_ctx.total_effective_physical_damage)
     
+    # Identificar se o ataque vem de um Aliado (ex: Riggermortis, Sawbones, Anka, Chum, Scooba)
+    is_ally_incoming = any(a_name in incoming_name for a_name in ["riggermortis", "sawbones", "anka", "chum", "scooba"]) or arena_ctx.has_opponent_allies
+
     from .on_hit_evaluator import estimate_on_hit_value
     on_hit_ev = estimate_on_hit_value(incoming_name, state)
-    if on_hit_ev > 0:
+    if on_hit_ev > 0 and not is_ally_incoming:
         import math
         cards_needed = math.ceil(opp_power / 3.0)
         offensive_value_lost = cards_needed * 3.5
@@ -56,6 +59,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         and opp_hand_count_eval >= 1
         and has_go_again
         and on_hit_ev == 0
+        and not is_ally_incoming
     )
 
     on_hit_threat = max(get_on_hit_threat(incoming_name, incoming_text), arena_ctx.composite_threat_score)
@@ -108,6 +112,13 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     turn_plan = engine.strategy.analyze_turn_plan(state)
     is_heavy_hero = getattr(engine.strategy, "is_heavy_hero", False)
     current_turn = int(state.get("turnNo", state.get("currentTurn", 1)))
+
+    has_inertia = getattr(arena_ctx, "has_inertia", False)
+    has_bloodrot = getattr(arena_ctx, "has_bloodrot", False)
+    if has_inertia and turn_plan:
+        # Inertia (CR 8.6.21): Todas as cartas na mão e arsenal são enviadas ao fundo do deck
+        # na End Phase. Pivotar ou reter cartas na mão é fútil; usar a mão para defender.
+        turn_plan.can_absorb_damage = False
 
     # Contagem dinâmica de cartas Runegate na mão
     runegate_in_hand = sum(
@@ -181,7 +192,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             avail_fl, _ = engine.calculate_available_resources(state)
             opp_cost = engine.strategy.calculate_card_opportunity_cost(hand, c, floating_res=avail_fl)
 
-        if opp_cost > 0 and not is_phantasm_popper:
+        if opp_cost > 0 and not is_phantasm_popper and not has_inertia:
             absorb_mult = engine.strategy.get_dynamic_multiplier("absorb_tempo_bonus", 1.0)
             score -= opp_cost * 1.5 * absorb_mult
             is_catastrophic = on_hit_threat >= 8.0 or (my_hp - opp_power) <= 0
@@ -191,7 +202,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         # ── Poda de Preservação de Mão Ofensiva:
         # Se temos vida alta (> 20) e o ataque inimigo é fraco (<= 2 sem on-hit),
         # penaliza queimar cartas vermelhas de ataque chave (power >= 4 e pitch == 1)
-        if my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2 and not is_phantasm_popper:
+        if not has_inertia and my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2 and not is_phantasm_popper:
             if info["power"] >= 4 and info["pitch"] == 1:
                 score -= 5.0
 
@@ -199,7 +210,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             score -= 4.0
 
         # ── Poda de Tempo Pivot e Reserva Estrita de Pitch Crítico:
-        if (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
+        if not has_inertia and (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
             if info["pitch"] == 1 and info["power"] >= 6 and not has_phantasm:
                 score -= 25.0  # Nunca bloqueia com a bomba de ataque de Pivot (a menos que estoure Phantasm!)
             elif hasattr(engine.strategy, "is_critical_pitch_resource") and engine.strategy.is_critical_pitch_resource(info, hand, state) and not is_phantasm_popper:
@@ -208,6 +219,13 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
                 blue_count = len([x for x in hand if engine.extract_card_info(x)["pitch"] == 3])
                 if blue_count == 2:
                     score -= 15.0  # Preserva a 2ª azul para fusão elemental / custo 3 + arma
+
+        # ── Bloodrot Pox (CR 8.6.20) Reserva Crítica de Pitch para Sobrevivência ──
+        if has_bloodrot and my_hp <= 2 and not is_phantasm_popper:
+            avail_floating, _ = engine.calculate_available_resources(state)
+            if (avail_floating < 3) and info["pitch"] >= (3 - avail_floating):
+                # Preserva recurso vital para pagar {r}{r}{r} na End Phase e não sofrer dano letal
+                score -= 40.0
 
         # Bônus para reações de defesa dedicadas (Sink, Fate, Staunch)
         if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
@@ -579,8 +597,23 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             continue
 
         # Poda de Bloqueio Ineficiente: Não bloqueia se score for muito negativo com HP alto
-        if my_hp > 15 and item["score"] < 0 and not has_dangerous_on_hit and not is_popper:
+        if not has_inertia and my_hp > 15 and item["score"] < 0 and not has_dangerous_on_hit and not is_popper:
             continue
+
+        # Bloodrot Pox (CR 8.6.20): Prevenção de morte por dano de Bloodrot na End Phase
+        if has_bloodrot and (my_hp - max(0, opp_power - (current_blocked + item["block"]))) <= 2 and is_hand:
+            avail_floating, _ = engine.calculate_available_resources(state)
+            needed_pitch = max(0, 3 - avail_floating)
+            if needed_pitch > 0:
+                chosen_hand_indices = {b[0] for b in chosen_blocks if b[0] < len(hand)}
+                remaining_hand_pitch = sum(
+                    engine.extract_card_info(hand[h_i])["pitch"]
+                    for h_i in range(len(hand))
+                    if h_i not in chosen_hand_indices and h_i != item["idx"]
+                )
+                if remaining_hand_pitch < needed_pitch and (opp_power - current_blocked) < my_hp:
+                    # Bloquear com esta carta privaria a mão do pitch vital para pagar Bloodrot Pox
+                    continue
 
         chosen_blocks.append((item["idx"], item["card_id"], item["name"], item["mode"]))
         current_blocked += item["block"]

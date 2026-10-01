@@ -63,3 +63,9 @@ Migrar integralmente o motor neural e a camada de percepção tática para uma a
 ## Alternatives Considered
 - **LLM Multimodal em Tempo Real**: Rejeitado pelo custo de latência proibitivo (>500ms por decisão) incompatível com as restrições de tempo de turno do Talishar.
 - **Embeddings Esparsos One-Hot (5.000+ dimensões)**: Rejeitado devido ao volume massivo de parâmetros não convergentes e incapacidade de inferir similaridade funcional entre cartas correlatas.
+
+---
+
+## 📌 Adendo de Evolução Arquitetural (800 ➔ 832 Dimensões)
+- **Data do Adendo**: 2026-09-21
+- **Contexto**: A especificação inicial deste ADR operava com 800 dimensões (32 dimensões globais de contexto + 16 slots de cartas × 48 floats semânticos). Para acomodar a expansão do contexto de mesa (rastreamento de liveness, zonas adicionais, contagem de auras e alvos KataGo), o vetor de contexto global foi ampliado de 32 para 64 floats, fixando a dimensão canônica flat-packed em **832 dimensões** (`STATE_DIM = 832` em `ai/model.py`, `CONTEXT.md`). O Replay Buffer e os pesos em produção operam nativamente sobre esta dimensão definitiva.

@@ -20,7 +20,10 @@ Este documento descreve detalhadamente a engenharia de decisão, formalização 
 13. [Poda 12: Bloqueio Flexível com Validação de Conversão de Mão](#12-bloqueio-flexível-com-validação-de-conversão-de-mão)
 14. [Poda 13: Treino Híbrido Humano vs Bot com Telemetria e Bônus ELO](#13-treino-híbrido-humano-vs-bot-com-telemetria-e-bônus-elo)
 15. [Poda 14: Compreensão Semântica de Arena e Modificadores Dinâmicos de Combate](#14-compreensão-semântica-de-arena-e-modificadores-dinâmicos-de-combate)
-16. [Mapeamento de Módulos e Referências](#-mapeamento-de-módulos-e-referências)
+16. [Poda 15: Comportamento e Avaliação de Palavras-Chave de Combate](#15-comportamento-e-avaliação-de-palavras-chave-de-combate)
+17. [Poda 16: Gestão Dinâmica de Tokens de Arena (CR 8.6)](#16-gestão-dinâmica-de-tokens-de-arena-cr-86)
+18. [Poda 17: Palavras-Chave de Efeito das Comprehensive Rules (CR 8.5)](#17-palavras-chave-de-efeito-das-comprehensive-rules-cr-85)
+19. [Mapeamento de Módulos e Referências](#-mapeamento-de-módulos-e-referências)
 
 ---
 
@@ -31,7 +34,7 @@ Em jogos com informação imperfeita e alta profundidade combinatória como Fles
 - O número de subconjuntos de blocos a partir de uma mão de 4 cartas e 4 equipamentos ultrapassa $2^8 = 256$ combinações teóricas por elo de cadeia.
 - Decisões ilegais segundo as regras do jogo (como pitchar cartas do Arsenal ou equipar simultaneamente armas 2H e escudos) inviabilizam o treinamento ou causam loops infinitos no motor de regras.
 
-As **14 Podas Táticas** atuam como um filtro pré-MCTS e direcionador heurístico:
+As **17 Podas Táticas & Regras Oficiais** atuam como um filtro pré-MCTS e direcionador heurístico:
 1. **Garantem conformidade estrita com o Comprehensive Rules (CR)** de Flesh and Blood.
 2. **Eliminam ramos dominados ou ilegais** antes da amostragem de mundos no ISMCTS.
 3. **Preservam recursos de longo prazo** (*tempo*, cartas reservadas para combos e integridade de armaduras de uso único).
@@ -102,6 +105,9 @@ Bloquear além do estritamente necessário (*overblocking*) destrói a mão do d
    Cartas com `Ambush` e a carta *Down and Dirty* são autorizadas a defender diretamente do Arsenal:
    - *Down and Dirty* recebe bônus de $+1\{d\}$ (defende $4$ em vez de $3$).
    - Defender do Arsenal recebe bônus de score $\text{score} = \text{effective\_block} \times 2.5 + 5.0$, pois limpa o Arsenal e preserva cartas da mão.
+4. **Modo Prevenção de Dano de Blood Debt em Levia (`LEVIA_BLOOD_DEBT_PREVENTION` - CR 8.5.8)**:
+   - Quando cartas com *Blood Debt* acumulam na zona banida de Levia, a estratégia `brute.py` ativa um plano prioritário reservando um ataque de poder 6+ e o pitch correspondente para atacar e desligar a perda de vida na End Phase.
+   - Ataques de poder 6+ sofrem penalidade defensiva extrema ($-40.0$ para vermelhas, $-25.0$ para amarelas/azuis) para que nunca sejam gastas como bloqueadores ordinários a menos que seja para sobreviver a dano letal iminente.
 
 ---
 
@@ -385,9 +391,6 @@ Cartas de arena como Itens, Auras e Equipamentos ativos frequentemente concedem 
 
 ---
 
-
----
-
 ## 15. Comportamento e Avaliação de Palavras-Chave de Combate
 
 ### Fundamentação Oficial e Conceito
@@ -412,6 +415,40 @@ A engine processa intrinsecamente os efeitos táticos de palavras-chave estrutur
 4. **Piercing (CR 8.5.21)**:
    - **Mecânica:** Se o ataque for defendido por um equipamento, o atacante ganha +1 de dano para aquele elo.
    - **Tática e Engine:** Em `defense_pruner.py`, o motor soma +1 de poder ao ataque caso algum equipamento seja selecionado para o bloqueio. Equipamentos que defendem apenas 1 (`block <= 1`) geram mitigação líquida de `0` e são duramente penalizados heuristicamente (`-15.0`) e descartados no pós-processamento, já que a quebra ou uso deles seria em vão.
+5. **Combate contra Aliados & Anti-Gravy Bones (`is_ally_incoming`)**:
+   - **Mecânica:** Aliados na arena adversária (ex: *Riggermortis*, *Sawbones*, *Anka*, *Chum*, *Scooba*) permanecem em campo e atacam repetidamente a cada turno sem consumir cartas da mão do oponente.
+   - **Tática e Engine:** Em `defense_pruner.py`, o motor sinaliza `is_ally_incoming` e impede que o ataque seja ignorado por falta de efeito On-Hit (`on_hit_ev == 0`). Em modais de alvos (`CHOOSETARGET` / `CHOOSECARD` em `choice_handler.py`), o bot prioriza agressivamente atacar e destruir aliados adversários ($+30.0$ em aliados de poder 6 como *Riggermortis* e *Sawbones*; $+20.0$ em intermediários como *Anka*), quebrando a fonte de dano recorrente.
+
+---
+
+## 16. Gestão Dinâmica de Tokens de Arena (CR 8.6)
+
+### Fundamentação Oficial e Conceito
+Auras e marcadores de arena alteram a economia de recursos, ações e ciclo de vida das cartas no final do turno:
+1. **Quicken & Agility (CR 8.6.1, CR 8.6.28)**: Concedem *Go Again* gratuito no primeiro ataque da cadeia. Em `attack_pruner.py`, ataques sem *Go Again* nativo abrem a cadeia de combate sem sofrer a penalidade de quebra prematura (`-4.0`).
+2. **Frostbite (CR 8.6.10)**: Taxa cada carta jogada ou habilidade ativada em +1 recurso por token. A poda em `attack_pruner.py` soma `frostbite_count` ao custo da carta e descarta cartas impagáveis frente aos recursos totais.
+3. **Inertia (CR 8.6.21)**: Coloca toda a mão e arsenal no fundo do deck na *End Phase*. Em `defense_pruner.py`, a presença de *Inertia* desativa imediatamente o `turn_plan.can_absorb_damage` e zera custos de oportunidade de retenção de mão, forçando o uso de todas as cartas viáveis para defesa.
+4. **Bloodrot Pox (CR 8.6.20)**: Impõe perda de 2 pontos de vida no fim do turno a menos que {r}{r}{r} sejam pagos. Em vida crítica ($\le 2$ HP), `defense_pruner.py` protege cartas de *pitch* (pitch 3) contra uso em bloqueio não-letal para garantir a sobrevivência na *End Phase*.
+
+---
+
+## 17. Palavras-Chave de Efeito das Comprehensive Rules (CR 8.5)
+
+### Módulos do Código
+- [`scripts/extract_cr_mechanics.py`](../scripts/extract_cr_mechanics.py)
+- [`data/fab_card_semantics.json`](../data/fab_card_semantics.json)
+
+### Catálogo e Integração Semântica
+As 9 palavras-chave de efeito da CR 8.5 são extraídas de forma determinística das regras oficiais:
+- **`clash` (CR 8.5.45)**: Comparação de poder de cartas reveladas do topo do deck.
+- **`wager` (CR 8.5.46)**: Apostas em resolução de ataque gerando tokens como prêmio.
+- **`amp` (CR 8.5.47)**: Amplificação de dano arcano.
+- **`transcend` (CR 8.5.48)**: Transformação em Chi Interior (*Inner Chi*).
+- **`reload` (CR 8.5.23)**: Recarregamento de flechas no arsenal vazio.
+- **`freeze` (CR 8.5.34)**: Bloqueio de ativação e defesa de permanentes.
+- **`intimidate` (CR 8.5.10)**: Remoção temporária de cartas da mão defensora.
+- **`opt` (CR 8.5.22)**: Manipulação e filtragem de topo de baralho.
+- **`charge` (CR 8.5.29)**: Alimentação da alma (*Soul*) do herói.
 
 ## 🔗 Mapeamento de Módulos e Referências
 
@@ -432,3 +469,5 @@ A engine processa intrinsecamente os efeitos táticos de palavras-chave estrutur
 | **13. Treino Híbrido Humano** | [`ai/bot_runtime/match_tracker.py`](../ai/bot_runtime/match_tracker.py), [`stats/`](../stats/) | ELO Rating System |
 | **14. Semântica de Arena** | [`ai/policy/card_semantics.py`](../ai/policy/card_semantics.py), [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py) | CR 7.4.2a, CR 8.5.21 |
 | **15. Palavras-Chave de Combate** | [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py), [`ai/game_simulator.py`](../ai/game_simulator.py) | CR 7.4.2, 7.4.4, 8.5.8, 8.5.21 |
+| **16. Tokens de Arena** | [`ai/policy/attack_pruner.py`](../ai/policy/attack_pruner.py), [`ai/policy/defense_pruner.py`](../ai/policy/defense_pruner.py) | CR 8.6.1, 8.6.10, 8.6.20, 8.6.21 |
+| **17. Efeitos Semânticos CR** | [`scripts/extract_cr_mechanics.py`](../scripts/extract_cr_mechanics.py), [`data/fab_card_semantics.json`](../data/fab_card_semantics.json) | CR 8.5.10 a CR 8.5.48 |

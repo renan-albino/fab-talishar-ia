@@ -64,6 +64,15 @@ class ArenaThreatContext:
         "ward": 0,
         "quell": 0,
     })
+    has_quicken: bool = False
+    has_agility: bool = False
+    has_might: bool = False
+    has_frostbite: bool = False
+    frostbite_count: int = 0
+    has_inertia: bool = False
+    has_bloodrot: bool = False
+    has_opponent_allies: bool = False
+    opponent_allies_count: int = 0
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -324,6 +333,40 @@ def build_arena_threat_context(state: dict, my_hp: Optional[int] = None) -> Aren
     if is_lethal:
         threat_reasons.append(f"PERIGO LETAL: Dano Potencial {total_potential_damage} >= Vida Atual {my_hp}")
 
+    # ── 4. Inspecionar Tokens e Auras do Jogador (playerAuras / playerItems) ──
+    my_auras = (state.get("playerAuras") or state.get("myAuras") or []) + (state.get("playerTokens") or state.get("myTokens") or []) + (state.get("playerItems") or state.get("myItems") or [])
+    has_quicken = False
+    has_agility = False
+    has_might = False
+    has_frostbite = False
+    frostbite_count = 0
+    has_inertia = False
+    has_bloodrot = False
+
+    for m in my_auras:
+        m_name = str(m.get("cardNumber", m.get("name", "")) if isinstance(m, dict) else m).lower()
+        if "quicken" in m_name:
+            has_quicken = True
+        if "agility" in m_name:
+            has_agility = True
+        if "might" in m_name:
+            has_might = True
+        if "frostbite" in m_name:
+            has_frostbite = True
+            cnt = int(m.get("counters", m.get("numCounters", 1))) if isinstance(m, dict) else 1
+            frostbite_count += max(1, cnt)
+        if "inertia" in m_name:
+            has_inertia = True
+        if "bloodrot" in m_name:
+            has_bloodrot = True
+
+    # ── 5. Inspecionar Aliados do Oponente na Arena (opponentAllies / theirAllies) ──
+    opp_allies = state.get("opponentAllies") or state.get("theirAllies") or []
+    has_opp_allies = bool(isinstance(opp_allies, list) and len(opp_allies) > 0)
+    opp_allies_cnt = len(opp_allies) if isinstance(opp_allies, list) else 0
+    if has_opp_allies:
+        threat_reasons.append(f"Aliados do Oponente na Arena: {opp_allies_cnt}x aliados vivos")
+
     return ArenaThreatContext(
         chain_attack_name=chain_card_name,
         chain_base_power=base_power,
@@ -338,4 +381,13 @@ def build_arena_threat_context(state: dict, my_hp: Optional[int] = None) -> Aren
         is_lethal_danger=is_lethal,
         threat_reasons=threat_reasons,
         opponent_prevention=opp_prevention,
+        has_quicken=has_quicken,
+        has_agility=has_agility,
+        has_might=has_might,
+        has_frostbite=has_frostbite,
+        frostbite_count=frostbite_count,
+        has_inertia=has_inertia,
+        has_bloodrot=has_bloodrot,
+        has_opponent_allies=has_opp_allies,
+        opponent_allies_count=opp_allies_cnt,
     )

@@ -80,11 +80,13 @@ class MCTSEngine:
         device: str = "cpu",
         c_puct: Optional[float] = None,
         single_player_tree: bool = True,
+        epoch_ratio: float = 0.0,
     ):
         self.model              = model
         self.device             = device
         self.c_puct             = c_puct if c_puct is not None else _get_c_puct()
         self.single_player_tree = single_player_tree
+        self.epoch_ratio        = epoch_ratio
 
     # ── API pública ────────────────────────────────────────────────
 
@@ -283,13 +285,16 @@ class MCTSEngine:
         if node.is_expanded:
             return
 
+        epoch_ratio = float(getattr(self, "epoch_ratio", 0.0))
+        shaping_temp = 2.5 + (7.5 * max(0.0, min(1.0, epoch_ratio)))
+
         raw_scores = []
         for idx, action in enumerate(legal_actions):
             mode = action.get("mode", 99)
             dist_idx = min(mode, 31) if mode < 32 else (mode % 32)
             p_neural = max(1e-6, float(priors[dist_idx]))
             t_score  = float(action.get("score", 0.0))
-            shaped   = np.log(p_neural) + (t_score / 2.5)
+            shaped   = np.log(p_neural) + (t_score / shaping_temp)
             raw_scores.append((idx, shaped, action.get("name", str(idx))))
 
         # ── Prior Threshold Pruning ──────────────────────────────
@@ -355,8 +360,9 @@ class MCTSEngine:
         if n == 0:
             return
         
-        # Dirichlet Alpha dinâmico (AlphaZero usa ~10 / avg_actions)
-        alpha_val = min(1.0, 10.0 / max(1, n_actions))
+        # Dirichlet calibrado para FaB: alpha = min(1.5, 3.0 / max(1, n)), eps = 0.15
+        eps = 0.15
+        alpha_val = min(1.5, 3.0 / max(1, n))
         alpha = np.full(n, alpha_val, dtype=np.float32)
         try:
             noise = np.random.dirichlet(alpha)
@@ -366,8 +372,8 @@ class MCTSEngine:
         for i, child in enumerate(active):
             if i < len(noise):
                 child.prior = (
-                    (1.0 - DIRICHLET_EPSILON) * child.prior
-                    + DIRICHLET_EPSILON * float(noise[i])
+                    (1.0 - eps) * child.prior
+                    + eps * float(noise[i])
                 )
 
     # ── Seleção PUCT ──────────────────────────────────────────────

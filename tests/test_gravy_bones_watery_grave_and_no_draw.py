@@ -217,3 +217,64 @@ def test_gravy_bones_shutout_win_preservation():
     assert "Bot 1 (Gravy Bones)" in stats["recent_matches"][0]["winner"]
     assert stats["deck_stats"]["Gravy Bones"]["wins"] == 1
     assert stats["deck_stats"]["Gravy Bones"]["losses"] == 0
+
+
+def test_anti_gravy_ally_targeting_and_defense():
+    """Valida o contra-jogo contra Gravy Bones: priorização de alvo em aliados e bloqueio de dano recorrente."""
+    from ai.bot_runtime.choice_handler import score_choice_candidate
+    from ai.policy.defense_pruner import select_defense_blocks
+    from ai.policy_engine import PolicyEngine
+
+    class MockClient:
+        player_id = 1
+        policy_engine = PolicyEngine(use_gpu=False, num_mcts_sims=0)
+
+    mock_client = MockClient()
+
+    # 1. Alvo de ataque: Riggermortis e Sawbones devem ter alta prioridade em modais de target
+    score_riggermortis = score_choice_candidate(mock_client, {"cardNumber": "riggermortis_yellow"}, turn_phase="CHOOSETARGET")
+    score_hero = score_choice_candidate(mock_client, {"cardNumber": "random_target"}, turn_phase="CHOOSETARGET")
+    assert score_riggermortis > score_hero + 25.0
+
+    # 2. Defesa: Ataque vindo de um Aliado (riggermortis) não deve ser ignorado por cálculo de on-hit
+    state_ally_atk = {
+        "playerHealth": 20,
+        "opponentHealth": 20,
+        "combatChainPower": 6,
+        "activeChainLink": {
+            "cardNumber": "riggermortis_yellow",
+            "totalPower": 6,
+            "goAgain": True
+        },
+        "opponentAllies": [{"cardNumber": "riggermortis_yellow", "power": 6}],
+        "playerHand": [
+            {"cardNumber": "sink_below_red", "name": "Sink Below", "block": 4, "pitch": 1, "action": 27, "type": "DR"},
+            {"cardNumber": "generic_block", "name": "Generic Block", "block": 3, "pitch": 3, "action": 27, "type": "A"}
+        ]
+    }
+    pe = PolicyEngine(use_gpu=False, num_mcts_sims=0)
+    blocks = pe.select_defense_blocks(state_ally_atk)
+    assert len(blocks) > 0, "O bot não deve ignorar ataque de aliado!"
+
+
+def test_levia_blood_debt_prevention_plan():
+    """Valida que a estratégia Brute prioriza atacar com cartas 6+ quando Levia tem Blood Debt banido."""
+    from ai.hero_strategies.brute import BruteStrategy
+    strat = BruteStrategy()
+
+    state_levia = {
+        "playerHero": "levia",
+        "playerHealth": 14,
+        "opponentHealth": 20,
+        "playerBanish": [
+            {"cardNumber": "unhallowed_rite_red", "keywords": ["blood_debt"]}
+        ],
+        "playerHand": [
+            {"cardNumber": "dreadbore_red", "power": 6, "cost": 2, "pitch": 1},
+            {"cardNumber": "blue_pitch", "power": 2, "cost": 0, "pitch": 3}
+        ]
+    }
+    plan = strat.analyze_turn_plan(state_levia)
+    assert plan.plan_type == "LEVIA_BLOOD_DEBT_PREVENTION"
+    assert "dreadbore_red" in plan.reserved_card_names
+

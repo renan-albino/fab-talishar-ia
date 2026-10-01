@@ -114,7 +114,7 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
   - **Modo Cavar (Digging Mode - CR 4.3.2)**: Quando a mão possui dinamicamente `max(2, intellect - 1)` cartas e todas são recursos, arsenala a melhor ação para permitir compras de cartas novas no *End of Turn* e destravar o bot.
   - **Resolução Legal de Armas & Mãos (CR 2.8.2 e CR 3.0)**: Gestão estrita do limite de 2 mãos no sideboard. Armas de duas mãos (2H) ocupam 2 mãos e nunca são combinadas com escudo/off-hand; armas 1H podem ser combinadas com escudo ou segunda arma 1H.
   - **Detecção de Stalemate / Empate Técnico & Anti-Loop**: Decks esgotados (0 cartas) sem dano por 3 turnos ou partidas que atingem o hard cap de turnos (45 em Blitz, 55 em CC) são imediatamente finalizadas como Empate Oficial, liberando os processos e economizando 100% da CPU.
-- **Mapeamento Canônico de 139 Heróis (`HERO_CLASS_REGISTRY`)**: Cobertura de 100% de todos os heróis oficiais de Rathe catalogados no Talishar, associados às suas estratégias especializadas de classe.
+- **Mapeamento Canônico de 174 Heróis (`HERO_CLASS_REGISTRY`)**: Cobertura de 100% de todos os heróis oficiais de Rathe catalogados no Talishar, associados às suas estratégias especializadas de classe.
 
 ---
 
@@ -202,7 +202,7 @@ Na aba **"⚡ Treinamento com GPU (Deep RL)"** do Dashboard, a IA adapta automat
 
 ## ⚔️ Resumo das Podas Táticas & Regras Oficiais FaB (CR)
 
-Para navegar a alta complexidade tática de Flesh and Blood e eliminar a explosão combinatória na busca MCTS/ISMCTS sem violar as regras oficiais (**Comprehensive Rules - CR** e **Tournament Rules - TR**), o motor [`ai/policy/`](ai/policy/) implementa **14 Podas Táticas e Regras Oficiais**.
+Para navegar a alta complexidade tática de Flesh and Blood e eliminar a explosão combinatória na busca MCTS/ISMCTS sem violar as regras oficiais (**Comprehensive Rules - CR** e **Tournament Rules - TR**), o motor [`ai/policy/`](ai/policy/) implementa **17 Podas Táticas e Regras Oficiais**.
 
 > [!TIP]
 > 📖 **Documentação Técnica Completa**: Consulte o guia aprofundado em [**`docs/tactical_rules.md`**](docs/tactical_rules.md) para a formulação matemática rigorosa, regras oficiais CR/TR, algoritmos de breakpoint (knapsack) e exemplos práticos de cada poda.
@@ -222,6 +222,10 @@ Para navegar a alta complexidade tática de Flesh and Blood e eliminar a explos�
 | **11** | **Poda de Prevenção e Reação no Vazio** | [`ai/bot_runtime/phase_decider.py`](ai/bot_runtime/phase_decider.py) | Veta Boots of Omniward, Ward e Spellvoid sem dano ativo; restringe Snapdragon Scalers ao turno de ataque sem Go Again. |
 | **12** | **Bloqueio Flexível & Conversão de Mão** | [`ai/hero_strategies/turn_planner.py`](ai/hero_strategies/turn_planner.py) | Rejeita blocos ineficientes ($\le 2.0$) para absorver dano e contra-atacar com 4 cartas; modo sobrevivência estrito se $HP \le 6$. |
 | **13** | **Treino Híbrido Humano vs Bot & Bônus ELO** | [`ai/bot_runtime/match_tracker.py`](ai/bot_runtime/match_tracker.py) | Isola salas humanas; imune a punching bag; bonifica trajetórias vitoriosas contra humanos com peso 3.0x no buffer. |
+| **14** | **Compreensão Semântica de Arena** | [`ai/policy/card_semantics.py`](ai/policy/card_semantics.py) | Sintetiza ameaça de itens/auras (Boom Grenade, Dominate, Piercing) sem hardcodes nominais; adapta bloqueio e conversão de itens próprios. |
+| **15** | **Palavras-Chave de Combate** | [`ai/policy/defense_pruner.py`](ai/policy/defense_pruner.py) & CR 7/8 | Poda adaptativa para Phantasm (popper 6+ com -200 cost), restrição estrita sob Dominate/Overpower, Intimidate simulado e combate a aliados. |
+| **16** | **Tokens de Arena (CR 8.6)** | CR 8.6.1, 8.6.10, 8.6.20, 8.6.21 | Quicken/Agility concedem go again no Elo 1; Frostbite taxa custos de ataque; Inertia força bloqueio total; Bloodrot preserva pitch defensivo. |
+| **17** | **Palavras-Chave de Efeito CR** | CR 8.5.10 a CR 8.5.48 | Catálogo semântico determinístico de 9 keywords (clash, wager, amp, transcend, reload, freeze, intimidate, opt, charge) para decisões do MCTS e simulador. |
 
 ---
 
@@ -306,7 +310,7 @@ Para garantir que todos os módulos de IA, simulador, ISMCTS, podas táticas e e
 ```bash
 ./venv/bin/pytest
 ```
-*(Todos os 443 testes automatizados executam e passam em ~40 segundos, isolados nativamente via `pytest.ini`).*
+*(Todos os 461 testes automatizados executam e passam em ~40 segundos, isolados nativamente via `pytest.ini`).*
 
 ---
 
@@ -383,7 +387,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 O Git Hook `pre-push` é executado automaticamente a cada `git push` para garantir que falhas nunca cheguem ao repositório remoto ou quebrem o GitHub Actions. Ele executa:
 1. **Sintaxe Completa Python** (`compileall`).
 2. **Dry-Run do ISMCTS** (`scripts/analyze_ismcts.py --dry-run`).
-3. **Execução da Suíte de Testes** (`pytest tests/`, 443 testes) [Incremental: pula se apenas documentação foi alterada].
+3. **Execução da Suíte de Testes** (`pytest tests/`, 461 testes) [Incremental: pula se apenas documentação foi alterada].
 4. **Verificação de Sincronização dos Templates** (`prepare_environment.py --export-templates` & diff).
 5. **Build de Produção do Frontend Vite** (`npx vite build`) [Incremental: pula se não houve alterações no frontend].
 
@@ -433,8 +437,8 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 │   └── frontend/             # Componentes React (ChessAdvantageTracker, ChatBox...)
 ├── docs/                     # Documentação técnica, ADRs e Roadmap
 │   ├── ROADMAP.md            # Planejamento estratégico e expansão de cobertura
-│   ├── tactical_rules.md     # Detalhamento técnico das 13 Podas Táticas & Regras FaB (CR)
-│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0008)
+│   ├── tactical_rules.md     # Detalhamento técnico das 17 Podas Táticas & Regras FaB (CR)
+│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0012)
 │   └── agents/               # Guias para agentes (domain.md, issue-tracker.md)
 ├── ai/                       # Módulos de Inteligência Artificial e Deep RL
 │   ├── bot_runtime/          # Runtime modular do bot (lobby, tracker, choices, fases, client)
@@ -463,14 +467,19 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 │   └── tabs/                 # Módulos individuais de cada aba do Dashboard
 ├── scripts/
 │   ├── sync_and_clean.sh     # Automação de limpeza, exportação de templates e pré-commit
+│   ├── verify_ci.sh          # Validador pré-push e esteira incremental local idêntica ao CI
+│   ├── fast_search.py        # Busca de padrões com poda automática de diretórios pesados
 │   ├── extract_equipment_metadata.py # Extração semântica de equipamentos
 │   ├── extract_ability_costs.py # Extração de custos de ativação
+│   ├── extract_card_semantics.py # Extração de semântica e modificadores de combate de cartas
+│   ├── extract_cr_mechanics.py # Mapeamento de regras formais CR para cartas
+│   ├── generate_card_embeddings.py # Compilação da matriz de embeddings densos SVD
 │   ├── analyze_ismcts.py     # Analisador local ISMCTS (--dry-run sem servidor)
 │   ├── prepare_environment.sh # Script shell de setup automático
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
 │   ├── manage_state.py       # Gestão de checkpoints compactos e releases no GitHub
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 443 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 461 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -485,7 +494,9 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 ├── data/
 │   ├── equipment_metadata.json # Metadados semânticos de 624 equipamentos (custos, buffs, tokens)
 │   ├── ability_costs.json    # Custos dinâmicos de habilidades e armas extraídos do Talishar
-│   ├── fab_cards_db.json     # Banco oficial de 5.132 cartas do Talishar
+│   ├── fab_cards_db.json     # Banco oficial de 5.277 cartas do Talishar
+│   ├── fab_card_semantics.json # Base semântica e perfis funcionais de 5.144 cartas
+│   ├── card_embeddings.pt    # Matriz densa de embeddings semânticos SVD [5145, 48]
 │   ├── training_stats.json   # Histórico de partidas e Leaderboard ELO compilado
 │   └── training_metrics.json # Métricas de evolução, loss e épocas da rede neural
 ├── logs/                     # Logs detalhados de partidas e telemetria ISMCTS
@@ -552,7 +563,7 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Imutabilidade O(1) no Simulador MCTS** | Motor de combate transita estados via `ImmutableGameState` com operações `.replace()` ao invés de clones de dicionário na memória, garantindo integridade de árvore e aceleração massiva da simulação |
 | **Self-Play Headless & Hardware Probe** | Treinamento da IA agora usa ambiente Gymnasium-like local, ignorando tráfego de rede; o orquestrador analisa hardware (CUDA/CPU) e restringe VRAM ativamente antes das execuções |
 | **SQLite3 Transacional Local** | Eliminação completa das gravações atômicas em JSONs (e locks baseados em `fcntl`). Toda a telemetria, histórico de duelo e ELO de Heróis agora é gravada e consultada rapidamente do arquivo `talishar_stats.db` |
-| **Documentação Técnica de Podas Táticas & CR** | Criação de [`docs/tactical_rules.md`](docs/tactical_rules.md) com detalhamento matemático e regras oficiais (CR/TR) das 14 podas táticas e heurísticas da engine |
+| **Documentação Técnica de Podas Táticas & CR** | Criação de [`docs/tactical_rules.md`](docs/tactical_rules.md) com detalhamento matemático e regras oficiais (CR/TR) das 17 podas táticas e heurísticas da engine |
 | **Gestão de Checkpoints & GitHub Releases** | Utilitário `scripts/manage_state.py` com empacotamento compacto (~6.5 MB), comandos CLI de export/import e Git Hook `post-commit` automático que publica novos modelos treinados na release `checkpoint-latest` do GitHub |
 | **Perfis Dinâmicos de Treino (Equilibrado / Turbo)** | Calibração por hardware (GTX 1660 Super, CPUs, GPUs high-end), botão Turbo Máximo (~90% carga) com escalonamento de CPU em segundo plano (`nice 10`) garantindo estabilidade absoluta da interface web |
 | **Poda de Arsenal (CR 3.1.5) & RangerStrategy** | Poda estrita que proíbe recursos (`type: R`) e gemas no Arsenal (evitando travar o slot), priorização de flechas (`Arrow`) como condição essencial de ataque no Ranger e capacidade de passar sem arsenalar para preservar recursos |
@@ -572,16 +583,17 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Imunidade a Adblockers (BannerUnit)** | Criação do módulo `bannerUnit` e alias Vite substituindo importações dinâmicas `/components/ads/`, eliminando quebras causadas por extensões de bloqueio de anúncios (uBlock Origin, Brave Shields) |
 | **Decomposição Modular Completa (9 Monólitos)** | Refatoração estrutural completa de 9 arquivos monolíticos (`dashboard.py`, `bot_client.py`, `policy_engine.py`, `mcts.py`, `trainer.py`, `deck_parser.py`, `stats_manager.py`, `hero_strategies/base.py`, `hero_strategies/other_classes.py`) em pacotes limpos e coesos (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`), preservando 100% de retrocompatibilidade em todas as fachadas raízes |
 | **Paralelização Multi-Thread do ISMCTS** | Busca paralela e thread-safe em mundos determinizados com `concurrent.futures.ThreadPoolExecutor` em `ai/mcts/ismcts.py`, acelerando a amostragem e a agregação ponderada de votos na árvore de decisão |
-| **Suíte de Testes Expandida (443 Testes Automatizados)** | Ampliação da cobertura de testes para 443 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), persistência atômica, normalização de decks, alocação adaptativa de CPU/threads e orquestração de GPU, com isolamento via `pytest.ini` |
-| **Torneios Suíços Automatizados** | Implementado em `stats/tournament_manager.py` com ligas entre decks e persistência no `stats/`. |
+| **Suíte de Testes Expandida (461 Testes Automatizados)** | Ampliação da cobertura de testes para 461 testes (`pytest`) cobrindo todas as classes de heróis, estratégias hierárquicas, poda de arsenal (CR 3.1.5), conformidade com as Comprehensive Rules (CR 7/8) e tokens de arena (Quicken, Frostbite, Inertia, Bloodrot), persistência atômica, normalização de decks, alocação adaptativa de CPU/threads e orquestração de GPU, com isolamento via `pytest.ini` |
+| **Motor Central de Torneios Suíços** | Implementação algorítmica de chaveamento suíço, cálculo de pontuação (vitórias/empates) e persistência transacional em `stats/tournament_manager.py`. |
 | **Aprendizado Acelerado com Humanos & Assimilação Pós-Partida** | Ponderação amplificada (4.0x a 7.0x no PER) para partidas contra humanos, assimilação imediata pós-jogo em background via `ai/training/assimilation.py` com atualização segura do modelo (`model_latest.pt`) e alertas visuais com bloqueio protetor no Dashboard (`tab_play.py`) |
 | **Recomendação Inteligente de Heróis (Analytics & ELO)** | Motor de diagnóstico tático em `stats/recommendations.py` que analisa a telemetria e sugere os heróis prioritários para treino humano (gargalos de ELO < 45% WR, alta incerteza amostral e matchups inéditos contra humanos) integrado nas abas 1 e 6 do Dashboard |
 | **Sincronização de Telemetria do Replay Buffer** | Leitura direta com cache leve (TTL=3s) das amostras físicas do `replay_buffer.npz` no Dashboard (`ui/helpers.py`, `ui/tabs/tab_training.py`) e sincronização imediata de `samples_collected` pós-assimilação |
 | **Notificações Visuais de Assimilação em Tempo Real** | Ampulheta animada CSS e aviso de status na aba de Duelo Humano (`tab_play.py`) com injeção de logs estilizados no chat do Talishar durante a assimilação |
+| **Tuning Causal Anti-Espiral, MCTS Avançado & Stratified PER (461 Testes)** | Diagnóstico causal de Hand Value Conversion Rate (HVCR) e clamp estrito [0.85, 1.15] no auto-tuner (eliminando o efeito espiral), Pitch Stacking ordenado no fundo do deck simulado no ISMCTS, calibração do ruído de Dirichlet para o espaço de ações do FaB, decaimento da temperatura de fusão knapsack-NN, atenuação de falsos blunders por consistência temporal e amostragem estratificada por herói no buffer PER (461 testes unitários no pytest) |
 
 ### 📋 Pendente
  
-1. **Suporte a Torneios Suíços Completos**: Integração de chaves suíças automatizadas com persistência no `stats/`.
+1. **Interface Visual Completa para Torneios Suíços**: Painel interativo multi-rodadas com gestão de chaves em tempo real na aba dedicada do Dashboard Streamlit (`ui/tabs/tab_tournaments.py`).
 2. **Modelagem de Matchups**: Fine-tuning da rede para arquétipos específicos do meta competitivo.
 
 ---
@@ -600,5 +612,5 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 ### Próximos Passos Recomendados (Baixa Prioridade / Pesquisa):
 - **1. Incerteza Bayesiana no Pitch:** Dropout no Value Head para calcular a variância do valor esperado antes de gastar recursos de pitch.
 - **2. `num_sims` Adaptativo:** Dobrar simulações de MCTS em situações de dano letal (HP $\le 10$).
-- **3. Suporte a Torneios Suíços Completos:** Integração de chaves suíças automatizadas com persistência no `stats/`.
+- **3. Interface Interativa de Torneios Suíços:** Conectar `stats/tournament_manager.py` à renderização visual e controles de rodadas na UI do Streamlit.
 

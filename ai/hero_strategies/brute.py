@@ -51,11 +51,13 @@ class BruteStrategy(HeroStrategy):
         return score
 
     @lru_cache(maxsize=1024)
-    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool) -> float:
+    def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool, **kwargs) -> float:
         if block_val <= 0:
             return -999.0
-        if pitch == 1 and power >= 6:
-            return -20.0
+        # Ataques de poder 6+ são o combustível central do Brute (Beat Chest, Intimidate e desligar Blood Debt da Levia).
+        # NUNCA devem ser gastos no bloqueio a menos que seja para sobreviver a dano letal.
+        if power >= 6:
+            return -40.0 if pitch == 1 else -25.0
         return float(block_val) * 2.0 - (power * 0.5)
 
     def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
@@ -89,7 +91,53 @@ class BruteStrategy(HeroStrategy):
                 reason="Brute survival mode: blocking incoming lethal or critical damage"
             )
 
-        # PIVOT_BRUTE_SMASH: Ataque de poder 6+ com pitch disponível
+        # 2. MODO LEVIA: PREVENÇÃO DE BLOOD DEBT (CR 8.5.8)
+        # Se houver cartas com Blood Debt na banished zone, atacamos com 6+ de poder
+        # para ativar a habilidade da Levia e desligar a perda de vida na End Phase!
+        player_banish = state.get("playerBanish", [])
+        blood_debt_count = sum(
+            1 for b in player_banish
+            if isinstance(b, dict) and (
+                "blood debt" in str(b.get("keywords", [])).lower()
+                or "blood debt" in str(b.get("text", "")).lower()
+                or any(k in str(b.get("cardNumber", "")).lower() for k in ["bloodrush", "dreadbore", "shadow", "graven", "howl", "hungering", "convulsion", "unhallowed"])
+            )
+        )
+        is_levia = "levia" in str(state.get("playerHero", "")).lower() or "levia" in str(state.get("hero", "")).lower()
+        if (blood_debt_count > 0 or is_levia) and not is_fatal:
+            smash_card = None
+            for c in all_cards:
+                power = int(c.get("power", 0))
+                if power >= 6 or self.has_heavy_attack(c):
+                    smash_card = c
+                    break
+            if smash_card is not None:
+                cost = int(smash_card.get("cost", 0))
+                needed_pitch = max(0, cost - floating_res)
+                pitch_card = None
+                for c in hand:
+                    if c is smash_card:
+                        continue
+                    if int(c.get("pitch", 1)) >= needed_pitch:
+                        pitch_card = c
+                        break
+                if needed_pitch == 0 or pitch_card is not None:
+                    s_name = str(smash_card.get("cardNumber") or smash_card.get("name", ""))
+                    reserved: Set[str] = {s_name}
+                    if pitch_card is not None:
+                        reserved.add(str(pitch_card.get("cardNumber") or pitch_card.get("name", "")))
+                    reserved_in_hand = [c for c in hand if str(c.get("cardNumber") or c.get("name", "")) in reserved]
+                    max_blocks = max(0, len(hand) - len(reserved_in_hand))
+                    return TurnPlan(
+                        plan_type="LEVIA_BLOOD_DEBT_PREVENTION",
+                        reserved_card_names=reserved,
+                        can_absorb_damage=(my_hp > blood_debt_count * 2 and not has_dangerous_on_hit),
+                        max_block_cards=max_blocks,
+                        offensive_potential=float(smash_card.get("power", 6)),
+                        reason=f"Levia Blood Debt Prevention: reserving {s_name} (6+ power) to banish and disable {blood_debt_count} Blood Debt damage"
+                    )
+
+        # 3. PIVOT_BRUTE_SMASH: Ataque de poder 6+ com pitch disponível
         if my_hp >= 10 and not has_dangerous_on_hit:
             smash_card = None
             for c in all_cards:

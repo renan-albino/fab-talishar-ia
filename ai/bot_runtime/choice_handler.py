@@ -73,12 +73,22 @@ def score_choice_candidate(client, candidate, turn_phase: str = "", state: dict 
         score += 20.0
     elif any(k in c_name for k in ["boom_grenade", "convection_amplifier", "penetration_script", "foundry_heart"]):
         score += 18.0
-    elif any(k in c_name for k in ["riggermortis", "zenith_blade", "edict_of_steel", "sink_below"]):
+    elif any(k in c_name for k in ["riggermortis", "sawbones", "zenith_blade", "edict_of_steel", "sink_below"]):
         score += 15.0
     elif c_info.get("pitch") == 1:
         score += 6.0
     elif c_info.get("has_go_again"):
         score += 5.0
+
+    # ── Alvo de Ataque: Se o modal for escolha de alvo (CHOOSETARGET, CHOOSECARD, etc.)
+    # e houver opção de atacar/destruir um Aliado inimigo (ex: Riggermortis, Sawbones, Anka),
+    # priorizar eliminar o aliado com alto poder para cessar o dano recorrente!
+    if "TARGET" in turn_phase or "CHOOSE" in turn_phase:
+        if any(a_name in c_name for a_name in ["riggermortis", "sawbones"]):
+            score += 30.0  # Alvo de altíssima prioridade (poder 6 recorrente)
+        elif any(a_name in c_name for a_name in ["anka", "chum", "scooba"]):
+            score += 20.0  # Aliado intermediário
+
 
     # Se for para descartar ou afundar (e não era para salvar o Arsenal):
     # Inverte o score para descartar/afundar a PIOR carta (ciclando e preservando peças nobres)
@@ -368,6 +378,14 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
     if turn_phase in ("CHOOSECARD", "CHOOSECARDID", "MAYCHOOSECARD", "CHOOSEZONE", "CHOOSEDECK", "MAYCHOOSEDECK", "CHOOSEHAND", "MAYCHOOSEHAND", "CHOOSEDISCARD", "MAYCHOOSEDISCARD", "CHOOSEPERMANENT", "MAYCHOOSEPERMANENT", "CHOOSEMYSOUL", "MAYCHOOSEMYSOUL", "CHOOSETARGET"):
         p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
         cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
+        if not cards_arr and isinstance(popup, dict) and isinstance(popup.get("popup"), dict):
+            cards_arr = popup["popup"].get("cardsArray", [])
+        if not cards_arr and isinstance(state, dict):
+            pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
+            if isinstance(pip, dict):
+                cards_arr = pip.get("cardsMultiZone", []) or pip.get("cardsArray", [])
+        if not cards_arr and isinstance(popup, dict):
+            cards_arr = popup.get("cardsMultiZone", [])
         if not cards_arr and "DISCARD" in turn_phase:
             cards_arr = state.get("playerDiscard", [])
         elif not cards_arr and "HAND" in turn_phase:

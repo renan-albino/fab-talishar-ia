@@ -6,12 +6,17 @@ How the engineering skills should consume this repo's domain documentation when 
 
 - **`CONTEXT.md`** at the repo root: The canonical glossary for all domain concepts, rules, and architecture terms, including explicit `_Avoid_` constraints to prevent terminological drift.
 - **`docs/adr/`**: Read the Architectural Decision Records (ADRs) that touch the area you are about to work in:
-  - [ADR-0001-modular-package-decomposition.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0001-modular-package-decomposition.md): Decomposição dos 9 monólitos em pacotes coesos (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/`) mantendo fachadas retrocompatíveis.
-  - [ADR-0002-parallel-ismcts-multithreading.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0002-parallel-ismcts-multithreading.md): Paralelização do ISMCTS através de determinizações independentes de mundos concorrentes com `ThreadPoolExecutor`.
-  - [ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md): Transição arquitetural para Pydantic, Imutabilidade no MCTS, Treinamento Headless in-memory e Banco de Dados SQLite3 transacional (Deprecia o ADR-0003).
-  - [ADR-0004-arsenal-cr315-and-digging-mode.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0004-arsenal-cr315-and-digging-mode.md): Poda estrita de Arsenal conforme CR 3.1.5 e Heurística de Modo Cavar (CR 4.3.2) para desobstrução de mãos travadas.
-  - [ADR-0005-setup-templates-vs-git-submodules.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0005-setup-templates-vs-git-submodules.md): Desacoplamento via `setup_templates/` contra forks/submódulos do Talishar para imunidade a quebras upstream.
-  - [ADR-0006-asymmetric-distillation-mcts-visit-targets.md](file:///home/renan-albino/Documents/fab-talishar-ia/docs/adr/ADR-0006-asymmetric-distillation-mcts-visit-targets.md): Distilação assimétrica usando vetor de visitas ISMCTS ($\pi_{\text{MCTS}}$) e alvos auxiliares KataGo.
+  - [ADR-0001-modular-package-decomposition.md](../adr/ADR-0001-modular-package-decomposition.md): Decomposição dos 9 monólitos em pacotes coesos (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/`) mantendo fachadas retrocompatíveis.
+  - [ADR-0002-parallel-ismcts-multithreading.md](../adr/ADR-0002-parallel-ismcts-multithreading.md): Paralelização do ISMCTS através de determinizações independentes de mundos concorrentes com `ThreadPoolExecutor`.
+  - [ADR-0004-arsenal-cr315-and-digging-mode.md](../adr/ADR-0004-arsenal-cr315-and-digging-mode.md): Poda estrita de Arsenal conforme CR 3.1.5 e Heurística de Modo Cavar (CR 4.3.2) para desobstrução de mãos travadas.
+  - [ADR-0005-setup-templates-vs-git-submodules.md](../adr/ADR-0005-setup-templates-vs-git-submodules.md): Desacoplamento via `setup_templates/` contra forks/submódulos do Talishar para imunidade a quebras upstream.
+  - [ADR-0006-asymmetric-distillation-mcts-visit-targets.md](../adr/ADR-0006-asymmetric-distillation-mcts-visit-targets.md): Distilação assimétrica usando vetor de visitas ISMCTS ($\pi_{\text{MCTS}}$) e alvos auxiliares KataGo.
+  - [ADR-0007-card-transformer-and-generic-arena-semantics.md](../adr/ADR-0007-card-transformer-and-generic-arena-semantics.md): Arquitetura Transformer Dual-Head e compreensão semântica holística de arena.
+  - [ADR-0008-hybrid-ismcts-concurrency-and-actor-evaluator.md](../adr/ADR-0008-hybrid-ismcts-concurrency-and-actor-evaluator.md): Concorrência híbrida ISMCTS (threads, multiprocessing, direct_gpu) e lazy GPU probe.
+  - [ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md](../adr/ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md): Transição arquitetural para Pydantic, Imutabilidade no MCTS, Treinamento Headless in-memory e Banco de Dados SQLite3 transacional (Deprecia o ADR-0003).
+  - [ADR-0010-adaptive-thread-scaling-and-liveness-supervision.md](../adr/ADR-0010-adaptive-thread-scaling-and-liveness-supervision.md): Alocação adaptativa de threads CPU PyTorch (anti-thrashing) e supervisão de liveness por atividade real.
+  - [ADR-0011-comprehensive-rules-mechanics-and-arena-tokens.md](../adr/ADR-0011-comprehensive-rules-mechanics-and-arena-tokens.md): Integração formal das Comprehensive Rules (CR 7/8), evasões de combate (Dominate, Overpower, Phantasm, Piercing) e gestão dinâmica de tokens de arena (Quicken, Agility, Frostbite, Inertia, Bloodrot).
+  - [ADR-0012-causal-dynamic-tuning-and-mcts-per-enhancements.md](../adr/ADR-0012-causal-dynamic-tuning-and-mcts-per-enhancements.md): Auto-tuning causal com Hand Value Conversion Rate (HVCR), Pitch Stacking no ISMCTS, ruído de Dirichlet calibrado, decaimento de temperatura knapsack-NN e amostragem estratificada no PER.
 
 ## File structure
 
@@ -23,16 +28,22 @@ Single-context layout:
 ├── docs/adr/
 │   ├── ADR-0001-modular-package-decomposition.md
 │   ├── ADR-0002-parallel-ismcts-multithreading.md
+│   ├── ADR-0003-concurrent-atomic-persistence-file-locks.md (Deprecated)
 │   ├── ADR-0004-arsenal-cr315-and-digging-mode.md
 │   ├── ADR-0005-setup-templates-vs-git-submodules.md
 │   ├── ADR-0006-asymmetric-distillation-mcts-visit-targets.md
-│   └── ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md
+│   ├── ADR-0007-card-transformer-and-generic-arena-semantics.md
+│   ├── ADR-0008-hybrid-ismcts-concurrency-and-actor-evaluator.md
+│   ├── ADR-0009-architecture-rewrite-pydantic-sqlite-immutable-state.md
+│   ├── ADR-0010-adaptive-thread-scaling-and-liveness-supervision.md
+│   ├── ADR-0011-comprehensive-rules-mechanics-and-arena-tokens.md
+│   └── ADR-0012-causal-dynamic-tuning-and-mcts-per-enhancements.md
 ├── ai/
 │   ├── bot_runtime/         ← client, lobby, match tracker, choices, phases
 │   ├── policy/              ← attack, defense, pitch, arsenal pruners & engine
 │   ├── mcts/                ← node, standard_mcts, world_generator, ismcts
 │   ├── training/            ← orchestrator, matchup_engine, process_supervisor
-│   ├── hero_strategies/     ← 139 heróis, knapsack_solver, turn_planner
+│   ├── hero_strategies/     ← 174 heróis, knapsack_solver, turn_planner
 ├── deck_manager/            ← parser, repository, slugifier, validator
 ├── stats/                   ← elo, storage, sync, deck_names
 └── ui/                      ← dashboard Streamlit decomposto (helpers e tabs/)

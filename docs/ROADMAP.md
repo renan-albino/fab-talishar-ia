@@ -7,22 +7,24 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 ## 📌 Status Atual dos Marcos de Arquitetura & Testes
 
 - [x] **Modularização dos 9 Monólitos**: Todos os arquivos de lógica de negócio e interface decompostos em pacotes coesos abaixo de 500 linhas (`ai/bot_runtime/`, `ai/policy/`, `ai/mcts/`, `ai/training/`, `deck_manager/`, `stats/`, `ui/tabs/`).
-- [x] **Governança & ADRs**: ADR-0001 a ADR-0008 documentados em `docs/adr/`, `CONTEXT.md` com diretivas de vocabulário e domínio canônicos.
+- [x] **Governança & ADRs**: ADR-0001 a ADR-0012 documentados em `docs/adr/`, `CONTEXT.md` com diretivas de vocabulário e domínio canônicos.
 - [x] **Regras Oficiais de Combate (CR)**: Phantasm Popping (CR 7.4.4), Dominate (CR 7.4.2a), Overpower (CR 7.4.2b), Piercing (CR 8.5.21) e Intimidate (CR 8.5.8).
 - [x] **Arquitetura 2.0 (Resiliência & Alta Performance)**: Adoção do Pydantic na borda de dados, estados imutáveis $O(1)$ no Simulador/MCTS, Treino via Headless Self-Play na RAM, Profiling Ativo de VRAM/GPU e transição do atomic JSON IO para transações SQL em SQLite3. (ADR-0009)
 - [x] **Fundamentos Competitivos de FaB**: Implementação das heurísticas estratégicas do meta de alto nível (OpponentTracker de ritmo de jogo, PUCT dinâmico por $V_{\text{root}}$, timing de cadeia e Deck Damage multi-ciclo).
 - [x] **Remoção de Hardcodes & Generalização Dinâmica**: Sideboard com fadiga dinâmica via histórico SQLite (`get_average_match_length`), amostragem universal no ISMCTS via `fab_cards_db.json` e eliminação de listas estáticas de heróis nas podas.
 - [x] **Ferramentas CLI de Automação**: Utilitários operacionais em `.agents/skills/automated-tasks/scripts/` (`validate_decks.py`, `benchmark_mcts.py`, `healthcheck_talishar.py` e `run_smoke_tests.py`).
 - [x] **Rede Neural v2 (FaBCardTransformerNetwork - ADR-0007)**: Substituição completa do antigo MLP de 192 entradas por arquitetura Transformer com Self/Cross-Attention (4x dim_feedforward), alvos auxiliares KataGo e embeddings densos em $O(1)$.
-- [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.132 cartas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena e poda adaptativa sem hardcodes nominais (incluindo regra dinâmica aggro/combo via DB).
-- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando 443 testes canônicos robustos e centralizados em `PROJECT_ROOT`.
+- [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.277 cartas (`data/fab_cards_db.json`) e 5.290 cartas semânticas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena e poda adaptativa sem hardcodes nominais (incluindo regra dinâmica aggro/combo via DB).
+- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando 461 testes canônicos robustos e centralizados em `PROJECT_ROOT`.
 - [x] **Validador Pré-Push & CI Local Incremental**: Script `scripts/verify_ci.sh` e hook `pre-push` que replica localmente 100% da esteira do GitHub Actions (Pytest, ISMCTS dry-run, template diff e Vite build) com detecção inteligente de diffs (economizando tempo em builds do Vite e testes de docs).
 - [x] **Busca Rápida & Prevenção de Grep Cego**: Ferramenta `scripts/fast_search.py` com poda automática de pastas pesadas e diretivas em `.agents/rules/search_guidelines.md` e `AGENTS.template.md`.
 - [x] **Sincronização Upstream & Changelog Automatizado**: Sincronização automatizada com repositórios oficiais do Talishar (`prepare_environment.py --update-upstream` e `start.sh --update`), reaplicação de patches da IA e rastreamento de versões em `docs/talishar_upstream_changelog.md`.
 - [x] **Alocação Adaptativa de Threads CPU & Eliminação de Thread Thrashing**: Dimensionamento dinâmico de threads PyTorch (`torch.set_num_threads`) por núcleos físicos e workers ativos sem perda de profundidade de simulação MCTS (ADR-0010).
 - [x] **Supervisor de Liveness por Atividade Real & Encerramento Cirúrgico**: Substituição de timeouts cegos de relógio por rastreamento de liveness baseado em crescimento de logs e turnos de jogo, com kill cirúrgico isolado de salas travadas em `process_supervisor.py` (ADR-0010).
 - [x] **Resiliência de Runtime (Normalização In-Place & Watchdogs)**: Desempacotamento in-place de `turnPhase` associativo em `client.py`, limite de 3 retentativas no sideboard do lobby e watchdog de escape de prioridade (>25s).
-- [x] **Passo 3 (Especialização de Classes Não-Lineares & Auto-Tuning por Arquétipo)**: Auto-tuning consciente de arquétipo via banco de dados sem dependência estática.
+- [x] **Comprehensive Rules (CR) & Tokens de Arena (ADR-0011)**: Unificação de regras de combate (Dominate, Overpower, Phantasm, Piercing) no GameSimulator, tokens de arena (Quicken, Agility, Frostbite, Inertia, Bloodrot Pox) e 9 palavras-chave de efeito (CR 8.5) via `scripts/extract_cr_mechanics.py`, com suíte dedicada em `tests/test_cr_combat_and_tokens.py`.
+- [x] **Passo 3 (Especialização de Classes Não-Lineares & Auto-Tuning por Arquétipo)**: Auto-tuning consciente de arquétipo via banco de dados sem dependência estática, correção da espiral de auto-tuning e balanceamento de contra-jogo ao Gravy Bones e sobrevivência de Levia.
+- [x] **Tuning Causal Anti-Espiral, MCTS Avançado & Stratified PER (ADR-0012)**: Diagnóstico causal de Hand Value Conversion Rate (HVCR) com clamp estrito [0.85, 1.15], Pitch Stacking no ISMCTS, calibração do Dirichlet para o espaço de ações do FaB, decaimento da temperatura de fusão knapsack-NN, atenuação de falsos blunders por consistência temporal e amostragem estratificada no PER (461 testes unitários).
 - [ ] **Passo 4 (Simulador Determinístico & Sideboard)**: Testes de casos de borda e transição de estados no simulador (agora otimizado com deepcopy seguro).
 - [ ] **Passo 5 (Pipeline de Treinamento Neural PyTorch)**: Implementação e bateria de testes para `ai/training/orchestrator.py` e `ai/experience_collector.py` (PER agora operando em $O(\log N)$ via SumTree).
 - [ ] **Passo 6 (Interface Gráfica Streamlit)**: Mocks automatizados de renderização de abas com `streamlit.testing.v1.AppTest`.
@@ -34,14 +36,16 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 ### 📐 O que é a Cobertura Global?
 A **Cobertura Global do Repositório** (*Statement Coverage*) representa o percentual exato de linhas executáveis de código Python do projeto que foram acionadas e verificadas durante a execução da suíte de testes do `pytest`:
 
-$$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{Total de Linhas Executáveis no Repositório}} \times 100\% = \frac{5.833}{8.687} = \mathbf{67,1\%}$$
+$$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{Total de Linhas Executáveis no Repositório}} \times 100\% = \frac{5.845}{8.695} = \mathbf{67,2\%}$$
 
 ### 📈 Histórico de Evolução
 | Marco | Total de Testes | Linhas Cobertas | Linhas Faltantes | Cobertura Global | Cobertura do Runtime |
 |---|:---:|:---:|:---:|:---:|:---:|
 | **Baseline Inicial** | 143 testes | 4.850 / 8.680 | 3.830 | **55,8%** | 35% |
-| **Pós-Frentes A, B e C** | 168 testes | 5.101 / 8.680 | 3.579 | **58,8%** | 39% |
-| **Pós-Passos 1 e 2 (Atual)** | **414 testes** | **5.833 / 8.687** | **2.854** | **67,1%** | **88%** |
+| **Pós-Passos 1, 2 e 3** | 444 testes | 5.833 / 8.687 | 2.854 | 67,1% | 88% |
+| **CR & Tokens de Arena (ADR-0011)** | 452 testes | 5.910 / 8.710 | 2.800 | 67,8% | 90% |
+| **Anomalias & Anti-Gravy** | 454 testes | 5.928 / 8.715 | 2.787 | 68,0% | 91% |
+| **Tuning Causal & Stratified PER (ADR-0012 - Atual)** | **461 testes** | **6.015 / 8.730** | **2.715** | **68,9%** | **93%** |
 
 ---
 
@@ -101,7 +105,7 @@ Distribuição das 2.854 Linhas Faltantes (Miss):
 
 ```mermaid
 graph LR
-    A["Estado Atual: 67% (414 testes)"] --> B["Meta 1: ~74% (Passo 3: Heróis)"]
+    A["Estado Atual: 67% (444 testes)"] --> B["Meta 1: ~74% (Passo 3: Heróis)"]
     B --> C["Meta 2: ~78% (Passo 4: Simulador/Decks)"]
     C --> D["Meta 3: ~82% (Passo 5: Treino PyTorch)"]
     D --> E["Meta 4: ~92%+ (Passo 6: UI Streamlit)"]

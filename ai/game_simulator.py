@@ -372,7 +372,54 @@ class GameSimulator:
         else:
             intimidate_count = 0
 
-        if opp_hand and isinstance(opp_hand[0], dict):
+        is_dominate = bool(action.get("dominate", card_meta.get("dominate", False)))
+        is_overpower = bool(action.get("overpower", card_meta.get("overpower", False)))
+        has_phantasm = bool(action.get("phantasm", card_meta.get("phantasm", False)))
+
+        # CR 8.3.13: Phantasm Popping (destruído por carta 6+ poder)
+        phantasm_popped = False
+        has_opp_card_objs = bool(opp_hand and (isinstance(opp_hand[0], (dict, ImmutableGameState)) or hasattr(opp_hand[0], "get")))
+        if has_phantasm and has_opp_card_objs:
+            for c in opp_hand:
+                if cls.extract_card_meta(c).get("power", 0) >= 6:
+                    phantasm_popped = True
+                    break
+
+        base_hand_count = int(state.get("opponentHandCount", state.get("theirHandCount", len(opp_hand) if opp_hand else 3)))
+        opp_hand_count = max(0, (len(opp_hand) if opp_hand else base_hand_count) - intimidate_count)
+
+        if phantasm_popped:
+            expected_block = atk_power
+            cards_used_to_block = 1
+        elif is_dominate:
+            # CR 7.3.2a & CR 8.3.4: Defesa restrita a no máximo 1 carta da mão
+            if has_opp_card_objs:
+                usable_hand = opp_hand[intimidate_count:] if intimidate_count > 0 else opp_hand
+                cards_def = [int(c.get("defense", c.get("block", 3))) for c in usable_hand]
+                cards_def.sort(reverse=True)
+                opp_hand_count = len(usable_hand)
+                expected_block = min(atk_power, cards_def[0] if cards_def else 0)
+                cards_used_to_block = 1 if (expected_block > 0 and opp_hand_count > 0) else 0
+            else:
+                base_hand_count = int(state.get("opponentHandCount", state.get("theirHandCount", 3)))
+                opp_hand_count = max(0, base_hand_count - intimidate_count)
+                expected_block = min(atk_power, 3 if opp_hand_count > 0 else 0)
+                cards_used_to_block = 1 if opp_hand_count > 0 else 0
+        elif is_overpower:
+            # CR 7.3.2b & CR 8.3.22: Máximo de 1 carta de ação da mão para bloquear
+            if has_opp_card_objs:
+                usable_hand = opp_hand[intimidate_count:] if intimidate_count > 0 else opp_hand
+                cards_def = [int(c.get("defense", c.get("block", 3))) for c in usable_hand]
+                cards_def.sort(reverse=True)
+                opp_hand_count = len(usable_hand)
+                expected_block = min(atk_power, cards_def[0] if cards_def else 0)
+                cards_used_to_block = 1 if (expected_block > 0 and opp_hand_count > 0) else 0
+            else:
+                base_hand_count = int(state.get("opponentHandCount", state.get("theirHandCount", 3)))
+                opp_hand_count = max(0, base_hand_count - intimidate_count)
+                expected_block = min(atk_power, 3 if opp_hand_count > 0 else 0)
+                cards_used_to_block = min(opp_hand_count, 1)
+        elif has_opp_card_objs:
             usable_hand = opp_hand[intimidate_count:] if intimidate_count > 0 else opp_hand
             cards_def = [int(c.get("defense", c.get("block", 3))) for c in usable_hand]
             cards_def.sort(reverse=True)
@@ -445,16 +492,24 @@ class GameSimulator:
         hand = list(state.get("playerHand", []))
         discard = list(state.get("playerDiscard", []))
 
+        has_piercing = bool(active_chain.get("piercing") or active_chain.get("hasPiercing") or state.get("piercing"))
+        used_equipment_block = False
+
         action_def = 0
         for c in cards_to_block:
             if isinstance(c, dict):
                 c_meta = cls.extract_card_meta(c)
                 val = int(c.get("defense", c.get("block", c_meta.get("defense", 0))))
                 c_name = str(c.get("name") or c.get("cardNumber") or c_meta.get("name", "")).lower()
+                c_sub = str(c.get("subtype", "")).lower()
+                if any(slot in c_sub or slot in c_name for slot in ["head", "chest", "arms", "legs", "equipment", "shield"]):
+                    used_equipment_block = True
             else:
                 c_name = str(c).lower()
                 c_meta = cls.extract_card_meta({"cardNumber": c_name})
                 val = int(c_meta.get("defense", 0))
+                if any(slot in c_name for slot in ["head", "chest", "arms", "legs", "equipment", "shield"]):
+                    used_equipment_block = True
 
             action_def += val
 
@@ -481,7 +536,8 @@ class GameSimulator:
         active_chain["block"] = total_def
         updates["activeChainLink"] = ImmutableGameState(active_chain)
 
-        taken_damage = max(0, incoming_power - total_def)
+        eff_incoming = incoming_power + (1 if (has_piercing and used_equipment_block) else 0)
+        taken_damage = max(0, eff_incoming - total_def)
         updates["playerHealth"] = max(0, base_hp - taken_damage)
         updates["yourHealth"] = max(0, base_hp - taken_damage)
         updates["_simulated_projected_damage"] = taken_damage

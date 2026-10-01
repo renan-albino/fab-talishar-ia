@@ -15,7 +15,8 @@ import re
 
 EXCLUDE_DIRS = {
     "node_modules", "venv", ".venv", "env", ".git", "Talishar", "Talishar-FE",
-    "logs", "data", "build", "dist", "__pycache__", ".pytest_cache", ".cache"
+    "logs", "data", "build", "dist", "__pycache__", ".pytest_cache", ".cache",
+    "Games", "mysql-data", "AccountFiles", "HostFiles", "cache", ".turbo"
 }
 
 def fast_search(pattern: str, root: str = ".", extensions: list = None, max_results: int = 100):

@@ -98,6 +98,7 @@ class ReplayBuffer:
         # Alvos Auxiliares (Metodologia KataGo - David J. Wu, 2019)
         self.aux_delta_hp = np.zeros((max_capacity, 1), dtype=np.float32)
         self.aux_turn_dmg = np.zeros((max_capacity, 1), dtype=np.float32)
+        self.hero_ids = np.zeros(max_capacity, dtype=np.int32)
         self.current_size = 0
         self.pointer = 0
 
@@ -109,6 +110,7 @@ class ReplayBuffer:
         weight: float = 1.0,
         aux_delta_hp: float = 0.0,
         aux_turn_dmg: float = 0.0,
+        hero_id: int = 0,
     ):
         idx = self.pointer
         self.states[idx] = state
@@ -119,6 +121,7 @@ class ReplayBuffer:
         
         self.aux_delta_hp[idx] = float(aux_delta_hp)
         self.aux_turn_dmg[idx] = float(aux_turn_dmg)
+        self.hero_ids[idx] = int(hero_id)
         self.pointer = (self.pointer + 1) % self.max_capacity
         self.current_size = min(self.current_size + 1, self.max_capacity)
 
@@ -127,7 +130,8 @@ class ReplayBuffer:
         trajectory: List[Any],
         winner_player_id: int,
         weights: Optional[List[float]] = None,
-        epoch_ratio: float = 0.0
+        epoch_ratio: float = 0.0,
+        hero_id: int = 0,
     ):
         """
         Adiciona trajetória completa ao buffer calculando Recompensa Densa (Reward Shaping),
@@ -142,6 +146,7 @@ class ReplayBuffer:
             policy = step[1]
             p_id = step[2]
             board_eval = step[3] if len(step) > 3 else None
+            step_hero = int(step[4]) if len(step) > 4 and step[4] is not None else hero_id
 
             # 1. Recompensa terminal (-1.0, 0.0, +1.0)
             if winner_player_id in (1, 2):
@@ -171,7 +176,7 @@ class ReplayBuffer:
                 aux_dmg = 0.0
 
             w = weights[i] if weights and i < len(weights) else 1.0
-            self.add(state, policy, reward, weight=w, aux_delta_hp=aux_delta, aux_turn_dmg=aux_dmg)
+            self.add(state, policy, reward, weight=w, aux_delta_hp=aux_delta, aux_turn_dmg=aux_dmg, hero_id=step_hero)
 
     def sample_batch(
         self,
@@ -181,10 +186,11 @@ class ReplayBuffer:
         beta: float = 0.6,
         return_is_weights: bool = False,
         return_aux: bool = False,
+        stratified: bool = False,
     ):
         """
-        Amostra um batch balanceado com suporte opcional a Importance Sampling (Schaul et al. 2016)
-        e alvos auxiliares KataGo (David J. Wu, 2019).
+        Amostra um batch balanceado com suporte opcional a Importance Sampling (Schaul et al. 2016),
+        amostragem estratificada por herói e alvos auxiliares KataGo (David J. Wu, 2019).
         """
         if self.current_size == 0:
             raise ValueError("Buffer vazio, não é possível amostrar batch.")
@@ -192,31 +198,71 @@ class ReplayBuffer:
         if prioritized and self.current_size > 1:
             indices = []
             is_weights_list = []
-            segment = self.sum_tree.total_priority / batch_size
-            for i in range(batch_size):
-                a = segment * i
-                b = segment * (i + 1)
-                v = random.uniform(a, b)
-                parent_idx, data_idx, priority = self.sum_tree.get_leaf(v)
-                if data_idx >= self.current_size:
-                    data_idx = random.randint(0, self.current_size - 1)
-                    priority = self.sum_tree.tree[data_idx + self.sum_tree.capacity - 1]
-                indices.append(data_idx)
-                
-                prob = priority / max(self.sum_tree.total_priority, 1e-8)
-                sampled_prob = max(prob, 1e-8)
-                is_weight = (float(self.current_size) * sampled_prob) ** (-beta)
-                is_weights_list.append(is_weight)
-                
+
+            if stratified:
+                active_heroes = np.unique(self.hero_ids[:self.current_size])
+                if len(active_heroes) > batch_size:
+                    selected_heroes = np.random.choice(active_heroes, batch_size, replace=False)
+                else:
+                    selected_heroes = active_heroes
+
+                for h in selected_heroes:
+                    h_indices = np.where(self.hero_ids[:self.current_size] == h)[0]
+                    idx = int(np.random.choice(h_indices))
+                    indices.append(idx)
+
+                    priority = self.sum_tree.tree[idx + self.sum_tree.capacity - 1]
+                    prob = priority / max(self.sum_tree.total_priority, 1e-8)
+                    sampled_prob = max(prob, 1e-8)
+                    is_weight = (float(self.current_size) * sampled_prob) ** (-beta)
+                    is_weights_list.append(is_weight)
+
+            remainder = batch_size - len(indices)
+            if remainder > 0:
+                segment = self.sum_tree.total_priority / remainder
+                for i in range(remainder):
+                    a = segment * i
+                    b = segment * (i + 1)
+                    v = random.uniform(a, b)
+                    parent_idx, data_idx, priority = self.sum_tree.get_leaf(v)
+                    if data_idx >= self.current_size:
+                        data_idx = random.randint(0, self.current_size - 1)
+                        priority = self.sum_tree.tree[data_idx + self.sum_tree.capacity - 1]
+                    indices.append(data_idx)
+
+                    prob = priority / max(self.sum_tree.total_priority, 1e-8)
+                    sampled_prob = max(prob, 1e-8)
+                    is_weight = (float(self.current_size) * sampled_prob) ** (-beta)
+                    is_weights_list.append(is_weight)
+
             indices = np.array(indices)
             is_weights = np.array(is_weights_list, dtype=np.float32)
             if np.max(is_weights) > 0:
                 is_weights = is_weights / np.max(is_weights)
         else:
-            if self.current_size < batch_size:
-                indices = np.random.choice(self.current_size, batch_size, replace=True)
+            if stratified:
+                active_heroes = np.unique(self.hero_ids[:self.current_size])
+                if len(active_heroes) > batch_size:
+                    selected_heroes = np.random.choice(active_heroes, batch_size, replace=False)
+                else:
+                    selected_heroes = active_heroes
+                indices = []
+                for h in selected_heroes:
+                    h_indices = np.where(self.hero_ids[:self.current_size] == h)[0]
+                    indices.append(int(np.random.choice(h_indices)))
+                remainder = batch_size - len(indices)
+                if remainder > 0:
+                    if self.current_size < remainder:
+                        rem = np.random.choice(self.current_size, remainder, replace=True)
+                    else:
+                        rem = np.random.choice(self.current_size, remainder, replace=False)
+                    indices.extend(rem.tolist())
+                indices = np.array(indices)
             else:
-                indices = np.random.choice(self.current_size, batch_size, replace=False)
+                if self.current_size < batch_size:
+                    indices = np.random.choice(self.current_size, batch_size, replace=True)
+                else:
+                    indices = np.random.choice(self.current_size, batch_size, replace=False)
             is_weights = np.ones(len(indices), dtype=np.float32)
 
         b_states = torch.from_numpy(self.states[indices]).float()
@@ -265,7 +311,8 @@ class ReplayBuffer:
                     weights=current_weights,
                     aux_delta_hp=self.aux_delta_hp[:self.current_size],
                     aux_turn_dmg=self.aux_turn_dmg[:self.current_size],
-                    schema_version=np.int32(2),
+                    hero_ids=self.hero_ids[:self.current_size],
+                    schema_version=np.int32(3),
                 )
                 os.replace(tmp_path, filepath)
             except Exception:
@@ -286,6 +333,7 @@ class ReplayBuffer:
         new_sum_tree = SumTree(new_capacity)
         new_aux_delta = np.zeros((new_capacity, 1), dtype=np.float32)
         new_aux_dmg = np.zeros((new_capacity, 1), dtype=np.float32)
+        new_hero_ids = np.zeros(new_capacity, dtype=np.int32)
 
         copy_n = min(self.current_size, new_capacity)
         if copy_n > 0:
@@ -294,6 +342,7 @@ class ReplayBuffer:
             new_values[:copy_n] = self.values[:copy_n]
             new_aux_delta[:copy_n] = self.aux_delta_hp[:copy_n]
             new_aux_dmg[:copy_n] = self.aux_turn_dmg[:copy_n]
+            new_hero_ids[:copy_n] = self.hero_ids[:copy_n]
             
             tree_start = self.sum_tree.capacity - 1
             for i in range(copy_n):
@@ -305,6 +354,7 @@ class ReplayBuffer:
         self.sum_tree = new_sum_tree
         self.aux_delta_hp = new_aux_delta
         self.aux_turn_dmg = new_aux_dmg
+        self.hero_ids = new_hero_ids
         self.max_capacity = new_capacity
         self.current_size = copy_n
         self.pointer = copy_n % new_capacity
@@ -325,6 +375,7 @@ class ReplayBuffer:
                 loaded_weights = data["weights"] if "weights" in data.files else None
                 loaded_aux_delta = data["aux_delta_hp"] if "aux_delta_hp" in data.files else None
                 loaded_aux_dmg = data["aux_turn_dmg"] if "aux_turn_dmg" in data.files else None
+                loaded_hero_ids = data["hero_ids"] if "hero_ids" in data.files else None
 
                 n_loaded = len(loaded_states)
                 if n_loaded > self.max_capacity:
@@ -349,6 +400,11 @@ class ReplayBuffer:
                     self.aux_turn_dmg[:n] = loaded_aux_dmg[:n]
                 else:
                     self.aux_turn_dmg[:n] = 0.0
+
+                if loaded_hero_ids is not None and len(loaded_hero_ids) >= n:
+                    self.hero_ids[:n] = loaded_hero_ids[:n]
+                else:
+                    self.hero_ids[:n] = 0
 
                 self.current_size = n
                 self.pointer = n % self.max_capacity

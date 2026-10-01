@@ -123,13 +123,36 @@ def generate_worlds(
         opp_deck_pool.extend(generic_cards)
 
     from ai.mcts.state import ImmutableGameState
+
+    # Modelagem de Pitch Stacking: cartas na zona de pitch vão para o fundo do deck
+    pitch_updates = {}
+    player_pitch = state.get("playerPitch")
+    if player_pitch:
+        pitch_seq = tuple(player_pitch) if isinstance(player_pitch, (list, tuple)) else ()
+        if pitch_seq:
+            pitch_updates["playerDeckBottom"] = pitch_seq
+            if "playerDeck" in state and isinstance(state.get("playerDeck"), (list, tuple)):
+                pitch_updates["playerDeck"] = tuple(state.get("playerDeck")) + pitch_seq
+
+    opp_pitch = state.get("opponentPitch", state.get("theirPitch"))
+    if opp_pitch:
+        opp_pitch_seq = tuple(opp_pitch) if isinstance(opp_pitch, (list, tuple)) else ()
+        if opp_pitch_seq:
+            pitch_updates["opponentDeckBottom"] = opp_pitch_seq
+
+    if opp_hand_count == 0:
+        if isinstance(state, ImmutableGameState):
+            return [state.replace(**pitch_updates)] if pitch_updates else [state]
+        return [ImmutableGameState(state).replace(**pitch_updates)] if pitch_updates else [ImmutableGameState(state)]
+
     worlds = []
     for _ in range(num_worlds):
         sampled = random.sample(opp_deck_pool, min(opp_hand_count, len(opp_deck_pool)))
         
         updates = {
             "opponentHand": tuple(sampled),
-            "opponentHandCount": len(sampled)
+            "opponentHandCount": len(sampled),
+            **pitch_updates,
         }
         
         if isinstance(state, ImmutableGameState):

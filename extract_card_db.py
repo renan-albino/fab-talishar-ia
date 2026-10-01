@@ -71,19 +71,29 @@ def get_web_container():
     return "talishar_web-server_1"
 
 def extract_from_local():
-    local_path = os.path.join(os.path.dirname(__file__), "Talishar", "GeneratedCode", "GeneratedCardDictionaries.php")
-    if not os.path.exists(local_path):
+    base_gen = os.path.join(os.path.dirname(__file__), "Talishar", "GeneratedCode")
+    local_path = os.path.join(base_gen, "GeneratedCardDictionaries.php")
+    funcs_dir = os.path.join(base_gen, "GeneratedFunctions")
+    if not os.path.exists(local_path) and not os.path.exists(funcs_dir):
         return None
     import re
-    print(f"Lendo dicionários diretamente de {local_path}...")
-    with open(local_path, "r", encoding="utf-8") as f:
-        php = f.read()
+    print(f"Lendo dicionários diretamente do código local ({funcs_dir if os.path.exists(funcs_dir) else local_path})...")
+    php = ""
+    if os.path.exists(local_path):
+        with open(local_path, "r", encoding="utf-8") as f:
+            php = f.read()
 
-    def parse_match(func_name, end_func_name):
-        start = php.find(f"function {func_name}")
-        if start == -1: return {}
-        end = php.find(f"function {end_func_name}", start) if end_func_name else len(php)
-        section = php[start:end]
+    def parse_match(func_name, end_func_name=None):
+        raw_name = func_name.split("(")[0].strip()
+        func_file = os.path.join(funcs_dir, f"{raw_name}.php")
+        if os.path.exists(func_file):
+            with open(func_file, "r", encoding="utf-8") as f:
+                section = f.read()
+        else:
+            start = php.find(f"function {func_name}")
+            if start == -1: return {}
+            end = php.find(f"function {end_func_name}", start) if end_func_name else len(php)
+            section = php[start:end]
         res = {}
         for k, v in re.findall(r'"([a-zA-Z0-9_]+)"\s*=>\s*(-?\d+|"[^"]*"|true|false)', section):
             if v == "true": res[k] = True

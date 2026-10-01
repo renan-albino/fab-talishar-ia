@@ -27,6 +27,16 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
     hand = state.get("playerHand", [])
     player_ap = int(state.get("playerAP", state.get("actionPoints", 1)))
 
+    # ── Tokens de Arena do Jogador (CR 8.6) ──
+    player_auras = (state.get("playerAuras") or state.get("myAuras") or []) + (state.get("playerTokens") or state.get("myTokens") or [])
+    has_quicken = any("quicken" in str(a.get("cardNumber", a.get("name", "")) if isinstance(a, dict) else a).lower() for a in player_auras)
+    has_agility = any("agility" in str(a.get("cardNumber", a.get("name", "")) if isinstance(a, dict) else a).lower() for a in player_auras)
+    frostbite_count = sum(
+        (int(a.get("counters", a.get("numCounters", 1))) if isinstance(a, dict) else 1)
+        for a in player_auras
+        if "frostbite" in str(a.get("cardNumber", a.get("name", "")) if isinstance(a, dict) else a).lower()
+    )
+
     # ── Consciência Semântica de Itens Próprios na Arena (ex: Boom Grenade armada) ──
     my_items = state.get("playerItems") or state.get("myItems") or []
     has_own_on_hit_item = False
@@ -56,7 +66,8 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
             continue
 
         if info["action"] > 0 and c_name not in unpayable_set:
-            card_cost = max(0, int(info.get("cost", 0)))
+            # CR 8.6.10: Frostbite adiciona +1 ao custo de cada carta ou habilidade jogada
+            card_cost = max(0, int(info.get("cost", 0))) + frostbite_count
             # A própria carta atacante é gasta e não pode dar pitch para pagar a si mesma!
             # O pitch disponível para esta carta é (total_res - info["pitch"])
             pitch_from_other_cards = total_res - info["pitch"]
@@ -114,14 +125,17 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
     tracker = state.get("opponent_tracker")
 
     # ── 1.2 Poda Tática de Go Again (Evitar quebrar a cadeia prematuramente)
-    # Se temos AP == 1 e múltiplos ataques na mão, e pelo menos um tem Go Again:
-    # Penalizamos severamente iniciar o turno com um ataque SEM Go Again.
+    # CR 8.6.1 & CR 8.6.28: Quicken e Agility concedem Go Again gratuito ao primeiro ataque!
+    chain_link = int(state.get("currentChainLink", 1))
+    grants_free_go_again = (has_quicken or has_agility) and chain_link <= 1
+
     for atk in hand_attacks:
-        if player_ap <= 1 and has_any_go_again and not atk["has_go_again"] and len(hand_attacks) > 1:
+        effective_go_again = atk["has_go_again"] or grants_free_go_again
+        if player_ap <= 1 and has_any_go_again and not effective_go_again and len(hand_attacks) > 1:
             # Se não for letal (power < oponente_hp), penaliza iniciar com non-go-again
             atk["score"] -= 4.0
-        elif atk["has_go_again"] and atk["cost"] == 0:
-            # Bônus para abrir cadeia com starter de custo zero
+        elif effective_go_again and atk["cost"] == 0:
+            # Bônus para abrir cadeia com starter de custo zero (ou tornado 0 com go again)
             atk["score"] += 1.5
 
         if has_own_on_hit_item:

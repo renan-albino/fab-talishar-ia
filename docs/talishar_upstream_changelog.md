@@ -9,8 +9,8 @@ Ele serve como referência para os agentes de IA entenderem exatamente quais mud
 
 | Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
 | :--- | :--- | :--- | :--- | :--- |
-| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `d617d6758` (`d617d67585fbdb1a7892e6fa2a85d79d2855009e`) | 2026-09-26 | ✅ Sincronizado + Patches Aplicados |
-| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `5ceae0ea0` (`5ceae0ea098923ff232ea73d028d5287833c060e`) | 2026-09-25 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `1fa4ee2de` (`1fa4ee2de6aaebf3a882cd858e3507fb512cd5a0`) | 2026-09-30 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `94a22511b` (`94a22511bac7ca8752f3fef72a00e466aa557035`) | 2026-09-30 | ✅ Sincronizado + Patches Aplicados |
 
 ---
 
@@ -24,6 +24,193 @@ Quando o Talishar oficial atualizar:
 ---
 
 ## 🕒 Histórico de Sincronizações
+
+### 🔄 Sincronização em 2026-09-30 22:13:11
+
+#### Talishar Backend
+- **Transição de Versão**: `d617d6758` (2026-09-26) ➔ `1fa4ee2de` (2026-09-30)
+- **Novos commits incorporados**: 53
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Banco fab_cards_db.json reindexado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `1fa4ee2de` (2026-09-30 por **PvtVoid**) — Fix bot DR logic
+* `3b22bb544` (2026-09-30 por **PvtVoid**) — More puzzle logic and debugging
+* `c5e8fecc1` (2026-09-30 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `11bb1c0f8` (2026-09-30 por **Paul Gibby**) — fix flarvo
+* `722328294` (2026-09-30 por **PvtVoid**) — Update CreatePuzzleGame.php
+* `fc07b850c` (2026-09-30 por **PvtVoid**) — Fix puzzle + replay bugs
+* `9ae099b7e` (2026-09-30 por **PvtVoid**) — Fix sound not always playing when someone join a lobby that was already occupied previously
+* `a4886e229` (2026-09-30 por **PvtVoid**) — Merge branch 'main' of https://github.com/Talishar/Talishar
+* `f93eda216` (2026-09-30 por **PvtVoid**) — Automatically pitch your hand when every card in it is needed to pay the remaining resource cost
+* `cac258318` (2026-09-30 por **Paul Gibby**) — make SetArsenalFacing to return the uniqueID
+* `fbc127921` (2026-09-30 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `4fe005f75` (2026-09-30 por **Paul Gibby**) — refactor sealace sarong to apply to the card it flipped
+* `3d6a41b9d` (2026-09-30 por **PvtVoid**) — Update ParseGamestate.php
+* `d4436c0d2` (2026-09-30 por **PvtVoid**) — Fix tick tock clock sometimes have damage dealt via another item
+* `93320155c` (2026-09-30 por **PvtVoid**) — Remove unused WriteGamestate()
+* `c04725a21` (2026-09-30 por **PvtVoid**) — Don't allow zz scripts to be available on prod (prevention)
+* `ad0b6b984` (2026-09-30 por **Paul Gibby**) — fix fabricate applying to both player's evos
+* `9ddefe8b5` (2026-09-29 por **Paul Gibby**) — only trigger kimono when card is sent from play
+* `650ef8d3b` (2026-09-29 por **Paul Gibby**) — refactor celestial kimono
+* `d47b1ac0c` (2026-09-29 por **Paul Gibby**) — add gem to helm of hindsight
+* `e460892ff` (2026-09-29 por **Paul Gibby**) — fix embrace sin rarity
+* `04c4f37d9` (2026-09-29 por **Paul Gibby**) — fix corrupted corpse getting banished by chains of consecration
+* `60a6df2fe` (2026-09-29 por **Paul Gibby**) — Allies count as dying when banished
+* `f673bc0cb` (2026-09-29 por **Paul Gibby**) — Merge pull request #1423 from Talishar/split-generated-functions
+* `4491208cc` (2026-09-29 por **Paul Gibby**) — Merge branch 'main' into split-generated-functions
+* `648d66f1b` (2026-09-29 por **PvtVoid**) — Require YesNo Answer Setting
+* `e7bed2691` (2026-09-29 por **PvtVoid**) — Update puzzle logic and fix bugs
+* `655cc22bc` (2026-09-29 por **PvtVoid**) — Refactor decompose into 1 prompt instead of 3
+* `eecdc19ec` (2026-09-29 por **PvtVoid**) — Update to prompt logic + pick automatically when a UID is the same twice.
+* `23841648b` (2026-09-28 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `1359e2bc7` (2026-09-28 por **Paul Gibby**) — refactor gravekeeping
+* `bfbfd3f07` (2026-09-28 por **Paul Gibby**) — splitting up GeneratedFunctions
+* `369ea9206` (2026-09-28 por **PvtVoid**) — Make a button to clear prompt table
+* `7c5ec3b85` (2026-09-28 por **PvtVoid**) — Auto-pass arcane prompt if you can't pay for it (empty hand + pitch)
+* `c525c41af` (2026-09-28 por **PvtVoid**) — Also add PEEKTOPCARD when you check the top of your opponent deck
+* `a532064ac` (2026-09-28 por **PvtVoid**) — Don't trigger your Hooves on opponent turn
+* `cd4a5ad9d` (2026-09-28 por **PvtVoid**) — New Runechant shortcut + No "look on top" popUp + GemSnooze
+* `1d7240553` (2026-09-28 por **Paul Gibby**) — fix relative imports
+* `b13b7df52` (2026-09-28 por **Paul Gibby**) — fix includes
+* `ec69969d2` (2026-09-28 por **Paul Gibby**) — update CSV card code generator to correctly flag combo
+* `d0389e9b5` (2026-09-28 por **Paul Gibby**) — remove combo from ancestral harmony
+* `9279e8df6` (2026-09-28 por **Paul Gibby**) — Merge pull request #1422 from Talishar/clean-class-state
+* `95da373e9` (2026-09-28 por **Paul Gibby**) — don't remove big game trophy shot effect when it hits
+* `352bd1279` (2026-09-28 por **Paul Gibby**) — Merge branch 'main' into clean-class-state
+* `11753029f` (2026-09-28 por **Paul Gibby**) — fix HasFusion in Card
+* `322b2cb07` (2026-09-28 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `7ae397911` (2026-09-28 por **Paul Gibby**) — update dev tools with new class state initialization
+* `1a9e351e1` (2026-09-28 por **Paul Gibby**) — Merge branch 'main' into clean-class-state
+* `9ba288231` (2026-09-28 por **Paul Gibby**) — add exp_may to leave no witnesses
+* `b8e6e7789` (2026-09-28 por **PvtVoid**) — Update ModeratorList.inc.php
+* `f64d2178d` (2026-09-27 por **Paul Gibby**) — refactor arts of desire
+* `a58a18182` (2026-09-27 por **Paul Gibby**) — update $CS_NumAuras to only check played/created auras
+* `92ce312ae` (2026-09-27 por **Paul Gibby**) — first commit
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `AI/BotLogic.php`
+- `AI/PlayerMacros.php`
+- `APIs/ClearPromptStats.php`
+- `APIs/CreatePuzzleGame.php`
+- `APIs/GetLobbyRefresh.php`
+- `APIs/GetPromptStats.php`
+- `APIs/GetPuzzleCandidates.php`
+- `APIs/VerifyPuzzleCandidates.php`
+- `AllyAbilities.php`
+- `AuraAbilities.php`
+- `BuildGameState.php`
+- `BuildPlayerInputPopup.php`
+- `CLAUDE.md`
+- `CardDictionaries/ArcaneRising/ARCWizard.php`
+- `CardDictionaries/HighSeas/SEAShared.php`
+- `CardDictionaries/Keywords.php`
+- `CardDictionaries/Outsiders/OUTShared.php`
+- `CardDictionaries/PartTheMistveil/MSTShared.php`
+- `CardDictionary.php`
+- `CardLogic.php`
+- *(e mais 161 arquivos...)*
+
+</details>
+
+#### Talishar Frontend
+- **Transição de Versão**: `d04e9bc87` (2026-09-27) ➔ `94a22511b` (2026-09-30)
+- **Novos commits incorporados**: 27
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Frontend Vite recompilado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `94a2251` (2026-09-30 por **PvtVoid**) — Experienced play description
+* `472d53e` (2026-09-30 por **PvtVoid**) — Fix playerName drop down going off screen
+* `e2dcf7b` (2026-09-30 por **PvtVoid**) — More video ads fixes
+* `c76248e` (2026-09-30 por **PvtVoid**) — Update video ads
+* `dc6f5c5` (2026-09-30 por **PvtVoid**) — More puzzle logic and debugging
+* `016b726` (2026-09-30 por **PvtVoid**) — Revert "ads video move to ads-test only"
+* `1b424bb` (2026-09-30 por **PvtVoid**) — ads video move to ads-test only
+* `43f2c32` (2026-09-30 por **PvtVoid**) — Fix puzzle + replay bugs
+* `ceac1b7` (2026-09-30 por **PvtVoid**) — Fix sound not always playing when someone join a lobby that was already occupied previously
+* `bd30fb0` (2026-09-30 por **PvtVoid**) — Update translation.json
+* `4ce0adf` (2026-09-30 por **Evgeny**) — Translate permanents zone scroll button labels
+* `7d5f790` (2026-09-30 por **Evgeny**) — Don't apply log styling to player chat
+* `7dd3657` (2026-09-29 por **PvtVoid**) — Require YesNo Answer Setting
+* `a24c3e3` (2026-09-29 por **PvtVoid**) — Puzzle frtonend changes
+* `11c8053` (2026-09-29 por **PvtVoid**) — Refactor decompose into 1 prompt instead of 3
+* `4726a63` (2026-09-29 por **PvtVoid**) — Update styles of premium page
+* `f53b29c` (2026-09-29 por **PvtVoid**) — Add prompt collumn
+* `456b3a0` (2026-09-28 por **PvtVoid**) — Stack cards that are the same while searching in your deck and make stack icons look the same across zones
+* `5f2ada4` (2026-09-28 por **PvtVoid**) — Make a button to clear prompt table
+* `0911a0b` (2026-09-28 por **PvtVoid**) — Add player PEEKATTOPDECK to do the same to opponent deck
+* `460b1be` (2026-09-28 por **PvtVoid**) — New Runechant shortcut + No "look on top" popUp + GemSnooze
+* `9998350` (2026-09-28 por **PvtVoid**) — Update useAuth.tsx
+* `37444f9` (2026-09-28 por **PvtVoid**) — Frontend style and syntax changes
+* `6234f51` (2026-09-28 por **PvtVoid**) — Update snapshot
+* `6b03c1e` (2026-09-28 por **PvtVoid**) — Show a stack of layers for permanents
+* `925d627` (2026-09-28 por **PvtVoid**) — Option de hide opponent hand in replays
+* `d01bbdb` (2026-09-28 por **PvtVoid**) — Add 'SKIP'
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `ADS_SYSTEM.md`
+- `index.html`
+- `public/locales/en/translation.json`
+- `public/locales/fr/translation.json`
+- `public/locales/ja/translation.json`
+- `public/locales/zh/translation.json`
+- `src/app/ParseGameState.ts`
+- `src/appConstants.ts`
+- `src/components/ads/VideoAdDock.module.css`
+- `src/components/ads/VideoAdDock.tsx`
+- `src/components/footer/Footer.module.scss`
+- `src/components/footer/Footer.tsx`
+- `src/components/header/Header.tsx`
+- `src/config/ads.ts`
+- `src/features/Button.ts`
+- `src/features/Card.ts`
+- `src/features/GameState.ts`
+- `src/features/api/apiSlice.ts`
+- `src/features/game/GameSlice.ts`
+- `src/features/game/InitialGameState.ts`
+- *(e mais 52 arquivos...)*
+
+</details>
+
+
+---
+
+### 🔄 Sincronização em 2026-09-27 12:23:57
+
+#### Talishar Frontend
+- **Transição de Versão**: `5ceae0ea0` (2026-09-25) ➔ `d04e9bc87` (2026-09-27)
+- **Novos commits incorporados**: 1
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Frontend Vite recompilado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `d04e9bc` (2026-09-27 por **Paul Gibby**) — add card-generator-csv script as an alternative to card-generator in case fabcube is behind
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `package.json`
+- `scripts/card-generator-csv.js`
+- `src/constants/cardList.ts`
+
+</details>
+
+
+---
 
 ### 🔄 Sincronização em 2026-09-27 00:21:43
 

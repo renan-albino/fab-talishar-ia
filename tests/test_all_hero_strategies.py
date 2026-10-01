@@ -347,12 +347,54 @@ def test_turn_plan_systems():
     print("\n[OK] Todos os TurnPlans (Genérico e Especializados) validados com 100% de sucesso!\n")
 
 
+def test_turn_planner_evaluates_hand_defense_correctly():
+    """
+    Valida que calculate_hand_conversion e o TurnPlanner utilizam extract_card_info
+    para extrair com precisão os valores de poder, bloqueio e pitch de cartas identificadas
+    apenas por cardNumber (formato padrão do Talishar API).
+    """
+    from ai.hero_strategies.turn_planner import calculate_hand_conversion, analyze_turn_plan
+
+    # 1. Testar calculate_hand_conversion com sink_below_red (bloco = 4, def_val = min(4, 3) = 3.0)
+    off_val, def_val = calculate_hand_conversion([{"cardNumber": "sink_below_red"}], weapon_power=0)
+    assert def_val == 3.0, f"Esperado def_val == 3.0 para sink_below_red, obtido {def_val}"
+    assert off_val == 0.0, f"Esperado off_val == 0.0 para sink_below_red, obtido {off_val}"
+
+    # 2. Testar que cartas com apenas cardNumber têm valores de poder e bloqueio identificados
+    talishar_hand = [
+        {"cardNumber": "sink_below_red"},
+        {"cardNumber": "command_and_conquer_red"},
+        {"cardNumber": "autumns_touch_blue"},
+    ]
+    # weapon_power = 1
+    # offensive_value: 1 (arma) + 0 (sink) + 6 (cnc) + 5 (autumn) = 12.0
+    # total_cost: 0 + 2 + 3 = 5
+    # total_pitch: 1 (sink) + 1 (cnc) + 3 (autumn) = 5
+    # defensive_value: min(4, 3) + min(2, 3) + min(3, 3) = 3 + 2 + 3 = 8.0
+    off_val_multi, def_val_multi = calculate_hand_conversion(talishar_hand, weapon_power=1)
+    assert def_val_multi == 8.0, f"Esperado def_val == 8.0, obtido {def_val_multi}"
+    assert off_val_multi == 12.0, f"Esperado off_val == 12.0, obtido {off_val_multi}"
+
+    # 3. Testar analyze_turn_plan com cartas apenas com cardNumber
+    state = {
+        "playerHealth": 18,
+        "playerHand": talishar_hand,
+        "activeChainLink": {"totalPower": 3, "cardNumber": "generic_poke"}
+    }
+    plan = analyze_turn_plan("generic", state=state)
+    assert plan.can_absorb_damage is True
+    assert "command_and_conquer_red" in plan.key_cards
+    assert "autumns_touch_blue" in plan.key_cards
+    print("  ✓ TurnPlan Card Eval: Identificação correta de defesa/poder para cartas Talishar")
+
+
 if __name__ == "__main__":
     test_all_139_official_heroes_resolution()
     test_dynamic_fallback()
     test_archetype_specific_heuristics()
     test_policy_engine_integration()
     test_turn_plan_systems()
+    test_turn_planner_evaluates_hand_defense_correctly()
     print("=" * 60)
     print(">>> TODOS OS TESTES PASSARAM COM SUCESSO! ARQUITETURA 100% HOMOLOGADA <<<")
     print("=" * 60)

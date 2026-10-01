@@ -93,6 +93,19 @@ CR_LABEL_KEYWORDS = {
     "starfall": {"class": "lightning_wizard", "instant_in_graveyard_condition": True},
 }
 
+# Effect Keywords (CR 8.5)
+CR_EFFECT_KEYWORDS = {
+    "clash": {"category": "comparison", "compare_power": True},
+    "wager": {"category": "trigger", "token_prize": True},
+    "amp": {"category": "arcane_buff", "increase_arcane": True},
+    "transcend": {"category": "transformation", "inner_chi": True},
+    "reload": {"category": "arsenal", "load_arrow": True},
+    "freeze": {"category": "lockout", "prevent_activate": True},
+    "intimidate": {"category": "disruption", "banish_hand_temp": True},
+    "opt": {"category": "deck_manipulation", "look_top_deck": True},
+    "charge": {"category": "soul", "card_to_soul": True},
+}
+
 # 38 Tokens Oficiais (CR 8.6)
 CR_TOKENS = {
     "quicken": {"type": "aura", "effect": "next attack gets go again"},
@@ -239,6 +252,12 @@ def extract_cr_profile(card_id: str, card_data: Dict[str, Any]) -> Dict[str, Any
         label_spaced = label.replace("_", " ")
         if f"{label_spaced} -" in text or f"{label_spaced} —" in text or f"{label_spaced}:" in text or label in cid:
             keywords.append(label)
+
+    # 2b. Checagem de Effect Keywords (CR 8.5)
+    for eff in ["clash", "wager", "amp", "transcend", "reload", "freeze", "intimidate", "opt", "charge"]:
+        eff_spaced = eff.replace("_", " ")
+        if re.search(r"\b" + re.escape(eff_spaced) + r"\b", text) or eff in cid:
+            keywords.append(eff)
 
     # 3. Disrupção On-Hit e Severidade
     extra_on_hit_damage = 0

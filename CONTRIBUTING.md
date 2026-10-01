@@ -30,7 +30,7 @@ O projeto é altamente modularizado. Ao navegar pelo código, você trabalhará 
 - **`ai/`**: O "Cérebro" do projeto. Contém todos os módulos de Inteligência Artificial e Deep RL. Aqui dentro, você encontrará motores de decisão (ISMCTS), o simulador determinístico do jogo (`ai/game_simulator.py`), a rede neural em PyTorch (`ai/model.py`), lógicas de podas táticas, runtime do bot e estratégias específicas para os heróis do jogo (`ai/hero_strategies/`).
 - **`ui/`**: Interface do usuário para o Dashboard Analítico. Construído utilizando o framework Streamlit, os arquivos estão organizados de forma modular, delegando a responsabilidade de visualização para `ui/helpers.py` e separando as telas em `ui/tabs/` (com 7 abas dedicadas, incluindo Play, Arena, Treino, etc).
 - **`deck_manager/`**: Módulo desacoplado responsável pela gestão centralizada de baralhos. Trata de tudo relacionado aos decks: o parseamento (leitura dos arquivos de configuração), validação de formatos rigorosos (Blitz, Classic Constructed), verificação do limite de cópias das cartas, inventário de equipamentos e persistência atômica.
-- **`stats/`**: Sistema de rankeamento e métricas de desempenho. Aqui ocorrem os cálculos do rating **ELO dinâmico**, consolidação de vitórias/derrotas de forma canônica (evitando duplicatas de decks), sincronização com proteção de escrita (locks atômicos) e gerenciamento dos históricos de partidas no formato de leaderboards.
+- **`stats/`**: Sistema de rankeamento e métricas de desempenho. Aqui ocorrem os cálculos do rating **ELO dinâmico**, consolidação de vitórias/derrotas de forma canônica (evitando duplicatas de decks), persistência transacional concorrente em SQLite3 (`data/talishar_stats.db`) e gerenciamento dos históricos de partidas no formato de leaderboards.
 
 ## 🧪 Rodando os Testes Automatizados
 
@@ -51,6 +51,12 @@ pytest tests/
 
 ## 📝 Regras Gerais para Commits
 
+- **Padronização de Mensagens (Conventional Commits):** Prefira mensagens claras e estruturadas por escopo:
+  - `feat: <descrição>` para novas funcionalidades ou podas táticas.
+  - `fix: <descrição>` para correção de bugs ou falhas de regras.
+  - `docs: <descrição>` para atualizações de documentação e ADRs.
+  - `test: <descrição>` para adição ou refatoração de testes unitários.
+  - `refactor: <descrição>` para reestruturações de código sem alteração comportamental.
 - **Não versione lixo:** Nunca realize o commit de logs brutos (`logs/*.log`) ou binários de rede neural não filtrados. Nosso projeto utiliza hooks de Git (`pre-commit` e `post-commit`), já configurados via `prepare_environment.sh`, que limpam resíduos, verificam tipagem, e compilam o frontend automaticamente antes de qualquer envio.
 - **Use as ferramentas de automação:** Se fizer qualquer alteração no frontend (`Talishar-FE/`) ou backend (`Talishar/`) original, lembre-se de sincronizar os templates rodando: `./venv/bin/python scripts/prepare_environment.py --export-templates`.
 - **Dúvidas Adicionais?** Consulte o arquivo principal `README.md` e também os documentos técnicos na pasta `docs/` (como `docs/tactical_rules.md`) para entender mais a fundo o funcionamento dos algoritmos antes de propor grandes refatorações na lógica de avaliação da engine.

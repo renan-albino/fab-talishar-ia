@@ -145,14 +145,14 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
         # Vencedor terminou com vida intacta (sofreu zero de dano líquido)
         winner_undamaged = (winner_hp >= winner_init_hp)
 
-        if winner_undamaged and loser_hp <= 0:
+        # Só considera Punching Bag se o jogo foi curto/unilateral (< 8 turnos) E o perdedor teve 0 ataques ou travou com exceções
+        if winner_undamaged and loser_hp <= 0 and turn < 8:
             if client.player_id == loser_id:
                 if (client.attacks_made == 0 and client.damage_dealt == 0) or client.execution_exceptions_count >= 2:
-                    if turn >= 5 or client.execution_exceptions_count >= 2:
-                        is_invalid_match = True
-                        invalid_reason = "Bot Inerte (Travou sem atacar / Punching Bag)"
+                    is_invalid_match = True
+                    invalid_reason = "Bot Inerte (Travou sem atacar / Punching Bag)"
             else:
-                if turn >= 5 and getattr(client, "opp_attacks_count", 0) == 0:
+                if getattr(client, "opp_attacks_count", 0) == 0:
                     is_invalid_match = True
                     invalid_reason = "Bot Oponente Inerte (Punching Bag)"
 

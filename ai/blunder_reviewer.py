@@ -51,23 +51,32 @@ def review_trajectory_for_blunders(
     brilliant_count = 0
 
     # Calcula deltas de avaliação entre passos sucessivos
+    step_swings = []
     for i in range(n_steps - 1):
         step_pid = trajectory[i][2] if len(trajectory[i]) > 2 else bot_player_id
         is_my_step = (step_pid == bot_player_id)
-
         delta = evals[i + 1] - evals[i]
-        # Se for o próprio bot jogando, queda no eval indica lance subótimo dele
-        # Se for o oponente, aumento indica ganho do oponente (ponto de atenção)
-        step_swing = delta if is_my_step else -delta
+        step_swings.append(delta if is_my_step else -delta)
 
-        from config.settings import SETTINGS
-        blunder_thresh = getattr(SETTINGS, "blunder_threshold", -3.0)
-        inacc_thresh = getattr(SETTINGS, "inaccuracy_threshold", -1.5)
-        brill_thresh = getattr(SETTINGS, "brilliant_threshold", 3.0)
+    from config.settings import SETTINGS
+    blunder_thresh = getattr(SETTINGS, "blunder_threshold", -3.0)
+    inacc_thresh = getattr(SETTINGS, "inaccuracy_threshold", -1.5)
+    brill_thresh = getattr(SETTINGS, "brilliant_threshold", 3.0)
+    reversal_thresh = getattr(SETTINGS, "blunder_reversal_threshold", 2.0)
+    attenuated_weight = getattr(SETTINGS, "attenuated_blunder_weight", 1.5)
+
+    for i in range(n_steps - 1):
+        step_swing = step_swings[i]
 
         if step_swing <= blunder_thresh:
-            weights[i] = 3.5
-            blunder_count += 1
+            # Consistência temporal: se um suposto blunder for seguido imediatamente
+            # por reversão favorável, atenua o peso (blefe / assimetria de informação oculta)
+            is_reversal = (i + 1 < len(step_swings)) and (step_swings[i + 1] >= reversal_thresh)
+            if is_reversal:
+                weights[i] = attenuated_weight
+            else:
+                weights[i] = 3.5
+                blunder_count += 1
         elif step_swing <= inacc_thresh:
             weights[i] = 2.0
             inaccuracy_count += 1

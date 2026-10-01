@@ -17,31 +17,34 @@ from .constants import (
 def extract_card_info(card: dict) -> dict:
     """Extrai e normaliza atributos de cartas a partir do snapshot e do banco oficial."""
     card_number = str(card.get("cardNumber", "")).lower()
-    pitch = 1
-    if "_blue" in card_number:
-        pitch = 3
-    elif "_yellow" in card_number:
-        pitch = 2
-    elif "_red" in card_number:
-        pitch = 1
+    pitch = int(card.get("pitch", 0))
+    if pitch == 0:
+        if "_blue" in card_number:
+            pitch = 3
+        elif "_yellow" in card_number:
+            pitch = 2
+        elif "_red" in card_number:
+            pitch = 1
+        else:
+            pitch = 1
 
     power = int(card.get("power", 0))
     block = int(card.get("defense", card.get("block", 0)))
-    cost = 0
-    has_go_again = False
+    cost = int(card.get("cost", 0))
+    has_go_again = bool(card.get("has_go_again", False))
 
     # Consulta banco de dados oficial (fab_cards_db.json)
     db_entry = _load_cards_db().get(card_number)
     if db_entry:
-        if "cost" in db_entry:
+        if cost == 0 and "cost" in db_entry:
             cost = max(0, int(db_entry["cost"]))
-        if "pitch" in db_entry:
+        if "pitch" not in card and "pitch" in db_entry:
             pitch = int(db_entry["pitch"])
         if power == 0 and "power" in db_entry:
             power = int(db_entry["power"])
         if block == 0 and "defense" in db_entry:
             block = int(db_entry["defense"])
-        if "has_go_again" in db_entry:
+        if not has_go_again and "has_go_again" in db_entry:
             has_go_again = bool(db_entry["has_go_again"])
 
     is_equip_or_weapon = (

@@ -4,8 +4,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_10"
+      "ward_10",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -578,8 +578,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -718,8 +718,8 @@
     "type": "E",
     "subtype": "Base",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -859,9 +859,9 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
+      "ward_4",
       "protect",
-      "ward",
-      "ward_4"
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -917,8 +917,8 @@
     "type": "T",
     "subtype": "Dragon,Ally",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -1737,8 +1737,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_2",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_2"
     ],
     "evasion": {
       "dominate": false,
@@ -2261,8 +2261,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -2317,7 +2317,9 @@
     "name": "Alpha Rampage",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -2456,7 +2458,9 @@
     "name": "Amplify the Arknight",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -2483,7 +2487,9 @@
     "name": "Amplify the Arknight",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -2510,7 +2516,9 @@
     "name": "Amplify the Arknight",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -2537,7 +2545,9 @@
     "name": "Amplifying Arrow",
     "type": "AA",
     "subtype": "Arrow",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -4379,8 +4389,8 @@
     "type": "E",
     "subtype": "Off-Hand",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -4978,9 +4988,9 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_3",
+      "arcane_barrier",
       "battleworn",
-      "arcane_barrier"
+      "arcane_barrier_3"
     ],
     "evasion": {
       "dominate": false,
@@ -5009,8 +5019,8 @@
     "type": "I",
     "subtype": "Evo,Base,Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -5039,8 +5049,8 @@
     "type": "E",
     "subtype": "Evo,Base,Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -6117,8 +6127,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -6147,8 +6157,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -6177,8 +6187,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -6481,8 +6491,8 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -10325,8 +10335,8 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -13723,8 +13733,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -13753,8 +13763,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -13783,8 +13793,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -14031,8 +14041,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "heave_2",
       "crush",
+      "heave_2",
       "heave"
     ],
     "evasion": {
@@ -14224,8 +14234,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -15896,8 +15906,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "bond",
-      "stealth"
+      "stealth",
+      "bond"
     ],
     "evasion": {
       "dominate": false,
@@ -16016,8 +16026,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "bond",
-      "stealth"
+      "stealth",
+      "bond"
     ],
     "evasion": {
       "dominate": false,
@@ -16046,8 +16056,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "bond",
-      "stealth"
+      "stealth",
+      "bond"
     ],
     "evasion": {
       "dominate": false,
@@ -16076,8 +16086,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "bond",
-      "stealth"
+      "stealth",
+      "bond"
     ],
     "evasion": {
       "dominate": false,
@@ -16106,8 +16116,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "bond",
-      "stealth"
+      "stealth",
+      "bond"
     ],
     "evasion": {
       "dominate": false,
@@ -16136,8 +16146,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "bond",
-      "stealth"
+      "stealth",
+      "bond"
     ],
     "evasion": {
       "dominate": false,
@@ -16166,8 +16176,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "bond",
-      "stealth"
+      "stealth",
+      "bond"
     ],
     "evasion": {
       "dominate": false,
@@ -16509,8 +16519,8 @@
     "type": "A",
     "subtype": "Ally",
     "keywords": [
-      "spellvoid_2",
-      "spellvoid"
+      "spellvoid",
+      "spellvoid_2"
     ],
     "evasion": {
       "dominate": false,
@@ -17052,7 +17062,9 @@
     "name": "Brain Freeze",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "freeze"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -17079,7 +17091,9 @@
     "name": "Brain Freeze",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "freeze"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -17106,7 +17120,9 @@
     "name": "Brain Freeze",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "freeze"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -18934,8 +18950,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "overpower",
-      "boost"
+      "boost",
+      "overpower"
     ],
     "evasion": {
       "dominate": false,
@@ -18964,8 +18980,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "overpower",
-      "boost"
+      "boost",
+      "overpower"
     ],
     "evasion": {
       "dominate": false,
@@ -18994,8 +19010,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "overpower",
-      "boost"
+      "boost",
+      "overpower"
     ],
     "evasion": {
       "dominate": false,
@@ -19024,9 +19040,9 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
+      "arcane_barrier",
       "arcane_barrier_1",
-      "go_again",
-      "arcane_barrier"
+      "go_again"
     ],
     "evasion": {
       "dominate": false,
@@ -20024,8 +20040,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -20054,8 +20070,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -20732,8 +20748,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -21233,8 +21249,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "channel",
-      "go_again"
+      "go_again",
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21263,8 +21279,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "channel",
-      "go_again"
+      "go_again",
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21322,8 +21338,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "channel",
-      "go_again"
+      "go_again",
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21352,8 +21368,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "channel",
-      "go_again"
+      "go_again",
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21382,8 +21398,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "channel",
-      "go_again"
+      "go_again",
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21413,9 +21429,9 @@
     "subtype": "Aura",
     "keywords": [
       "amp",
-      "channel",
+      "amp_3",
       "go_again",
-      "amp_3"
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21444,8 +21460,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "channel",
-      "go_again"
+      "go_again",
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21474,8 +21490,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "channel",
-      "go_again"
+      "go_again",
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21504,8 +21520,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "channel",
-      "go_again"
+      "go_again",
+      "channel"
     ],
     "evasion": {
       "dominate": false,
@@ -21534,6 +21550,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -21563,6 +21580,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -21592,6 +21610,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -22354,7 +22373,9 @@
     "name": "Chorus of the Amphitheater",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -22381,7 +22402,9 @@
     "name": "Chorus of the Amphitheater",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -22408,7 +22431,9 @@
     "name": "Chorus of the Amphitheater",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -22900,8 +22925,8 @@
     "subtype": "Aura",
     "keywords": [
       "flow",
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -23046,6 +23071,7 @@
     "type": "A",
     "subtype": "Item",
     "keywords": [
+      "amp",
       "crank"
     ],
     "evasion": {
@@ -23130,7 +23156,9 @@
     "name": "Clash of Agility",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23157,7 +23185,9 @@
     "name": "Clash of Agility",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23184,7 +23214,9 @@
     "name": "Clash of Agility",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23211,7 +23243,9 @@
     "name": "Clash of Arms",
     "type": "B",
     "subtype": "Block",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23238,7 +23272,9 @@
     "name": "Clash of Bravado",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23265,7 +23301,9 @@
     "name": "Clash of Chests",
     "type": "B",
     "subtype": "Block",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23292,7 +23330,9 @@
     "name": "Clash of Heads",
     "type": "B",
     "subtype": "Block",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23319,7 +23359,9 @@
     "name": "Clash of Legs",
     "type": "B",
     "subtype": "Block",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23346,7 +23388,9 @@
     "name": "Clash of Might",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23373,7 +23417,9 @@
     "name": "Clash of Might",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23400,7 +23446,9 @@
     "name": "Clash of Might",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23427,7 +23475,9 @@
     "name": "Clash of Mountains",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23454,7 +23504,9 @@
     "name": "Clash of Mountains",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23481,7 +23533,9 @@
     "name": "Clash of Mountains",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23508,7 +23562,9 @@
     "name": "Clash of Shields",
     "type": "B",
     "subtype": "Block",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23535,7 +23591,9 @@
     "name": "Clash of Vigor",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23562,7 +23620,9 @@
     "name": "Clash of Vigor",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -23589,7 +23649,9 @@
     "name": "Clash of Vigor",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "clash"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -27111,6 +27173,7 @@
     "type": "A",
     "subtype": "Item",
     "keywords": [
+      "amp",
       "go_again"
     ],
     "evasion": {
@@ -28139,8 +28202,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -28339,8 +28402,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "crank",
-      "boost"
+      "boost",
+      "crank"
     ],
     "evasion": {
       "dominate": false,
@@ -28369,8 +28432,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "crank",
-      "boost"
+      "boost",
+      "crank"
     ],
     "evasion": {
       "dominate": false,
@@ -28399,8 +28462,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "crank",
-      "boost"
+      "boost",
+      "crank"
     ],
     "evasion": {
       "dominate": false,
@@ -29228,8 +29291,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -29285,8 +29348,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_2",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_2"
     ],
     "evasion": {
       "dominate": false,
@@ -29373,8 +29436,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -30742,7 +30805,9 @@
     "name": "Dampen",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -30769,7 +30834,9 @@
     "name": "Dampen",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -30796,7 +30863,9 @@
     "name": "Dampen",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -31946,8 +32015,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -31976,8 +32045,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -32006,8 +32075,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -32117,8 +32186,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -32147,8 +32216,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -32177,8 +32246,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -32406,8 +32475,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -33477,8 +33546,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -34179,8 +34248,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "heave_2",
       "crush",
+      "heave_2",
       "heave"
     ],
     "evasion": {
@@ -35094,8 +35163,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -35544,7 +35613,9 @@
     "name": "Dracona Optimai",
     "type": "AA",
     "subtype": "Dragon,Ally",
-    "keywords": [],
+    "keywords": [
+      "opt"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -36323,9 +36394,9 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
+      "go_again",
       "spellvoid_1",
-      "spellvoid",
-      "go_again"
+      "spellvoid"
     ],
     "evasion": {
       "dominate": false,
@@ -37115,8 +37186,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -37145,8 +37216,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -37175,8 +37246,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -37763,9 +37834,9 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
+      "arcane_barrier",
       "temper",
-      "arcane_barrier_2",
-      "arcane_barrier"
+      "arcane_barrier_2"
     ],
     "evasion": {
       "dominate": false,
@@ -38043,8 +38114,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "surge",
-      "go_again"
+      "go_again",
+      "surge"
     ],
     "evasion": {
       "dominate": false,
@@ -38073,8 +38144,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "surge",
-      "go_again"
+      "go_again",
+      "surge"
     ],
     "evasion": {
       "dominate": false,
@@ -38103,8 +38174,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "surge",
-      "go_again"
+      "go_again",
+      "surge"
     ],
     "evasion": {
       "dominate": false,
@@ -38243,8 +38314,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "spellvoid_2",
-      "spellvoid"
+      "spellvoid",
+      "spellvoid_2"
     ],
     "evasion": {
       "dominate": false,
@@ -39058,7 +39129,9 @@
     "name": "Electrostatic Discharge",
     "type": "I",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -39085,7 +39158,9 @@
     "name": "Electrostatic Discharge",
     "type": "I",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -39112,7 +39187,9 @@
     "name": "Electrostatic Discharge",
     "type": "I",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -39285,8 +39362,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -39342,8 +39419,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -40497,8 +40574,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -42153,8 +42230,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -42183,8 +42260,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -42213,8 +42290,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -43506,8 +43583,8 @@
     "type": "I",
     "subtype": "Evo,Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -43536,8 +43613,8 @@
     "type": "E",
     "subtype": "Evo,Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -43736,8 +43813,8 @@
     "type": "I",
     "subtype": "Evo,Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -43766,8 +43843,8 @@
     "type": "E",
     "subtype": "Evo,Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -44086,8 +44163,8 @@
     "type": "I",
     "subtype": "Evo,Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -44116,8 +44193,8 @@
     "type": "E",
     "subtype": "Evo,Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -44204,8 +44281,8 @@
     "type": "I",
     "subtype": "Evo,Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -44234,8 +44311,8 @@
     "type": "E",
     "subtype": "Evo,Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -44438,8 +44515,8 @@
     "type": "A",
     "subtype": "Evo,Base,Legs",
     "keywords": [
-      "tower",
-      "temper"
+      "temper",
+      "tower"
     ],
     "evasion": {
       "dominate": false,
@@ -44468,8 +44545,8 @@
     "type": "E",
     "subtype": "Evo,Base,Legs",
     "keywords": [
-      "tower",
-      "temper"
+      "temper",
+      "tower"
     ],
     "evasion": {
       "dominate": false,
@@ -45086,8 +45163,8 @@
     "subtype": "",
     "keywords": [
       "amp",
-      "amp_1",
-      "go_again"
+      "go_again",
+      "amp_1"
     ],
     "evasion": {
       "dominate": false,
@@ -45117,8 +45194,8 @@
     "subtype": "",
     "keywords": [
       "amp",
-      "go_again",
-      "amp_3"
+      "amp_3",
+      "go_again"
     ],
     "evasion": {
       "dominate": false,
@@ -45148,8 +45225,8 @@
     "subtype": "",
     "keywords": [
       "amp",
-      "amp_2",
-      "go_again"
+      "go_again",
+      "amp_2"
     ],
     "evasion": {
       "dominate": false,
@@ -46138,8 +46215,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -46168,8 +46245,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -46198,8 +46275,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -48561,6 +48638,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "freeze",
       "go_again"
     ],
     "evasion": {
@@ -48794,8 +48872,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -49378,8 +49456,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -49492,7 +49570,9 @@
     "name": "Flittering Charge",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -49519,7 +49599,9 @@
     "name": "Flittering Charge",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -49546,7 +49628,9 @@
     "name": "Flittering Charge",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -50271,8 +50355,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -52939,9 +53023,9 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
+      "arcane_barrier",
       "arcane_barrier_1",
-      "go_again",
-      "arcane_barrier"
+      "go_again"
     ],
     "evasion": {
       "dominate": false,
@@ -54353,9 +54437,9 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "arcane_barrier_1",
       "blade_break",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -56038,8 +56122,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -56467,9 +56551,9 @@
     "type": "E",
     "subtype": "Off-Hand",
     "keywords": [
+      "arcane_barrier",
       "arcane_barrier_1",
-      "blood_debt",
-      "arcane_barrier"
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -57242,8 +57326,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "spellvoid_2",
-      "spellvoid"
+      "spellvoid",
+      "spellvoid_2"
     ],
     "evasion": {
       "dominate": false,
@@ -57272,8 +57356,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "spellvoid_2",
-      "spellvoid"
+      "spellvoid",
+      "spellvoid_2"
     ],
     "evasion": {
       "dominate": false,
@@ -57943,8 +58027,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -57973,8 +58057,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -58759,10 +58843,10 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
       "blade_break",
-      "go_again",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1",
+      "go_again"
     ],
     "evasion": {
       "dominate": false,
@@ -59282,8 +59366,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "heavy",
-      "battleworn"
+      "battleworn",
+      "heavy"
     ],
     "evasion": {
       "dominate": false,
@@ -59312,8 +59396,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "temper",
       "heavy",
+      "temper",
       "go_again"
     ],
     "evasion": {
@@ -59343,8 +59427,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "temper",
-      "heavy"
+      "heavy",
+      "temper"
     ],
     "evasion": {
       "dominate": false,
@@ -59373,8 +59457,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "temper",
-      "heavy"
+      "heavy",
+      "temper"
     ],
     "evasion": {
       "dominate": false,
@@ -59522,8 +59606,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -59923,8 +60007,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "spellvoid_1",
       "blade_break",
+      "spellvoid_1",
       "spellvoid"
     ],
     "evasion": {
@@ -60210,8 +60294,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "phantasm"
+      "phantasm",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -60562,8 +60646,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "phantasm"
+      "phantasm",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -60592,8 +60676,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "phantasm"
+      "phantasm",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -60622,8 +60706,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "phantasm"
+      "phantasm",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -60969,8 +61053,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -62689,8 +62773,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -62719,8 +62803,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -62749,8 +62833,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -62997,8 +63081,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -63517,8 +63601,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -63547,8 +63631,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -66835,6 +66919,7 @@
     "type": "A",
     "subtype": "Invocation",
     "keywords": [
+      "opt",
       "go_again"
     ],
     "evasion": {
@@ -67124,7 +67209,9 @@
     "name": "Ion Charged",
     "type": "I",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -67804,8 +67891,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "stealth"
+      "stealth",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -67834,8 +67921,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "stealth"
+      "stealth",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -67864,8 +67951,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "stealth"
+      "stealth",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -70320,6 +70407,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -70349,6 +70437,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -70378,6 +70467,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -71969,8 +72059,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
       "battleworn",
+      "arcane_barrier_1",
       "arcane_barrier"
     ],
     "evasion": {
@@ -73899,7 +73989,9 @@
     "name": "Madcap Charger",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -73926,7 +74018,9 @@
     "name": "Madcap Charger",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -73953,7 +74047,9 @@
     "name": "Madcap Charger",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -75368,8 +75464,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -75788,8 +75884,8 @@
     "type": "E",
     "subtype": "Base,Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -76486,8 +76582,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -76711,9 +76807,9 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
-      "dominate",
+      "ward_4",
       "ward",
-      "ward_4"
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -77475,7 +77571,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "blade_break"
+      "blade_break",
+      "amp"
     ],
     "evasion": {
       "dominate": false,
@@ -79043,8 +79140,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -79100,8 +79197,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -79130,8 +79227,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -80022,8 +80119,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -80135,8 +80232,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -80165,8 +80262,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -80195,8 +80292,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -80225,8 +80322,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -81874,6 +81971,7 @@
     "type": "A",
     "subtype": "Item",
     "keywords": [
+      "opt",
       "go_again"
     ],
     "evasion": {
@@ -81990,8 +82088,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -82020,8 +82118,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -83125,6 +83223,7 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -83154,6 +83253,7 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -83183,6 +83283,7 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -85552,8 +85653,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -85582,8 +85683,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -85612,8 +85713,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -85642,9 +85743,9 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
+      "phantasm",
       "ward",
-      "phantasm"
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -87457,8 +87558,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -92188,8 +92289,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -92218,8 +92319,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -92248,8 +92349,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -93244,8 +93345,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -93885,7 +93986,9 @@
     "name": "Rampant Growth // Life",
     "type": "I",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -93912,7 +94015,9 @@
     "name": "Rampart of the Ram's Head",
     "type": "E",
     "subtype": "Off-Hand",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -94859,6 +94964,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -94888,6 +94994,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -94917,6 +95024,7 @@
     "type": "A",
     "subtype": "",
     "keywords": [
+      "charge",
       "go_again"
     ],
     "evasion": {
@@ -95535,7 +95643,9 @@
     "name": "Reckless Charge",
     "type": "A",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "charge"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -95562,7 +95672,9 @@
     "name": "Reckless Stampede",
     "type": "AA",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -97287,8 +97399,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -97818,7 +97930,9 @@
     "name": "Rhinar, Reckless Rampage",
     "type": "C",
     "subtype": "",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -98267,9 +98381,9 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
+      "go_again",
       "blood_debt",
-      "go_again"
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -98298,9 +98412,9 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
+      "go_again",
       "blood_debt",
-      "go_again"
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -98329,9 +98443,9 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
+      "go_again",
       "blood_debt",
-      "go_again"
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -99194,8 +99308,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "rupture"
+      "rupture",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -100191,8 +100305,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -100221,8 +100335,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -101112,8 +101226,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "heave_2",
-      "heave"
+      "heave",
+      "heave_2"
     ],
     "evasion": {
       "dominate": false,
@@ -101142,8 +101256,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "heave_2",
-      "heave"
+      "heave",
+      "heave_2"
     ],
     "evasion": {
       "dominate": false,
@@ -101172,8 +101286,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "heave_2",
-      "heave"
+      "heave",
+      "heave_2"
     ],
     "evasion": {
       "dominate": false,
@@ -101621,8 +101735,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -101765,8 +101879,8 @@
     "type": "T",
     "subtype": "Aura",
     "keywords": [
-      "arcane",
-      "runechant"
+      "runechant",
+      "arcane"
     ],
     "evasion": {
       "dominate": false,
@@ -101795,8 +101909,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane",
-      "runechant"
+      "runechant",
+      "arcane"
     ],
     "evasion": {
       "dominate": false,
@@ -101825,8 +101939,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane",
-      "runechant"
+      "runechant",
+      "arcane"
     ],
     "evasion": {
       "dominate": false,
@@ -101855,8 +101969,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane",
-      "runechant"
+      "runechant",
+      "arcane"
     ],
     "evasion": {
       "dominate": false,
@@ -101885,8 +101999,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane",
-      "runechant"
+      "runechant",
+      "arcane"
     ],
     "evasion": {
       "dominate": false,
@@ -101915,8 +102029,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane",
-      "runechant"
+      "runechant",
+      "arcane"
     ],
     "evasion": {
       "dominate": false,
@@ -101945,8 +102059,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane",
-      "runechant"
+      "runechant",
+      "arcane"
     ],
     "evasion": {
       "dominate": false,
@@ -101975,8 +102089,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane",
-      "runechant"
+      "runechant",
+      "arcane"
     ],
     "evasion": {
       "dominate": false,
@@ -102563,8 +102677,8 @@
     "type": "A",
     "subtype": "Item",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -103922,8 +104036,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -103952,8 +104066,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -105166,8 +105280,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -106028,8 +106142,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -106058,8 +106172,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -106088,8 +106202,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -106616,8 +106730,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -106646,8 +106760,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -106676,8 +106790,8 @@
     "type": "A",
     "subtype": "",
     "keywords": [
-      "blood_debt",
-      "go_again"
+      "go_again",
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -106934,8 +107048,8 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -107649,8 +107763,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -108910,8 +109024,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "spellvoid_2",
-      "spellvoid"
+      "spellvoid",
+      "spellvoid_2"
     ],
     "evasion": {
       "dominate": false,
@@ -110334,9 +110448,9 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
+      "ward_2",
       "protect",
-      "ward",
-      "ward_2"
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -110365,9 +110479,9 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
+      "ward_4",
       "protect",
-      "ward",
-      "ward_4"
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -110396,8 +110510,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_3",
       "protect",
+      "ward_3",
       "ward"
     ],
     "evasion": {
@@ -110618,8 +110732,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -110648,8 +110762,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -110899,8 +111013,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -110986,8 +111100,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -111016,8 +111130,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -111046,8 +111160,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -111076,8 +111190,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -111774,8 +111888,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -111804,8 +111918,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -111834,8 +111948,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -112451,10 +112565,10 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_1",
       "blade_break",
-      "go_again",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1",
+      "go_again"
     ],
     "evasion": {
       "dominate": false,
@@ -112483,9 +112597,9 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "go_again",
       "arcane_barrier_2",
-      "arcane_barrier"
+      "arcane_barrier",
+      "go_again"
     ],
     "evasion": {
       "dominate": false,
@@ -114070,8 +114184,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "heave_2",
       "crush",
+      "heave_2",
       "heave"
     ],
     "evasion": {
@@ -114836,8 +114950,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -114893,8 +115007,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -114953,8 +115067,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -116210,8 +116324,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -116240,8 +116354,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -116270,8 +116384,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "phantasm",
-      "go_again"
+      "go_again",
+      "phantasm"
     ],
     "evasion": {
       "dominate": false,
@@ -116593,8 +116707,8 @@
     "type": "T",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -117105,8 +117219,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -117249,8 +117363,8 @@
     "type": "W",
     "subtype": "Dagger",
     "keywords": [
-      "piercing",
-      "go_again"
+      "go_again",
+      "piercing"
     ],
     "evasion": {
       "dominate": false,
@@ -117861,10 +117975,10 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
+      "arcane_barrier",
       "arcane_barrier_1",
       "go_again",
-      "blood_debt",
-      "arcane_barrier"
+      "blood_debt"
     ],
     "evasion": {
       "dominate": false,
@@ -118884,8 +118998,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -118913,7 +119027,9 @@
     "name": "Stamp Authority",
     "type": "A",
     "subtype": "Aura",
-    "keywords": [],
+    "keywords": [
+      "amp"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,
@@ -119138,9 +119254,9 @@
     "subtype": "Aura",
     "keywords": [
       "amp",
-      "amp_1",
+      "ward_2",
       "ward",
-      "ward_2"
+      "amp_1"
     ],
     "evasion": {
       "dominate": false,
@@ -120824,8 +120940,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_2",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_2"
     ],
     "evasion": {
       "dominate": false,
@@ -120908,8 +121024,8 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -122627,8 +122743,8 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -122657,8 +122773,8 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -122716,8 +122832,8 @@
     "type": "W",
     "subtype": "Staff",
     "keywords": [
-      "surge",
-      "go_again"
+      "go_again",
+      "surge"
     ],
     "evasion": {
       "dominate": false,
@@ -124839,9 +124955,9 @@
     "type": "A",
     "subtype": "Item",
     "keywords": [
+      "go_again",
       "spellvoid_1",
-      "spellvoid",
-      "go_again"
+      "spellvoid"
     ],
     "evasion": {
       "dominate": false,
@@ -127303,8 +127419,8 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -127441,8 +127557,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "spellvoid_1",
       "blade_break",
+      "spellvoid_1",
       "spellvoid"
     ],
     "evasion": {
@@ -128072,8 +128188,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -128102,8 +128218,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane_barrier_3",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_3"
     ],
     "evasion": {
       "dominate": false,
@@ -128132,8 +128248,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "arcane_barrier_2",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_2"
     ],
     "evasion": {
       "dominate": false,
@@ -128465,8 +128581,8 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -129414,8 +129530,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -129859,8 +129975,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_1",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -129918,8 +130034,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "overpower",
-      "galvanize"
+      "galvanize",
+      "overpower"
     ],
     "evasion": {
       "dominate": false,
@@ -129948,8 +130064,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "overpower",
-      "galvanize"
+      "galvanize",
+      "overpower"
     ],
     "evasion": {
       "dominate": false,
@@ -129978,8 +130094,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "overpower",
-      "galvanize"
+      "galvanize",
+      "overpower"
     ],
     "evasion": {
       "dominate": false,
@@ -130760,6 +130876,7 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
+      "amp",
       "temper"
     ],
     "evasion": {
@@ -130789,8 +130906,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -130819,8 +130936,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -130849,8 +130966,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -131275,9 +131392,9 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
       "blade_break",
-      "arcane_barrier"
+      "arcane_barrier",
+      "arcane_barrier_1"
     ],
     "evasion": {
       "dominate": false,
@@ -131815,8 +131932,8 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -133756,8 +133873,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -134448,8 +134565,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -134478,8 +134595,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -134508,8 +134625,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -134538,8 +134655,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -134568,8 +134685,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -134598,8 +134715,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -134852,8 +134969,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -134882,8 +134999,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -134912,8 +135029,8 @@
     "type": "A",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -135386,9 +135503,9 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
+      "arcane_barrier",
       "arcane_barrier_1",
-      "go_again",
-      "arcane_barrier"
+      "go_again"
     ],
     "evasion": {
       "dominate": false,
@@ -135498,8 +135615,8 @@
     "type": "AA",
     "subtype": "Angel,Ally",
     "keywords": [
-      "ward",
-      "ward_4"
+      "ward_4",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -135584,9 +135701,9 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "vigor",
       "blade_break",
-      "go_again"
+      "go_again",
+      "vigor"
     ],
     "evasion": {
       "dominate": false,
@@ -136810,9 +136927,9 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "go_again",
       "arcane_barrier_2",
-      "arcane_barrier"
+      "arcane_barrier",
+      "go_again"
     ],
     "evasion": {
       "dominate": false,
@@ -138248,8 +138365,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -138308,8 +138425,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -139000,8 +139117,8 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -139192,8 +139309,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward_1",
-      "ward"
+      "ward",
+      "ward_1"
     ],
     "evasion": {
       "dominate": false,
@@ -139252,8 +139369,8 @@
     "type": "I",
     "subtype": "Aura",
     "keywords": [
-      "ward",
-      "ward_2"
+      "ward_2",
+      "ward"
     ],
     "evasion": {
       "dominate": false,
@@ -140188,8 +140305,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -140218,8 +140335,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -140248,8 +140365,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "rune_gate",
-      "blood_debt"
+      "blood_debt",
+      "rune_gate"
     ],
     "evasion": {
       "dominate": false,
@@ -140278,10 +140395,10 @@
     "type": "E",
     "subtype": "Chest",
     "keywords": [
-      "arcane_barrier_1",
-      "spellvoid",
       "spellvoid_1",
-      "arcane_barrier"
+      "arcane_barrier_1",
+      "arcane_barrier",
+      "spellvoid"
     ],
     "evasion": {
       "dominate": false,
@@ -140310,10 +140427,10 @@
     "type": "E",
     "subtype": "Arms",
     "keywords": [
-      "arcane_barrier_1",
-      "spellvoid",
       "spellvoid_1",
-      "arcane_barrier"
+      "arcane_barrier_1",
+      "arcane_barrier",
+      "spellvoid"
     ],
     "evasion": {
       "dominate": false,
@@ -140342,10 +140459,10 @@
     "type": "E",
     "subtype": "Head",
     "keywords": [
-      "arcane_barrier_1",
-      "spellvoid",
       "spellvoid_1",
-      "arcane_barrier"
+      "arcane_barrier_1",
+      "arcane_barrier",
+      "spellvoid"
     ],
     "evasion": {
       "dominate": false,
@@ -140374,10 +140491,10 @@
     "type": "E",
     "subtype": "Legs",
     "keywords": [
-      "arcane_barrier_1",
-      "spellvoid",
       "spellvoid_1",
-      "arcane_barrier"
+      "arcane_barrier_1",
+      "arcane_barrier",
+      "spellvoid"
     ],
     "evasion": {
       "dominate": false,
@@ -141621,8 +141738,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "blood_debt"
+      "blood_debt",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -141651,8 +141768,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "blood_debt"
+      "blood_debt",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -141681,8 +141798,8 @@
     "type": "AA",
     "subtype": "",
     "keywords": [
-      "dominate",
-      "blood_debt"
+      "blood_debt",
+      "dominate"
     ],
     "evasion": {
       "dominate": true,
@@ -144340,6 +144457,4194 @@
     "type": "R",
     "subtype": "chi",
     "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "satiate_bloodthirst_red": {
+    "name": "Satiate Bloodthirst",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "pint_with_a_pal": {
+    "name": "Pint with a Pal",
+    "type": "EVENT",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "breach_flesh_red": {
+    "name": "Breach Flesh",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bloodfrenzy_gloomblade_yellow": {
+    "name": "Bloodfrenzy Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_walker_red": {
+    "name": "Shadowrealm Walker",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "otherworldly_ossuary_blue": {
+    "name": "Otherworldly Ossuary",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_ripper_blue": {
+    "name": "Shadowrealm Ripper",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "permanent_interment_blue": {
+    "name": "Permanent Interment",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "suraya_archangel_of_endless_hope": {
+    "name": "Suraya, Archangel of Endless Hope",
+    "type": "AA",
+    "subtype": "angel,ally",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "gorging_shadowbeast_blue": {
+    "name": "Gorging Shadowbeast",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_swiftness_yellow": {
+    "name": "Shadowrealm Swiftness",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "breach_flesh_blue": {
+    "name": "Breach Flesh",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "step_through_realms_blue": {
+    "name": "Step through Realms",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "satiate_bloodthirst_blue": {
+    "name": "Satiate Bloodthirst",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "cleave_the_heavens_red": {
+    "name": "Cleave the Heavens",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "heave"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "peak_power_yellow": {
+    "name": "Peak Power",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rocktop_bellow_blue": {
+    "name": "Rocktop Bellow",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_bloodhound_yellow": {
+    "name": "Shadowrealm Bloodhound",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "peak_power_red": {
+    "name": "Peak Power",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bloodfrenzy_gloomblade_red": {
+    "name": "Bloodfrenzy Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "acrid_stench_blue": {
+    "name": "Acrid Stench",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "unleash_pandemonium": {
+    "name": "Unleash Pandemonium",
+    "type": "EVENT",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "mutual_sacrifice_yellow": {
+    "name": "Mutual Sacrifice",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "whispers_within_red": {
+    "name": "Whispers Within",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowake_gloomblade_blue": {
+    "name": "Shadowake Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "step_through_realms_yellow": {
+    "name": "Step through Realms",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowake_gloomblade_red": {
+    "name": "Shadowake Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_bloodhound_red": {
+    "name": "Shadowrealm Bloodhound",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rumbling_hunger_yellow": {
+    "name": "Rumbling Hunger",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "dark_arcanite_boots": {
+    "name": "Dark Arcanite Boots",
+    "type": "E",
+    "subtype": "legs",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "boneseer_skullcap": {
+    "name": "Boneseer Skullcap",
+    "type": "E",
+    "subtype": "head",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "feeding_frenzy_blue": {
+    "name": "Feeding Frenzy",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "murmuring_gloomblade_blue": {
+    "name": "Murmuring Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_strength_blue": {
+    "name": "Shadowrealm Strength",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "enshrine_sin_blue": {
+    "name": "Enshrine Sin",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "murmuring_gloomblade_yellow": {
+    "name": "Murmuring Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "cleave_the_heavens_blue": {
+    "name": "Cleave the Heavens",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "heave"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "whispers_within_yellow": {
+    "name": "Whispers Within",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "consuming_appetite_yellow": {
+    "name": "Consuming Appetite",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "dam_the_shadowake_yellow": {
+    "name": "Dam the Shadowake",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "dark_arcanite_helm": {
+    "name": "Dark Arcanite Helm",
+    "type": "E",
+    "subtype": "head",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bone_mass_blue": {
+    "name": "Bone Mass",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "goremass_summoning_blue": {
+    "name": "Goremass Summoning",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rally_the_shadow_horde_yellow": {
+    "name": "Rally the Shadow Horde",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rumbling_hunger_red": {
+    "name": "Rumbling Hunger",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "abyssal_bite_blue": {
+    "name": "Abyssal Bite",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "mutual_sacrifice_blue": {
+    "name": "Mutual Sacrifice",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "trained_saurian": {
+    "name": "Trained Saurian",
+    "type": "EVENT",
+    "subtype": "ally",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "drop_dead_bodice": {
+    "name": "Drop Dead Bodice",
+    "type": "E",
+    "subtype": "chest",
+    "keywords": [
+      "arcane_barrier"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 1,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "placeholder_equipment": {
+    "name": "Placeholder Equipment",
+    "type": "E",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bonded_burial_yellow": {
+    "name": "Bonded Burial",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "bond"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rocktop_bellow_yellow": {
+    "name": "Rocktop Bellow",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "headstrong_stampede_red": {
+    "name": "Headstrong Stampede",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "amp"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "herald_of_hope_blue": {
+    "name": "Herald of Hope",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "feasting_shadowbeast_red": {
+    "name": "Feasting Shadowbeast",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_ripper_red": {
+    "name": "Shadowrealm Ripper",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "peak_power_blue": {
+    "name": "Peak Power",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "placeholder_weapon": {
+    "name": "Placeholder Weapon",
+    "type": "W",
+    "subtype": "hammer",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "malignant_migration_red": {
+    "name": "Malignant Migration",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "corporeal_chasm_red": {
+    "name": "Corporeal Chasm",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "corpse_cover_red": {
+    "name": "Corpse Cover",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "restless_plowman_red": {
+    "name": "Restless Plowman",
+    "type": "A",
+    "subtype": "zombie,ally",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "feeding_frenzy_yellow": {
+    "name": "Feeding Frenzy",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "fallen_herald_yellow": {
+    "name": "Fallen Herald",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "corporeal_chasm_yellow": {
+    "name": "Corporeal Chasm",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rumbling_hunger_blue": {
+    "name": "Rumbling Hunger",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "satiate_bloodthirst_yellow": {
+    "name": "Satiate Bloodthirst",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "corpse_cover_yellow": {
+    "name": "Corpse Cover",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "malignant_migration_yellow": {
+    "name": "Malignant Migration",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "malignant_migration_blue": {
+    "name": "Malignant Migration",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "cleave_the_heavens_yellow": {
+    "name": "Cleave the Heavens",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "heave"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "herald_of_hope_yellow": {
+    "name": "Herald of Hope",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rise_to_the_challenge_blue": {
+    "name": "Rise to the Challenge",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "murmur_of_iarathael_red": {
+    "name": "Murmur of i'Arathael",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "permanent_interment_yellow": {
+    "name": "Permanent Interment",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "commit_to_corruption_yellow": {
+    "name": "Commit to Corruption",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rumbling_of_iarathael_red": {
+    "name": "Rumbling of i'Arathael",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "whispers_within_blue": {
+    "name": "Whispers Within",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "headstrong_stampede_yellow": {
+    "name": "Headstrong Stampede",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "amp"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "banneret_of_swordsmanship_yellow": {
+    "name": "Banneret of Swordsmanship",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rally_the_shadow_horde_blue": {
+    "name": "Rally the Shadow Horde",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "dam_the_shadowake_blue": {
+    "name": "Dam the Shadowake",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_bloodhound_blue": {
+    "name": "Shadowrealm Bloodhound",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bonded_burial_red": {
+    "name": "Bonded Burial",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "bond"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "figment_of_hope_yellow": {
+    "name": "Figment of Hope",
+    "type": "I",
+    "subtype": "figment",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "herald_of_hope_red": {
+    "name": "Herald of Hope",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "start_swinging": {
+    "name": "Start Swinging",
+    "type": "EVENT",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "enshrine_sin_red": {
+    "name": "Enshrine Sin",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rites_of_nightfall_blue": {
+    "name": "Rites of Nightfall",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "reverse_psychology": {
+    "name": "Reverse Psychology",
+    "type": "EVENT",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "eeny_meeny": {
+    "name": "Eeny, Meeny",
+    "type": "EVENT",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowake_gloomblade_yellow": {
+    "name": "Shadowake Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "blasmophets_boon_blue": {
+    "name": "Blasmophet's Boon",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_walker_blue": {
+    "name": "Shadowrealm Walker",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "enshrine_sin_yellow": {
+    "name": "Enshrine Sin",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bloodfrenzy_gloomblade_blue": {
+    "name": "Bloodfrenzy Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "commit_to_corruption_blue": {
+    "name": "Commit to Corruption",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "acrid_stench_red": {
+    "name": "Acrid Stench",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "commit_to_corruption_red": {
+    "name": "Commit to Corruption",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rise_to_the_challenge_yellow": {
+    "name": "Rise to the Challenge",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "cogwerx_prong_bot_yellow": {
+    "name": "Cogwerx Prong Bot",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "consuming_command_blue": {
+    "name": "Consuming Command",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "hoodwink_blue": {
+    "name": "Hoodwink",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "wind_slicer_blue": {
+    "name": "Wind Slicer",
+    "type": "I",
+    "subtype": "shuriken,item",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "dark_arcanite_plating": {
+    "name": "Dark Arcanite Plating",
+    "type": "E",
+    "subtype": "chest",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rally_the_shadow_horde_red": {
+    "name": "Rally the Shadow Horde",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "corpse_cover_blue": {
+    "name": "Corpse Cover",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_ripper_yellow": {
+    "name": "Shadowrealm Ripper",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "feeding_frenzy_red": {
+    "name": "Feeding Frenzy",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "clambering_corpses_blue": {
+    "name": "Clambering Corpses",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "gorging_shadowbeast_red": {
+    "name": "Gorging Shadowbeast",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bone_mass_yellow": {
+    "name": "Bone Mass",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "promise_of_power_yellow": {
+    "name": "Promise of Power",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "gorging_shadowbeast_yellow": {
+    "name": "Gorging Shadowbeast",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "visit_the_crystal_ball": {
+    "name": "Visit the Crystal Ball",
+    "type": "EVENT",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "breach_flesh_yellow": {
+    "name": "Breach Flesh",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_walker_yellow": {
+    "name": "Shadowrealm Walker",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "skeletal_puppetry_blue": {
+    "name": "Skeletal Puppetry",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "feasting_shadowbeast_yellow": {
+    "name": "Feasting Shadowbeast",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "skeletal_puppetry_yellow": {
+    "name": "Skeletal Puppetry",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rocktop_bellow_red": {
+    "name": "Rocktop Bellow",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "fresh_from_the_forge_red": {
+    "name": "Fresh from the Forge",
+    "type": "AR",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "mutual_sacrifice_red": {
+    "name": "Mutual Sacrifice",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "abyssal_force_blue": {
+    "name": "Abyssal Force",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "acrid_stench_yellow": {
+    "name": "Acrid Stench",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "favorable_winds_yellow": {
+    "name": "Favorable Winds",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bone_mass_red": {
+    "name": "Bone Mass",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "sale_at_the_golden_anvil": {
+    "name": "Sale at the Golden Anvil",
+    "type": "EVENT",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "restless_shieldmaiden_red": {
+    "name": "Restless Shieldmaiden",
+    "type": "A",
+    "subtype": "zombie,ally",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "step_through_realms_red": {
+    "name": "Step through Realms",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "restless_steed_red": {
+    "name": "Restless Steed",
+    "type": "A",
+    "subtype": "zombie,ally",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "dark_arcanite_gloves": {
+    "name": "Dark Arcanite Gloves",
+    "type": "E",
+    "subtype": "arms",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "bonded_burial_blue": {
+    "name": "Bonded Burial",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "bond"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "murmuring_gloomblade_red": {
+    "name": "Murmuring Gloomblade",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "skeletal_puppetry_red": {
+    "name": "Skeletal Puppetry",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "permanent_interment_red": {
+    "name": "Permanent Interment",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "corporeal_chasm_blue": {
+    "name": "Corporeal Chasm",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "forbidden_harvest_yellow": {
+    "name": "Forbidden Harvest",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "devouring_doomwake_red": {
+    "name": "Devouring Doomwake",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "arknight_descendancy_blue": {
+    "name": "Arknight Descendancy",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "feasting_shadowbeast_blue": {
+    "name": "Feasting Shadowbeast",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "dam_the_shadowake_red": {
+    "name": "Dam the Shadowake",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "abyssal_rush_blue": {
+    "name": "Abyssal Rush",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "rise_to_the_challenge_red": {
+    "name": "Rise to the Challenge",
+    "type": "B",
+    "subtype": "block",
+    "keywords": [],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "headstrong_stampede_blue": {
+    "name": "Headstrong Stampede",
+    "type": "AA",
+    "subtype": "",
+    "keywords": [
+      "amp"
+    ],
+    "evasion": {
+      "dominate": false,
+      "overpower": false,
+      "piercing": 0,
+      "phantasm": false,
+      "stealth": false,
+      "mirage": false
+    },
+    "extra_on_hit_damage": 0,
+    "on_hit_disruption": null,
+    "on_hit_severity": 0.0,
+    "grants_evasion": [],
+    "grants_piercing": 0,
+    "arcane_threat": 0,
+    "prevention": {
+      "arcane_barrier": 0,
+      "spellvoid": 0,
+      "ward": 0,
+      "quell": 0
+    },
+    "generates_ap": 0,
+    "generates_resource": 0
+  },
+  "shadowrealm_solace_blue": {
+    "name": "Shadowrealm Solace",
+    "type": "A",
+    "subtype": "",
+    "keywords": [
+      "go_again"
+    ],
     "evasion": {
       "dominate": false,
       "overpower": false,

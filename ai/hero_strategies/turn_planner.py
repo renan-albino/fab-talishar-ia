@@ -6,25 +6,23 @@ e decisão inteligente de bloqueio de sobrevivência (Survival Block) para Flesh
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Optional, Dict, Any, Set, List
+from typing import Optional, List, Tuple, Dict, Any, Set, Union
 from .knapsack_solver import (
     calculate_hand_conversion_potential,
 )
+from ai.policy.card_evaluator import extract_card_info
 
 def calculate_hand_conversion(hand_cards: List[dict], weapon_power: int) -> Tuple[float, float]:
     offensive_value = float(weapon_power)
     defensive_value = 0.0
     total_cost = 0
     total_pitch = 0
-    from ai.policy.constants import _get_cards_db
-    cards_db = _get_cards_db()
     for c in hand_cards:
-        c_name = str(c.get("cardNumber") or c.get("name", "")).lower()
-        db_card = cards_db.get(c_name, {})
-        power = int(c.get("power", db_card.get("power", 0)))
-        cost = int(c.get("cost", db_card.get("cost", 0)))
-        pitch = int(c.get("pitch", db_card.get("pitch", 0)))
-        block = int(c.get("block", c.get("defense", db_card.get("block", 0))))
+        info = extract_card_info(c)
+        power = info.get("power", 0)
+        cost = info.get("cost", 0)
+        pitch = info.get("pitch", 0)
+        block = info.get("block", 0)
         offensive_value += power
         total_cost += cost
         total_pitch += pitch
@@ -110,10 +108,8 @@ def should_trigger_survival_block(
     # Se há on-hit perigoso e vida saudável (> 12), avalia conversão da mão
     if my_hp > 12 and hand:
         hand_conv, _ = calculate_hand_conversion_potential(hero_name, hand=hand, floating_res=floating_res)
-        from ai.policy.constants import _get_cards_db
-        cards_db = _get_cards_db()
         block_vals = [
-            int(c.get("block", c.get("defense", cards_db.get(str(c.get("cardNumber") or c.get("name", "")).lower(), {}).get("block", 0))) or 0)
+            int(extract_card_info(c).get("block", 0))
             for c in hand
         ]
         sorted_b = sorted([b for b in block_vals if b > 0], reverse=True)
@@ -204,7 +200,7 @@ def analyze_turn_plan(
     weapon_power = sum(int(eq.get("power", 0)) for eq in actual_state.get("playerEquipment", []) if isinstance(eq, dict) and str(eq.get("slot", "")).lower() == "weapon")
     off_val, def_val = calculate_hand_conversion(hand, weapon_power)
     
-    key_cards = set([str(c.get("cardNumber") or c.get("name", "")) for c in hand if int(c.get("power", 0)) > 0])
+    key_cards = set([str(c.get("cardNumber") or c.get("name", "")) for c in hand if int(extract_card_info(c).get("power", 0)) > 0])
     
     on_hit_penalty = 3.5 if has_dangerous_on_hit else 0.0
 
@@ -240,11 +236,11 @@ def analyze_turn_plan(
         max_attack_power = -1
 
         for c in hand:
-            c_name = str(c.get("cardNumber") or c.get("name", "")).lower()
-            c_power = int(c.get("power", 0))
-            c_cost = int(c.get("cost", 0))
-            c_pitch = int(c.get("pitch", 1))
-            has_ga = bool(c.get("has_go_again", False))
+            info = extract_card_info(c)
+            c_power = info.get("power", 0)
+            c_cost = info.get("cost", 0)
+            c_pitch = info.get("pitch", 1)
+            has_ga = info.get("has_go_again", False)
 
             if c_power >= 5 or (c_power >= 4 and has_ga):
                 needed_pitch = max(0, c_cost - floating_res)
@@ -252,7 +248,8 @@ def analyze_turn_plan(
                 for p in hand:
                     if p is c:
                         continue
-                    p_pitch = int(p.get("pitch", 1))
+                    p_info = extract_card_info(p)
+                    p_pitch = int(p_info.get("pitch", 1))
                     if p_pitch >= needed_pitch:
                         candidate_pitch = p
                         break
