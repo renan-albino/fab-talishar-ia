@@ -217,6 +217,14 @@ class TestProcessCleanup:
         terminate_process_cleanly(None)
         terminate_process_cleanly(object())
 
+    def test_terminate_magicmock_process_safety(self):
+        """Mocks de processos (MagicMock) não devem disparar killpg contra PGID 1 ou o runner."""
+        mock_proc = MagicMock()
+        mock_proc.poll.return_value = None
+        with patch("os.killpg") as mock_killpg:
+            terminate_process_cleanly(mock_proc)
+            mock_killpg.assert_not_called()
+
 
 # ══════════════════════════════════════════════════════════════════════
 # 4. TESTES DE SIMETRIA DE VIRTUAL LOSS NO MCTS

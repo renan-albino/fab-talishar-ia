@@ -35,6 +35,8 @@ Durante o treinamento concorrente com múltiplos workers (ex: 5 workers gerando 
    - Em `ai/bot_runtime/lobby_manager.py`, se `client.submit_sideboard()` falhar 3 vezes consecutivas, o lobby é abortado com erro explícito.
 5. **Watchdog de Prioridade Retida (>25s):**
    - No cliente HTTP, se `havePriority == True` persistir no mesmo estado por mais de 25 segundos, o bot força o envio de uma ação de escape (`mode=99`).
+6. **Proteção Estrita de Sinais Unix contra PGID 1 e Mocks:**
+   - Em `ai/training/process_supervisor.py` (`terminate_process_cleanly`), o envio de `os.killpg` exige que `proc.pid` seja estritamente um inteiro válido > 1 e que `pgid > 1 and pgid != os.getpgid(0)`. Isso impede que objetos de teste `MagicMock` sejam convertidos implicitamente via `__index__` para `1`, erradicando disparos espúrios de `SIGTERM` contra o processo init/runner no GitHub Actions (`The runner has received a shutdown signal`).
 
 ## Consequências
 

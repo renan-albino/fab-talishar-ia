@@ -54,11 +54,13 @@ def terminate_process_cleanly(proc: Any, timeout: float = 2.0) -> None:
                 import sys, os, signal
                 if sys.platform != "win32":
                     try:
-                        pgid = os.getpgid(proc.pid)
-                        # Só mata o grupo se o filho está em grupo diferente do processo atual
-                        # para não enviar SIGTERM ao próprio pytest/shell pai
-                        if pgid != os.getpgid(0):
-                            os.killpg(pgid, signal.SIGTERM)
+                        pid = getattr(proc, "pid", None)
+                        if isinstance(pid, int) and not isinstance(pid, bool) and pid > 1:
+                            pgid = os.getpgid(pid)
+                            # Só mata o grupo se o filho está em grupo diferente do processo atual
+                            # e nunca sinaliza o grupo 1 (init / container host)
+                            if pgid > 1 and pgid != os.getpgid(0):
+                                os.killpg(pgid, signal.SIGTERM)
                     except (ProcessLookupError, PermissionError, OSError, AttributeError):
                         pass
             is_alive = True
@@ -120,11 +122,13 @@ def get_active_pids(active_procs: List[Any], proc_lock: Optional[threading.Lock]
         if isinstance(item, (list, tuple)):
             for p in item:
                 if p is not None and hasattr(p, "poll") and p.poll() is None:
-                    if hasattr(p, "pid"):
-                        pids.append(p.pid)
+                    pid = getattr(p, "pid", None)
+                    if isinstance(pid, int) and not isinstance(pid, bool):
+                        pids.append(pid)
         elif hasattr(item, "poll") and item.poll() is None:
-            if hasattr(item, "pid"):
-                pids.append(item.pid)
+            pid = getattr(item, "pid", None)
+            if isinstance(pid, int) and not isinstance(pid, bool):
+                pids.append(pid)
     return pids
 
 

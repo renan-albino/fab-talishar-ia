@@ -63,6 +63,6 @@ Implementou-se um conjunto coordenado de 6 melhorias estruturais:
   - Heróis raros têm garantia de presença e aprendizado contínuo nos batches de treino GPU.
   - Eliminação de falsos blunders provocados por blefes ou viradas táticas imediatas.
   - O MCTS agora aproveita o pitch stacking que o próprio bot construiu.
-  - Suíte completa de 461 testes unitários passando com 100% de sucesso.
+  - Suíte completa de 462 testes unitários passando com 100% de sucesso.
 - **Neutras**:
   - `ReplayBuffer` consome alguns kilobytes adicionais em RAM para armazenar `int32` por slot de experiência.
