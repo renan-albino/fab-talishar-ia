@@ -52,7 +52,6 @@ def wait_in_lobby_and_start(client) -> bool:
        - Aguarda o oponente confirmar e a partida iniciar (gamestate ativo ou isMainGameReady).
     """
     client.log(f"[LOBBY] Bot conectado ao lobby da sala #{client.game_id}. Submetendo sideboard...")
-    client.submit_sideboard()
 
     first_player_chosen = False
     sideboard_fail_count = 0
@@ -79,12 +78,17 @@ def wait_in_lobby_and_start(client) -> bool:
                     time.sleep(0.2)
                     continue
 
-                # 2. Se o bot ainda não submeteu sideboard ou o sideboard foi resetado
-                if not data.get("mySideboardSubmitted", False):
-                    if not client.submit_sideboard():
+                # 2. Submissão em duas etapas: Equipamento depois Sideboard
+                if data.get("canSubmitEquipment", False) and not data.get("myEquipmentSubmitted", False):
+                    if not client.submit_equipment():
                         sideboard_fail_count += 1
                         if sideboard_fail_count >= 3:
-                            client.error(f"[LOBBY ERRO] Falha repetida no sideboard ({sideboard_fail_count}x). Abortando lobby da sala #{client.game_id}.")
+                            return False
+                    time.sleep(0.2)
+                elif data.get("canSubmitSideboard", False) and not data.get("mySideboardSubmitted", False):
+                    if not client.submit_deck_phase():
+                        sideboard_fail_count += 1
+                        if sideboard_fail_count >= 3:
                             return False
                     time.sleep(0.2)
 
@@ -138,11 +142,16 @@ def wait_for_opponent_and_start(client) -> bool:
                         first_player_chosen = True
                         time.sleep(0.2)
 
-                    if not ldata.get("mySideboardSubmitted", False):
-                        if not client.submit_sideboard():
+                    if ldata.get("canSubmitEquipment", False) and not ldata.get("myEquipmentSubmitted", False):
+                        if not client.submit_equipment():
                             sideboard_fail_count += 1
                             if sideboard_fail_count >= 3:
-                                client.error(f"[LOBBY ERRO] Falha repetida no sideboard ({sideboard_fail_count}x). Abortando lobby da sala #{client.game_id}.")
+                                return False
+                        time.sleep(0.2)
+                    elif ldata.get("canSubmitSideboard", False) and not ldata.get("mySideboardSubmitted", False):
+                        if not client.submit_deck_phase():
+                            sideboard_fail_count += 1
+                            if sideboard_fail_count >= 3:
                                 return False
                         time.sleep(0.2)
 

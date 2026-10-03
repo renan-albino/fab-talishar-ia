@@ -272,68 +272,7 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
 
  $deckLoaded = false;
 
- if ($deck != null && is_array($deck)) {
-   $deckObj = json_decode(json_encode($deck));
-   $isFaBDB = false;
-   $isFaBMeta = false;
-   if ($deckObj != null && isset($deckObj->{'name'})) {
-     $deckName = $deckObj->{'name'};
-     $deckFormat = (isset($deckObj->{'format'}) ? $deckObj->{'format'} : "");
-     $cards = $deckObj->{'cards'};
-     $deckCards = "";
-     $sideboardCards = "";
-     $headSideboard = "";
-     $chestSideboard = "";
-     $armsSideboard = "";
-     $legsSideboard = "";
-     $offhandSideboard = "";
-     $quiverSideboard = "";
-     $modularSideboard = "";
-     $unsupportedCards = "";
-     $bannedCard = "";
-     $restrictedCard = "";
-     $isDeckLegal = "";
-     $character = "";
-     $head = "";
-     $chest = "";
-     $arms = "";
-     $legs = "";
-     $offhand = "";
-     $quiver = "";
-     $weapon1 = "";
-     $weapon2 = "";
-     $weaponSideboard = "";
-     $totalCards = 0;
-     $orderedSets = ["WTR", "ARC", "CRU", "MON", "ELE", "EVR", "UPR", "DYN", "OUT", "DTD", "TCC", "EVO", "HVY",
-                     "MST", "AKO", "ASB", "ROS", "AAZ", "TER", "AUR", "AIO", "AJV", "HNT", "ARK", "AST", "AMX",
-                     "HER", "SEA", "AGB", "MPG", "ASR", "APR", "AVS", "BDD", "SMP", "SUP", "APS", "PEN", "AHA",
-                     "OMN", "AZS", "MPW", "DDD", "AOL"];
-     if (is_countable($cards)) {
-       $cardCount = count($cards);
-       for ($i = 0; $i < $cardCount; ++$i) {
-         $id = GetCardId($cards[$i], $isFaBDB, $isFaBMeta, $orderedSets);
-         if (TypeContains($id, "C")) { $character = $id; break; }
-       }
-       for ($i = 0; $i < $cardCount; ++$i) {
-         $count_val = $cards[$i]->{'total'};
-         $numSideboard = (isset($cards[$i]->{'sideboardTotal'}) ? $cards[$i]->{'sideboardTotal'} : 0);
-         $id = GetCardId($cards[$i], $isFaBDB, $isFaBMeta, $orderedSets);
-         if ($id == "" && isset($cards[$i]->{'cardIdentifier'})) {
-           $id = $cards[$i]->{'cardIdentifier'};
-         }
-         if ($id == "") continue;
-         if($id == "goldfin_harpoon") $id = "goldfin_harpoon_yellow";
-         ProcessCard($id, $count_val, $numSideboard, $isFaBDB, $totalCards, $modularSideboard, $unsupportedCards, $character, $weapon1, $weapon2, $weaponSideboard, $head, $headSideboard, $chest, $chestSideboard, $arms, $armsSideboard, $legs, $legsSideboard, $offhand, $offhandSideboard, $quiver, $quiverSideboard, $deckCards, $sideboardCards, $format);
-       }
-       $deckLoaded = true;
-     }
-   } else {
-     $response->error = 'Deck object is null or invalid.';
-     echo json_encode($response);
-     exit;
-   }
- }
- else if ($decklink != "") {
+ if ($decklink != "") {
    if ($playerID == 1)
      $p1DeckLink = $decklink;
    else if ($playerID == 2)
@@ -552,7 +491,6 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
      }
      $deckLoaded = true;
    }
- }
 
    if (!$deckLoaded) {
      $response->error = "⚠️ Error retrieving deck. Decklist link invalid.";
@@ -630,7 +568,7 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
    $filename = "../Games/" . $gameName . "/p" . $playerID . "Deck.txt";
    $origFilename = "../Games/" . $gameName . "/p" . $playerID . "DeckOrig.txt";
 
-   $arenaLocked = (($p1EquipmentSubmitted ?? "0") == "1" && ($p2EquipmentSubmitted ?? "0") == "1");
+   $arenaLocked = ($p1EquipmentSubmitted == "1" && $p2EquipmentSubmitted == "1");
    $lockedCharString = "";
    if ($arenaLocked && file_exists($filename)) {
      $lockedHandler = @fopen($filename, "r");
@@ -697,7 +635,7 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
      include_once "../includes/dbh.inc.php";
      addFavoriteDeck($_SESSION["userid"], $decklink, $deckName, SetID($character), $deckFormat);
    }
-
+ }
 
  if (!isset($character) || $character == "") {
    $response->error = "There is no character. Something went wrong with parsing your deck.";
@@ -951,7 +889,7 @@ function isClashLegal($cardID, $character) {
     default: break;
   }
   if(HasSpecialization($cardID)) return true;
-  if(Rarity($cardID) == "C" || Rarity($cardID) == "T" || Rarity($cardID) == "R") return true;
+  if(Rarity($cardID) == "C" || Rarity($cardID) == "T" || Rarity($cardID) == "B" || Rarity($cardID) == "R") return true;
   if(($character == "emperor_dracai_of_aesir" || $character == "") && $cardID == "command_and_conquer_red") return true; //C&C is legal for Emperor in Clash
   if(($character == "prism_advent_of_thrones" || $character == "") && $set == "DTD" && $number >= 5 && $number <= 12) return true; //Figments are legal for Prism in Clash
   return false;
@@ -1195,6 +1133,7 @@ function ProcessCard($id, $count, $numSideboard, $isFaBDB, &$totalCards, &$modul
 
   $cardName = CardName($id);
   if ($cardName == "" || isUnimplemented($id)) {
+      echo "$id - $cardName";
       if ($unsupportedCards != "") $unsupportedCards .= " ";
       $unsupportedCards .= $id;
       return;

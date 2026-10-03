@@ -38,18 +38,15 @@ BACKEND_MAPPINGS = [
     ("docker-compose.yml", "docker-compose.yml"),
     ("APIKeys/APIKeys.php.template", "APIKeys/APIKeys.php.template"),
     ("APIs/AppendGameLog.php", "APIs/AppendGameLog.php"),
-    ("APIs/GetLobbyRefresh.php", "APIs/GetLobbyRefresh.php"),
     ("APIs/GetFavoriteDecks.php", "APIs/GetFavoriteDecks.php"),
     ("APIs/JoinGame.php", "APIs/JoinGame.php"),
     ("APIs/CreateGame.php", "APIs/CreateGame.php"),
-    ("APIs/APIParseGamefile.php", "APIs/APIParseGamefile.php"),
-    ("APIs/SubmitSideboard.php", "APIs/SubmitSideboard.php"),
     ("AI/CombatDummy.php", "AI/CombatDummy.php"),
     ("Libraries/FormatCodes.php", "Libraries/FormatCodes.php"),
     ("Libraries/HTTPLibraries.php", "Libraries/HTTPLibraries.php"),
     ("Libraries/PlayerSettings.php", "Libraries/PlayerSettings.php"),
     ("ProcessInput.php", "ProcessInput.php"),
-    ("MenuFiles/WriteGamefile.php", "MenuFiles/WriteGamefile.php"),
+    ("CardDictionaries/Outsiders/OUTShared.php", "CardDictionaries/Outsiders/OUTShared.php"),
 ]
 
 FRONTEND_MAPPINGS = [

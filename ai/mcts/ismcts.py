@@ -391,7 +391,9 @@ class ISMCTSEngine:
 
         if mode == "threads":
             try:
-                max_workers = min(4, actual_worlds)
+                import os
+                max_cores = max(2, (os.cpu_count() or 4) - 1)  # Save 1 core for OS/Simulators
+                max_workers = min(max_cores, actual_worlds)
                 with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                     futures = [
                         executor.submit(

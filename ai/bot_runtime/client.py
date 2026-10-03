@@ -12,6 +12,8 @@ from ai.talishar_api import TalisharApiClient, DEFAULT_BACKEND_URL
 from ai.chat_badges import evaluate_board_state, format_html_line
 from ai.bot_runtime import lobby_manager, match_tracker, choice_handler, phase_decider
 from ai.common.schemas import GameState
+from config.settings import SETTINGS
+import ai.shadow_mode as shadow_mode
 
 def safe_int(val, default=0):
     try:
@@ -375,7 +377,9 @@ class FabBotClient:
     def get_opponent_info(self):
         return lobby_manager.get_opponent_info(self)
 
-    def submit_sideboard(self):
+    def _calculate_sideboard(self):
+        if hasattr(self, '_cached_sideboard') and self._cached_sideboard:
+            return self._cached_sideboard
         from ai.sideboard_manager import resolve_sideboard
         opp_hero, opp_class = self.get_opponent_info()
         sub_obj = resolve_sideboard(
@@ -388,23 +392,63 @@ class FabBotClient:
             game_id=self.game_id or "",
             player_id=self.player_id or 1,
         )
+        self._cached_sideboard = sub_obj
+        return sub_obj
 
-        hero = sub_obj["hero"]
-        head = sub_obj["head"]
-        chest = sub_obj["chest"]
-        arms = sub_obj["arms"]
-        legs = sub_obj["legs"]
-        weapons = sub_obj["hands"]
-        flat_deck = sub_obj["deck"]
-        inv = sub_obj["inventory"]
-
+    def submit_equipment(self):
+        sub_obj = self._calculate_sideboard()
         post_payload = {
             "gameName": self.game_id,
             "playerID": self.player_id,
             "authKey": self.auth_key,
-            "submission": json.dumps(sub_obj)
+            "submission": json.dumps(sub_obj),
+            "phase": "equipment"
         }
+        return self._do_submit_sideboard(post_payload)
 
+    def submit_deck_phase(self):
+        sub_obj = self._calculate_sideboard()
+        post_payload = {
+            "gameName": self.game_id,
+            "playerID": self.player_id,
+            "authKey": self.auth_key,
+            "submission": json.dumps(sub_obj),
+            "phase": "deck"
+        }
+        success = self._do_submit_sideboard(post_payload)
+        
+        if success:
+            hero = sub_obj["hero"]
+            flat_deck = sub_obj["deck"]
+            inv = sub_obj["inventory"]
+            self.metrics["sideboard_info"] = {
+                "hero": hero,
+                "equipment": {
+                    "head": sub_obj["head"],
+                    "chest": sub_obj["chest"],
+                    "arms": sub_obj["arms"],
+                    "legs": sub_obj["legs"],
+                    "weapons": sub_obj["hands"]
+                },
+                "main_deck_count": len(flat_deck),
+                "main_deck_cards": flat_deck,
+                "sideboard_count": len(inv),
+                "sideboard_cards": inv
+            }
+            self.save_metrics_throttled(force=True)
+
+            from ai.policy_engine import PolicyEngine
+            import os
+            self.policy_engine = PolicyEngine(
+                hero_name=hero,
+                model_path="data/model_latest.pt" if os.path.exists("data/model_latest.pt") else None,
+                device="cuda",
+                log_fn=self.log
+            )
+            self.log(f"[LOBBY] AI Policy Engine inicializado para {hero}.")
+        return success
+
+    def _do_submit_sideboard(self, post_payload):
         try:
             res = self.session.post(f"{TALISHAR_API_URL}/APIs/SubmitSideboard.php", json=post_payload, timeout=5.0)
         except TypeError:
@@ -414,34 +458,9 @@ class FabBotClient:
             if "error" in data or data.get("status") == "FAIL":
                 self.error(f"[ERRO NO SIDEBOARD] {data.get('error') or data.get('deckError')}")
                 return False
+            return True
         except Exception:
             pass
-
-        self.metrics["sideboard_info"] = {
-            "hero": hero,
-            "equipment": {
-                "head": head,
-                "chest": chest,
-                "arms": arms,
-                "legs": legs,
-                "weapons": weapons
-            },
-            "main_deck_count": len(flat_deck),
-            "main_deck_cards": flat_deck,
-            "sideboard_count": len(inv),
-            "sideboard_cards": inv
-        }
-        self.save_metrics_throttled(force=True)
-
-        self.policy_engine = PolicyEngine(
-            hero_name=hero,
-            model_path="data/model_latest.pt" if os.path.exists("data/model_latest.pt") else None,
-            room_id=self.room_id,
-            num_mcts_sims=self.mcts_sims,
-            use_gpu=self.use_gpu
-        )
-        self.policy_engine.update_room_id(room_id=self.room_id, hero_name=hero)
-        self.info(f"[SIDEBOARD CONFIRMADO] Jogador {self.player_id}: Hero={hero} | Equip: [H:{head}, C:{chest}, A:{arms}, L:{legs}, W:{weapons}] | Deck={len(flat_deck)} cartas | Inv={len(inv)} itens.")
         return True
 
     def send_chat_log(self, text: str, highlight: bool = False, bg_color: str = "#1e293b", text_color: str = "#38bdf8"):
@@ -526,6 +545,12 @@ class FabBotClient:
         my_h = safe_int(state.get("playerHealth"), default=40)
         opp_h = safe_int(state.get("opponentHealth"), default=40)
 
+        pending = getattr(self, "_pending_shadow", None)
+        if pending and pending[0] is not None:
+            shadow_mode.flush(self, pending, state)
+        self._pending_shadow = None
+        self._last_state = state
+
         match_tracker.track_tick_health_and_damage(self, state, my_h, opp_h)
 
         turn_active_id = state.get("turnPlayer", 1)
@@ -588,6 +613,9 @@ class FabBotClient:
                     pass
 
     def send_action(self, mode=99, card_id="", button_input="", chk_count=0, chk_input=None, input_text=""):
+        if SETTINGS.shadow_mode and getattr(self, "_last_state", None):
+            self._pending_shadow = (shadow_mode.predict(self._last_state, card_id), self._last_state, mode, card_id)
+            
         return self.api.process_input(
             game_name=self.game_id,
             player_id=self.player_id,

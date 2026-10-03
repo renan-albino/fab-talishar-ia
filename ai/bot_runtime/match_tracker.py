@@ -258,7 +258,15 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
         try:
             p1_d_file = f"logs/{client.room_id}_host_deck.txt"
             p2_d_file = f"logs/{client.room_id}_join_deck.txt"
-            p1_d = "Humano (Você)" if is_vs_human else getattr(client, "deck_name", client.clean_deck)
+            if is_vs_human:
+                human_hero_raw = state.get("opponentHero") if client.player_id == 2 else state.get("theirHero")
+                if not human_hero_raw:
+                    human_hero_raw = state.get("theirHero") or state.get("opponentHero") or {}
+                human_hero_name = human_hero_raw.get("name", "Desconhecido") if isinstance(human_hero_raw, dict) else str(human_hero_raw).strip()
+                p1_d = f"{human_hero_name}" if human_hero_name else "Humano"
+            else:
+                p1_d = getattr(client, "deck_name", client.clean_deck)
+                
             if not is_vs_human and os.path.exists(p1_d_file):
                 with open(p1_d_file, encoding="utf-8") as f1:
                     p1_d = f1.read().strip()
@@ -281,6 +289,8 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                         else:
                             p1_d = resolved_opp
             
+            from config.settings import SETTINGS
+            
             from stats_manager import update_match_result
             update_match_result(
                 room_id=client.room_id,
@@ -292,7 +302,8 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                 winner_id=winner_id,
                 is_human_p1=is_vs_human,
                 is_invalid_match=is_invalid_match,
-                invalid_reason=invalid_reason
+                invalid_reason=invalid_reason,
+                player_name=SETTINGS.player_name if is_vs_human else ""
             )
             if hasattr(client, "chosen_turn_order") and client.chosen_turn_order and not is_invalid_match:
                 won = (winner_id == client.player_id)
