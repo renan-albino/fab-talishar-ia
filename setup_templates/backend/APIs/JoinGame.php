@@ -552,6 +552,7 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
      }
      $deckLoaded = true;
    }
+ }
 
    if (!$deckLoaded) {
      $response->error = "⚠️ Error retrieving deck. Decklist link invalid.";
@@ -629,7 +630,7 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
    $filename = "../Games/" . $gameName . "/p" . $playerID . "Deck.txt";
    $origFilename = "../Games/" . $gameName . "/p" . $playerID . "DeckOrig.txt";
 
-   $arenaLocked = ($p1EquipmentSubmitted == "1" && $p2EquipmentSubmitted == "1");
+   $arenaLocked = (($p1EquipmentSubmitted ?? "0") == "1" && ($p2EquipmentSubmitted ?? "0") == "1");
    $lockedCharString = "";
    if ($arenaLocked && file_exists($filename)) {
      $lockedHandler = @fopen($filename, "r");
@@ -696,7 +697,7 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
      include_once "../includes/dbh.inc.php";
      addFavoriteDeck($_SESSION["userid"], $decklink, $deckName, SetID($character), $deckFormat);
    }
- }
+
 
  if (!isset($character) || $character == "") {
    $response->error = "There is no character. Something went wrong with parsing your deck.";
