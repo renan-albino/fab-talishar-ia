@@ -202,6 +202,24 @@ Na aba **"⚡ Treinamento com GPU (Deep RL)"** do Dashboard, a IA adapta automat
 
 ---
 
+## 🏃 Auto-Scaling & Treinamento Headless
+
+Quando você não usa o Streamlit e roda os motores diretamente via terminal, a arquitetura ativa recursos avançados para geração massiva de experiência (**Self-Play**).
+
+### Comando Rápido (Headless Puro)
+Para "encher o replay buffer" incrivelmente rápido burlando a latência e o frontend do Talishar, use a simulação direta em memória:
+```bash
+wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --headless
+```
+
+### Auto-Configuração Dinâmica (Sem Parâmetros)
+Quando o orquestrador é iniciado sem flags, ele assume comportamento autônomo baseado no seu hardware (`config/settings.py`):
+1. **Auto-Cálculo de Workers**: Ele identifica seus Cores lógicos, memória RAM e limites da VRAM da GPU para decidir quantas partidas instanciar de forma simultânea (Ex: `3` processos com `50` MCTS Sims numa GTX 1660 SUPER).
+2. **Motor Round-Robin (Matchups Embaralhados)**: O componente `RoundRobinMatchupEngine` lê todos os baralhos reais na pasta `decks/` (ex: boltyn, dash_io, marlynn, etc.). Em vez de viciar o treino em um único herói, ele gera uma chave "todos contra todos" trocando a ordem (host/joiner), garantindo que a IA possua uma fundação sólida e evite *catastrophic forgetting*.
+3. **Shadow Mode vs Headless**: Além do `--headless` in-memory (para velocidade bruta e expansão de buffer), o pipeline também faz uso de bot conectando localmente no jogo via websockets (*Shadow Mode / bot_client.py*), para garantir que as transições lógicas não sofram drift quando encostam nas complexidades ou falhas da plataforma e da infraestrutura (Treinamento Sim2Real).
+
+---
+
 ## ⚔️ Resumo das Podas Táticas & Regras Oficiais FaB (CR)
 
 Para navegar a alta complexidade tática de Flesh and Blood e eliminar a explosão combinatória na busca MCTS/ISMCTS sem violar as regras oficiais (**Comprehensive Rules - CR** e **Tournament Rules - TR**), o motor [`ai/policy/`](ai/policy/) implementa **17 Podas Táticas e Regras Oficiais**.
