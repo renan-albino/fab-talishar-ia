@@ -15,7 +15,7 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 - [x] **Ferramentas CLI de Automação**: Utilitários operacionais em `.agents/skills/automated-tasks/scripts/` (`validate_decks.py`, `benchmark_mcts.py`, `healthcheck_talishar.py` e `run_smoke_tests.py`).
 - [x] **Rede Neural v2 (FaBCardTransformerNetwork - ADR-0007)**: Substituição completa do antigo MLP de 192 entradas por arquitetura Transformer com Self/Cross-Attention (4x dim_feedforward), alvos auxiliares KataGo e embeddings densos em $O(1)$.
 - [x] **Compreensão Semântica Genérica de Arena**: Extração automatizada de 5.277 cartas (`data/fab_cards_db.json`) e 5.290 cartas semânticas (`data/fab_card_semantics.json`), percepção holística de ameaças de arena e poda adaptativa sem hardcodes nominais (incluindo regra dinâmica aggro/combo via DB).
-- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando 462 testes canônicos robustos e centralizados em `PROJECT_ROOT`.
+- [x] **Consolidação e Higienização da Suíte de Testes**: Eliminação de testes redundantes e padronização semântica de arquivos, totalizando 465 testes canônicos robustos e centralizados em `PROJECT_ROOT`.
 - [x] **Validador Pré-Push & CI Local Incremental**: Script `scripts/verify_ci.sh` e hook `pre-push` que replica localmente 100% da esteira do GitHub Actions (Pytest, ISMCTS dry-run, template diff e Vite build) com detecção inteligente de diffs (economizando tempo em builds do Vite e testes de docs).
 - [x] **Busca Rápida & Prevenção de Grep Cego**: Ferramenta `scripts/fast_search.py` com poda automática de pastas pesadas e diretivas em `.agents/rules/search_guidelines.md` e `AGENTS.template.md`.
 - [x] **Sincronização Upstream & Changelog Automatizado**: Sincronização automatizada com repositórios oficiais do Talishar (`prepare_environment.py --update-upstream` e `start.sh --update`), reaplicação de patches da IA e rastreamento de versões em `docs/talishar_upstream_changelog.md`.
@@ -24,7 +24,7 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 - [x] **Resiliência de Runtime (Normalização In-Place & Watchdogs)**: Desempacotamento in-place de `turnPhase` associativo em `client.py`, limite de 3 retentativas no sideboard do lobby e watchdog de escape de prioridade (>25s).
 - [x] **Comprehensive Rules (CR) & Tokens de Arena (ADR-0011)**: Unificação de regras de combate (Dominate, Overpower, Phantasm, Piercing) no GameSimulator, tokens de arena (Quicken, Agility, Frostbite, Inertia, Bloodrot Pox) e 9 palavras-chave de efeito (CR 8.5) via `scripts/extract_cr_mechanics.py`, com suíte dedicada em `tests/test_cr_combat_and_tokens.py`.
 - [x] **Passo 3 (Especialização de Classes Não-Lineares & Auto-Tuning por Arquétipo)**: Auto-tuning consciente de arquétipo via banco de dados sem dependência estática, correção da espiral de auto-tuning e balanceamento de contra-jogo ao Gravy Bones e sobrevivência de Levia.
-- [x] **Tuning Causal Anti-Espiral, MCTS Avançado & Stratified PER (ADR-0012)**: Diagnóstico causal de Hand Value Conversion Rate (HVCR) com clamp estrito [0.85, 1.15], Pitch Stacking no ISMCTS, calibração do Dirichlet para o espaço de ações do FaB, decaimento da temperatura de fusão knapsack-NN, atenuação de falsos blunders por consistência temporal e amostragem estratificada no PER (462 testes unitários).
+- [x] **Tuning Causal Anti-Espiral, MCTS Avançado & Stratified PER (ADR-0012)**: Diagnóstico causal de Hand Value Conversion Rate (HVCR) com clamp estrito [0.85, 1.15], Pitch Stacking no ISMCTS, calibração do Dirichlet para o espaço de ações do FaB, decaimento da temperatura de fusão knapsack-NN, atenuação de falsos blunders por consistência temporal e amostragem estratificada no PER (465 testes unitários).
 - [x] **Passo 4 (Fase 0 - Benchmark Humano)**: Modo Sombra (Shadow Mode) funcional salvando diffs de estado, rastreador de herói humano e suíte de extração/avaliação de Puzzles Dourados (`extract_puzzle.py`, `puzzle_score.py`).
 - [ ] **Passo 5 (Pipeline de Treinamento Neural PyTorch)**: Implementação e bateria de testes para `ai/training/orchestrator.py` e `ai/experience_collector.py` (PER agora operando em $O(\log N)$ via SumTree).
 - [ ] **Passo 6 (Interface Gráfica Streamlit)**: Mocks automatizados de renderização de abas com `streamlit.testing.v1.AppTest`.
@@ -45,7 +45,7 @@ $$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{T
 | **Pós-Passos 1, 2 e 3** | 444 testes | 5.833 / 8.687 | 2.854 | 67,1% | 88% |
 | **CR & Tokens de Arena (ADR-0011)** | 452 testes | 5.910 / 8.710 | 2.800 | 67,8% | 90% |
 | **Anomalias & Anti-Gravy** | 454 testes | 5.928 / 8.715 | 2.787 | 68,0% | 91% |
-| **Tuning Causal & Stratified PER (ADR-0012 - Atual)** | **462 testes** | **6.015 / 8.730** | **2.715** | **68,9%** | **93%** |
+| **Tuning Causal & Stratified PER (ADR-0012 - Atual)** | **465 testes** | **6.015 / 8.730** | **2.715** | **68,9%** | **93%** |
 
 ---
 

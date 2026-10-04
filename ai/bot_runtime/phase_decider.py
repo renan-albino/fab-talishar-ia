@@ -450,6 +450,27 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
             elif "flick_knives" in eq_name:
                 if not is_attacking:
                     continue
+                # Poda Sim2Real: Flick Knives exige uma adaga equipada funcional e não arremessada/destruída
+                cards_db = getattr(client.policy_engine, "cards_db", {}) if hasattr(client, "policy_engine") else {}
+                equip_list = state.get("playerEquipment", [])
+                has_active_dagger = False
+                for item in equip_list:
+                    if not isinstance(item, dict):
+                        continue
+                    if item.get("status", 1) == 0 or item.get("broken", False) or item.get("destroyed", False):
+                        continue
+                    c_id = str(item.get("cardNumber", "")).lower().strip()
+                    sub = str(item.get("subType", item.get("subtype", ""))).lower()
+                    meta_sub = str(cards_db.get(c_id, {}).get("subtype", "")).lower() if cards_db else ""
+                    if "dagger" in sub or "dagger" in meta_sub or c_id in (
+                        "spider's_bite", "harmonized_kodachi", "kunai_of_retribution",
+                        "hunters_klaive", "nerve_scalpel", "orbitoclast", "scale_peeler",
+                        "obsidian_fire_vein", "mark_of_the_huntsman"
+                    ):
+                        has_active_dagger = True
+                        break
+                if not has_active_dagger:
+                    continue
 
             # ── Poda 3: Validação de Pontuação Semântica da Estratégia ──
             eq_score = client.policy_engine.strategy.evaluate_equipment_ability(state, eq)

@@ -13,9 +13,10 @@ from ai.game_simulator import GameSimulator
 from stats.db import get_connection
 
 
-def predict(pre_state: dict, card_id: str) -> Optional[dict]:
+def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Optional[dict]:
     """
     Constrói a ação a partir do estado e pede para o simulador prever os campos próprios.
+    Resolve índices brutos (ex: mode 27 card_id='0') para cartas reais de playerHand/playerEquipment.
     """
     if not card_id:
         return None
@@ -34,7 +35,24 @@ def predict(pre_state: dict, card_id: str) -> Optional[dict]:
     else:
         return None
 
-    action = {"type": act_type, "cardNumber": card_id}
+    actual_card_name = str(card_id).lower().strip()
+    card_obj = None
+    if str(card_id).isdigit():
+        idx = int(card_id)
+        if mode == 3:
+            equips = pre_state.get("playerEquipment", [])
+            if 0 <= idx < len(equips) and isinstance(equips[idx], dict):
+                card_obj = equips[idx]
+                actual_card_name = str(card_obj.get("cardNumber", "")).lower().strip()
+        else:
+            hand = pre_state.get("playerHand", [])
+            if 0 <= idx < len(hand) and isinstance(hand[idx], dict):
+                card_obj = hand[idx]
+                actual_card_name = str(card_obj.get("cardNumber", "")).lower().strip()
+
+    action = {"type": act_type, "cardNumber": actual_card_name, "name": actual_card_name}
+    if card_obj:
+        action["raw"] = card_obj
 
     try:
         next_state, _ = GameSimulator.simulate_step(pre_state, action)
@@ -46,7 +64,7 @@ def predict(pre_state: dict, card_id: str) -> Optional[dict]:
             "arsenal_count": len(ns_dict.get("playerArsenal", [])),
             "player_health": int(ns_dict.get("playerHealth", pre_state.get("playerHealth", 40))),
             "opponent_health": int(ns_dict.get("opponentHealth", pre_state.get("opponentHealth", 40))),
-            "card_consumed": card_id,
+            "card_consumed": actual_card_name,
         }
     except Exception:
         return None

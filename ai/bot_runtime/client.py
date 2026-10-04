@@ -672,7 +672,7 @@ class FabBotClient:
             "time": time.time(),
         }
         if SETTINGS.shadow_mode and getattr(self, "_last_state", None):
-            self._pending_shadow = (shadow_mode.predict(self._last_state, card_id), self._last_state, mode, card_id)
+            self._pending_shadow = (shadow_mode.predict(self._last_state, card_id, mode=mode), self._last_state, mode, card_id)
             
         return self.api.process_input(
             game_name=self.game_id,

@@ -401,6 +401,25 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
                     best_score = score
                     best_card_id = str(c_item.get("actionDataOverride", c_item.get("cardNumber", str(idx)))) if isinstance(c_item, dict) else str(idx)
                     best_btn_inp = best_card_id
+        else:
+            # Poda Sim2Real: Tratar modais com botões de opção direta (ex.: Transformação do Marionette modo 23)
+            pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
+            pip_btns = (
+                (pip.get("buttons") if isinstance(pip, dict) else None)
+                or (popup.get("buttons") if isinstance(popup, dict) else None)
+                or (popup.get("popup", {}).get("buttons") if isinstance(popup, dict) and isinstance(popup.get("popup"), dict) else None)
+                or []
+            )
+            valid_btns = [b for b in pip_btns if isinstance(b, dict) and b.get("mode") not in (99, 100)]
+            if valid_btns:
+                chosen_btn = valid_btns[0]
+                action_mode = int(chosen_btn.get("mode", 23))
+                btn_input = str(chosen_btn.get("buttonInput", ""))
+                cid = str(chosen_btn.get("cardID", btn_input))
+                client.log(f"[AÇÃO JOGADOR {client.player_id}] Seleção em Modal/Botão -> {turn_phase} (Modo: {action_mode}, Input: {btn_input})")
+                client.send_action(mode=action_mode, button_input=btn_input, card_id=cid)
+                time.sleep(0.002)
+                return True
 
         client.log(f"[AÇÃO JOGADOR {client.player_id}] Seleção Inteligente de Alvo/Zona -> {turn_phase} (CardID: {best_card_id})")
         client.send_action(mode=16, card_id=best_card_id, button_input=best_btn_inp)
