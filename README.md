@@ -140,7 +140,9 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 | [`ai/experience_collector.py`](ai/experience_collector.py) | Replay Buffer circular em memória com amostragem priorizada por importância (PER), dense reward shaping e serialização compacta em `.npz`. |
 | [`ai/ismcts_logger.py`](ai/ismcts_logger.py) | Logger estruturado thread-safe que persiste diagnósticos de decisão ISMCTS (mundos amostrados, votos, confiança e $V_{root}$) em `logs/ismcts_decisions.jsonl`. |
 | [`scripts/extract_equipment_metadata.py`](scripts/extract_equipment_metadata.py) | Extrator de metadados semânticos de 624 equipamentos oficiais do Talishar gerando `data/equipment_metadata.json` (buffs de poder, descontos, contadores, geração de recursos, Go Again e tokens). |
-| [`scripts/extract_ability_costs.py`](scripts/extract_ability_costs.py) | Extrator automático de custos de ativação de habilidades e armas a partir dos arquivos PHP do Talishar gerando `data/ability_costs.json`. |
+| [`scripts/extract_cr_mechanics.py`](scripts/extract_cr_mechanics.py) | Mapeamento de regras formais CR para cartas |
+| [`scripts/extract_puzzle.py`](scripts/extract_puzzle.py) | Extrai Puzzles Dourados do SQLite gerados pelo Modo Sombra (Fase 0) |
+| [`scripts/phase0_report.py`](scripts/phase0_report.py) | Gera relatório de Winrate Humano e Fidelidade do Shadow Mode |
 
 ---
 

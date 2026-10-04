@@ -147,6 +147,11 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
 - **Dynamic World Pool Sampling (`ai/mcts/world_generator.py`)**: Amostragem de cartas no determinizador do ISMCTS orientada pelo banco oficial `fab_cards_db.json` e correspondência de classe/talentos, sem listas nominais hardcoded de heróis.
   - _Avoid_: Listas de nomes de heróis em if/else, Simulação restrita a heróis conhecidos.
 
+- **Shadow Mode (Modo Sombra) (`ai/shadow_mode.py` - ADR-0013)**: Subsistema de interceptação passiva que compara predições locais do `simulate_step` com o estado real validado pelo backend, registrando as divergências em SQLite (`shadow_steps`) para quantificar a % de Fidelidade do Simulador.
+  - _Avoid_: Modo espião, Teste cego online, Verificação manual de diff.
+- **Golden Puzzles (Puzzles Dourados) (`tests/puzzles/` & `scripts/extract_puzzle.py`)**: Snapshots estáticos JSON extraídos do histórico do Shadow Mode contra humanos, usados como testes de regressão ("benchmark humano") para garantir que o bot descubra a mesma jogada ótima.
+  - _Avoid_: Desafios randômicos, Mocks manuais sem extração de DB.
+
 ---
 
 ## Domain: Architecture

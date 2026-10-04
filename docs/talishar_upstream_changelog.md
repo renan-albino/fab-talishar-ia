@@ -9,8 +9,8 @@ Ele serve como referência para os agentes de IA entenderem exatamente quais mud
 
 | Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
 | :--- | :--- | :--- | :--- | :--- |
-| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `1fa4ee2de` (`1fa4ee2de6aaebf3a882cd858e3507fb512cd5a0`) | 2026-09-30 | ✅ Sincronizado + Patches Aplicados |
-| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `94a22511b` (`94a22511bac7ca8752f3fef72a00e466aa557035`) | 2026-09-30 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `c9f35efed` (`c9f35efedac80bfe41858f1d141f35293b1b2f25`) | 2026-10-03 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `4d11c8c92` (`4d11c8c924a05c54454decf3a5614e0135a3b277`) | 2026-10-03 | ✅ Sincronizado + Patches Aplicados |
 
 ---
 
@@ -24,6 +24,152 @@ Quando o Talishar oficial atualizar:
 ---
 
 ## 🕒 Histórico de Sincronizações
+
+### 🔄 Sincronização em 2026-10-03 16:24:09
+
+#### Talishar Backend
+- **Transição de Versão**: `1fa4ee2de` (2026-09-30) ➔ `c9f35efed` (2026-10-03)
+- **Novos commits incorporados**: 39
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Banco fab_cards_db.json reindexado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `c9f35efed` (2026-10-03 por **Paul Gibby**) — add log message to arknight descendancy
+* `fc14c75e4` (2026-10-03 por **Paul Gibby**) — refactor spoiled skull
+* `2df8d9a97` (2026-10-03 por **Paul Gibby**) — don't apply humble to a dishonored hero
+* `b5ba831d3` (2026-10-03 por **PvtVoid**) — Merge pull request #1425 from Blighting/fix/hide-snooze-on-rematch
+* `e1e396c4c` (2026-10-03 por **Evgeny**) — Add regression test for rematch prompt effect context
+* `adf9e77c1` (2026-10-03 por **Evgeny**) — Clear stale effect context when queuing rematch prompts
+* `8d210db6f` (2026-10-03 por **Evgeny**) — Hide "Not this turn" on rematch prompts
+* `8676825df` (2026-10-03 por **PvtVoid**) — More ads stats improvements
+* `c99c60e4c` (2026-10-03 por **PvtVoid**) — Merge branch 'main' of https://github.com/Talishar/Talishar
+* `d167207e0` (2026-10-03 por **PvtVoid**) — More bot logic updates
+* `c7a337ebd` (2026-10-02 por **Paul Gibby**) — refactor reckless swing
+* `a3dcff514` (2026-10-02 por **Paul Gibby**) — fix pitchless cards counting as -1 pitch when calcing arcane barrier
+* `9c47a71c3` (2026-10-02 por **Paul Gibby**) — don't let oasis choose the attack proxy
+* `87509063a` (2026-10-02 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `4024d3825` (2026-10-02 por **Paul Gibby**) — fix activating apex buster with no targets
+* `b7e558852` (2026-10-02 por **PvtVoid**) — Try to make puzzles better and more interesting
+* `aac28c565` (2026-10-02 por **Paul Gibby**) — refactor ripple away and set windups to work better with 3oak
+* `2dd96dbd2` (2026-10-02 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `c095952f2` (2026-10-02 por **Paul Gibby**) — add label to attack target allies
+* `45f42e26f` (2026-10-02 por **PvtVoid**) — Fix disruption stats. Annihilations cards + playable from banish aren't disruptions
+* `4005f8405` (2026-10-02 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `2bb4e63d9` (2026-10-02 por **Paul Gibby**) — refactor shadow of ursur to make it harder to pass on accident
+* `fba9d7eee` (2026-10-02 por **PvtVoid**) — Don't show a toast notification for GEMOFF
+* `0d3134bb8` (2026-10-02 por **PvtVoid**) — Update BuildPlayerInputPopup.php
+* `77a6bc4d9` (2026-10-02 por **PvtVoid**) — Php error logs fixes
+* `7e9008855` (2026-10-02 por **PvtVoid**) — Fix prompt not having the Not this turn button/wrong subtitle
+* `b4ee9ce4b` (2026-10-02 por **PvtVoid**) — Update ads stats
+* `1b195434b` (2026-10-01 por **PvtVoid**) — Update ads analytics
+* `cf4cd77a9` (2026-10-01 por **PvtVoid**) — Ads Analytics
+* `723539e5d` (2026-10-01 por **PvtVoid**) — Merge branch 'main' of https://github.com/Talishar/Talishar
+* `1955c7057` (2026-10-01 por **PvtVoid**) — GetCardsDisrupted update
+* `caf135c4f` (2026-10-01 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `a50018516` (2026-10-01 por **Paul Gibby**) — manually specify cogwerx prong bot's cog source
+* `61e0d9b35` (2026-10-01 por **PvtVoid**) — Add disruption toggle to end game stats
+* `12e6bdd90` (2026-10-01 por **PvtVoid**) — Add really common triggers (e.g. Hero + equip or tokens) that can be ignored
+* `6b5e38687` (2026-10-01 por **PvtVoid**) — Remove TTox prompt since everyone does Both everytime it's possible (no downside)
+* `4eeb5ce2d` (2026-10-01 por **PvtVoid**) — Fix Rise to the challenge
+* `46fa04f0b` (2026-10-01 por **PvtVoid**) — Remove debug log
+* `2839eee74` (2026-10-01 por **PvtVoid**) — Backend performance improvements
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `AI/BotLogic.php`
+- `AI/EncounterAI.php`
+- `AI/PlayerMacros.php`
+- `APIs/CreatePuzzleGame.php`
+- `APIs/GetDailyPuzzle.php`
+- `APIs/GetMonetizationReport.php`
+- `APIs/GetPuzzleCandidates.php`
+- `APIs/RateDailyPuzzle.php`
+- `APIs/SchedulePuzzle.php`
+- `APIs/SiteMetrics.php`
+- `APIs/StartDailyPuzzle.php`
+- `APIs/VerifyPuzzleCandidates.php`
+- `AccountFiles/AccountDatabaseAPI.php`
+- `BuildGameState.php`
+- `BuildPlayerInputPopup.php`
+- `CardDictionaries/ArcaneRising/ARCWizard.php`
+- `CardDictionaries/DuskTillDawn/DTDShared.php`
+- `CardDictionaries/HitEffects.php`
+- `CardDictionaries/Outsiders/OUTShared.php`
+- `CardDictionaries/WelcomeToRathe/WTRShared.php`
+- *(e mais 45 arquivos...)*
+
+</details>
+
+#### Talishar Frontend
+- **Transição de Versão**: `94a22511b` (2026-09-30) ➔ `4d11c8c92` (2026-10-03)
+- **Novos commits incorporados**: 26
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Frontend Vite recompilado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `4d11c8c` (2026-10-03 por **PvtVoid**) — More ads stats improvements
+* `45ada7e` (2026-10-03 por **PvtVoid**) — Merge pull request #804 from Blighting/feat/mobile-chat-filter
+* `dab80a7` (2026-10-03 por **Evgeny**) — Center the chat send button icon
+* `7f4b25f` (2026-10-03 por **Evgeny**) — Add All / Chat / Log filter tabs to mobile chat
+* `0b4a3d5` (2026-10-03 por **PvtVoid**) — Merge pull request #803 from Blighting/fix/mobile-matchup-note
+* `529a7b7` (2026-10-03 por **Eugene**) — Fix mobile lobby matchups not scrolling to the bottom (#802)
+* `c55cbef` (2026-10-03 por **Evgeny**) — Fix matchup note staying open on mobile
+* `6548fa0` (2026-10-03 por **PvtVoid**) — Fix tooltip not showing
+* `966936f` (2026-10-03 por **Evgeny**) — Let the lobby deck list span the ad row
+* `c769fbd` (2026-10-02 por **PvtVoid**) — Try to make puzzles better and more interesting
+* `60aec78` (2026-10-02 por **PvtVoid**) — Update INCLUDE_DISRUPTION_TOOLTIP
+* `d81ce11` (2026-10-02 por **PvtVoid**) — More ads stats update + lobby ad
+* `ea862e2` (2026-10-02 por **PvtVoid**) — Fix gem on landscape mobiles
+* `f782b0e` (2026-10-02 por **PvtVoid**) — Fix small devices not seeing chat
+* `3746e3a` (2026-10-02 por **PvtVoid**) — Don't show a toast notification for GEMOFF
+* `dbc30dc` (2026-10-02 por **PvtVoid**) — Fix missing asset window
+* `c7df900` (2026-10-02 por **PvtVoid**) — Update ads stats
+* `763809d` (2026-10-01 por **PvtVoid**) — Update ads analytics
+* `d1a9bc8` (2026-10-01 por **PvtVoid**) — Ads Analytics
+* `4365806` (2026-10-01 por **PvtVoid**) — Update HelpTooltip.tsx
+* `77b4fbe` (2026-10-01 por **PvtVoid**) — Disruption endgame stats fixes
+* `6ad5585` (2026-10-01 por **PvtVoid**) — Update EndGameStats.module.css
+* `1fcef34` (2026-10-01 por **PvtVoid**) — Fix tooltip being off screen
+* `1bb1ac2` (2026-10-01 por **PvtVoid**) — Add disruption toggle to end game stats
+* `4deb3ec` (2026-10-01 por **PvtVoid**) — In-game ads back and fixed hopefully
+* `37960ef` (2026-10-01 por **PvtVoid**) — Frontend performance improvements
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `.env.production`
+- `.env.template`
+- `ADS_SYSTEM.md`
+- `index.html`
+- `public/locales/en/translation.json`
+- `public/locales/fr/translation.json`
+- `public/locales/ja/translation.json`
+- `public/locales/zh/translation.json`
+- `src/app/GameStateHandler.tsx`
+- `src/app/ParseGameState.ts`
+- `src/appConstants.ts`
+- `src/components/RustCounterPanel/RustCounterPanel.tsx`
+- `src/components/Tooltip/HelpTooltip.module.css`
+- `src/components/Tooltip/HelpTooltip.test.tsx`
+- `src/components/Tooltip/HelpTooltip.tsx`
+- `src/components/ads/AdAnalyticsTracker.tsx`
+- `src/components/ads/AdUnit.tsx`
+- `src/components/ads/index.ts`
+- `src/components/header/Header.tsx`
+- `src/config/ads.ts`
+- *(e mais 54 arquivos...)*
+
+</details>
+
+
+---
 
 ### 🔄 Sincronização em 2026-09-30 22:13:11
 

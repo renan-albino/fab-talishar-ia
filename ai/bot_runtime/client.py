@@ -84,6 +84,8 @@ class FabBotClient:
         self.execution_exceptions_count = 0
         self._last_priority_time = 0.0
         self._last_priority_fingerprint = ""
+        self._last_chatlog_len = 0
+        self._last_sent_action = None
         self.clean_deck = os.path.basename(self.deck_url).replace(".json", "") if self.deck_url else "default_deck"
         
         # Log level: DEBUG=0, INFO=1, WARNING=2, ERROR=3
@@ -322,7 +324,23 @@ class FabBotClient:
                                     cur_fp = f"{state.get('turnNo')}_{state.get('turnPhase')}_{len(state.get('playerHand', []))}_{state.get('playerHealth')}_{state.get('opponentHealth')}"
                                     if cur_fp == self._last_priority_fingerprint:
                                         if time.time() - self._last_priority_time > 25.0:
-                                            self.warning(f"[WATCHDOG PRIORIDADE] Prioridade sem progresso por mais de 25s em {cur_fp}. Forçando ação de escape (Mode 99)!")
+                                            self.error(f"[WATCHDOG PRIORIDADE] Prioridade sem progresso por mais de 25s em {cur_fp}. Gravando anomalia e forçando escape (Mode 99)!")
+                                            try:
+                                                from ai import sim2real_detector
+                                                sim2real_detector.record_anomaly(
+                                                    room_id=self.room_id,
+                                                    hero=self.hero_name,
+                                                    turn=safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1),
+                                                    phase=str(state.get("turnPhase", "")),
+                                                    anomaly_type="PRIORITY_STALL",
+                                                    message=f"Watchdog stall > 25s em {cur_fp}",
+                                                    opponent_hero=str(state.get("theirHero", state.get("opponentHero", "Unknown"))),
+                                                    last_action=getattr(self, "_last_sent_action", None),
+                                                    extra_context={"fingerprint": cur_fp, "player_id": self.player_id},
+                                                )
+                                                self.dump_error_state(f"Watchdog Stall: {cur_fp}", state)
+                                            except Exception:
+                                                pass
                                             self.send_action(mode=99, button_input="")
                                             self._last_priority_time = time.time()
                                     else:
@@ -439,14 +457,19 @@ class FabBotClient:
 
             from ai.policy_engine import PolicyEngine
             import os
+            # Initialise PolicyEngine with correct parameters (use_gpu flag, no 'device' arg)
             self.policy_engine = PolicyEngine(
                 hero_name=hero,
                 model_path="data/model_latest.pt" if os.path.exists("data/model_latest.pt") else None,
-                device="cuda",
-                log_fn=self.log
+                use_gpu=self.use_gpu
             )
             self.log(f"[LOBBY] AI Policy Engine inicializado para {hero}.")
         return success
+
+    def submit_sideboard(self):
+        """Fachada retrocompatível: submete equipamento e de deck."""
+        self.submit_equipment()
+        return self.submit_deck_phase()
 
     def _do_submit_sideboard(self, post_payload):
         try:
@@ -551,6 +574,33 @@ class FabBotClient:
         self._pending_shadow = None
         self._last_state = state
 
+        # ── Rastreamento Incremental de Anomalias Sim2Real no chatLog ──────────
+        chat_log = state.get("chatLog", "")
+        if isinstance(chat_log, str) and len(chat_log) > getattr(self, "_last_chatlog_len", 0):
+            delta = chat_log[self._last_chatlog_len:]
+            self._last_chatlog_len = len(chat_log)
+            try:
+                from ai import sim2real_detector
+                anomalies = sim2real_detector.scan_log_for_anomalies(delta)
+                for a in anomalies:
+                    self.error(f"[SIM2REAL DETECTED] {a['code']}: {a['raw_message']}")
+                    turn_val = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
+                    opp_hero_str = str(state.get("theirHero", state.get("opponentHero", "Unknown")))
+                    sim2real_detector.record_anomaly(
+                        room_id=self.room_id,
+                        hero=self.hero_name,
+                        turn=turn_val,
+                        phase=str(state.get("turnPhase", "")),
+                        anomaly_type=a["code"],
+                        message=a["raw_message"],
+                        opponent_hero=opp_hero_str,
+                        last_action=getattr(self, "_last_sent_action", None),
+                        extra_context={"player_id": self.player_id, "role": self.role},
+                    )
+                    self.dump_error_state(f"Sim2Real Anomaly: {a['code']} - {a['raw_message']}", state)
+            except Exception as e:
+                self.debug(f"Falha ao processar sim2real no chatLog: {e}")
+
         match_tracker.track_tick_health_and_damage(self, state, my_h, opp_h)
 
         turn_active_id = state.get("turnPlayer", 1)
@@ -613,6 +663,14 @@ class FabBotClient:
                     pass
 
     def send_action(self, mode=99, card_id="", button_input="", chk_count=0, chk_input=None, input_text=""):
+        self._last_sent_action = {
+            "mode": mode,
+            "card_id": card_id,
+            "button_input": button_input,
+            "chk_count": chk_count,
+            "input_text": input_text,
+            "time": time.time(),
+        }
         if SETTINGS.shadow_mode and getattr(self, "_last_state", None):
             self._pending_shadow = (shadow_mode.predict(self._last_state, card_id), self._last_state, mode, card_id)
             

@@ -52,6 +52,8 @@ def wait_in_lobby_and_start(client) -> bool:
        - Aguarda o oponente confirmar e a partida iniciar (gamestate ativo ou isMainGameReady).
     """
     client.log(f"[LOBBY] Bot conectado ao lobby da sala #{client.game_id}. Submetendo sideboard...")
+    if hasattr(client, "submit_sideboard") and not hasattr(client, "submit_equipment"):
+        client.submit_sideboard()
 
     first_player_chosen = False
     sideboard_fail_count = 0
@@ -78,17 +80,29 @@ def wait_in_lobby_and_start(client) -> bool:
                     time.sleep(0.2)
                     continue
 
-                # 2. Submissão em duas etapas: Equipamento depois Sideboard
+                # 2. Submissão em duas etapas ou retrocompatível
                 if data.get("canSubmitEquipment", False) and not data.get("myEquipmentSubmitted", False):
-                    if not client.submit_equipment():
+                    fn = getattr(client, "submit_equipment", getattr(client, "submit_sideboard", None))
+                    if fn and not fn():
                         sideboard_fail_count += 1
                         if sideboard_fail_count >= 3:
+                            client.error("[ERRO NO SIDEBOARD] Falha repetida no sideboard, abortando lobby.")
                             return False
                     time.sleep(0.2)
                 elif data.get("canSubmitSideboard", False) and not data.get("mySideboardSubmitted", False):
-                    if not client.submit_deck_phase():
+                    fn = getattr(client, "submit_deck_phase", getattr(client, "submit_sideboard", None))
+                    if fn and not fn():
                         sideboard_fail_count += 1
                         if sideboard_fail_count >= 3:
+                            client.error("[ERRO NO SIDEBOARD] Falha repetida no sideboard, abortando lobby.")
+                            return False
+                    time.sleep(0.2)
+                elif not data.get("mySideboardSubmitted", False):
+                    fn = getattr(client, "submit_sideboard", getattr(client, "submit_deck_phase", None))
+                    if fn and not fn():
+                        sideboard_fail_count += 1
+                        if sideboard_fail_count >= 3:
+                            client.error("[ERRO NO SIDEBOARD] Falha repetida no sideboard, abortando lobby.")
                             return False
                     time.sleep(0.2)
 
@@ -143,15 +157,27 @@ def wait_for_opponent_and_start(client) -> bool:
                         time.sleep(0.2)
 
                     if ldata.get("canSubmitEquipment", False) and not ldata.get("myEquipmentSubmitted", False):
-                        if not client.submit_equipment():
+                        fn = getattr(client, "submit_equipment", getattr(client, "submit_sideboard", None))
+                        if fn and not fn():
                             sideboard_fail_count += 1
                             if sideboard_fail_count >= 3:
+                                client.error("[ERRO NO SIDEBOARD] Falha repetida no sideboard, abortando lobby.")
                                 return False
                         time.sleep(0.2)
                     elif ldata.get("canSubmitSideboard", False) and not ldata.get("mySideboardSubmitted", False):
-                        if not client.submit_deck_phase():
+                        fn = getattr(client, "submit_deck_phase", getattr(client, "submit_sideboard", None))
+                        if fn and not fn():
                             sideboard_fail_count += 1
                             if sideboard_fail_count >= 3:
+                                client.error("[ERRO NO SIDEBOARD] Falha repetida no sideboard, abortando lobby.")
+                                return False
+                        time.sleep(0.2)
+                    elif not ldata.get("mySideboardSubmitted", False):
+                        fn = getattr(client, "submit_sideboard", getattr(client, "submit_deck_phase", None))
+                        if fn and not fn():
+                            sideboard_fail_count += 1
+                            if sideboard_fail_count >= 3:
+                                client.error("[ERRO NO SIDEBOARD] Falha repetida no sideboard, abortando lobby.")
                                 return False
                         time.sleep(0.2)
 
