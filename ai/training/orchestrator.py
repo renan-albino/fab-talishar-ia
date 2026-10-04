@@ -157,7 +157,7 @@ class GPUTrainingOrchestrator:
             with open(METRICS_FILE, "w", encoding="utf-8") as f:
                 json.dump(clean_stats, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            print(f"[Treinador] Erro ao salvar métricas: {e}")
+            print(f"[Treinador] Erro ao salvar métricas: {e}", flush=True)
 
         # Salva o modelo e o buffer se existirem
         if self.model is not None:
@@ -165,7 +165,7 @@ class GPUTrainingOrchestrator:
                 buffer = get_global_buffer(self.config.get("buffer_capacity", SETTINGS.buffer_capacity))
                 self._save_checkpoint(self.model, buffer)
             except Exception as e:
-                print(f"[Treinador] Aviso ao salvar checkpoint manual: {e}")
+                print(f"[Treinador] Aviso ao salvar checkpoint manual: {e}", flush=True)
 
     # Aliases privados para compatibilidade interna
     _load_metrics = load_metrics
@@ -193,7 +193,7 @@ class GPUTrainingOrchestrator:
         self.thread = threading.Thread(target=self._training_loop, daemon=True)
         self.thread.start()
         cfg = self.config
-        print(f"[Treinador] ▶ Iniciado | Dispositivo: {cfg['device']} | Batch: {cfg['batch_size']} | Workers: {cfg['num_workers']}")
+        print(f"[Treinador] ▶ Iniciado | Dispositivo: {cfg['device']} | Batch: {cfg['batch_size']} | Workers: {cfg['num_workers']}", flush=True)
 
     def stop(self):
         """Sinaliza parada e encerra imediatamente todos os subprocessos ativos."""
@@ -211,7 +211,7 @@ class GPUTrainingOrchestrator:
 
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=1.5)
-        print("[Treinador] ⏸ Treinamento pausado e processos limpos.")
+        print("[Treinador] ⏸ Treinamento pausado e processos limpos.", flush=True)
 
     # ── Loop principal ────────────────────────────────────────────
 
@@ -279,6 +279,7 @@ class GPUTrainingOrchestrator:
             bot_env = os.environ.copy()
             bot_env["TALISHAR_SKIP_GPU_PROBE"] = "1"
 
+            headless_samples_ingested = 0
             if cfg.get("headless"):
                 from ai.training.headless_env import HeadlessSelfPlayLoop
                 import concurrent.futures
@@ -303,9 +304,9 @@ class GPUTrainingOrchestrator:
                     for future in concurrent.futures.as_completed(futures):
                         try:
                             traj, winner = future.result(timeout=SETTINGS.game_timeout_seconds)
-                            buffer.ingest_from_memory([(traj, winner)])
+                            headless_samples_ingested += buffer.ingest_from_memory([(traj, winner)])
                         except Exception as e:
-                            print(f"[Treinador] Erro no headless worker: {e}")
+                            print(f"[Treinador] Erro no headless worker: {e}", flush=True)
                 
                 num_finished = len(futures)
                 self.stats["total_games"] += num_finished
@@ -433,7 +434,7 @@ class GPUTrainingOrchestrator:
 
             # ── 5. Recarregar buffer e passo de otimização ─────────
             trajectories_dir = os.path.join(BASE_DIR, "data", "trajectories")
-            newly_ingested = buffer.ingest_trajectories(trajectories_dir)
+            newly_ingested = buffer.ingest_trajectories(trajectories_dir) + headless_samples_ingested
             if newly_ingested > 0:
                 buffer.save()
             else:
@@ -465,6 +466,8 @@ class GPUTrainingOrchestrator:
                     "samples":      self.stats["samples_collected"],
                     "lr":           round(scheduler.get_last_lr()[0], 6),
                 }
+                print(f"[Treinador] Época {self.stats['epochs_completed']} | Jogos Concluídos: {self.stats['total_games']} | Amostras no Buffer: {self.stats['samples_collected']} | Total Loss: {self.stats['total_loss']:.4f}", flush=True)
+                
                 self.stats["history"].append(epoch_entry)
                 if len(self.stats["history"]) > 200:
                     self.stats["history"].pop(0)
@@ -605,7 +608,7 @@ class GPUTrainingOrchestrator:
         )
         torch.save(model.state_dict(), versioned)
         buffer.save()
-        print(f"[Treinador] 💾 Checkpoint salvo: {SETTINGS.teacher_checkpoint}")
+        print(f"[Treinador] 💾 Checkpoint salvo: {SETTINGS.teacher_checkpoint}", flush=True)
 
 
 if __name__ == "__main__":
@@ -624,14 +627,14 @@ if __name__ == "__main__":
     workers = SETTINGS.num_workers
     footprint_mb = sims * workers * 1.5
     
-    print(f"[Pre-flight] Detalhes GPU: {vram_mb:.0f}MB VRAM | {sm_count} SMs")
-    print(f"[Pre-flight] Footprint estimado: {footprint_mb:.0f}MB VRAM")
+    print(f"[Pre-flight] Detalhes GPU: {vram_mb:.0f}MB VRAM | {sm_count} SMs", flush=True)
+    print(f"[Pre-flight] Footprint estimado: {footprint_mb:.0f}MB VRAM", flush=True)
     
     if footprint_mb > vram_mb:
-        print("[Pre-flight] 🚨 AVISO: Footprint estimado excede a VRAM disponível. Abortando treinamento para evitar OOM.")
+        print("[Pre-flight] 🚨 AVISO: Footprint estimado excede a VRAM disponível. Abortando treinamento para evitar OOM.", flush=True)
         sys.exit(1)
     
-    print("[Pre-flight] Hardware Check aprovado. Iniciando Orquestrador...")
+    print("[Pre-flight] Hardware Check aprovado. Iniciando Orquestrador...", flush=True)
     
     orchestrator = GPUTrainingOrchestrator()
     orchestrator.start(custom_config={"headless": args.headless})
@@ -641,4 +644,4 @@ if __name__ == "__main__":
             time.sleep(1)
     except KeyboardInterrupt:
         orchestrator.stop()
-        print("Treinamento finalizado.")
+        print("Treinamento finalizado.", flush=True)
