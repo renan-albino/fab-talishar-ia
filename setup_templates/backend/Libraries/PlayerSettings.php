@@ -752,3 +752,4 @@ function SaveSettingInDatabase($setting)
 }
 
 //Campaign supporter rosters live in PatreonDictionary.php
+function RequireYesNoAnswerSetting($playerID) { return false; }

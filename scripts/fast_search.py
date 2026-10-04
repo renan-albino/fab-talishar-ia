@@ -2,16 +2,13 @@
 """
 scripts/fast_search.py
 ======================
-Utilitário de busca rápida de texto que automaticamente ignora pastas gigantescas
-(node_modules, venv, Talishar/Games, build, logs, data, .git, etc.) para evitar travamentos.
-
-Uso:
-  python scripts/fast_search.py "termo" [caminho] [--ext=.py,.tsx]
+Utilitário de busca ultrarrápida usando git grep (nativo) e fallback para grep.
+Ignora pastas gigantescas automaticamente.
 """
 
 import sys
 import os
-import re
+import subprocess
 
 EXCLUDE_DIRS = {
     "node_modules", "venv", ".venv", "env", ".git", "Talishar", "Talishar-FE",
@@ -19,46 +16,65 @@ EXCLUDE_DIRS = {
     "Games", "mysql-data", "AccountFiles", "HostFiles", "cache", ".turbo"
 }
 
-def fast_search(pattern: str, root: str = ".", extensions: list = None, max_results: int = 100):
+def fast_search(pattern: str, root: str = ".", extensions: list = None):
+    print(f"[*] Buscando por '{pattern}' em '{root}' (ultrarrápido)...")
+    
+    # 1. Tentar git grep primeiro (instantâneo para arquivos versionados)
     try:
-        regex = re.compile(pattern, re.IGNORECASE)
-    except re.error as e:
-        print(f"[ERRO] Regex inválida: {e}")
-        sys.exit(1)
+        cmd_git = ["git", "grep", "-n", "-I", "-i", "-e", pattern, "--", root]
+        if extensions:
+            pathspecs = [f"*{ext}" for ext in extensions]
+            cmd_git.extend(pathspecs)
+            
+        result = subprocess.run(cmd_git, capture_output=True, text=True, cwd=root if root != "." else None)
+        if result.returncode == 0 and result.stdout.strip():
+            lines = result.stdout.strip().split("\n")
+            count = 0
+            for line in lines:
+                parts = line.split(":", 2)
+                if len(parts) >= 3:
+                    snippet = parts[2].strip()
+                    if len(snippet) > 120:
+                        snippet = snippet[:117] + "..."
+                    print(f"{parts[0]}:{parts[1]}: {snippet}")
+                    count += 1
+                if count >= 100:
+                    break
+            if len(lines) > 100:
+                print(f"\n[!] Limite de 100 resultados atingido (total {len(lines)}). Refine a busca.")
+            return
+    except Exception:
+        pass
 
-    matches_found = 0
-    print(f"[*] Buscando por '{pattern}' em '{root}' (excluindo diretórios pesados)...")
+    # 2. Fallback para o grep GNU nativo se git grep falhar (ex: arquivos não trackeados)
+    try:
+        excludes = [f"--exclude-dir={d}" for d in EXCLUDE_DIRS]
+        cmd_grep = ["grep", "-rnI", "-i"] + excludes + [pattern, root]
+        
+        result = subprocess.run(cmd_grep, capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            lines = result.stdout.strip().split("\n")
+            count = 0
+            for line in lines:
+                parts = line.split(":", 2)
+                if len(parts) >= 3:
+                    if extensions:
+                        if not any(parts[0].endswith(e) for e in extensions):
+                            continue
+                    snippet = parts[2].strip()
+                    if len(snippet) > 120:
+                        snippet = snippet[:117] + "..."
+                    print(f"{parts[0]}:{parts[1]}: {snippet}")
+                    count += 1
+                if count >= 100:
+                    break
+            if len(lines) > 100:
+                print(f"\n[!] Limite de 100 resultados atingido. Refine a busca.")
+            return
+    except Exception:
+        pass
 
-    for dirpath, dirnames, filenames in os.walk(root):
-        # Poda em tempo real das pastas ignoradas
-        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS and not d.startswith(".")]
-
-        for fname in filenames:
-            if extensions and not any(fname.endswith(ext) for ext in extensions):
-                continue
-
-            fpath = os.path.join(dirpath, fname)
-            relpath = os.path.relpath(fpath, root)
-
-            try:
-                with open(fpath, "r", encoding="utf-8", errors="ignore") as fp:
-                    for line_no, line in enumerate(fp, 1):
-                        if regex.search(line):
-                            snippet = line.strip()
-                            if len(snippet) > 120:
-                                snippet = snippet[:117] + "..."
-                            print(f"{relpath}:{line_no}: {snippet}")
-                            matches_found += 1
-                            if matches_found >= max_results:
-                                print(f"\n[!] Limite de {max_results} resultados atingido. Refine a busca ou aponte para um subdiretório.")
-                                return
-            except Exception:
-                continue
-
-    if matches_found == 0:
-        print(f"[-] Nenhuma ocorrência encontrada para '{pattern}'.")
-    else:
-        print(f"[OK] Total de {matches_found} ocorrência(s) encontrada(s).")
+    print(f"[-] Nenhuma ocorrência encontrada para '{pattern}'.")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):

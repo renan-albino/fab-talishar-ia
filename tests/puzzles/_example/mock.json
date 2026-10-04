@@ -1,0 +1,20 @@
+{
+  "setup": {
+    "hero": "Levia",
+    "match": "mock-123",
+    "turn": 1
+  },
+  "state": {
+    "turnNo": 1,
+    "turnPlayer": 1,
+    "turnPhase": {"turnPhase": "M"},
+    "playerHand": [{"id": "card123"}],
+    "playerResources": [0, 0],
+    "playerAP": 1,
+    "playerArsenal": []
+  },
+  "expected_best_action": {
+    "type": "play",
+    "card_id": "card123"
+  }
+}

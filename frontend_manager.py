@@ -41,7 +41,7 @@ def is_frontend_running(deep: bool = False) -> bool:
     if not deep:
         return True
     try:
-        r = requests.get(FRONTEND_URL, timeout=0.5)
+        r = requests.get(FRONTEND_URL, timeout=3.0)
         return r.status_code == 200
     except Exception as e:
         logger.warning(f"Falha ao verificar frontend: {e}")

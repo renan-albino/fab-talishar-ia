@@ -97,6 +97,7 @@ def update_match_result(
     is_invalid_match: bool = False,
     invalid_reason: str = "",
     stats_file: Optional[str] = None,
+    player_name: str = "",
 ) -> dict:
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -109,7 +110,7 @@ def update_match_result(
             
         p1_deck_clean = canonicalize_deck_name(p1_deck)
         p2_deck_clean = canonicalize_deck_name(p2_deck)
-        tracked_p1 = "👤 Humano (Você)" if is_human_p1 else p1_deck_clean
+        tracked_p1 = f"{p1_deck_clean} ({player_name})" if is_human_p1 and player_name else p1_deck_clean
         tracked_p2 = p2_deck_clean
 
         if not is_invalid_match:
@@ -134,12 +135,12 @@ def update_match_result(
             logger.warning(f"⚠️ [PARTIDA ANULADA] {room_id} descartada ({invalid_reason}).")
             winner_name = f"Anulada ({invalid_reason or 'Travamento'})"
             cursor.execute('''
-                INSERT INTO match_history (room_id, date, winner, p1_deck, p2_deck, p1_health, p2_health, turns)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO match_history (room_id, date, winner, p1_deck, p2_deck, p1_health, p2_health, turns, player)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (room_id, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), winner_name,
                   f"👤 Humano ({p1_deck_clean})" if is_human_p1 else p1_deck_clean,
                   f"🤖 Bot ({p2_deck_clean})" if is_human_p1 else p2_deck_clean,
-                  p1_health, p2_health, total_turns))
+                  p1_health, p2_health, total_turns, player_name))
             conn.commit()
             return get_stats_data()
 
@@ -193,12 +194,12 @@ def update_match_result(
         update_hero(d2_stats)
 
         cursor.execute('''
-            INSERT INTO match_history (room_id, date, winner, p1_deck, p2_deck, p1_health, p2_health, turns)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO match_history (room_id, date, winner, p1_deck, p2_deck, p1_health, p2_health, turns, player)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (room_id, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), winner_name,
               f"👤 Humano ({p1_deck_clean})" if is_human_p1 else p1_deck_clean,
               f"🤖 Bot ({p2_deck_clean})" if is_human_p1 else p2_deck_clean,
-              p1_health, p2_health, total_turns))
+              p1_health, p2_health, total_turns, player_name))
         
         conn.commit()
 

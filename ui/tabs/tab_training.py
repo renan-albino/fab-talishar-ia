@@ -367,4 +367,19 @@ def render_tab_training(deck_options=None, gpu_available=None):
             df_recent.columns = ["Sala", "Data/Hora", "Vencedor", "Deck Bot 1", "Deck Bot 2", "Vida B1", "Vida B2", "Turnos"]
             st.dataframe(df_recent, use_container_width=True)
 
+        # ── Auditoria Sim2Real & Erros de Motor ──────────────────────────────
+        try:
+            from stats.db import get_recent_sim2real_anomalies
+            anomalies = get_recent_sim2real_anomalies(limit=30)
+            with st.expander(f"🔍 Auditoria Sim2Real & Falhas do Motor ({len(anomalies)} registradas)", expanded=False):
+                if anomalies:
+                    st.caption("Eventos onde o motor oficial do Talishar divergiu do simulador, rejeitou ações ou falhou ao resolver camadas (layers).")
+                    df_anom = pd.DataFrame(anomalies)
+                    col_show = [c for c in ["id", "turn", "hero", "anomaly_type", "raw_message"] if c in df_anom.columns]
+                    st.dataframe(df_anom[col_show], use_container_width=True)
+                else:
+                    st.success("Nenhuma falha Sim2Real detectada recentemente! Motor e simulador em harmonia.")
+        except Exception:
+            pass
+
     render_gpu_live_telemetry()

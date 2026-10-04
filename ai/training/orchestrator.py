@@ -344,7 +344,7 @@ class GPUTrainingOrchestrator:
                         ],
                         cwd=BASE_DIR,
                         env=bot_env,
-                        stdout=subprocess.DEVNULL,
+                        stdout=open("logs/bot_client_out.log", "a"),
                         stderr=open("logs/bot_client_err.log", "a"),
                     )
                     with self._proc_lock:
@@ -364,7 +364,7 @@ class GPUTrainingOrchestrator:
                         ],
                         cwd=BASE_DIR,
                         env=bot_env,
-                        stdout=subprocess.DEVNULL,
+                        stdout=open("logs/bot_client_out.log", "a"),
                         stderr=open("logs/bot_client_err.log", "a"),
                     )
                     with self._proc_lock:

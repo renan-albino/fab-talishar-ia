@@ -174,7 +174,7 @@ def test_human_victory_with_full_health_is_not_annulled():
     assert stats["bot1_wins"] == 1
     assert "👤 Humano" in stats["recent_matches"][0]["winner"]
     assert "Anulada" not in stats["recent_matches"][0]["winner"]
-    assert "👤 Humano (Você)" in stats["deck_stats"]
-    assert stats["deck_stats"]["👤 Humano (Você)"]["wins"] == 1
+    assert "Teklovossen" in stats["deck_stats"]
+    assert stats["deck_stats"]["Teklovossen"]["wins"] == 1
 
 

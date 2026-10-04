@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,6 +51,43 @@ def init_db():
                 updated_at REAL DEFAULT 0.0
             )
         ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS shadow_steps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                room_id TEXT,
+                hero TEXT,
+                turn INTEGER,
+                phase TEXT,
+                mode INTEGER,
+                card_id TEXT,
+                diffs_json TEXT,
+                confounded INTEGER,
+                pre_state_json TEXT,
+                created_at REAL
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sim2real_anomalies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                room_id TEXT,
+                hero TEXT,
+                opponent_hero TEXT,
+                turn INTEGER,
+                phase TEXT,
+                anomaly_type TEXT,
+                raw_message TEXT,
+                last_action_json TEXT,
+                created_at REAL
+            )
+        ''')
+        
+        cursor.execute("PRAGMA table_info(match_history)")
+        columns = [col["name"] for col in cursor.fetchall()]
+        if "player" not in columns:
+            cursor.execute("ALTER TABLE match_history ADD COLUMN player TEXT")
+            
         conn.commit()
 
 @contextmanager
@@ -81,6 +118,20 @@ def get_average_match_length(hero_name: str) -> Optional[float]:
     except Exception:
         pass
     return None
+
+def get_recent_sim2real_anomalies(limit: int = 50) -> List[Dict[str, Any]]:
+    """Retorna as anomalias Sim2Real mais recentes registradas."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id, room_id, hero, opponent_hero, turn, phase, anomaly_type, raw_message, last_action_json, created_at
+                FROM sim2real_anomalies
+                ORDER BY id DESC LIMIT ?
+            ''', (limit,))
+            return [dict(row) for row in cursor.fetchall()]
+    except Exception:
+        return []
 
 # Initialize DB on load
 init_db()
