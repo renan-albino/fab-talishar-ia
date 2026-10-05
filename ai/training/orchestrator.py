@@ -120,6 +120,7 @@ class GPUTrainingOrchestrator:
             "max_resources":       SETTINGS.max_resources_mode,
             "headless":            self._extra.get("headless", False),
             "max_epochs":          self._extra.get("max_epochs", None),
+            "bot_device":          self._extra.get("bot_device", None),
         }
 
     # ── Métricas persistidas (API pública para dashboard) ────────
@@ -195,7 +196,9 @@ class GPUTrainingOrchestrator:
         self.thread = threading.Thread(target=self._training_loop, daemon=True)
         self.thread.start()
         cfg = self.config
-        print(f"[Treinador] ▶ Iniciado | Dispositivo: {cfg['device']} | Batch: {cfg['batch_size']} | Workers: {cfg['num_workers']}", flush=True)
+        mcts_info = cfg.get("mcts_sims", SETTINGS.mcts_simulations)
+        b_dev = cfg.get("bot_device") or ("cuda:0" if ("cuda" in str(cfg["device"]) and cfg["num_workers"] <= 4) else "cpu")
+        print(f"[Treinador] ▶ Iniciado | Dispositivo: {cfg['device']} | Batch: {cfg['batch_size']} | Workers: {cfg['num_workers']} | MCTS Sims: {mcts_info} | Bot Device: {b_dev}", flush=True)
 
     def stop(self):
         """Sinaliza parada e encerra imediatamente todos os subprocessos ativos."""
@@ -278,10 +281,14 @@ class GPUTrainingOrchestrator:
             mcts_sims_val = self.config.get("mcts_sims", 25)
             dev_val = self.config.get("device", "cuda:0")
 
-            # Em configurações com 3 ou mais workers paralelos (6+ bots) ou dispositivos sem CUDA,
-            # os bots de self-play executam inferência MCTS na CPU para economizar VRAM e evitar
-            # saturação de múltiplos contextos CUDA. O orquestrador mantém o treino de gradientes na GPU.
-            bot_device = "cpu" if (num_workers >= 3 or "cuda" not in str(dev_val)) else dev_val
+            # Dispositivo dos bots: respeita override explícito ou aloca na GPU se workers <= 4 e CUDA ativo
+            custom_bot_dev = self.config.get("bot_device")
+            if custom_bot_dev:
+                bot_device = custom_bot_dev
+            elif "cuda" in str(dev_val) and num_workers <= 4:
+                bot_device = dev_val
+            else:
+                bot_device = "cpu"
 
             max_epochs_val = int(self.config.get("max_epochs") or 100)
             epoch_ratio = min(1.0, self.stats["epochs_completed"] / max(1, max_epochs_val))
@@ -634,20 +641,34 @@ if __name__ == "__main__":
     parser.add_argument("--max-epochs", type=int, default=None, help="Maximum absolute epochs completed before stopping")
     parser.add_argument("--epochs", type=int, default=None, help="Number of new epochs to train from now before stopping")
     parser.add_argument("--timeout", type=int, default=None, help="Maximum execution time in seconds before stopping")
+    parser.add_argument("--workers", type=int, default=None, help="Number of parallel matches / workers")
+    parser.add_argument("--batch-size", type=int, default=None, help="Batch size for neural network training")
+    parser.add_argument("--mcts-sims", type=int, default=None, help="Number of MCTS simulations per decision")
+    parser.add_argument("--device", type=str, default=None, help="Trainer device (e.g. cuda:0 or cpu)")
+    parser.add_argument("--bot-device", type=str, default=None, help="Inference device for bots (cuda:0, cpu, or auto)")
+    parser.add_argument("--max-resources", action="store_true", help="Enable maximum hardware utilization mode")
     args = parser.parse_args()
+
+    if args.max_resources:
+        os.environ["FAB_MAX_RESOURCES"] = "1"
+    if args.workers is not None:
+        os.environ["FAB_WORKERS"] = str(args.workers)
+    if args.batch_size is not None:
+        os.environ["FAB_BATCH_SIZE"] = str(args.batch_size)
+    if args.mcts_sims is not None:
+        os.environ["FAB_MCTS_SIMS"] = str(args.mcts_sims)
     
     # Hardware Pre-flight Check
     # (Usamos vram_gb * 1024 para obter vram_mb)
     vram_mb = SETTINGS.vram_gb * 1024
     sm_count = SETTINGS.sm_count
     
-    # Exemplo: simulations * num_workers * 1.5MB
-    sims = SETTINGS.mcts_simulations
-    workers = SETTINGS.num_workers
+    sims = args.mcts_sims or SETTINGS.mcts_simulations
+    workers = args.workers or SETTINGS.num_workers
     footprint_mb = sims * workers * 1.5
     
     print(f"[Pre-flight] Detalhes GPU: {vram_mb:.0f}MB VRAM | {sm_count} SMs", flush=True)
-    print(f"[Pre-flight] Footprint estimado: {footprint_mb:.0f}MB VRAM", flush=True)
+    print(f"[Pre-flight] Footprint estimado: {footprint_mb:.0f}MB VRAM (Workers: {workers}, MCTS Sims: {sims})", flush=True)
     
     if footprint_mb > vram_mb:
         print("[Pre-flight] 🚨 AVISO: Footprint estimado excede a VRAM disponível. Abortando treinamento para evitar OOM.", flush=True)
@@ -658,6 +679,16 @@ if __name__ == "__main__":
     custom_cfg = {"headless": args.headless}
     if args.max_epochs is not None:
         custom_cfg["max_epochs"] = args.max_epochs
+    if args.workers is not None:
+        custom_cfg["num_workers"] = args.workers
+    if args.batch_size is not None:
+        custom_cfg["batch_size"] = args.batch_size
+    if args.mcts_sims is not None:
+        custom_cfg["mcts_sims"] = args.mcts_sims
+    if args.device is not None:
+        custom_cfg["device"] = args.device
+    if args.bot_device is not None:
+        custom_cfg["bot_device"] = args.bot_device
 
     orchestrator = GPUTrainingOrchestrator()
     if args.epochs is not None:

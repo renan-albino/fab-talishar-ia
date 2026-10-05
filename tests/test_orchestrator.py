@@ -231,4 +231,25 @@ def test_wait_for_processes_stagnant_timeout_surgical_kill():
     assert finished_indices == {0, 1}
 
 
+def test_orchestrator_custom_performance_config():
+    GPUTrainingOrchestrator.reset_instance()
+    orch = GPUTrainingOrchestrator()
+    custom_cfg = {
+        "num_workers": 6,
+        "batch_size": 2048,
+        "mcts_sims": 80,
+        "bot_device": "cuda:0",
+        "device": "cuda:0",
+    }
+    orch._extra = custom_cfg
+    cfg = orch.config
+    assert cfg["num_workers"] == 6
+    assert cfg["batch_size"] == 2048
+    assert cfg["mcts_sims"] == 80
+    assert cfg["bot_device"] == "cuda:0"
+    assert cfg["device"] == "cuda:0"
+    GPUTrainingOrchestrator.reset_instance()
+
+
+
 

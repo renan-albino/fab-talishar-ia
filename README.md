@@ -217,6 +217,22 @@ wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/traini
 
 # Treinar com temporizador automático (ex: 60 segundos):
 wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --headless --timeout 60
+
+# Alta performance: mais workers paralelos e batch size maior na GPU:
+wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --headless --workers 5 --batch-size 2048 --mcts-sims 60
+```
+
+### Treinamento Padrão Sim2Real (Conectado ao Talishar)
+Para treinar bots em partidas reais contra a plataforma Talishar e auditar casos de borda:
+```bash
+# Modo padrão com auto-alocação segura:
+wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py
+
+# Modo Sim2Real com alta performance (4 partidas paralelas, batch 2048 e inferência na GPU):
+wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --workers 4 --batch-size 2048 --mcts-sims 50 --bot-device cuda:0
+
+# Modo de potência máxima automático do hardware:
+wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --max-resources
 ```
 
 ### Auto-Configuração Dinâmica (Sem Parâmetros)
