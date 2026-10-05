@@ -118,6 +118,8 @@ class GPUTrainingOrchestrator:
             "training_decks":      self._extra.get("training_decks", []),
             "ismcts_concurrency":  self._extra.get("ismcts_concurrency", getattr(SETTINGS, "default_ismcts_concurrency", "threads")),
             "max_resources":       SETTINGS.max_resources_mode,
+            "headless":            self._extra.get("headless", False),
+            "max_epochs":          self._extra.get("max_epochs", None),
         }
 
     # ── Métricas persistidas (API pública para dashboard) ────────
@@ -256,6 +258,13 @@ class GPUTrainingOrchestrator:
         games_since_save = 0
 
         while self.is_running:
+            cfg = self.config
+            max_ep = cfg.get("max_epochs")
+            if max_ep is not None and self.stats.get("epochs_completed", 0) >= int(max_ep):
+                print(f"[Treinador] 🏁 Meta de {max_ep} época(s) atingida. Finalizando loop...", flush=True)
+                self.is_running = False
+                break
+
             # ── 1. Selecionar par de decks (rotativo) ──────────────
             decks_pool = training_decks or self._get_all_decks()
 
@@ -284,7 +293,7 @@ class GPUTrainingOrchestrator:
                 from ai.training.headless_env import HeadlessSelfPlayLoop
                 import concurrent.futures
                 
-                headless_env = HeadlessSelfPlayLoop(self.model, mcts_sims=mcts_sims_val, device=bot_device)
+                headless_env = HeadlessSelfPlayLoop(self.model, mcts_sims=mcts_sims_val, device=str(device))
                 futures = []
                 with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
                     for _ in range(num_workers):
@@ -472,6 +481,12 @@ class GPUTrainingOrchestrator:
                 if len(self.stats["history"]) > 200:
                     self.stats["history"].pop(0)
 
+                max_ep = cfg.get("max_epochs")
+                if max_ep is not None and self.stats["epochs_completed"] >= int(max_ep):
+                    print(f"[Treinador] 🏁 Meta de {max_ep} época(s) atingida. Finalizando loop...", flush=True)
+                    self.is_running = False
+                    break
+
             self.save_metrics()
 
             # ── 6. Salvar checkpoint periodicamente ─────────────────
@@ -615,6 +630,9 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="GPUTrainingOrchestrator")
     parser.add_argument("--headless", action="store_true", help="Run headless in-memory self-play loop bypassing Talishar API")
+    parser.add_argument("--max-epochs", type=int, default=None, help="Maximum absolute epochs completed before stopping")
+    parser.add_argument("--epochs", type=int, default=None, help="Number of new epochs to train from now before stopping")
+    parser.add_argument("--timeout", type=int, default=None, help="Maximum execution time in seconds before stopping")
     args = parser.parse_args()
     
     # Hardware Pre-flight Check
@@ -636,11 +654,24 @@ if __name__ == "__main__":
     
     print("[Pre-flight] Hardware Check aprovado. Iniciando Orquestrador...", flush=True)
     
+    custom_cfg = {"headless": args.headless}
+    if args.max_epochs is not None:
+        custom_cfg["max_epochs"] = args.max_epochs
+
     orchestrator = GPUTrainingOrchestrator()
-    orchestrator.start(custom_config={"headless": args.headless})
+    if args.epochs is not None:
+        target_epochs = orchestrator.stats.get("epochs_completed", 0) + args.epochs
+        custom_cfg["max_epochs"] = target_epochs
+
+    orchestrator.start(custom_config=custom_cfg)
+    start_time = time.time()
     
     try:
         while orchestrator.is_running:
+            if args.timeout is not None and (time.time() - start_time) >= args.timeout:
+                print(f"[Treinador] ⏱ Timeout de {args.timeout}s atingido. Encerrando orquestrador...", flush=True)
+                orchestrator.stop()
+                break
             time.sleep(1)
     except KeyboardInterrupt:
         orchestrator.stop()

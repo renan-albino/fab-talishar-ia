@@ -209,7 +209,14 @@ Quando você não usa o Streamlit e roda os motores diretamente via terminal, a 
 ### Comando Rápido (Headless Puro)
 Para "encher o replay buffer" incrivelmente rápido burlando a latência e o frontend do Talishar, use a simulação direta em memória:
 ```bash
+# Execução contínua em memória com baralhos reais de decks/*.json:
 wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --headless
+
+# Treinar por um número fixo de épocas relativas e parar automaticamente:
+wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --headless --epochs 5
+
+# Treinar com temporizador automático (ex: 60 segundos):
+wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --headless --timeout 60
 ```
 
 ### Auto-Configuração Dinâmica (Sem Parâmetros)

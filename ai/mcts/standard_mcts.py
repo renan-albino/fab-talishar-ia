@@ -19,7 +19,6 @@ import torch
 from typing import Dict, Any, List, Optional, Tuple
 
 from ai.model import FaBPolicyValueNetwork
-from ai.game_simulator import GameSimulator
 from ai.logger import get_logger
 
 from .node import MCTSNode
@@ -220,6 +219,7 @@ class MCTSEngine:
             for node in nodes:
                 if state is not None and legal_actions and 0 <= node.action_id < len(legal_actions):
                     try:
+                        from ai.game_simulator import GameSimulator
                         next_state, leaf_vec = GameSimulator.simulate_step(state, legal_actions[node.action_id])
                         node.state = next_state
                     except Exception:
