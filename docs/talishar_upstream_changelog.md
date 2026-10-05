@@ -9,7 +9,7 @@ Ele serve como referência para os agentes de IA entenderem exatamente quais mud
 
 | Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
 | :--- | :--- | :--- | :--- | :--- |
-| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `c9f35efed` (`c9f35efedac80bfe41858f1d141f35293b1b2f25`) | 2026-10-03 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `adda159c1` (`adda159c1c36769ff0d141e8df77de1e6ecdc81d`) | 2026-10-04 | ✅ Sincronizado + Patches Aplicados |
 | **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `4d11c8c92` (`4d11c8c924a05c54454decf3a5614e0135a3b277`) | 2026-10-03 | ✅ Sincronizado + Patches Aplicados |
 
 ---
@@ -24,6 +24,34 @@ Quando o Talishar oficial atualizar:
 ---
 
 ## 🕒 Histórico de Sincronizações
+
+### 🔄 Sincronização em 2026-10-04 12:30:10
+
+#### Talishar Backend
+- **Transição de Versão**: `c9f35efed` (2026-10-03) ➔ `adda159c1` (2026-10-04)
+- **Novos commits incorporados**: 3
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Banco fab_cards_db.json reindexado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `adda159c1` (2026-10-04 por **Paul Gibby**) — fix ripple away doubling up
+* `7962ba252` (2026-10-04 por **Paul Gibby**) — add seed disease
+* `212898b5a` (2026-10-03 por **Paul Gibby**) — seed prototypes
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `Classes/CardObjects/MPACards.php`
+- `Constants.php`
+- `zzProcessImage.php`
+
+</details>
+
+
+---
 
 ### 🔄 Sincronização em 2026-10-03 16:24:09
 

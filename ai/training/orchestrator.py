@@ -283,7 +283,8 @@ class GPUTrainingOrchestrator:
             # saturação de múltiplos contextos CUDA. O orquestrador mantém o treino de gradientes na GPU.
             bot_device = "cpu" if (num_workers >= 3 or "cuda" not in str(dev_val)) else dev_val
 
-            epoch_ratio = min(1.0, self.stats["epochs_completed"] / max(1, self.config.get("max_epochs", 100)))
+            max_epochs_val = int(self.config.get("max_epochs") or 100)
+            epoch_ratio = min(1.0, self.stats["epochs_completed"] / max(1, max_epochs_val))
             ismcts_concurrency_val = str(self.config.get("ismcts_concurrency", getattr(SETTINGS, "default_ismcts_concurrency", "threads")))
             bot_env = os.environ.copy()
             bot_env["TALISHAR_SKIP_GPU_PROBE"] = "1"
