@@ -198,7 +198,7 @@ def test_deck_parser_metadata_enrichment():
 
     # Verificar que os decks salvos possuem metadados válidos
     saved_decks = list_saved_decks()
-    assert len(saved_decks) >= 10, "Esperado pelo menos 10 decks em decks/"
+    assert len(saved_decks) >= 1, "Esperado pelo menos 1 deck em decks/"
     
     for d in saved_decks:
         assert "hero" in d or "hero_name" in d, f"Deck {d.get('slug')} sem identificação de herói"

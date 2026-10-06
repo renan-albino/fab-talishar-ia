@@ -430,7 +430,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 O Git Hook `pre-push` é executado automaticamente a cada `git push` para garantir que falhas nunca cheguem ao repositório remoto ou quebrem o GitHub Actions. Ele executa:
 1. **Sintaxe Completa Python** (`compileall`).
 2. **Dry-Run do ISMCTS** (`scripts/analyze_ismcts.py --dry-run`).
-3. **Execução da Suíte de Testes** (`pytest tests/`, 465 testes) [Incremental: pula se apenas documentação foi alterada].
+3. **Execução da Suíte de Testes** (`pytest tests/`, 478 testes) [Incremental: pula se apenas documentação foi alterada].
 4. **Verificação de Sincronização dos Templates** (`prepare_environment.py --export-templates` & diff).
 5. **Build de Produção do Frontend Vite** (`npx vite build`) [Incremental: pula se não houve alterações no frontend].
 
@@ -522,7 +522,7 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
 │   ├── manage_state.py       # Gestão de checkpoints compactos e releases no GitHub
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 465 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 478 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -632,7 +632,9 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Recomendação Inteligente de Heróis (Analytics & ELO)** | Motor de diagnóstico tático em `stats/recommendations.py` que analisa a telemetria e sugere os heróis prioritários para treino humano (gargalos de ELO < 45% WR, alta incerteza amostral e matchups inéditos contra humanos) integrado nas abas 1 e 6 do Dashboard |
 | **Sincronização de Telemetria do Replay Buffer** | Leitura direta com cache leve (TTL=3s) das amostras físicas do `replay_buffer.npz` no Dashboard (`ui/helpers.py`, `ui/tabs/tab_training.py`) e sincronização imediata de `samples_collected` pós-assimilação |
 | **Notificações Visuais de Assimilação em Tempo Real** | Ampulheta animada CSS e aviso de status na aba de Duelo Humano (`tab_play.py`) com injeção de logs estilizados no chat do Talishar durante a assimilação |
-| **Tuning Causal Anti-Espiral, MCTS Avançado & Stratified PER (465 Testes)** | Diagnóstico causal de Hand Value Conversion Rate (HVCR) e clamp estrito [0.85, 1.15] no auto-tuner (eliminando o efeito espiral), Pitch Stacking ordenado no fundo do deck simulado no ISMCTS, calibração do ruído de Dirichlet para o espaço de ações do FaB, decaimento da temperatura de fusão knapsack-NN, atenuação de falsos blunders por consistência temporal e amostragem estratificada por herói no buffer PER (465 testes unitários no pytest) |
+| **Tuning Causal Anti-Espiral, MCTS Avançado & Stratified PER** | Diagnóstico causal de Hand Value Conversion Rate (HVCR) e clamp estrito [0.85, 1.15] no auto-tuner (eliminando o efeito espiral), Pitch Stacking ordenado no fundo do deck simulado no ISMCTS, calibração do ruído de Dirichlet para o espaço de ações do FaB, decaimento da temperatura de fusão knapsack-NN, atenuação de falsos blunders por consistência temporal e amostragem estratificada por herói no buffer PER |
+| **Resolução de Modais de Adagas, Poda de Flick Knives & Criação Resiliente de Salas (484 Testes)** | Mapeamento unificado de extração de opções de popup (`extract_popup_cards`), targeting cirúrgico de adagas (*Pain in the Backside*, *Flick Knives*) via Mode 16 com `actionDataOverride` (`MYCHAR-X`), detecção rigorosa de adagas quebradas/arremessadas (`isBroken`, `overlay=1`), normalização bidirecional de slugs de decks no dashboard/backend sem fallback espúrio para URLs externas e suporte direto a payload JSON de baralhos (484 testes unitários no pytest) |
+| **Táticas de Kassai, Defesa de Sobrevivência & Perfis MCTS no Duelo (489 Testes)** | Sequenciamento consciente de recursos para buffs de armas (*Spoils of War*, *Blood on Her Hands*), priorização dinâmica do swing de arma com buff ativo (+30.0 score), guarda mandatória contra dano fatal e eliminação de letargia defensiva em `defense_pruner.py`, e painel com perfis de velocidade MCTS (0 sims instantâneo <50ms até 50 sims) no Dashboard (489 testes unitários no pytest) |
 
 ### 📋 Pendente
  

@@ -1,6 +1,37 @@
 import time
 import random
 
+def extract_popup_cards(popup: dict = None, state: dict = None) -> list:
+    """Extrai com segurança a lista de cartas selecionáveis do popup/estado em qualquer formato."""
+    if not isinstance(popup, dict):
+        popup = {}
+    p_data = popup.get("data", popup) if isinstance(popup.get("data"), dict) else popup
+    p_inner = popup.get("popup", {}) if isinstance(popup.get("popup"), dict) else {}
+    pip = {}
+    if isinstance(state, dict):
+        pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
+        if not isinstance(pip, dict):
+            pip = {}
+
+    candidates = [
+        p_data.get("cards"),
+        p_data.get("cardsArray"),
+        p_data.get("cardsMultiZone"),
+        popup.get("cards"),
+        popup.get("cardsArray"),
+        popup.get("cardsMultiZone"),
+        p_inner.get("cards"),
+        p_inner.get("cardsArray"),
+        p_inner.get("cardsMultiZone"),
+        pip.get("cards"),
+        pip.get("cardsMultiZone"),
+        pip.get("cardsArray"),
+    ]
+    for c in candidates:
+        if isinstance(c, list) and c:
+            return c
+    return []
+
 def score_choice_candidate(client, candidate, turn_phase: str = "", state: dict = None, popup: dict = None) -> float:
     """Pontua um candidato para escolha múltipla ou alvo de primeira tentativa."""
     c_name = ""
@@ -79,6 +110,10 @@ def score_choice_candidate(client, candidate, turn_phase: str = "", state: dict 
         score += 6.0
     elif c_info.get("has_go_again"):
         score += 5.0
+
+    # Prioridade para Adagas em modais de seleção (ex: Flick Knives / Pain in the Backside)
+    if "dagger" in c_name or "kunai" in c_name or "spider's_bite" in c_name or "kodachi" in c_name or "scalpel" in c_name or "huntsman" in c_name or "orbitoclast" in c_name:
+        score += 22.0
 
     # ── Alvo de Ataque: Se o modal for escolha de alvo (CHOOSETARGET, CHOOSECARD, etc.)
     # e houver opção de atacar/destruir um Aliado inimigo (ex: Riggermortis, Sawbones, Anka),
@@ -166,16 +201,7 @@ def check_and_handle_anti_loop(client, state: dict, turn_num: int, turn_phase: s
                 client.log(f"[AÇÃO JOGADOR {client.player_id}] Anti-Loop ({turn_phase}) Multi-Form -> Forçando índice 0 (Mode 19)")
                 client.send_action(mode=19, chk_count=1, chk_input=["0"])
             else:
-                p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
-                cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
-                if not cards_arr and isinstance(popup, dict) and isinstance(popup.get("popup"), dict):
-                    cards_arr = popup["popup"].get("cardsArray", [])
-                if not cards_arr and isinstance(state, dict):
-                    pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
-                    if isinstance(pip, dict):
-                        cards_arr = pip.get("cardsMultiZone", []) or pip.get("cardsArray", [])
-                if not cards_arr and isinstance(popup, dict):
-                    cards_arr = popup.get("cardsMultiZone", [])
+                cards_arr = extract_popup_cards(popup, state)
 
                 c0 = cards_arr[0] if cards_arr else {}
                 target_id = str(c0.get("actionDataOverride") or "0") if isinstance(c0, dict) else "0"
@@ -318,15 +344,16 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
             time.sleep(0.002)
             return True
             
-        p_buttons = p_data.get("buttons", [])
-        if p_buttons:
-            btn = p_buttons[0]
-            client.log(f"[AÇÃO JOGADOR {client.player_id}] Popup Botão -> {btn.get('caption', 'OK')}")
+        p_buttons = p_data.get("buttons", []) or popup.get("buttons", [])
+        valid_p_buttons = [b for b in p_buttons if isinstance(b, dict) and b.get("mode") not in (99, 100)]
+        if valid_p_buttons:
+            btn = valid_p_buttons[0]
+            client.log(f"[AÇÃO JOGADOR {client.player_id}] Popup Botão -> {btn.get('caption', 'OK')} (Mode {btn.get('mode', 17)})")
             client.send_action(mode=btn.get("mode", 17), button_input=btn.get("buttonInput", ""))
             time.sleep(0.002)
             return True
             
-        cards_arr = p_data.get("cardsArray", [])
+        cards_arr = extract_popup_cards(popup, state)
         if cards_arr:
             best_card = cards_arr[0]
             best_idx = 0
@@ -376,20 +403,35 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
         return True
 
     if turn_phase in ("CHOOSECARD", "CHOOSECARDID", "MAYCHOOSECARD", "CHOOSEZONE", "CHOOSEDECK", "MAYCHOOSEDECK", "CHOOSEHAND", "MAYCHOOSEHAND", "CHOOSEDISCARD", "MAYCHOOSEDISCARD", "CHOOSEPERMANENT", "MAYCHOOSEPERMANENT", "CHOOSEMYSOUL", "MAYCHOOSEMYSOUL", "CHOOSETARGET"):
-        p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
-        cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
-        if not cards_arr and isinstance(popup, dict) and isinstance(popup.get("popup"), dict):
-            cards_arr = popup["popup"].get("cardsArray", [])
-        if not cards_arr and isinstance(state, dict):
-            pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
-            if isinstance(pip, dict):
-                cards_arr = pip.get("cardsMultiZone", []) or pip.get("cardsArray", [])
-        if not cards_arr and isinstance(popup, dict):
-            cards_arr = popup.get("cardsMultiZone", [])
+        cards_arr = extract_popup_cards(popup, state)
         if not cards_arr and "DISCARD" in turn_phase:
             cards_arr = state.get("playerDiscard", [])
         elif not cards_arr and "HAND" in turn_phase:
             cards_arr = state.get("playerHand", [])
+
+        # Poda Sim2Real: Tratar modais com botões de opção direta (ex.: Transformação do Marionette modo 23)
+        pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
+        pip_btns = (
+            (pip.get("buttons") if isinstance(pip, dict) else None)
+            or (popup.get("buttons") if isinstance(popup, dict) else None)
+            or (popup.get("popup", {}).get("buttons") if isinstance(popup, dict) and isinstance(popup.get("popup"), dict) else None)
+            or []
+        )
+        valid_btns = [b for b in pip_btns if isinstance(b, dict) and b.get("mode") not in (99, 100)]
+        has_interactive_cards = any(
+            isinstance(c, dict) and (c.get("action", 0) != 0 or c.get("actionDataOverride"))
+            for c in cards_arr
+        )
+
+        if valid_btns and not has_interactive_cards:
+            chosen_btn = valid_btns[0]
+            action_mode = int(chosen_btn.get("mode", 23))
+            btn_input = str(chosen_btn.get("buttonInput", ""))
+            cid = str(chosen_btn.get("cardID", btn_input))
+            client.log(f"[AÇÃO JOGADOR {client.player_id}] Seleção em Modal/Botão -> {turn_phase} (Modo: {action_mode}, Input: {btn_input})")
+            client.send_action(mode=action_mode, button_input=btn_input, card_id=cid)
+            time.sleep(0.002)
+            return True
 
         best_card_id = "0"
         best_btn_inp = "0"
@@ -401,25 +443,15 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
                     best_score = score
                     best_card_id = str(c_item.get("actionDataOverride", c_item.get("cardNumber", str(idx)))) if isinstance(c_item, dict) else str(idx)
                     best_btn_inp = best_card_id
-        else:
-            # Poda Sim2Real: Tratar modais com botões de opção direta (ex.: Transformação do Marionette modo 23)
-            pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
-            pip_btns = (
-                (pip.get("buttons") if isinstance(pip, dict) else None)
-                or (popup.get("buttons") if isinstance(popup, dict) else None)
-                or (popup.get("popup", {}).get("buttons") if isinstance(popup, dict) and isinstance(popup.get("popup"), dict) else None)
-                or []
-            )
-            valid_btns = [b for b in pip_btns if isinstance(b, dict) and b.get("mode") not in (99, 100)]
-            if valid_btns:
-                chosen_btn = valid_btns[0]
-                action_mode = int(chosen_btn.get("mode", 23))
-                btn_input = str(chosen_btn.get("buttonInput", ""))
-                cid = str(chosen_btn.get("cardID", btn_input))
-                client.log(f"[AÇÃO JOGADOR {client.player_id}] Seleção em Modal/Botão -> {turn_phase} (Modo: {action_mode}, Input: {btn_input})")
-                client.send_action(mode=action_mode, button_input=btn_input, card_id=cid)
-                time.sleep(0.002)
-                return True
+        elif valid_btns:
+            chosen_btn = valid_btns[0]
+            action_mode = int(chosen_btn.get("mode", 23))
+            btn_input = str(chosen_btn.get("buttonInput", ""))
+            cid = str(chosen_btn.get("cardID", btn_input))
+            client.log(f"[AÇÃO JOGADOR {client.player_id}] Seleção em Modal/Botão -> {turn_phase} (Modo: {action_mode}, Input: {btn_input})")
+            client.send_action(mode=action_mode, button_input=btn_input, card_id=cid)
+            time.sleep(0.002)
+            return True
 
         client.log(f"[AÇÃO JOGADOR {client.player_id}] Seleção Inteligente de Alvo/Zona -> {turn_phase} (CardID: {best_card_id})")
         client.send_action(mode=16, card_id=best_card_id, button_input=best_btn_inp)
@@ -436,16 +468,7 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
             or turn_phase in ("MULTICHOOSE", "MULTICHOOSEHAND")
         )
 
-        p_data = popup.get("data", popup) if isinstance(popup, dict) else {}
-        cards_arr = p_data.get("cardsArray", []) if isinstance(p_data, dict) else []
-        if not cards_arr and isinstance(popup, dict) and isinstance(popup.get("popup"), dict):
-            cards_arr = popup["popup"].get("cardsArray", [])
-        if not cards_arr and isinstance(state, dict):
-            pip = state.get("playerInputPopUp") or state.get("playerInputPopup") or {}
-            if isinstance(pip, dict):
-                cards_arr = pip.get("cardsMultiZone", []) or pip.get("cardsArray", [])
-        if not cards_arr and isinstance(popup, dict):
-            cards_arr = popup.get("cardsMultiZone", [])
+        cards_arr = extract_popup_cards(popup, state)
 
         if turn_phase in ("CHOOSEMULTIZONE", "MAYCHOOSEMULTIZONE") and not is_multi_form:
             if turn_phase == "MAYCHOOSEMULTIZONE" and not cards_arr:

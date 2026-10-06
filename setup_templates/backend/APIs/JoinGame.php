@@ -284,13 +284,30 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
    $isFaBBazaar = IsFaBBazaarHostLink($decklink);
    
    // Sim2Real AI engine support:
-   if (str_ends_with($decklink, ".json")) {
+   $isLocalJson = false;
+   $local_paths = [];
+   if (!str_starts_with($decklink, "http://") && !str_starts_with($decklink, "https://")) {
+       $clean_slug = str_ends_with($decklink, ".json") ? substr($decklink, 0, -5) : $decklink;
+       if (str_starts_with($clean_slug, "decks/")) $clean_slug = substr($clean_slug, 6);
        $local_paths = [
            $decklink,
            "../" . $decklink,
            "../../" . $decklink,
-           "/var/www/html/game/" . $decklink
+           "/var/www/html/game/" . $decklink,
+           "decks/" . $clean_slug . ".json",
+           "../decks/" . $clean_slug . ".json",
+           "../../decks/" . $clean_slug . ".json",
+           "/var/www/html/game/decks/" . $clean_slug . ".json"
        ];
+       foreach ($local_paths as $lp) {
+           if (file_exists($lp)) {
+               $isLocalJson = true;
+               break;
+           }
+       }
+   }
+
+   if ($isLocalJson || str_ends_with($decklink, ".json")) {
        $apiDeck = null;
        foreach ($local_paths as $lp) {
            if (file_exists($lp)) {
@@ -305,6 +322,14 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
            $response->error = "Local deck file not found: " . $decklink;
            echo json_encode($response);
            exit;
+       }
+   }
+   else if (!empty($deck) && (is_array($deck) || is_object($deck))) {
+       $candidateObj = is_object($deck) ? $deck : json_decode(json_encode($deck));
+       if (isset($candidateObj->cards) && count($candidateObj->cards) > 0) {
+           $deckObj = $candidateObj;
+           $apiDeck = json_encode($deckObj);
+           $apiInfo = ['http_code' => 200];
        }
    }
    else if ($isFaBDB) {
@@ -353,26 +378,28 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
      $apiLink = "https://api.fabmeta.net/deck/" . $slug;
    }
    
-   if (!str_ends_with($decklink, ".json")) {
-       $response->apiLink = $apiLink;
-       curl_setopt($curl, CURLOPT_URL, $apiLink);
-       curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-       $apiDeck = curl_exec($curl);
-       $apiInfo = curl_getinfo($curl);
-       curl_close($curl);
-   }
+   if (!isset($deckObj) || $deckObj === null) {
+       if (!str_ends_with($decklink, ".json")) {
+           $response->apiLink = $apiLink;
+           curl_setopt($curl, CURLOPT_URL, $apiLink);
+           curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+           $apiDeck = curl_exec($curl);
+           $apiInfo = curl_getinfo($curl);
+           curl_close($curl);
+       }
 
-   if ($apiDeck === FALSE) {
-     WriteGameFile();
-     if (is_array($decklink))
-       $response->error = "Deckbuilder API for this deck returns no data: " . implode("/", $decklink);
-     else
-       $response->error = "Deckbuilder API for this deck returns no data: " . $decklink;
-     echo json_encode($response);
-     exit;
-   }
-   if (!str_ends_with($decklink, ".json")) {
-       $deckObj = json_decode($apiDeck);
+       if ($apiDeck === FALSE) {
+         WriteGameFile();
+         if (is_array($decklink))
+           $response->error = "Deckbuilder API for this deck returns no data: " . implode("/", $decklink);
+         else
+           $response->error = "Deckbuilder API for this deck returns no data: " . $decklink;
+         echo json_encode($response);
+         exit;
+       }
+       if (!str_ends_with($decklink, ".json")) {
+           $deckObj = json_decode($apiDeck);
+       }
    }
    if ($apiInfo['http_code'] == 401 && $isFaBBazaar) {
      $response->error = "API UNAUTHORIZED! FaB Bazaar API key is missing. Contact site administrator.";

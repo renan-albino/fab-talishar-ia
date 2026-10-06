@@ -251,5 +251,15 @@ def test_orchestrator_custom_performance_config():
     GPUTrainingOrchestrator.reset_instance()
 
 
-
-
+def test_orchestrator_train_steps_and_bot_device():
+    GPUTrainingOrchestrator.reset_instance()
+    orch = GPUTrainingOrchestrator()
+    custom_cfg = {
+        "train_steps": 5,
+        "headless": False,
+    }
+    orch._extra = custom_cfg
+    cfg = orch.config
+    assert cfg.get("train_steps") == 5
+    assert cfg.get("headless") is False
+    GPUTrainingOrchestrator.reset_instance()

@@ -127,3 +127,28 @@ def test_extract_hero_from_deck_both_signatures():
     cards = [{"identifier": "betsy_skin_in_the_game", "total": 1}]
     hero = extract_hero_from_deck(cards)
     assert "Betsy" in hero
+
+
+def test_delete_saved_deck_slug_variants(tmp_path):
+    """Garante que delete_saved_deck aceita slug simples, com .json ou com decks/."""
+    from deck_manager.repository import save_deck_to_workspace, delete_saved_deck, list_saved_decks
+    test_deck = {
+        "name": "Temp Test Hero",
+        "format": "blitz",
+        "cards": [{"identifier": "kayo_armed_and_dangerous", "total": 1}]
+    }
+    # Cria deck no diretório temporário
+    base_dir = str(tmp_path)
+    res = save_deck_to_workspace(test_deck, base_dir=base_dir)
+    slug = res["slug"]
+    assert slug == "temp_test_hero"
+
+    # Testa exclusão passando slug com .json
+    assert delete_saved_deck(f"{slug}.json", base_dir=base_dir) is True
+    # Uma segunda tentativa deve retornar False
+    assert delete_saved_deck(slug, base_dir=base_dir) is False
+
+    # Recria e testa com prefixo decks/
+    save_deck_to_workspace(test_deck, base_dir=base_dir)
+    assert delete_saved_deck(f"decks/{slug}.json", base_dir=base_dir) is True
+

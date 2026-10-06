@@ -166,6 +166,54 @@ def render_tab_play(saved_decks=None, deck_options=None, fe_running=None, be_run
         else:
             bot_deck_slug = st.text_input("Slug do Deck do Bot:", value="betsy", key="play_bot_deck_txt")
 
+    with st.expander("⚡ Configurações de Inteligência & Performance da IA (Velocidade vs Profundidade)", expanded=False):
+        col_mcts1, col_mcts2, col_mcts3 = st.columns(3)
+        with col_mcts1:
+            perf_profile = st.selectbox(
+                "Perfil de Velocidade / MCTS:",
+                [
+                    "🚀 Rápido (10 sims - Fluido ~0.3s)",
+                    "⚡ Instantâneo (0 sims - Puro Heurístico <50ms)",
+                    "⚖️ Equilibrado (25 sims - ~1.0s)",
+                    "🧠 Mestre (50 sims - Análise Profunda ~2.0s)"
+                ],
+                index=0,
+                key="play_mcts_profile",
+                help="Define quantas simulações de Monte Carlo Tree Search o bot realiza por jogada. 0 sims responde imediatamente sem qualquer espera!"
+            )
+            profile_sims_map = {
+                "⚡ Instantâneo (0 sims - Puro Heurístico <50ms)": 0,
+                "🚀 Rápido (10 sims - Fluido ~0.3s)": 10,
+                "⚖️ Equilibrado (25 sims - ~1.0s)": 25,
+                "🧠 Mestre (50 sims - Análise Profunda ~2.0s)": 50
+            }
+            selected_mcts_sims = profile_sims_map[perf_profile]
+
+        with col_mcts2:
+            concurrency_choice = st.selectbox(
+                "Concorrência ISMCTS:",
+                ["threads (Multithread Paralelo)", "sequential (Sequencial)"],
+                index=0,
+                key="play_mcts_concurrency",
+                help="Multithreading executa múltiplos mundos em paralelo nos núcleos da CPU, acelerando a decisão."
+            )
+            selected_concurrency = "threads" if "threads" in concurrency_choice else "sequential"
+
+        with col_mcts3:
+            try:
+                import torch
+                has_cuda = torch.cuda.is_available()
+            except Exception:
+                has_cuda = False
+            device_options = ["cuda:0 (GPU CUDA)", "cpu (CPU)"] if has_cuda else ["cpu (CPU)"]
+            device_choice = st.selectbox(
+                "Dispositivo do Bot:",
+                device_options,
+                index=0,
+                key="play_bot_device"
+            )
+            selected_device = "cuda:0" if "cuda" in device_choice else "cpu"
+
     col_fmt, col_btn = st.columns([1, 2])
     with col_fmt:
         match_format = st.selectbox("Formato da Partida:", ["CC", "Blitz", "Commoner", "Silver Age"], index=0, key="play_match_format")
@@ -183,10 +231,18 @@ def render_tab_play(saved_decks=None, deck_options=None, fe_running=None, be_run
     if btn_create_duel:
         with st.spinner("Criando sala no Talishar e inicializando o Bot AI..."):
             fmt_code = "cc" if match_format == "CC" else ("blitz" if match_format == "Blitz" else "commoner")
-            res = frontend_manager.create_human_vs_bot_match(user_deck_slug, bot_deck_slug, fmt_code)
+            res = frontend_manager.create_human_vs_bot_match(
+                user_deck_slug,
+                bot_deck_slug,
+                fmt_code,
+                mcts_sims=selected_mcts_sims,
+                ismcts_concurrency=selected_concurrency,
+                device=selected_device,
+                torch_threads=2
+            )
             if res.get("success"):
                 st.session_state["active_human_match"] = res
-                st.success(f"🎉 Partida Criada! Sala #{res['game_name']} — Bot AI Conectado com sucesso!")
+                st.success(f"🎉 Partida Criada! Sala #{res['game_name']} — Bot AI Conectado com sucesso ({perf_profile})!")
             else:
                 st.error(f"Erro ao criar partida: {res.get('error')}")
 

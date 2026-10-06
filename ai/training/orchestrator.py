@@ -121,6 +121,7 @@ class GPUTrainingOrchestrator:
             "headless":            self._extra.get("headless", False),
             "max_epochs":          self._extra.get("max_epochs", None),
             "bot_device":          self._extra.get("bot_device", None),
+            "train_steps":         self._extra.get("train_steps", 1),
         }
 
     # ── Métricas persistidas (API pública para dashboard) ────────
@@ -197,7 +198,7 @@ class GPUTrainingOrchestrator:
         self.thread.start()
         cfg = self.config
         mcts_info = cfg.get("mcts_sims", SETTINGS.mcts_simulations)
-        b_dev = cfg.get("bot_device") or ("cuda:0" if ("cuda" in str(cfg["device"]) and cfg["num_workers"] <= 4) else "cpu")
+        b_dev = cfg.get("bot_device") or ("cuda:0" if cfg.get("headless") else "cpu")
         print(f"[Treinador] ▶ Iniciado | Dispositivo: {cfg['device']} | Batch: {cfg['batch_size']} | Workers: {cfg['num_workers']} | MCTS Sims: {mcts_info} | Bot Device: {b_dev}", flush=True)
 
     def stop(self):
@@ -241,7 +242,10 @@ class GPUTrainingOrchestrator:
             gamma=SETTINGS.lr_scheduler_gamma,
         )
         use_fp16 = bool(cfg.get("fp16", SETTINGS.fp16)) and "cuda" in str(device)
-        scaler = torch.cuda.amp.GradScaler(enabled=use_fp16)
+        try:
+            scaler = torch.amp.GradScaler("cuda", enabled=use_fp16)
+        except Exception:
+            scaler = torch.cuda.amp.GradScaler(enabled=use_fp16)
 
         buffer_cap = int(cfg.get("buffer_capacity", SETTINGS.buffer_capacity))
         os.environ["FAB_BUFFER_CAPACITY"] = str(buffer_cap)
@@ -281,11 +285,14 @@ class GPUTrainingOrchestrator:
             mcts_sims_val = self.config.get("mcts_sims", 25)
             dev_val = self.config.get("device", "cuda:0")
 
-            # Dispositivo dos bots: respeita override explícito ou aloca na GPU se workers <= 4 e CUDA ativo
+            # Dispositivo dos bots:
+            # - Em modo headless (threads em memória), bots compartilham com segurança o modelo na GPU.
+            # - Em modo Sim2Real (múltiplos subprocessos), CPU evita degradação por CUDA context thrashing,
+            #   a menos que explicitamente configurado pelo usuário.
             custom_bot_dev = self.config.get("bot_device")
             if custom_bot_dev:
                 bot_device = custom_bot_dev
-            elif "cuda" in str(dev_val) and num_workers <= 4:
+            elif cfg.get("headless"):
                 bot_device = dev_val
             else:
                 bot_device = "cpu"
@@ -460,9 +467,11 @@ class GPUTrainingOrchestrator:
 
             min_train = min(batch_size, max(32, len(buffer)))
             if len(buffer) >= min_train:
-                loss_p, loss_v, loss_t, entropy, val_mean = self._train_step(
-                    self.model, optimizer, scaler, buffer, device, batch_size, use_fp16
-                )
+                num_train_steps = max(1, int(cfg.get("train_steps", 1)))
+                for _ in range(num_train_steps):
+                    loss_p, loss_v, loss_t, entropy, val_mean = self._train_step(
+                        self.model, optimizer, scaler, buffer, device, batch_size, use_fp16
+                    )
                 scheduler.step()
 
                 self.stats["epochs_completed"] += 1
@@ -529,7 +538,8 @@ class GPUTrainingOrchestrator:
 
         optimizer.zero_grad()
 
-        with torch.cuda.amp.autocast(enabled=use_amp):
+        autocast_ctx = torch.amp.autocast("cuda", enabled=use_amp) if hasattr(torch, "amp") and hasattr(torch.amp, "autocast") else torch.cuda.amp.autocast(enabled=use_amp)
+        with autocast_ctx:
             policy_logits, value_preds, aux_preds = model(states_b, return_aux=True)
 
             log_probs  = F.log_softmax(policy_logits, dim=-1)
@@ -646,6 +656,7 @@ if __name__ == "__main__":
     parser.add_argument("--mcts-sims", type=int, default=None, help="Number of MCTS simulations per decision")
     parser.add_argument("--device", type=str, default=None, help="Trainer device (e.g. cuda:0 or cpu)")
     parser.add_argument("--bot-device", type=str, default=None, help="Inference device for bots (cuda:0, cpu, or auto)")
+    parser.add_argument("--train-steps", type=int, default=None, help="Number of gradient optimization steps per epoch (default: 1)")
     parser.add_argument("--max-resources", action="store_true", help="Enable maximum hardware utilization mode")
     args = parser.parse_args()
 
@@ -689,6 +700,8 @@ if __name__ == "__main__":
         custom_cfg["device"] = args.device
     if args.bot_device is not None:
         custom_cfg["bot_device"] = args.bot_device
+    if args.train_steps is not None:
+        custom_cfg["train_steps"] = args.train_steps
 
     orchestrator = GPUTrainingOrchestrator()
     if args.epochs is not None:

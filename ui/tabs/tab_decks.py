@@ -47,11 +47,13 @@ def render_tab_decks(saved_decks=None, deck_options=None):
                         st.write(f"🃏 **Total:** {d['total_cards']} cartas")
                     with c_d4:
                         if st.button(f"🗑️ Deletar", key=f"del_{d['slug']}", type="secondary"):
-                            delete_saved_deck(d["slug"])
-                            get_cached_saved_decks.clear()
-                            st.toast(f"Deck '{d['name']}' deletado!", icon="🗑️")
-                            st.success(f"Deck **{d['name']}** deletado com sucesso!")
-                            st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+                            if delete_saved_deck(d["slug"]):
+                                get_cached_saved_decks.clear()
+                                st.toast(f"Deck '{d['name']}' deletado!", icon="🗑️")
+                                st.success(f"Deck **{d['name']}** deletado com sucesso!")
+                                st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+                            else:
+                                st.error(f"Não foi possível excluir o arquivo de '{d['slug']}'.")
                     st.divider()
         else:
             st.info("Nenhum deck cadastrado ainda. Use a aba ao lado para importar seu primeiro deck.")

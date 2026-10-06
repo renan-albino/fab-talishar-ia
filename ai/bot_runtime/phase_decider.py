@@ -457,7 +457,7 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
                 for item in equip_list:
                     if not isinstance(item, dict):
                         continue
-                    if item.get("status", 1) == 0 or item.get("broken", False) or item.get("destroyed", False):
+                    if item.get("status", 1) == 0 or item.get("broken", False) or item.get("isBroken", False) or item.get("destroyed", False) or item.get("overlay", 0) == 1:
                         continue
                     c_id = str(item.get("cardNumber", "")).lower().strip()
                     sub = str(item.get("subType", item.get("subtype", ""))).lower()

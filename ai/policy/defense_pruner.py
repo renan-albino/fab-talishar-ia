@@ -43,9 +43,10 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     # Identificar se o ataque vem de um Aliado (ex: Riggermortis, Sawbones, Anka, Chum, Scooba)
     is_ally_incoming = any(a_name in incoming_name for a_name in ["riggermortis", "sawbones", "anka", "chum", "scooba"]) or arena_ctx.has_opponent_allies
 
+    is_fatal = (my_hp - opp_power) <= 0
     from .on_hit_evaluator import estimate_on_hit_value
     on_hit_ev = estimate_on_hit_value(incoming_name, state)
-    if on_hit_ev > 0 and not is_ally_incoming:
+    if not is_fatal and my_hp > 4 and on_hit_ev > 0 and not is_ally_incoming:
         import math
         cards_needed = math.ceil(opp_power / 3.0)
         offensive_value_lost = cards_needed * 3.5
@@ -141,7 +142,9 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         try:
             score = engine.strategy.evaluate_block_card(
                 info["name"], info["block"], info["pitch"], info["power"], info["has_go_again"],
-                runegate_in_hand=runegate_in_hand
+                runegate_in_hand=runegate_in_hand,
+                my_hp=my_hp,
+                is_fatal=is_fatal,
             )
         except TypeError:
             score = engine.strategy.evaluate_block_card(

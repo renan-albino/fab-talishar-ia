@@ -31,19 +31,67 @@ class WarriorStrategy(HeroStrategy):
             score += 4.0
         return score
 
-    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool) -> float:
+    def evaluate_weapon_attack(self, card_name: str, floating_res: int, total_res: int, has_hand_attacks: bool, state: Optional[dict] = None, **kwargs) -> float:
         # Guerreiro: o ataque com a arma é o centro absoluto da estratégia!
-        score = 10.0 + (2.0 if floating_res >= 1 else 0.0)
+        score = 16.0 + (3.0 if floating_res >= 1 else 0.0)
+        c_low = card_name.lower()
+
+        # Detecção de buffs de armas ativos no estado atual
+        has_weapon_buff = False
+        if isinstance(state, dict):
+            # 1. Indicadores diretos de buffs no state
+            if state.get("weaponBuff") or state.get("playerWeaponBuff") or state.get("weaponBonus") or state.get("activeWeaponBuff"):
+                has_weapon_buff = True
+
+            # 2. Auras / tokens concedendo bônus
+            auras = state.get("playerAuras", []) or []
+            tokens = state.get("playerTokens", []) or []
+            for item in (auras + tokens):
+                if isinstance(item, dict):
+                    i_name = str(item.get("cardNumber") or item.get("name", "")).lower()
+                    if any(b in i_name for b in ["courage", "quicken", "vigor", "might", "ironsong"]):
+                        has_weapon_buff = True
+                        break
+
+            # 3. Equipamento com bônus de poder ou contadores
+            for eq in state.get("playerEquipment", []):
+                if isinstance(eq, dict) and str(eq.get("cardNumber", "")).lower() == c_low:
+                    if int(eq.get("attackBonus", 0)) > 0 or int(eq.get("plusAttack", 0)) > 0:
+                        has_weapon_buff = True
+                    counters = eq.get("countersMap", {})
+                    if isinstance(counters, dict) and int(counters.get("power", 0)) > 0:
+                        has_weapon_buff = True
+
+            # 4. Cartas jogadas recentemente no turno que buffam arma
+            discard = state.get("playerDiscard", []) or state.get("playerGraveyard", [])
+            for c in discard[-3:]:
+                if isinstance(c, dict):
+                    d_name = str(c.get("cardNumber") or c.get("name", "")).lower()
+                    if any(w in d_name for w in ["spoils_of_war", "blood_on_her_hands", "hit_and_run", "edict_of_steel", "imperial_seal", "brimming_blade", "out_for_blood", "stroke_of_foresight"]):
+                        has_weapon_buff = True
+                        break
+
+            # 5. Kassai: cartas compradas no turno concedem -1 no custo da espada e ativam gold
+            num_drawn = int(state.get("cardsDrawnThisTurn", state.get("numCardsDrawn", 0)))
+            if "kassai" in str(self.hero_name).lower() and num_drawn >= 1 and any(s in c_low for s in ["saber", "sword", "blade", "cintari"]):
+                has_weapon_buff = True
+
+        if has_weapon_buff:
+            score += 30.0  # Buff de arma ativo: prioridade MÁXIMA para desferir o ataque e colher o investimento!
+
         return score
 
     def evaluate_block_card(self, card_name: str, block_val: int, pitch: int, power: int, has_go_again: bool, **kwargs) -> float:
         if block_val <= 0:
             return -999.0
         c_low = card_name.lower()
-        # Preserva Reações de Ataque na mão para forçar dano na etapa de reações
-        if any(w in c_low for w in ["ironsong", "glint", "steelblade", "stroke", "blade_runner", "reprise"]):
-            return -15.0
-        return float(block_val) * 2.0 - power
+        my_hp = kwargs.get("my_hp", 20)
+        is_fatal = kwargs.get("is_fatal", False)
+        # Preserva Reações de Ataque na mão para forçar dano na etapa de reações (APENAS se a vida estiver segura)
+        if not is_fatal and my_hp > 4:
+            if any(w in c_low for w in ["ironsong", "glint", "steelblade", "stroke", "blade_runner", "reprise"]):
+                return -15.0
+        return float(block_val) * 2.0 - (0 if (is_fatal or my_hp <= 4) else power)
 
     def analyze_turn_plan(self, state: dict) -> TurnPlan:
         my_hp = int(state.get("playerHealth", 20))
@@ -108,10 +156,40 @@ class WarriorStrategy(HeroStrategy):
     def modify_attack_candidate_score(self, card_name: str, card_info: dict, turn_plan: TurnPlan, base_score: float, state: dict) -> float:
         score = base_score
         c_clean = str(card_info.get("cardNumber") or card_name).lower()
-        if turn_plan.plan_type == "HALA_ZENITH_PRESSURE" and any(k in c_clean for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "ironsong"]):
+        is_weapon_buff = any(k in c_clean for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "blood_on_her_hands", "spoils_of_war", "hit_and_run"])
+
+        if is_weapon_buff:
+            # ── Verificação de Sequenciamento Crítico de Recursos ──
+            # Se o bot jogar o buff mas não tiver pitch/recursos para pagar o swing da arma subsequente,
+            # o buff é completamente desperdiçado (blunder). Penaliza severamente!
+            card_cost = int(card_info.get("cost", 0))
+            hand = state.get("playerHand", [])
+            other_hand_pitch = sum(
+                int(c.get("pitch", 1))
+                for c in hand
+                if str(c.get("cardNumber") or c.get("name", "")).lower() != c_clean
+            )
+            floating_res = int(state.get("playerPitchCount", 0))
+            if floating_res == 0:
+                resources = state.get("playerResources", [0, 0])
+                floating_res = int(resources[0]) if isinstance(resources, list) and resources else 0
+
+            # Custo estimado da arma principal
+            weapon_cost = 1 if any(w in str(self.hero_name).lower() for w in ["kassai", "cintari"]) else 2
+            for eq in state.get("playerEquipment", []):
+                if isinstance(eq, dict) and str(eq.get("slot", "")).lower() in ("weapon", "hands"):
+                    from ai.policy.card_evaluator import get_weapon_cost
+                    weapon_cost = get_weapon_cost(str(eq.get("cardNumber", "")), eq, state=state, hero_name=self.hero_name)
+                    break
+
+            total_res_after_buff = (floating_res + other_hand_pitch) - card_cost
+            if total_res_after_buff < weapon_cost:
+                score -= 35.0  # Faltam recursos para a arma após o buff: NÃO JOGAR!
+            else:
+                score += 25.0 if turn_plan.plan_type == "HALA_ZENITH_PRESSURE" else 20.0
+        elif turn_plan.plan_type == "HALA_ZENITH_PRESSURE" and "ironsong" in c_clean:
             score += 25.0
-        elif any(k in c_clean for k in ["edict_of_steel", "imperial_seal", "brimming_blade", "blood_on_her_hands", "spoils_of_war", "hit_and_run"]):
-            score += 20.0
+
         return score
 
 

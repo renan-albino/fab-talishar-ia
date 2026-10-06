@@ -98,7 +98,12 @@ def delete_saved_deck(slug: str, base_dir: str = None) -> bool:
     """Remove o arquivo JSON do deck exclusivamente do diretório raiz decks/."""
     decks_dir = get_decks_dir(base_dir)
     import re as _re
-    safe_slug = _re.sub(r"[^a-zA-Z0-9_\-]+", "", slug)
+    clean = str(slug).strip()
+    if clean.endswith(".json"):
+        clean = clean[:-5]
+    if clean.startswith("decks/"):
+        clean = clean[6:]
+    safe_slug = _re.sub(r"[^a-zA-Z0-9_\-]+", "", clean)
     deck_path = os.path.abspath(os.path.join(decks_dir, f"{safe_slug}.json"))
     if not deck_path.startswith(os.path.abspath(decks_dir)):
         return False

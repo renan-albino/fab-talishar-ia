@@ -1251,3 +1251,77 @@ def test_default_backend_url_import_fallback():
     # Restaura módulo com reload
     importlib.reload(api_module)
 
+
+# ==============================================================================
+# PARTE 9: TESTES DE CRIAÇÃO DE PARTIDA HUMANO VS BOT (frontend_manager.py)
+# ==============================================================================
+
+def test_create_human_vs_bot_match_normalizes_slugs():
+    """Valida que create_human_vs_bot_match normaliza slugs para decks/*.json."""
+    import frontend_manager
+
+    with patch("frontend_manager.is_backend_running", return_value=True), \
+         patch("frontend_manager.is_frontend_running", return_value=True), \
+         patch("frontend_manager.requests.post") as mock_post, \
+         patch("frontend_manager.subprocess.Popen") as mock_popen, \
+         patch("builtins.open", MagicMock()):
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"gameName": "1234", "authKey": "secret"}
+        mock_post.return_value = mock_resp
+
+        mock_proc = MagicMock()
+        mock_proc.pid = 9999
+        mock_popen.return_value = mock_proc
+
+        res = frontend_manager.create_human_vs_bot_match("cindra", "mario", "cc")
+
+        assert res["success"] is True
+        assert res["game_name"] == "1234"
+        assert res["player_deck"] == "cindra"
+        assert res["bot_deck"] == "mario"
+
+        # Verifica payload enviado para CreateGame.php
+        sent_payload = mock_post.call_args[1]["json"]
+        assert sent_payload["fabdb"] == "decks/cindra.json"
+        assert sent_payload["format"] == "cc"
+
+        # Verifica argumentos passados para o bot_client
+        bot_cmd = mock_popen.call_args[0][0]
+        assert "--deck" in bot_cmd
+        deck_idx = bot_cmd.index("--deck")
+        assert bot_cmd[deck_idx + 1] == "decks/mario.json"
+
+
+def test_create_human_vs_bot_match_preserves_external_urls():
+    """Valida que URLs externas do fabrary/fabdb são mantidas intactas."""
+    import frontend_manager
+
+    with patch("frontend_manager.is_backend_running", return_value=True), \
+         patch("frontend_manager.is_frontend_running", return_value=True), \
+         patch("frontend_manager.requests.post") as mock_post, \
+         patch("frontend_manager.subprocess.Popen") as mock_popen, \
+         patch("builtins.open", MagicMock()):
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"gameName": "5678", "authKey": "secret2"}
+        mock_post.return_value = mock_resp
+
+        mock_proc = MagicMock()
+        mock_proc.pid = 8888
+        mock_popen.return_value = mock_proc
+
+        ext_url = "https://fabrary.net/decks/12345"
+        res = frontend_manager.create_human_vs_bot_match(ext_url, "kassai.json", "blitz")
+
+        assert res["success"] is True
+        sent_payload = mock_post.call_args[1]["json"]
+        assert sent_payload["fabdb"] == ext_url
+        assert sent_payload["format"] == "blitz"
+
+        bot_cmd = mock_popen.call_args[0][0]
+        deck_idx = bot_cmd.index("--deck")
+        assert bot_cmd[deck_idx + 1] == "decks/kassai.json"
+

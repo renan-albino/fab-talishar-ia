@@ -156,7 +156,11 @@ def stop_frontend() -> bool:
 def create_human_vs_bot_match(
     player_deck_slug: str,
     bot_deck_slug: str,
-    format_code: str = "cc"
+    format_code: str = "cc",
+    mcts_sims: Optional[int] = 10,
+    ismcts_concurrency: Optional[str] = "threads",
+    device: Optional[str] = None,
+    torch_threads: Optional[int] = 2,
 ) -> Dict[str, Any]:
     """
     Cria uma partida no backend do Talishar para o jogador humano (Player 1)
@@ -178,11 +182,26 @@ def create_human_vs_bot_match(
         except Exception as e:
             logger.warning(f"Erro ao carregar deck {deck_path}: {e}")
 
+    # Normalização de caminhos locais e links remotos de decks
+    if str(player_deck_slug).startswith("http://") or str(player_deck_slug).startswith("https://"):
+        player_deck_link = player_deck_slug
+    else:
+        clean_slug = player_deck_slug[:-5] if player_deck_slug.endswith(".json") else player_deck_slug
+        clean_slug = clean_slug[6:] if clean_slug.startswith("decks/") else clean_slug
+        player_deck_link = f"decks/{clean_slug}.json"
+
+    if str(bot_deck_slug).startswith("http://") or str(bot_deck_slug).startswith("https://"):
+        bot_deck_param = bot_deck_slug
+    else:
+        clean_b_slug = bot_deck_slug[:-5] if bot_deck_slug.endswith(".json") else bot_deck_slug
+        clean_b_slug = clean_b_slug[6:] if clean_b_slug.startswith("decks/") else clean_b_slug
+        bot_deck_param = f"decks/{clean_b_slug}.json"
+
     # 1. Cria a sala no Talishar para o Player 1
     create_payload = {
         "format": format_code.lower(),
         "visibility": "private",
-        "fabdb": player_deck_slug,
+        "fabdb": player_deck_link,
         "deck": deck_data,
         "gameDescription": "Humano vs AI Master"
     }
@@ -219,14 +238,24 @@ def create_human_vs_bot_match(
     bot_log_path = os.path.join(logs_dir, f"Human_vs_Bot_{game_name}.log")
     out_f = open(bot_log_path, "w")
 
+    bot_cmd = [
+        PYTHON_BIN, "-u", os.path.join(BASE_DIR, "bot_client.py"),
+        "--room", game_name,
+        "--deck", bot_deck_param,
+        "--role", "join",
+        "--name", "AIMaster_Bot",
+    ]
+    if mcts_sims is not None:
+        bot_cmd.extend(["--mcts-sims", str(mcts_sims)])
+    if ismcts_concurrency:
+        bot_cmd.extend(["--ismcts-concurrency", str(ismcts_concurrency)])
+    if device:
+        bot_cmd.extend(["--device", str(device)])
+    if torch_threads:
+        bot_cmd.extend(["--torch-threads", str(torch_threads)])
+
     bot_proc = subprocess.Popen(
-        [
-            PYTHON_BIN, "-u", os.path.join(BASE_DIR, "bot_client.py"),
-            "--room", game_name,
-            "--deck", f"decks/{bot_deck_slug}.json",
-            "--role", "join",
-            "--name", "AIMaster_Bot"
-        ],
+        bot_cmd,
         cwd=BASE_DIR,
         stdout=out_f,
         stderr=out_f,
