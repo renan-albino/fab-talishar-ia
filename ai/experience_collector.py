@@ -80,6 +80,34 @@ class SumTree:
         data_idx = parent_idx - self.capacity + 1
         return parent_idx, data_idx, self.tree[parent_idx]
 
+    def get_leaves(self, v_arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Descida totalmente vetorizada em NumPy na árvore binária para batches inteiros."""
+        v = np.array(v_arr, dtype=np.float32, copy=True)
+        parent_idx = np.zeros(len(v), dtype=np.int64)
+        capacity_minus_1 = self.capacity - 1
+        tree = self.tree
+
+        while True:
+            active = parent_idx < capacity_minus_1
+            if not np.any(active):
+                break
+
+            p_act = parent_idx[active]
+            v_act = v[active]
+            left_child = 2 * p_act + 1
+            right_child = left_child + 1
+
+            left_vals = tree[left_child]
+            right_vals = tree[right_child]
+
+            go_left = (v_act <= left_vals) | (right_vals == 0)
+            v[active] = np.where(go_left, v_act, v_act - left_vals)
+            parent_idx[active] = np.where(go_left, left_child, right_child)
+
+        data_idx = parent_idx - capacity_minus_1
+        priorities = tree[parent_idx]
+        return parent_idx, data_idx, priorities
+
     @property
     def total_priority(self) -> float:
         return self.tree[0]
@@ -220,20 +248,22 @@ class ReplayBuffer:
             remainder = batch_size - len(indices)
             if remainder > 0:
                 segment = self.sum_tree.total_priority / remainder
-                for i in range(remainder):
-                    a = segment * i
-                    b = segment * (i + 1)
-                    v = random.uniform(a, b)
-                    parent_idx, data_idx, priority = self.sum_tree.get_leaf(v)
-                    if data_idx >= self.current_size:
-                        data_idx = random.randint(0, self.current_size - 1)
-                        priority = self.sum_tree.tree[data_idx + self.sum_tree.capacity - 1]
-                    indices.append(data_idx)
+                i_arr = np.arange(remainder, dtype=np.float32)
+                a = segment * i_arr
+                b = segment * (i_arr + 1.0)
+                v = np.random.uniform(a, b).astype(np.float32)
+                _, data_idx, priority = self.sum_tree.get_leaves(v)
 
-                    prob = priority / max(self.sum_tree.total_priority, 1e-8)
-                    sampled_prob = max(prob, 1e-8)
-                    is_weight = (float(self.current_size) * sampled_prob) ** (-beta)
-                    is_weights_list.append(is_weight)
+                out_of_bounds = data_idx >= self.current_size
+                if np.any(out_of_bounds):
+                    replacement = np.random.randint(0, self.current_size, size=np.sum(out_of_bounds))
+                    data_idx[out_of_bounds] = replacement
+                    priority[out_of_bounds] = self.sum_tree.tree[replacement + self.sum_tree.capacity - 1]
+
+                probs = np.maximum(priority / max(self.sum_tree.total_priority, 1e-8), 1e-8)
+                is_w = (float(self.current_size) * probs) ** (-beta)
+                indices.extend(data_idx.tolist())
+                is_weights_list.extend(is_w.tolist())
 
             indices = np.array(indices)
             is_weights = np.array(is_weights_list, dtype=np.float32)
@@ -270,18 +300,31 @@ class ReplayBuffer:
         b_values = torch.from_numpy(self.values[indices]).float()
         b_is = torch.from_numpy(is_weights.astype(np.float32)).float()
 
+        is_cuda = False
         if device:
-            b_states = b_states.to(device)
-            b_policies = b_policies.to(device)
-            b_values = b_values.to(device)
-            b_is = b_is.to(device)
+            dev = torch.device(device)
+            is_cuda = dev.type == "cuda"
+            if is_cuda:
+                b_states = b_states.pin_memory().to(dev, non_blocking=True)
+                b_policies = b_policies.pin_memory().to(dev, non_blocking=True)
+                b_values = b_values.pin_memory().to(dev, non_blocking=True)
+                b_is = b_is.pin_memory().to(dev, non_blocking=True)
+            else:
+                b_states = b_states.to(dev)
+                b_policies = b_policies.to(dev)
+                b_values = b_values.to(dev)
+                b_is = b_is.to(dev)
 
         if return_aux:
             b_aux_delta = torch.from_numpy(self.aux_delta_hp[indices]).float()
             b_aux_dmg = torch.from_numpy(self.aux_turn_dmg[indices]).float()
             if device:
-                b_aux_delta = b_aux_delta.to(device)
-                b_aux_dmg = b_aux_dmg.to(device)
+                if is_cuda:
+                    b_aux_delta = b_aux_delta.pin_memory().to(dev, non_blocking=True)
+                    b_aux_dmg = b_aux_dmg.pin_memory().to(dev, non_blocking=True)
+                else:
+                    b_aux_delta = b_aux_delta.to(dev)
+                    b_aux_dmg = b_aux_dmg.to(dev)
             aux_dict = {"delta_hp": b_aux_delta, "turn_dmg": b_aux_dmg}
 
             if return_is_weights:

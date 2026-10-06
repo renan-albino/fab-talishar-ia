@@ -8,8 +8,6 @@ import { HiClipboardCopy, HiClipboardCheck } from 'react-icons/hi';
 import { MdGames } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 
-export type LobbyPhase = 'equipment' | 'deck' | 'legacy';
-
 export type DeckSize = {
   deckSize: number;
   submitSideboard: boolean;
@@ -22,10 +20,6 @@ export type DeckSize = {
   onUnreadySideboard?: () => void;
   onSendInviteClick?: () => void;
   onIsValidChange?: (isValid: boolean) => void;
-  phase?: LobbyPhase;
-  canSubmitEquipment?: boolean;
-  canUnreadyEquipment?: boolean;
-  onUnreadyEquipment?: () => void;
 };
 
 const StickyFooter = ({
@@ -39,11 +33,7 @@ const StickyFooter = ({
   handleLeave,
   onUnreadySideboard,
   onSendInviteClick,
-  onIsValidChange,
-  phase = 'legacy',
-  canSubmitEquipment = false,
-  canUnreadyEquipment = false,
-  onUnreadyEquipment
+  onIsValidChange
 }: DeckSize) => {
   // Initial stuff to allow the lang to change
   const { t } = useTranslation();
@@ -57,26 +47,8 @@ const StickyFooter = ({
     errorArray.push(String(value));
   }
 
-  const isEquipmentPhase = phase === 'equipment';
-  const arenaCards = [
-    ...values.weapons.map((weapon) => weapon.img),
-    values.head,
-    values.chest,
-    values.arms,
-    values.legs
-  ].filter((card) => !!card && card !== 'NONE00');
-
   const needed = deckSize - values.deck.length;
-  const isConfirmEnabled =
-    isValid &&
-    !needToDoDisclaimer &&
-    (isEquipmentPhase ? canSubmitEquipment : submitSideboard);
-  const showEditButton = isEquipmentPhase
-    ? canUnreadyEquipment
-    : canUnreadySideboard;
-  const handleEditClick = isEquipmentPhase
-    ? onUnreadyEquipment
-    : onUnreadySideboard;
+  const isConfirmEnabled = isValid && submitSideboard && !needToDoDisclaimer;
 
   // Update CSS custom property with footer height
   useEffect(() => {
@@ -153,48 +125,6 @@ const StickyFooter = ({
     ? `/${deckSize}\u00a0\u00b7\u00a0need\u00a0${needed}\u00a0more`
     : `/${deckSize}`;
 
-  const arenaMetaText = showEditButton
-    ? `\u00a0\u00b7\u00a0${t('GAME_LOBBY.WAITING_FOR_ARENA')}`
-    : isConfirmEnabled
-    ? `\u00a0\u00b7\u00a0\u2713\u00a0ready`
-    : errorArray[0]
-    ? `\u00a0\u00b7\u00a0${errorArray[0]}`
-    : `\u00a0\u00b7\u00a0${t('GAME_LOBBY.ARENA')}`;
-
-  const statusSection = isEquipmentPhase ? (
-    <div
-      className={`${styles.deckSection} ${
-        isConfirmEnabled ? styles.deckReady : ''
-      } ${!isValid ? styles.deckInvalid : ''}`}
-      role="status"
-      aria-live="polite"
-    >
-      <div className={styles.deckCountLine}>
-        {!isValid && errorArray[0] && (
-          <FaExclamationCircle className={styles.deckStatusIcon} />
-        )}
-        <span className={styles.deckNumber}>{arenaCards.length}</span>
-        <span className={styles.deckMeta}>{arenaMetaText}</span>
-      </div>
-    </div>
-  ) : (
-    <div
-      className={`${styles.deckSection} ${
-        isConfirmEnabled ? styles.deckReady : ''
-      } ${!isValid ? styles.deckInvalid : ''}`}
-      role="status"
-      aria-live="polite"
-    >
-      <div className={styles.deckCountLine}>
-        {!isValid && errorArray[0] && (
-          <FaExclamationCircle className={styles.deckStatusIcon} />
-        )}
-        <span className={styles.deckNumber}>{values.deck.length}</span>
-        <span className={styles.deckMeta}>{deckMetaText}</span>
-      </div>
-    </div>
-  );
-
   return (
     <div className={styles.stickyFooter} ref={footerRef}>
       <div className={wrapperClass}>
@@ -230,21 +160,33 @@ const StickyFooter = ({
             )}
           </div>
 
-          {/* Center: arena or deck count, plus validation status */}
-          {statusSection}
+          {/* Center: deck count and validation status */}
+          <div
+            className={`${styles.deckSection} ${
+              isConfirmEnabled ? styles.deckReady : ''
+            } ${!isValid ? styles.deckInvalid : ''}`}
+            role="status"
+            aria-live="polite"
+          >
+            <div className={styles.deckCountLine}>
+              {!isValid && errorArray[0] && (
+                <FaExclamationCircle className={styles.deckStatusIcon} />
+              )}
+              <span className={styles.deckNumber}>{values.deck.length}</span>
+              <span className={styles.deckMeta}>{deckMetaText}</span>
+            </div>
+          </div>
 
           {/* Right: confirm / edit + optional leave */}
           <div className={styles.actionSection}>
-            {showEditButton ? (
+            {canUnreadySideboard ? (
               <button
                 className={styles.editButton}
                 type="button"
                 disabled={isUnreadyLoading || needToDoDisclaimer}
-                onClick={handleEditClick}
+                onClick={onUnreadySideboard}
               >
-                {isEquipmentPhase
-                  ? t('GAME_LOBBY.EDIT_EQUIPMENT')
-                  : t('GAME_LOBBY.EDIT_DECK')}
+                {t('GAME_LOBBY.EDIT_DECK')}
               </button>
             ) : (
               <button
@@ -259,11 +201,9 @@ const StickyFooter = ({
               >
                 {isSubmitting
                   ? t('GAME_LOBBY.SUBMITTING')
-                  : !isWidescreen
-                  ? t('GAME_LOBBY.CONFIRM')
-                  : isEquipmentPhase
-                  ? t('GAME_LOBBY.CONFIRM_EQUIPMENT')
-                  : t('GAME_LOBBY.CONFIRM_DECK')}
+                  : isWidescreen
+                  ? t('GAME_LOBBY.CONFIRM_DECK')
+                  : t('GAME_LOBBY.CONFIRM')}
               </button>
             )}
             {isWidescreen && (

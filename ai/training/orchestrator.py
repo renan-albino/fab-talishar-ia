@@ -153,18 +153,20 @@ class GPUTrainingOrchestrator:
             return obj
         return obj
 
-    def save_metrics(self):
-        """Salva métricas e checkpoints em disco."""
+    def save_metrics(self, save_checkpoint: bool = False):
+        """Salva métricas em disco sem forçar escrita de checkpoints ou buffer pesado."""
         os.makedirs(DATA_DIR, exist_ok=True)
         try:
             clean_stats = self._sanitize_for_json(self.stats)
-            with open(METRICS_FILE, "w", encoding="utf-8") as f:
+            tmp_file = f"{METRICS_FILE}.tmp_{os.getpid()}"
+            with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(clean_stats, f, indent=2, ensure_ascii=False)
+            os.replace(tmp_file, METRICS_FILE)
         except Exception as e:
             print(f"[Treinador] Erro ao salvar métricas: {e}", flush=True)
 
-        # Salva o modelo e o buffer se existirem
-        if self.model is not None:
+        # Salva o modelo e o buffer se explicitamente solicitado
+        if save_checkpoint and self.model is not None:
             try:
                 buffer = get_global_buffer(self.config.get("buffer_capacity", SETTINGS.buffer_capacity))
                 self._save_checkpoint(self.model, buffer)
@@ -307,31 +309,44 @@ class GPUTrainingOrchestrator:
             if cfg.get("headless"):
                 from ai.training.headless_env import HeadlessSelfPlayLoop
                 import concurrent.futures
-                
-                headless_env = HeadlessSelfPlayLoop(self.model, mcts_sims=mcts_sims_val, device=str(device))
+
+                use_batched = bool(cfg.get("batched_inference") or os.environ.get("FAB_BATCHED_INFERENCE") == "1")
+                evaluator = None
+                if use_batched:
+                    from ai.mcts.batched_evaluator import ThreadBatchedEvaluator
+                    evaluator = ThreadBatchedEvaluator(self.model, device=str(device))
+                    loop_model = evaluator
+                else:
+                    loop_model = self.model
+
+                headless_env = HeadlessSelfPlayLoop(loop_model, mcts_sims=mcts_sims_val, device=str(device))
                 futures = []
-                with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-                    for _ in range(num_workers):
-                        if not self.is_running:
-                            break
-                        d1, d2 = self._next_deck_pair(decks_pool)
-                        room_id = f"Train_{uuid.uuid4().hex[:8]}"
-                        batch_rooms.append((room_id, d1, d2))
-                        futures.append(executor.submit(headless_env.play_game, d1, d2))
-                    
-                    if batch_rooms:
-                        r0 = batch_rooms[0]
-                        extra_label = f" (+{len(batch_rooms)-1} partidas)" if len(batch_rooms) > 1 else ""
-                        self.stats["active_matchup"] = f"{r0[1]} vs {r0[2]}{extra_label} (Headless)"
-                    
-                    # Espera a conclusão
-                    for future in concurrent.futures.as_completed(futures):
-                        try:
-                            traj, winner = future.result(timeout=SETTINGS.game_timeout_seconds)
-                            headless_samples_ingested += buffer.ingest_from_memory([(traj, winner)])
-                        except Exception as e:
-                            print(f"[Treinador] Erro no headless worker: {e}", flush=True)
-                
+                try:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+                        for _ in range(num_workers):
+                            if not self.is_running:
+                                break
+                            d1, d2 = self._next_deck_pair(decks_pool)
+                            room_id = f"Train_{uuid.uuid4().hex[:8]}"
+                            batch_rooms.append((room_id, d1, d2))
+                            futures.append(executor.submit(headless_env.play_game, d1, d2))
+
+                        if batch_rooms:
+                            r0 = batch_rooms[0]
+                            extra_label = f" (+{len(batch_rooms)-1} partidas)" if len(batch_rooms) > 1 else ""
+                            self.stats["active_matchup"] = f"{r0[1]} vs {r0[2]}{extra_label} (Headless)"
+
+                        # Espera a conclusão
+                        for future in concurrent.futures.as_completed(futures):
+                            try:
+                                traj, winner = future.result(timeout=SETTINGS.game_timeout_seconds)
+                                headless_samples_ingested += buffer.ingest_from_memory([(traj, winner)])
+                            except Exception as e:
+                                print(f"[Treinador] Erro no headless worker: {e}", flush=True)
+                finally:
+                    if evaluator is not None:
+                        evaluator.stop()
+
                 num_finished = len(futures)
                 self.stats["total_games"] += num_finished
                 games_since_save += num_finished
@@ -456,13 +471,9 @@ class GPUTrainingOrchestrator:
                     except Exception:
                         pass
 
-            # ── 5. Recarregar buffer e passo de otimização ─────────
+            # ── 5. Ingerir trajetórias e passo de otimização ─────────
             trajectories_dir = os.path.join(BASE_DIR, "data", "trajectories")
             newly_ingested = buffer.ingest_trajectories(trajectories_dir) + headless_samples_ingested
-            if newly_ingested > 0:
-                buffer.save()
-            else:
-                buffer.load()
             self.stats["samples_collected"] = len(buffer)
 
             min_train = min(batch_size, max(32, len(buffer)))
@@ -513,9 +524,9 @@ class GPUTrainingOrchestrator:
 
             time.sleep(0.05)
 
-        # Ao parar, garante que salva o estado final
+        # Ao parar, garante que salva o estado final de forma síncrona
         if self.model is not None:
-            self._save_checkpoint(self.model, buffer)
+            self._save_checkpoint(self.model, buffer, async_save=False)
         self.save_metrics()
 
     # ── Helpers internos ──────────────────────────────────────────
@@ -565,10 +576,10 @@ class GPUTrainingOrchestrator:
         scaler.update()
 
         with torch.no_grad():
-            probs = F.softmax(policy_logits, dim=-1)
-            log_p = F.log_softmax(policy_logits, dim=-1)
-            entropy_elem = torch.where(probs > 0, -probs * log_p, torch.zeros_like(probs))
-            raw_entropy = entropy_elem.sum(dim=-1).mean().item() / float(np.log(2))
+            detached_log_p = log_probs.detach()
+            probs = detached_log_p.exp()
+            entropy_elem = -probs * detached_log_p
+            raw_entropy = (entropy_elem.sum(dim=-1).mean() / float(np.log(2))).item()
             raw_val_mean = value_preds.mean().item()
 
         def _safe_float(v: Any, default: float = 0.0) -> float:
@@ -631,17 +642,24 @@ class GPUTrainingOrchestrator:
         except Exception:
             pass
 
-    @staticmethod
-    def _save_checkpoint(model: FaBPolicyValueNetwork, buffer):
+    @classmethod
+    def _save_checkpoint(cls, model: FaBPolicyValueNetwork, buffer, async_save: bool = True):
         os.makedirs(SETTINGS.checkpoint_dir, exist_ok=True)
-        torch.save(model.state_dict(), SETTINGS.teacher_checkpoint)
-        versioned = SETTINGS.teacher_checkpoint.replace(
-            "teacher_latest.pt",
-            f"teacher_epoch_{int(time.time())}.pt"
-        )
-        torch.save(model.state_dict(), versioned)
-        buffer.save()
-        print(f"[Treinador] 💾 Checkpoint salvo: {SETTINGS.teacher_checkpoint}", flush=True)
+        state_dict_cpu = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+
+        def _do_save():
+            try:
+                torch.save(state_dict_cpu, SETTINGS.teacher_checkpoint)
+                buffer.save()
+                print(f"[Treinador] 💾 Checkpoint salvo: {SETTINGS.teacher_checkpoint}", flush=True)
+            except Exception as e:
+                print(f"[Treinador] ⚠ Erro ao salvar checkpoint: {e}", flush=True)
+
+        if async_save:
+            t = threading.Thread(target=_do_save, daemon=True)
+            t.start()
+        else:
+            _do_save()
 
 
 if __name__ == "__main__":
@@ -658,6 +676,7 @@ if __name__ == "__main__":
     parser.add_argument("--bot-device", type=str, default=None, help="Inference device for bots (cuda:0, cpu, or auto)")
     parser.add_argument("--train-steps", type=int, default=None, help="Number of gradient optimization steps per epoch (default: 1)")
     parser.add_argument("--max-resources", action="store_true", help="Enable maximum hardware utilization mode")
+    parser.add_argument("--batched-inference", action="store_true", help="Enable dynamic batching of MCTS neural evaluations across concurrent workers")
     args = parser.parse_args()
 
     if args.max_resources:
@@ -687,7 +706,10 @@ if __name__ == "__main__":
     
     print("[Pre-flight] Hardware Check aprovado. Iniciando Orquestrador...", flush=True)
     
-    custom_cfg = {"headless": args.headless}
+    custom_cfg = {
+        "headless": args.headless,
+        "batched_inference": args.batched_inference,
+    }
     if args.max_epochs is not None:
         custom_cfg["max_epochs"] = args.max_epochs
     if args.workers is not None:

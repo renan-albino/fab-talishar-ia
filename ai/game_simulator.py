@@ -64,6 +64,9 @@ DANGEROUS_ON_HITS = {
 }
 
 from ai.mcts.state import ImmutableGameState
+from collections.abc import Mapping
+
+_CARD_META_CACHE: Dict[Any, dict] = {}
 
 class GameSimulator:
     """
@@ -81,20 +84,51 @@ class GameSimulator:
     def extract_card_meta(cls, card: Any) -> dict:
         """
         Extrai metadados táticos e semânticos de uma carta consultando
-        data/fab_cards_db.json e data/fab_card_semantics.json.
-        Properly extracts base power, base defense, cost, pitch, and keywords:
-        (has_go_again, dominate, overpower, piercing, phantasm, on_hit_severity)
-        for any card in the database, with safe fallbacks only if absent.
+        data/fab_cards_db.json e data/fab_card_semantics.json com cache O(1).
         """
-        if hasattr(card, "to_dict"):
-            card = card.to_dict()
-            
-        if isinstance(card, dict):
-            card_num = str(card.get("cardNumber") or card.get("name") or card.get("id") or "").lower().strip()
-        elif isinstance(card, str):
+        if isinstance(card, str):
             card_num = card.lower().strip()
+            cache_key = card_num
+            if cache_key in _CARD_META_CACHE:
+                res = dict(_CARD_META_CACHE[cache_key])
+                res["raw"] = card
+                return res
+        elif isinstance(card, Mapping):
+            card_num = str(card.get("cardNumber") or card.get("name") or card.get("id") or "").lower().strip()
+            cache_key = (
+                card_num,
+                card.get("pitch"),
+                card.get("power"),
+                card.get("defense"),
+                card.get("defenseValue"),
+                card.get("block"),
+                card.get("cost"),
+                card.get("has_go_again"),
+                card.get("go_again"),
+                card.get("dominate"),
+                card.get("has_dominate"),
+                card.get("overpower"),
+                card.get("has_overpower"),
+                card.get("piercing"),
+                card.get("phantasm"),
+                card.get("has_phantasm"),
+                card.get("on_hit_severity"),
+                card.get("has_on_hit"),
+                card.get("has_intimidate"),
+                card.get("intimidate"),
+                card.get("intimidate_count"),
+            )
+            if cache_key in _CARD_META_CACHE:
+                res = dict(_CARD_META_CACHE[cache_key])
+                res["raw"] = card
+                return res
+        elif hasattr(card, "to_dict"):
+            card_dict = card.to_dict()
+            card_num = str(card_dict.get("cardNumber") or card_dict.get("name") or card_dict.get("id") or "").lower().strip()
+            cache_key = card_num
         else:
             card_num = ""
+            cache_key = ""
 
         db = _get_cards_db()
         sem = _get_card_semantics()
@@ -114,7 +148,7 @@ class GameSimulator:
                 sem_entry = sem.get(slug)
 
         # 1. Pitch
-        if isinstance(card, dict) and card.get("pitch") is not None and cls._safe_int(card.get("pitch", 0)) > 0:
+        if isinstance(card, Mapping) and card.get("pitch") is not None and cls._safe_int(card.get("pitch", 0)) > 0:
             pitch = cls._safe_int(card["pitch"])
         elif db_entry and "pitch" in db_entry:
             pitch = cls._safe_int(db_entry["pitch"])
@@ -128,7 +162,7 @@ class GameSimulator:
             pitch = 1
 
         # 2. Power
-        power = cls._safe_int(card.get("power", 0)) if isinstance(card, dict) else 0
+        power = cls._safe_int(card.get("power", 0)) if isinstance(card, Mapping) else 0
         if power == 0 and db_entry and "power" in db_entry:
             power = cls._safe_int(db_entry["power"])
         if power == 0 and not db_entry:
@@ -141,7 +175,7 @@ class GameSimulator:
                 power = 6 if pitch == 1 else 4
 
         # 3. Defense / Block
-        defense = cls._safe_int(card.get("defenseValue") or card.get("defense") or card.get("block") or 0) if isinstance(card, dict) else 0
+        defense = cls._safe_int(card.get("defenseValue") or card.get("defense") or card.get("block") or 0) if isinstance(card, Mapping) else 0
         if defense == 0 and db_entry and "defense" in db_entry:
             defense = cls._safe_int(db_entry["defense"])
         if defense == 0 and not db_entry:
@@ -150,7 +184,7 @@ class GameSimulator:
                 defense = 3 if pitch == 3 else 2
 
         # 4. Cost
-        cost = cls._safe_int(card.get("cost", 0)) if (isinstance(card, dict) and "cost" in card) else 0
+        cost = cls._safe_int(card.get("cost", 0)) if (isinstance(card, Mapping) and "cost" in card) else 0
         if cost == 0 and db_entry and "cost" in db_entry:
             cost = cls._safe_int(db_entry["cost"])
         if cost == 0 and not db_entry:
@@ -168,7 +202,7 @@ class GameSimulator:
 
         # has_go_again
         has_go_again = False
-        if isinstance(card, dict) and (card.get("has_go_again") or card.get("go_again")):
+        if isinstance(card, Mapping) and (card.get("has_go_again") or card.get("go_again")):
             has_go_again = True
         elif db_entry and db_entry.get("has_go_again"):
             has_go_again = True
@@ -180,27 +214,27 @@ class GameSimulator:
             ])
 
         # dominate
-        card_dom = bool(card.get("dominate") or card.get("has_dominate")) if isinstance(card, dict) else False
+        card_dom = bool(card.get("dominate") or card.get("has_dominate")) if isinstance(card, Mapping) else False
         sem_dom = bool(sem_evasion.get("dominate") or "dominate" in sem_keywords) if sem_entry else False
         dominate = card_dom or sem_dom or (not sem_entry and "dominate" in card_num)
 
         # overpower
-        card_op = bool(card.get("overpower") or card.get("has_overpower")) if isinstance(card, dict) else False
+        card_op = bool(card.get("overpower") or card.get("has_overpower")) if isinstance(card, Mapping) else False
         sem_op = bool(sem_evasion.get("overpower") or "overpower" in sem_keywords) if sem_entry else False
         overpower = card_op or sem_op or (not sem_entry and "overpower" in card_num)
 
         # piercing
-        card_pierce = int(card.get("piercing", 0)) if isinstance(card, dict) else 0
+        card_pierce = int(card.get("piercing", 0)) if isinstance(card, Mapping) else 0
         sem_pierce = int(sem_evasion.get("piercing", 0) or sem_entry.get("grants_piercing", 0) or (1 if "piercing" in sem_keywords else 0)) if sem_entry else 0
         piercing = card_pierce if card_pierce > 0 else (sem_pierce if sem_entry else (1 if "piercing" in card_num else 0))
 
         # phantasm
-        card_phan = bool(card.get("phantasm") or card.get("has_phantasm")) if isinstance(card, dict) else False
+        card_phan = bool(card.get("phantasm") or card.get("has_phantasm")) if isinstance(card, Mapping) else False
         sem_phan = bool(sem_evasion.get("phantasm") or "phantasm" in sem_keywords) if sem_entry else False
         phantasm = card_phan or sem_phan or (not sem_entry and "phantasm" in card_num)
 
         # on_hit_severity
-        card_sev = float(card.get("on_hit_severity", 0.0)) if isinstance(card, dict) else 0.0
+        card_sev = float(card.get("on_hit_severity", 0.0)) if isinstance(card, Mapping) else 0.0
         sem_sev = float(sem_entry.get("on_hit_severity", 0.0)) if sem_entry else 0.0
         if card_sev > 0:
             on_hit_severity = card_sev
@@ -211,7 +245,7 @@ class GameSimulator:
 
         # has_on_hit
         has_on_hit = False
-        if isinstance(card, dict) and card.get("has_on_hit"):
+        if isinstance(card, Mapping) and card.get("has_on_hit"):
             has_on_hit = True
         elif on_hit_severity > 0.0:
             has_on_hit = True
@@ -222,7 +256,7 @@ class GameSimulator:
 
         # Intimidate
         has_intimidate = False
-        if isinstance(card, dict) and (card.get("has_intimidate") or card.get("intimidate")):
+        if isinstance(card, Mapping) and (card.get("has_intimidate") or card.get("intimidate")):
             has_intimidate = True
         elif sem_entry and "intimidate" in sem_keywords:
             has_intimidate = True
@@ -231,10 +265,10 @@ class GameSimulator:
 
         intimidate_count = 0
         if has_intimidate:
-            raw_i = card.get("intimidate_count", card.get("intimidate", 1)) if isinstance(card, dict) else 1
+            raw_i = card.get("intimidate_count", card.get("intimidate", 1)) if isinstance(card, Mapping) else 1
             intimidate_count = int(raw_i) if isinstance(raw_i, (int, float)) and not isinstance(raw_i, bool) else 1
 
-        return {
+        meta_dict = {
             "name": card_num,
             "pitch": pitch,
             "power": power,
@@ -253,8 +287,14 @@ class GameSimulator:
             "phantasm": phantasm,
             "has_phantasm": phantasm,
             "on_hit_severity": on_hit_severity,
-            "raw": card
         }
+
+        if cache_key and len(_CARD_META_CACHE) < 32768:
+            _CARD_META_CACHE[cache_key] = meta_dict
+
+        res = dict(meta_dict)
+        res["raw"] = card
+        return res
 
     @classmethod
     def simulate_attack(cls, state, action: dict):
@@ -478,14 +518,14 @@ class GameSimulator:
         
         incoming_power = int(active_chain.get("totalPower", active_chain.get("power", state.get("combatChainPower", 4))))
 
-        if isinstance(block_action, list):
-            cards_to_block = block_action
-        elif isinstance(block_action, dict) and "cards" in block_action and isinstance(block_action["cards"], list):
-            cards_to_block = block_action["cards"]
-        elif isinstance(block_action, dict) and "blocking_cards" in block_action and isinstance(block_action["blocking_cards"], list):
-            cards_to_block = block_action["blocking_cards"]
-        elif isinstance(block_action, dict) and "card_names" in block_action and isinstance(block_action["card_names"], list):
-            cards_to_block = block_action["card_names"]
+        if isinstance(block_action, (list, tuple)):
+            cards_to_block = list(block_action)
+        elif isinstance(block_action, Mapping) and "cards" in block_action and isinstance(block_action["cards"], (list, tuple)):
+            cards_to_block = list(block_action["cards"])
+        elif isinstance(block_action, Mapping) and "blocking_cards" in block_action and isinstance(block_action["blocking_cards"], (list, tuple)):
+            cards_to_block = list(block_action["blocking_cards"])
+        elif isinstance(block_action, Mapping) and "card_names" in block_action and isinstance(block_action["card_names"], (list, tuple)):
+            cards_to_block = list(block_action["card_names"])
         else:
             cards_to_block = [block_action]
 
@@ -497,7 +537,7 @@ class GameSimulator:
 
         action_def = 0
         for c in cards_to_block:
-            if isinstance(c, dict):
+            if isinstance(c, Mapping):
                 c_meta = cls.extract_card_meta(c)
                 val = int(c.get("defense", c.get("block", c_meta.get("defense", 0))))
                 c_name = str(c.get("name") or c.get("cardNumber") or c_meta.get("name", "")).lower()
@@ -601,5 +641,5 @@ class GameSimulator:
         else:
             next_state = cls.simulate_attack(state, action)
 
-        vec = FaBPolicyValueNetwork.extract_state_vector(next_state.to_dict())
+        vec = FaBPolicyValueNetwork.extract_state_vector(next_state)
         return next_state, vec

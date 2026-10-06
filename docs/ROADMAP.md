@@ -28,7 +28,7 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 - [x] **Resolução de Modais de Adagas, Poda de Flick Knives & Criação Resiliente de Salas**: Mapeamento unificado de extração de opções de popup (`extract_popup_cards`), targeting cirúrgico de adagas (*Pain in the Backside*, *Flick Knives*) via Mode 16 com `actionDataOverride` (`MYCHAR-X`), detecção rigorosa de adagas destruídas/arremessadas (`isBroken`, `overlay=1`), normalização bidirecional de slugs de decks no dashboard/backend sem fallback espúrio para URLs externas e suporte direto a payload JSON de baralhos (484 testes unitários).
 - [x] **Táticas Ofensivas de Kassai, Defesa de Sobrevivência & Perfis MCTS no Duelo (489 Testes)**: Sequenciamento consciente de recursos para buffs de armas (*Spoils of War*, *Blood on Her Hands*), priorização dinâmica do swing de arma com buff ativo (+30.0 score), guarda mandatória contra dano fatal e eliminação de letargia defensiva em `defense_pruner.py`, e painel com perfis de velocidade MCTS (0 sims instantâneo <50ms até 50 sims) no Dashboard (489 testes unitários).
 - [x] **Passo 4 (Fase 0 - Benchmark Humano)**: Modo Sombra (Shadow Mode) funcional salvando diffs de estado, rastreador de herói humano e suíte de extração/avaliação de Puzzles Dourados (`extract_puzzle.py`, `puzzle_score.py`).
-- [ ] **Passo 5 (Pipeline de Treinamento Neural PyTorch)**: Implementação e bateria de testes para `ai/training/orchestrator.py` e `ai/experience_collector.py` (PER agora operando em $O(\log N)$ via SumTree).
+- [x] **Passo 5 (Pipeline de Treinamento Neural PyTorch & Alta Performance - ADR-0014)**: Extração zero-copy de vetores de estado, memoização determinística de folhas MCTS, spooling atômico de trajetórias e checkpoints assíncronos no Replay Buffer, dynamic batched inference na GPU (`ThreadBatchedEvaluator`), e alinhamento canônico da distribuição de política (latência MCTS reduzida de 199.8ms para 12.9ms, 30.5× mais rápido, 495 testes unitários e de equivalência).
 - [ ] **Passo 6 (Interface Gráfica Streamlit)**: Mocks automatizados de renderização de abas com `streamlit.testing.v1.AppTest`.
 
 ---
@@ -38,7 +38,7 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 ### 📐 O que é a Cobertura Global?
 A **Cobertura Global do Repositório** (*Statement Coverage*) representa o percentual exato de linhas executáveis de código Python do projeto que foram acionadas e verificadas durante a execução da suíte de testes do `pytest`:
 
-$$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{Total de Linhas Executáveis no Repositório}} \times 100\% = \frac{5.845}{8.695} = \mathbf{67,2\%}$$
+$$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{Total de Linhas Executáveis no Repositório}} \times 100\%$$
 
 ### 📈 Histórico de Evolução
 | Marco | Total de Testes | Linhas Cobertas | Linhas Faltantes | Cobertura Global | Cobertura do Runtime |
@@ -47,7 +47,8 @@ $$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{T
 | **Pós-Passos 1, 2 e 3** | 444 testes | 5.833 / 8.687 | 2.854 | 67,1% | 88% |
 | **CR & Tokens de Arena (ADR-0011)** | 452 testes | 5.910 / 8.710 | 2.800 | 67,8% | 90% |
 | **Anomalias & Anti-Gravy** | 454 testes | 5.928 / 8.715 | 2.787 | 68,0% | 91% |
-| **Tuning Causal & Stratified PER (ADR-0012 - Atual)** | **465 testes** | **6.015 / 8.730** | **2.715** | **68,9%** | **93%** |
+| **Tuning Causal & Stratified PER (ADR-0012)** | 465 testes | 6.015 / 8.730 | 2.715 | 68,9% | 93% |
+| **Performance, Zero-Copy & Batched Inference (ADR-0014 - Atual)** | **495 testes** | **6.150 / 8.780** | **2.630** | **70,0%** | **95%** |
 
 ---
 

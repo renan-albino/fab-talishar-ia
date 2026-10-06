@@ -94,3 +94,15 @@ Audita a base transacional SQLite3 para diagnosticar anomalias de balanceamento 
   * Overkills extremos ($\text{HP final} \le -5$);
   * Win Rate consolidado por baralho/herói, rankings de ELO e multiplicadores dinâmicos ativos (`dynamic_rules`).
 * **Função e Uso na IA:** Fornece visibilidade estatística para desenvolvedores e calibradores de heurísticas, permitindo identificar desequilíbrios no meta (como dominância de aliados) e disparar intervenções orientadas a dados.
+
+### 8. Pipeline de Trajetórias e Replay Buffer Assíncrono (Abordagem A - ADR-0014)
+* **Localização:** `ai/bot_runtime/match_tracker.py`, `ai/experience_collector.py` e `ai/training/orchestrator.py`
+* **Saída:** Trajetórias atômicas em `data/trajectories/traj_*.npz` e Buffer Mestre consolidado em `data/replay_buffer.npz`
+
+Gerencia o ciclo de vida dos dados de treino gerados tanto pelo modo headless quanto pelos bots Sim2Real na Arena:
+
+* **Spooling Atômico nos Bots:** Cada partida concluída emite apenas um pequeno arquivo de trajetória compactado via `np.savez_compressed` em `data/trajectories/` (poucos kilobytes por partida). Bots não abrem nem regravam mais o buffer mestre inteiro de 100k+ amostras, eliminando condições de corrida concorrente entre processos.
+* **Ingestão no Orquestrador:** O `GPUTrainingOrchestrator` ingere as trajetórias para o `ReplayBuffer` em memória através de `buffer.ingest_from_trajectories_dir()`.
+* **Descida Vetorizada na SumTree:** A amostragem de Prioritized Experience Replay (PER) utiliza descida vetorizada em NumPy (`SumTree.get_leaves(v_arr)`) e pin de memória CUDA assíncrono (`pin_memory().to(dev, non_blocking=True)`), reduzindo a amostragem de lote para $\approx 1.7\text{ ms}$.
+* **Persistência Assíncrona em Background:** Checkpoints completos de modelo e buffer são salvos assincronamente através de `threading.Thread`, disparados a cada `save_interval_games`, eliminando o overhead de I/O síncrono por época.
+

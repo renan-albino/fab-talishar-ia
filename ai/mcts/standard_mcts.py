@@ -20,10 +20,20 @@ from typing import Dict, Any, List, Optional, Tuple
 
 from ai.model import FaBPolicyValueNetwork
 from ai.logger import get_logger
+from ai.mcts.state import ImmutableGameState
 
 from .node import MCTSNode
 
 logger = get_logger("mcts")
+
+_GET_RISK_PROFILE_FN = None
+
+def _resolve_risk_profile(q_val: float) -> dict:
+    global _GET_RISK_PROFILE_FN
+    if _GET_RISK_PROFILE_FN is None:
+        from ai.policy.risk_profile import get_risk_profile
+        _GET_RISK_PROFILE_FN = get_risk_profile
+    return _GET_RISK_PROFILE_FN(q_val)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -163,7 +173,7 @@ class MCTSEngine:
             for idx, child in root.children.items():
                 if idx >= 0 and idx < len(legal_actions):
                     act_mode = legal_actions[idx].get("mode", 99)
-                    dist_idx = min(act_mode, 31)
+                    dist_idx = min(act_mode, 31) if act_mode < 32 else (act_mode % 32)
                     policy_dist[dist_idx] += child.visit_count / total_visits
 
         best_idx = self._select_action(root, legal_actions, training_mode)
@@ -195,15 +205,13 @@ class MCTSEngine:
         root_state_vec: np.ndarray,
         nodes: List[MCTSNode],
         base_value: float,
-        state: Optional[dict] = None,
+        state: Optional[Any] = None,
         legal_actions: Optional[List[Dict[str, Any]]] = None,
         world_seed: int = 0,
     ) -> List[float]:
         """
         Avalia todas as folhas selecionadas em UM ÚNICO forward pass batch.
-
-        Usa o GameSimulator para projetar o estado real pós-ação (recursos, dano, bloqueio).
-        Fallback determinístico e desconto por profundidade garantem segurança total.
+        Reaproveita projeções determinísticas de folhas idênticas via cache de action_id.
         """
         if not nodes:
             return []
@@ -215,29 +223,48 @@ class MCTSEngine:
             ]
 
         try:
-            leaf_vecs = []
+            if state is not None and not isinstance(state, ImmutableGameState):
+                state = ImmutableGameState(state)
+
+            from ai.game_simulator import GameSimulator
+
+            cache: Dict[int, Tuple[Any, int]] = {}
+            unique_vecs = []
+            slot_map = []
+
             for node in nodes:
-                if state is not None and legal_actions and 0 <= node.action_id < len(legal_actions):
-                    try:
-                        from ai.game_simulator import GameSimulator
-                        next_state, leaf_vec = GameSimulator.simulate_step(state, legal_actions[node.action_id])
-                        node.state = next_state
-                    except Exception:
-                        rng = np.random.default_rng(seed=(node.action_id + 1 + world_seed * 1000) % (2**31))
+                aid = node.action_id
+                if aid not in cache:
+                    if state is not None and legal_actions and 0 <= aid < len(legal_actions):
+                        try:
+                            next_state, leaf_vec = GameSimulator.simulate_step(state, legal_actions[aid])
+                        except Exception:
+                            rng = np.random.default_rng(seed=(aid + 1 + world_seed * 1000) % (2**31))
+                            noise = rng.normal(0.0, LEAF_PERTURB_SCALE, size=root_state_vec.shape).astype(np.float32)
+                            leaf_vec = np.clip(root_state_vec + noise, 0.0, 1.0)
+                            next_state = None
+                    else:
+                        rng = np.random.default_rng(seed=(aid + 1 + world_seed * 1000) % (2**31))
                         noise = rng.normal(0.0, LEAF_PERTURB_SCALE, size=root_state_vec.shape).astype(np.float32)
                         leaf_vec = np.clip(root_state_vec + noise, 0.0, 1.0)
-                else:
-                    rng = np.random.default_rng(seed=(node.action_id + 1 + world_seed * 1000) % (2**31))
-                    noise = rng.normal(0.0, LEAF_PERTURB_SCALE, size=root_state_vec.shape).astype(np.float32)
-                    leaf_vec = np.clip(root_state_vec + noise, 0.0, 1.0)
-                leaf_vecs.append(leaf_vec)
+                        next_state = None
 
-            # Batch: shape (num_sims, state_dim)
-            batch = np.stack(leaf_vecs, axis=0)
+                    slot_idx = len(unique_vecs)
+                    unique_vecs.append(leaf_vec)
+                    cache[aid] = (next_state, slot_idx)
 
-            if hasattr(self.model, "eval"):
+                next_st, s_idx = cache[aid]
+                if next_st is not None:
+                    node.state = next_st
+                slot_map.append(s_idx)
+
+            # Batch: shape (num_unique_actions, state_dim)
+            batch = np.stack(unique_vecs, axis=0)
+
+            if getattr(self.model, "training", False) and hasattr(self.model, "eval"):
                 self.model.eval()
-            with torch.no_grad():
+
+            with torch.inference_mode():
                 if hasattr(self.model, "to") and isinstance(self.model, torch.nn.Module):
                     x = torch.from_numpy(batch).float().to(self.device)
                 else:
@@ -257,7 +284,7 @@ class MCTSEngine:
                 else:
                     values_flat = list(values)
 
-            return values_flat
+            return [values_flat[s_idx] for s_idx in slot_map]
 
         except Exception:
             # Fallback: desconto por profundidade (nunca trava o bot)
@@ -379,9 +406,8 @@ class MCTSEngine:
     # ── Seleção PUCT ──────────────────────────────────────────────
 
     def _select(self, root: MCTSNode, sim_idx: int = 0) -> MCTSNode:
-        from ai.policy.risk_profile import get_risk_profile
         """Desce a árvore por PUCT considerando apenas filhos ativos (chave ≥ 0)."""
-        risk_profile = get_risk_profile(root.q_value)
+        risk_profile = _resolve_risk_profile(root.q_value)
         eff_c_puct = self.c_puct * risk_profile.get("c_puct_scale", 1.0)
 
         node = root

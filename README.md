@@ -68,11 +68,13 @@ O ecossistema integra 6 camadas interconectadas em tempo real:
   - Arquitetura Transformer Encoder Dual-Head com Self-Attention para sinergia entre cartas e Cross-Attention contextual com o estado global.
   - Vetor de entrada de 832 dimensões (64 dimensões globais de contexto + 16 slots de cartas × 48 floats semânticos de embeddings densos gerados via NLP/SVD).
   - Dual-Head: **Policy Head** (distribuição sobre 32 modos de ação) e **Value Head** (estimativa de vitória entre $[-1.0, 1.0]$), além de **Cabeças Auxiliares KataGo** (diferencial de vida $\Delta\text{HP}$ e estimativa de dano do turno).
-- **Simulador Determinístico (`ai/game_simulator.py`)**:
+- **Simulador Determinístico (`ai/game_simulator.py`) & Extração Zero-Copy (ADR-0014)**:
   - Projeta estados futuros exatos pós-ação (desconto de custos, pitch automático, cálculo de ataque vs bloqueio, dano não bloqueado, *Go Again*, AP e vida).
-  - Substitui ruído sintético por avaliações determinísticas nas folhas da árvore MCTS.
-- **Concorrência Híbrida no ISMCTS (`ai/mcts/ismcts.py` & ADR-0008)**:
+  - Extração zero-copy de vetores diretamente sobre `Mapping`/`ImmutableGameState`, eliminando serializações recursivas (`to_dict()`) e reduzindo a latência por decisão MCTS em **15.5× (199.8 ms $\to$ 12.9 ms)**.
+  - Memoização determinística de folhas por `action_id` na árvore MCTS, colapsando simulações redundantes e acelerando partidas em **30.5×**.
+- **Concorrência Híbrida & Batched Inference (`ai/mcts/` — ADR-0008 & ADR-0014)**:
   - *Information Set MCTS*: Amostra mundos determinizados preenchendo a mão oculta do adversário com filtro por classe do herói oponente (*Deck-Aware World Sampling* via `fab_cards_db.json`).
+  - **Dynamic Batched Inference (`ThreadBatchedEvaluator`)**: Agrupa requisições multithread de self-play headless em batches dinâmicos $[N, 832]$ com AMP FP16 em CUDA, maximizando a saturação da GPU.
   - **4 Modos de Execução**: `threads` (ThreadPool in-process leve, padrão para auto-treinamento com zero risco de OOM), `multiprocessing` (Actor-Evaluator em CPU com GPU centralizada em batch via Pipes), `direct_gpu` (CUDA nativo para GPUs de alta VRAM) e `sequential`.
   - **Telemetria Preditiva & Lazy Probe**: Cálculo de VRAM em tempo real no dashboard e cache de GPU probe (`@lru_cache`) para evitar sobrecarga no driver.
   - Avalia a melhor linha defensiva prevenindo *overblocking* e preservando a mão de contra-ataque (*Tempo Pivot*).
@@ -220,6 +222,9 @@ wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/traini
 
 # Alta performance: mais workers paralelos e batch size maior na GPU:
 wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --headless --workers 5 --batch-size 2048 --mcts-sims 60
+
+# Máxima vazão na GPU: Dynamic Batched Inference entre workers concorrentes (ADR-0014):
+wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python ai/training/orchestrator.py --headless --workers 8 --batched-inference --device cuda:0
 ```
 
 ### Treinamento Padrão Sim2Real (Conectado ao Talishar)

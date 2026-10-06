@@ -2,7 +2,6 @@
 
 include_once "../WriteLog.php";
 include_once "../Libraries/HTTPLibraries.php";
-include_once "../Libraries/CoreLibraries.php";
 include_once "../Libraries/SHMOPLibraries.php";
 include_once "../Libraries/BlockedUserLibraries.php";
 include_once "../APIKeys/APIKeys.php";
@@ -26,6 +25,16 @@ include_once "../Classes/CardObjects/LGSCards.php";
 
 
 // GetMetafyTiersFromDatabase is defined in includes/MetafyHelper.php (included above)
+
+if (!function_exists("DelimStringContains")) {
+  function DelimStringContains($str, $find, $partial=false)
+  {
+    foreach (explode(",", $str) as $item) {
+      if ($partial ? str_contains($item, $find) : $item == $find) return true;
+    }
+    return false;
+  }
+}
 
 if (!function_exists("SubtypeContains")) {
   function SubtypeContains($cardID, $subtype, $player = "")
@@ -132,7 +141,7 @@ $response = new stdClass();
 
 session_start();
 if (!isset($gameName)) {
-  $_POST = ReadJsonBody();
+  $_POST = json_decode(file_get_contents('php://input'), true);
   if($_POST == NULL) {
     $response->error = "Parameters were not passed";
     echo json_encode($response);
@@ -203,7 +212,6 @@ $preconDecklinks = [
   "https://fabrary.net/decks/01KNHHE1MY39BC4PXYXMTJVT1M", //hala
   "https://fabrary.net/decks/01KREWW7RJS0GZ2PCCD4BM47QY", //zyggy
   "https://fabrary.net/decks/01KP7ZJNFZZD8YNGP438FT8SFG", //olympia
-  "https://fabrary.net/decks/01KXQF1YZHCHP2KAMDBS5WC5Q9", //malice
 ];
 
 if ($favoriteDeckLink != "0" && $decklink == "") $decklink = $favoriteDeckLink;
@@ -258,179 +266,161 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
    }
  }
 
- if ($matchup == "" && !$forceBaseDeckRefresh && $playerID == 2 && $gameStatus >= $MGS_Player2Joined) {
-   if ($gameStatus >= $MGS_GameStarted) {
-     $response->gameStarted = true;
-   }
-   else {
-     $response->error = "Another player has already joined the game.";
-   }
-   WriteGameFile();
-   echo json_encode($response);
-   exit;
- }
+  $isBotJoining = ($playerID == 2 && ($p2uid == "Practice Dummy" || file_exists("../Games/" . $gameName . "/p2_bot_needed.txt") || ($p2IsAI ?? "0") == "1"));
+  if (!$isBotJoining && $matchup == "" && !$forceBaseDeckRefresh && $playerID == 2 && $gameStatus >= $MGS_Player2Joined) {
+    if ($gameStatus >= $MGS_GameStarted) {
+      $response->gameStarted = true;
+    }
+    else {
+      $response->error = "Another player has already joined the game.";
+    }
+    WriteGameFile();
+    echo json_encode($response);
+    exit;
+  }
 
- $deckLoaded = false;
+  $deckLoaded = false;
+  $deckObj = null;
+  $isFaBDB = false;
+  $isFaBMeta = false;
+  $isFaBTCGMeta = false;
+  $isFaBBazaar = false;
 
- if ($decklink != "") {
-   if ($playerID == 1)
-     $p1DeckLink = $decklink;
-   else if ($playerID == 2)
-     $p2DeckLink = $decklink;
-   $curl = curl_init();
-   $isFaBDB = str_contains($decklink, "fabdb");
-   $isFaBMeta = str_contains($decklink, "fabmeta");
-   $isFaBTCGMeta = str_contains($decklink, "fabtcgmeta");
-   $isFaBBazaar = IsFaBBazaarHostLink($decklink);
-   
-   // Sim2Real AI engine support:
-   $isLocalJson = false;
-   $local_paths = [];
-   if (!str_starts_with($decklink, "http://") && !str_starts_with($decklink, "https://")) {
-       $clean_slug = str_ends_with($decklink, ".json") ? substr($decklink, 0, -5) : $decklink;
-       if (str_starts_with($clean_slug, "decks/")) $clean_slug = substr($clean_slug, 6);
-       $local_paths = [
-           $decklink,
-           "../" . $decklink,
-           "../../" . $decklink,
-           "/var/www/html/game/" . $decklink,
-           "decks/" . $clean_slug . ".json",
-           "../decks/" . $clean_slug . ".json",
-           "../../decks/" . $clean_slug . ".json",
-           "/var/www/html/game/decks/" . $clean_slug . ".json"
-       ];
-       foreach ($local_paths as $lp) {
-           if (file_exists($lp)) {
-               $isLocalJson = true;
-               break;
-           }
-       }
-   }
+  if (is_array($deck) || is_object($deck)) {
+    $deckObj = json_decode(json_encode($deck));
+  } elseif (is_string($deck) && str_starts_with(trim($deck), "{")) {
+    $deckObj = json_decode($deck);
+  } elseif ($decklink != "") {
+    if ($playerID == 1)
+      $p1DeckLink = $decklink;
+    else if ($playerID == 2)
+      $p2DeckLink = $decklink;
 
-   if ($isLocalJson || str_ends_with($decklink, ".json")) {
-       $apiDeck = null;
-       foreach ($local_paths as $lp) {
-           if (file_exists($lp)) {
-               $apiDeck = file_get_contents($lp);
-               break;
-           }
-       }
-       if ($apiDeck !== null) {
-           $deckObj = json_decode($apiDeck);
-           $apiInfo = ['http_code' => 200];
-       } else {
-           $response->error = "Local deck file not found: " . $decklink;
-           echo json_encode($response);
-           exit;
-       }
-   }
-   else if (!empty($deck) && (is_array($deck) || is_object($deck))) {
-       $candidateObj = is_object($deck) ? $deck : json_decode(json_encode($deck));
-       if (isset($candidateObj->cards) && count($candidateObj->cards) > 0) {
-           $deckObj = $candidateObj;
-           $apiDeck = json_encode($deckObj);
-           $apiInfo = ['http_code' => 200];
-       }
-   }
-   else if ($isFaBDB) {
-     $decklinkArr = explode("/", $decklink);
-     $slug = $decklinkArr[count($decklinkArr) - 1];
-     $apiLink = "https://api.fabdb.net/decks/" . $slug;
-   }
-   else if ($isFaBTCGMeta) {
-     $parsedUrl = parse_url($decklink);
-     parse_str($parsedUrl['query'] ?? "-", $queryParams);
-     $deckId = $queryParams['deckName'] ?? $queryParams['deckId'] ?? '';
-     $apiLink = "https://api.fabtcgmeta.com/api/talishar/deck/" . rawurlencode($deckId);
-   }
-   else if ($isFaBBazaar) {
-     $deckId = ExtractFaBBazaarDeckId($decklink);
-     if ($deckId === '') {
-       $response->error = "Invalid FaB Bazaar deck URL format. Expected: https://fabbazaar.app/decks/DECK_ID";
-       echo (json_encode($response));
-       exit;
-     }
-     $headers = array(
-       "x-api-key: " . $FaBBazaarKey,
-       "Content-Type: application/json",
-       "User-Agent: Talishar"
-     );
-     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-     $apiLink = "https://fabbazaar.app/api/decks/" . $deckId . "/talishar";
-     if ($matchup != "") $apiLink .= "?matchupId=" . $matchup;
-   }
-   else if (str_contains($decklink, "fabrary")) {
-     $headers = [
-       "x-api-key: " . $FaBraryKey,
-       "Content-Type: application/json",
-     ];
-     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-     $decklinkArr = explode("/", $decklink);
-     $decklinkArr = explode("?", $decklinkArr[count($decklinkArr) - 1]);
-     $slug = $decklinkArr[0];
-     $apiLink = "https://atofkpq0x8.execute-api.us-east-2.amazonaws.com/prod/v1/decks/" . $slug;
-     if ($matchup != "")
-       $apiLink .= "?matchupId=" . $matchup;
-   }
-   else {
-     $decklinkArr = explode("/", $decklink);
-     $slug = $decklinkArr[count($decklinkArr) - 1];
-     $apiLink = "https://api.fabmeta.net/deck/" . $slug;
-   }
-   
-   if (!isset($deckObj) || $deckObj === null) {
-       if (!str_ends_with($decklink, ".json")) {
-           $response->apiLink = $apiLink;
-           curl_setopt($curl, CURLOPT_URL, $apiLink);
-           curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-           $apiDeck = curl_exec($curl);
-           $apiInfo = curl_getinfo($curl);
-           curl_close($curl);
-       }
+    if (str_starts_with(trim($decklink), "{")) {
+      $deckObj = json_decode($decklink);
+    } else {
+      $cleanSlug = basename($decklink, ".json");
+      $possiblePaths = [
+        $decklink,
+        "../decks/" . $cleanSlug . ".json",
+        "../../decks/" . $cleanSlug . ".json",
+        "../" . $decklink,
+        "../" . $cleanSlug . ".json",
+        "../deck.json",
+        "deck.json"
+      ];
+      foreach ($possiblePaths as $path) {
+        if (file_exists($path)) {
+          $loaded = json_decode(file_get_contents($path));
+          if ($loaded && isset($loaded->cards)) {
+            $deckObj = $loaded;
+            break;
+          }
+        }
+      }
+    }
 
-       if ($apiDeck === FALSE) {
-         WriteGameFile();
-         if (is_array($decklink))
-           $response->error = "Deckbuilder API for this deck returns no data: " . implode("/", $decklink);
-         else
-           $response->error = "Deckbuilder API for this deck returns no data: " . $decklink;
-         echo json_encode($response);
-         exit;
-       }
-       if (!str_ends_with($decklink, ".json")) {
-           $deckObj = json_decode($apiDeck);
-       }
-   }
-   if ($apiInfo['http_code'] == 401 && $isFaBBazaar) {
-     $response->error = "API UNAUTHORIZED! FaB Bazaar API key is missing. Contact site administrator.";
-     echo (json_encode($response));
-     die();
-   } elseif ($apiInfo['http_code'] == 404 && $isFaBBazaar) {
-     $response->error = "Deck not found on FaB Bazaar. The deck may be private, deleted, or the URL is incorrect.";
-     echo (json_encode($response));
-     die();
-   } elseif ($apiInfo['http_code'] == 429 && $isFaBBazaar) {
-     $response->error = "FaB Bazaar rate limit exceeded. Please wait a minute and try again.";
-     echo (json_encode($response));
-     die();
-   }
-   // if has message forbidden error out.
-   if ($apiInfo['http_code'] == 403) {
-     $response->error = "API FORBIDDEN! Invalid or missing token to access API: " . $apiLink . " The response from the deck hosting service was: " . $apiDeck;
-     echo json_encode($response);
-     die();
-   }
-   if ($deckObj == null) {
-     $response->error = 'Deck object is null. Failed to retrieve deck from API.';
-     echo json_encode($response);
-     exit;
-   }
-   if (!isset($deckObj->{'name'})) {
-     $response->error = 'Deck is invalid. Failed to retrieve deck from API.';
-     echo json_encode($response);
-     exit;
-   }
-   $deckName = $deckObj->{'name'};
+    if ($deckObj === null && (str_starts_with($decklink, "http://") || str_starts_with($decklink, "https://"))) {
+      $curl = curl_init();
+      $isFaBDB = str_contains($decklink, "fabdb");
+      $isFaBMeta = str_contains($decklink, "fabmeta");
+      $isFaBTCGMeta = str_contains($decklink, "fabtcgmeta");
+      $isFaBBazaar = IsFaBBazaarHostLink($decklink);
+      if ($isFaBDB) {
+        $decklinkArr = explode("/", $decklink);
+        $slug = $decklinkArr[count($decklinkArr) - 1];
+        $apiLink = "https://api.fabdb.net/decks/" . $slug;
+      }
+      else if ($isFaBTCGMeta) {
+        $parsedUrl = parse_url($decklink);
+        parse_str($parsedUrl['query'] ?? "-", $queryParams);
+        $deckId = $queryParams['deckName'] ?? $queryParams['deckId'] ?? '';
+        $apiLink = "https://api.fabtcgmeta.com/api/talishar/deck/" . rawurlencode($deckId);
+      }
+      else if ($isFaBBazaar) {
+        $deckId = ExtractFaBBazaarDeckId($decklink);
+        if ($deckId === '') {
+          $response->error = "Invalid FaB Bazaar deck URL format. Expected: https://fabbazaar.app/decks/DECK_ID";
+          echo (json_encode($response));
+          exit;
+        }
+        $headers = array(
+          "x-api-key: " . $FaBBazaarKey,
+          "Content-Type: application/json",
+          "User-Agent: Talishar"
+        );
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        $apiLink = "https://fabbazaar.app/api/decks/" . $deckId . "/talishar";
+        if ($matchup != "") $apiLink .= "?matchupId=" . $matchup;
+      }
+      else if (str_contains($decklink, "fabrary")) {
+        $headers = [
+          "x-api-key: " . $FaBraryKey,
+          "Content-Type: application/json",
+        ];
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        $decklinkArr = explode("/", $decklink);
+        $decklinkArr = explode("?", $decklinkArr[count($decklinkArr) - 1]);
+        $slug = $decklinkArr[0];
+        $apiLink = "https://atofkpq0x8.execute-api.us-east-2.amazonaws.com/prod/v1/decks/" . $slug;
+        if ($matchup != "")
+          $apiLink .= "?matchupId=" . $matchup;
+      }
+      else {
+        $decklinkArr = explode("/", $decklink);
+        $slug = $decklinkArr[count($decklinkArr) - 1];
+        $apiLink = "https://api.fabmeta.net/deck/" . $slug;
+      }
+      $response->apiLink = $apiLink;
+      curl_setopt($curl, CURLOPT_URL, $apiLink);
+      curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+      $apiDeck = curl_exec($curl);
+      $apiInfo = curl_getinfo($curl);
+      curl_close($curl);
+
+      if ($apiDeck === FALSE) {
+        WriteGameFile();
+        if (is_array($decklink))
+          $response->error = "Deckbuilder API for this deck returns no data: " . implode("/", $decklink);
+        else
+          $response->error = "Deckbuilder API for this deck returns no data: " . $decklink;
+        echo json_encode($response);
+        exit;
+      }
+      $deckObj = json_decode($apiDeck);
+      if ($apiInfo['http_code'] == 401 && $isFaBBazaar) {
+        $response->error = "API UNAUTHORIZED! FaB Bazaar API key is missing. Contact site administrator.";
+        echo (json_encode($response));
+        die();
+      } elseif ($apiInfo['http_code'] == 404 && $isFaBBazaar) {
+        $response->error = "Deck not found on FaB Bazaar. The deck may be private, deleted, or the URL is incorrect.";
+        echo (json_encode($response));
+        die();
+      } elseif ($apiInfo['http_code'] == 429 && $isFaBBazaar) {
+        $response->error = "FaB Bazaar rate limit exceeded. Please wait a minute and try again.";
+        echo (json_encode($response));
+        die();
+      }
+      if ($apiInfo['http_code'] == 403) {
+        $response->error = "API FORBIDDEN! Invalid or missing token to access API: " . $apiLink . " The response from the deck hosting service was: " . $apiDeck;
+        echo json_encode($response);
+        die();
+      }
+    }
+  }
+
+  if ($deckObj == null) {
+    $response->error = 'Deck object is null. Failed to retrieve deck.';
+    echo json_encode($response);
+    exit;
+  }
+  if (!isset($deckObj->{'name'})) {
+    $response->error = 'Deck is invalid. Failed to retrieve deck.';
+    echo json_encode($response);
+    exit;
+  }
+  $deckName = $deckObj->{'name'};
+
    if (isset($deckObj->{'matchups'})) {
      $matchups = $deckObj->{'matchups'};
      // Transform matchups to standardize turn order preferences
@@ -530,8 +520,8 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
            if ($isDeckLegal != "") $isDeckLegal .= ", ";
            $isDeckLegal .= $cardLabel;
          }
-         // Deck Check for singleton blitz
-         elseif ($format == "blitz" && !hasUnlimited($id) && $cardCounts[$id] > 1) {
+         // Deck Check for blitz (max 2 copies)
+         elseif ($format == "blitz" && !hasUnlimited($id) && $cardCounts[$id] > 2) {
            if ($isDeckLegal != "") $isDeckLegal .= ", ";
            $isDeckLegal .= $cardLabel;
          }
@@ -625,16 +615,6 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
    $filename = "../Games/" . $gameName . "/p" . $playerID . "Deck.txt";
    $origFilename = "../Games/" . $gameName . "/p" . $playerID . "DeckOrig.txt";
 
-   $arenaLocked = ($p1EquipmentSubmitted == "1" && $p2EquipmentSubmitted == "1");
-   $lockedCharString = "";
-   if ($arenaLocked && file_exists($filename)) {
-     $lockedHandler = @fopen($filename, "r");
-     if ($lockedHandler !== false) {
-       $lockedCharString = trim((string)fgets($lockedHandler));
-       fclose($lockedHandler);
-     }
-   }
-
    // Ensure any old deck files are removed before writing new ones
    if (file_exists($filename))
      unlink($filename);
@@ -659,7 +639,6 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
      $charString .= " " . $arms;
    if ($legs != "")
      $charString .= " " . $legs;
-   if ($lockedCharString !== "") $charString = $lockedCharString;
    fwrite($deckFile, $charString . "\r\n");
    fwrite($deckFile, $deckCards . "\r\n");
    fwrite($deckFile, $headSideboard . "\r\n");
@@ -692,7 +671,6 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
      include_once "../includes/dbh.inc.php";
      addFavoriteDeck($_SESSION["userid"], $decklink, $deckName, SetID($character), $deckFormat);
    }
- }
 
  if (!isset($character) || $character == "") {
    $response->error = "There is no character. Something went wrong with parsing your deck.";
@@ -748,10 +726,10 @@ if (isset($_SESSION["userid"])) LogIPHistory($_SESSION["userid"]);
        WriteLog("⚠️ This lobby was hidden due to inactivity. If you have connection issues, try creating a new game.", path: "../");
      }
 
-    if (ShouldSkipRustCountersForSupporterGame($p1IsPatron, $p2IsPatron)) {
+    if (ShouldSkipRustCountersForSupporterGame($p1IsPatron, $p2IsPatron) && $p2IsAI !== "1") {
       WriteLog("No rust counters were accrued because this game includes a Talishar supporter ❤️", highlight:true, path: "../", highlightColor: "green");
     }
-    elseif (ShouldSkipRustCountersForContributors()) {
+    elseif (ShouldSkipRustCountersForContributors() && $p2IsAI !== "1") {
       WriteLog("No rust counters were accrued because this game includes a Talishar contributor ❤️", highlight:true, path: "../", highlightColor: "green");
     }
 
@@ -931,7 +909,7 @@ function isClashLegal($cardID, $character) {
     case "brutus_summa_rudis": case "proclamation_of_combat": case "magrar":
       return true;
     case "drone_of_brutality_red": case "drone_of_brutality_yellow": case "drone_of_brutality_blue": //banned cards
-    case "amulet_of_ice_blue": case "ball_lightning_red": case "ball_lightning_yellow": case "ball_lightning_blue":
+    case "amulet_of_ice": case "ball_lightning_red": case "ball_lightning_yellow": case "ball_lightning_blue":
     case "belittle_red": case "belittle_yellow": case "belittle_blue":
     case "stubby_hammerers": case "duskblade": case "zephyr_needle":
       return false;
@@ -946,7 +924,7 @@ function isClashLegal($cardID, $character) {
     default: break;
   }
   if(HasSpecialization($cardID)) return true;
-  if(Rarity($cardID) == "C" || Rarity($cardID) == "T" || Rarity($cardID) == "B" || Rarity($cardID) == "R") return true;
+  if(Rarity($cardID) == "C" || Rarity($cardID) == "T" || Rarity($cardID) == "R") return true;
   if(($character == "emperor_dracai_of_aesir" || $character == "") && $cardID == "command_and_conquer_red") return true; //C&C is legal for Emperor in Clash
   if(($character == "prism_advent_of_thrones" || $character == "") && $set == "DTD" && $number >= 5 && $number <= 12) return true; //Figments are legal for Prism in Clash
   return false;
@@ -980,8 +958,6 @@ function IsCardBanned($cardID, $format, $character)
         case "runechant_of_wrath_yellow":
         case "runechant_of_lust_yellow":
         case "runechant_of_sloth_yellow":
-        case "the_hand_that_pulls_the_strings":
-        case "minerva_themis":
           return false;
         default:
           break;
@@ -1018,9 +994,9 @@ function isSpecialUsePromo($cardID) {
     $promoSet = array_flip([
       "taipanis_dracai_of_judgement", "proclamation_of_requisition", "gavel_of_natural_order",
       "theryon_magister_of_justice", "proclamation_of_abundance", "proclamation_of_production",
-      "brutus_summa_rudis", "proclamation_of_combat", "magrar", "ruudi_gem_keeper",
+      "brutus_summa_rudis", "proclamation_of_combat", "magrar", "ruu'di_gem_keeper",
       "go_bananas_yellow", "taylor", "yorick_weaver_of_tales", "tales_of_adventure_blue",
-      "good_deeds_dont_go_unnoticed_yellow", "pink_visor", "diamond_hands",
+      "good_deeds_don't_go_unnoticed_yellow", "pink_visor", "diamond_hands",
       "hummingbird_call_of_adventure", "shitty_xmas_present_yellow", "squizzy_&_floof",
       "fabric_of_spring_yellow", "venomback_fabric_yellow", "silversheen_needle", "bank_breaker"
     ]);
@@ -1030,7 +1006,7 @@ function isSpecialUsePromo($cardID) {
       "runechant_of_pride_yellow", "runechant_of_wrath_yellow", "runechant_of_lust_yellow",
       "runechant_of_sloth_yellow", "runic_reaving_red"
     ]);
-    $unreleasedSetNames = array_flip(["SPW", "MPA", "AMO", ""]);
+    $unreleasedSetNames = array_flip(["IAR", "AMA", "SPW", "SAT", "SBW", "MPA", "AMO", ""]);
   }
   if (isset($releaseSet[$cardID])) return false;
   return isset($promoSet[$cardID]) || isset($unreleasedSetNames[CardSet($cardID)]);
@@ -1039,9 +1015,9 @@ function isSpecialUsePromo($cardID) {
 function isUnimplemented($cardID) {
   // by default cards from new sets are unimplemented
   switch (CardSet($cardID)) {
+    case "IAR":
+    case "AMA":
     case "SPW":
-    case "MPA":
-    case "AMO":
     case "": // cards that don't have a set id yet
       $card = GetClass($cardID, 0);
       return $card == "-";
@@ -1070,24 +1046,24 @@ function isBannedInFormat($cardID, $format) {
           "tome_of_fyendal_yellow", "drone_of_brutality_red", "drone_of_brutality_yellow", "drone_of_brutality_blue", "tome_of_aetherwind_red", "art_of_war_yellow", "plunder_run_red", "plunder_run_yellow", "plunder_run_blue",
           "bloodsheath_skeleta", "cash_in_yellow", "prism_sculptor_of_arc_light", "luminaris", "tome_of_divinity_yellow", "galaxxi_black", "stubby_hammerers", "belittle_red",
           "belittle_yellow", "belittle_blue", "awakening_blue", "ball_lightning_red", "ball_lightning_yellow", "ball_lightning_blue", "duskblade", "crown_of_seeds", "lexi_livewire",
-          "voltaire_strike_twice", "briar_warden_of_thorns", "rosetta_thorn", "oldhim_grandfather_of_eternity", "winters_wail", "dromai_ash_artist", "storm_of_sandikai", "tome_of_firebrand_red",
-          "iyslander_stormbind", "krakens_aethervein", "berserk_yellow", "bonds_of_ancestry_yellow", "bonds_of_ancestry_blue", "orihon_of_mystic_tenets_blue", "high_octane_red", "count_your_blessings_blue",
+          "voltaire_strike_twice", "briar_warden_of_thorns", "rosetta_thorn", "oldhim_grandfather_of_eternity", "winter's_wail", "dromai_ash_artist", "storm_of_sandikai", "tome_of_firebrand_red",
+          "iyslander_stormbind", "kraken's_aethervein", "berserk_yellow", "bonds_of_ancestry_yellow", "bonds_of_ancestry_blue", "orihon_of_mystic_tenets_blue", "high_octane_red", "count_your_blessings_blue",
           "viserai_rune_blood", "nebula_blade", "enigma_ledger_of_ancestry", "cosmo_scroll_of_ancestral_tapestry", "zen_tamer_of_purpose", "tiger_taming_khakkara", "aurora_shooting_star", "star_fall",
           "count_your_blessings_red", "count_your_blessings_yellow", "nuu_alluring_desire", "beckoning_mistblade", "dash_inventor_extraordinaire", "teklo_plasma_pistol",
           "azalea_ace_in_the_hole", "death_dealer", "bonds_of_agony_blue", "golden_tipple_red", "golden_tipple_yellow",
           "plume_of_evergrowth", "orb_weaver_spinneret_yellow", "orb_weaver_spinneret_blue",
-          "chart_the_high_seas_blue", "wrath_of_retribution_red", "entwine_lightning_red", "entwine_lightning_yellow", "entwine_lightning_blue",
+          "chart_the_high_seas_blue", "wrath_of_retribution_red", "brand_with_cinderclaw_red", "brand_with_cinderclaw_yellow", "brand_with_cinderclaw_blue",
           "crucible_of_aetherweave", "rotwood_reaper", "mandible_claw", "staff_of_verdant_shoots",
           "electromagnetic_somersault_red", "electromagnetic_somersault_yellow",
           "channel_lightning_valley_yellow", "phantom_tidemaw_blue", "reaping_blade",
-          "volzar_the_lightning_rod", "luminaris_celestial_fury", "luminaris_angels_glow", "remembrance_yellow", "millers_grindstone", "zephyr_needle"
+          "volzar_the_lightning_rod", "luminaris_celestial_fury", "luminaris_angels_glow", "remembrance_yellow", "millers_grindstone"
       ], $livingLegends)),
       "commoner" => array_flip([
           "amulet_of_ice_blue", "belittle_red", "belittle_yellow", "belittle_blue", "aether_ironweave", "rosetta_thorn",
-          "waning_moon", "zephyr_needle", "reality_refractor", "stubby_hammerers"
+          "waning_moon", "zephyr_needle", "reality_refractor"
       ]),
       "llcc" => array_flip([
-          "krakens_aethervein", "crown_of_seeds", "carrion_husk", "zephyr_needle", "rosetta_thorn"
+          "kraken's_aethervein", "crown_of_seeds", "carrion_husk", "zephyr_needle", "rosetta_thorn"
       ]),
       "sage" => array_flip(array_merge([
         "fiddlers_green_red", "fiddlers_green_yellow", "fiddlers_green_blue",
@@ -1097,7 +1073,7 @@ function isBannedInFormat($cardID, $format) {
         "ball_lightning_red", "ball_lightning_yellow", "ball_lightning_blue",
         "belittle_red", "belittle_yellow", "belittle_blue",
         "bonds_of_ancestry_red", "bonds_of_ancestry_yellow", "bonds_of_ancestry_blue",
-        "count_your_blessings_red", "count_your_blessings_yellow", "count_your_blessings_blue",
+        "count_your_blessings_red", "count_your_blessings_yellow", "count_your_blessing_blue",
         "deadwood_dirge_red", "deadwood_dirge_yellow", "deadwood_dirge_blue",
         "drone_of_brutality_red", "drone_of_brutality_blue", "drone_of_brutality_yellow",
         "electromagnetic_somersault_red", "electromagnetic_somersault_yellow", "electromagnetic_somersault_blue",
@@ -1109,21 +1085,16 @@ function isBannedInFormat($cardID, $format) {
         "rosetta_thorn",
         "sigil_of_solace_red", "sigil_of_solace_yellow", "sigil_of_solace_blue",
         "sink_below_red", "sink_below_yellow", "sink_below_blue",
-        "snapdragon_scalers", "stubby_hammerers", "vest_of_the_first_fist", "waning_moon", "zephyr_needle",
-        "bracers_of_belief", "ebon_fold", "reaping_blade", "volzar_the_lightning_rod",
-        "absorb_in_aether_red", "absorb_in_aether_yellow", "absorb_in_aether_blue",
-        "beaten_trackers",
-        "emeritus_scolding_red", "emeritus_scolding_yellow", "emeritus_scolding_blue",
-        "harmonized_kodachi",
-        "lightning_press_red", "lightning_press_yellow", "lightning_press_blue",
-        "pulping_red", "pulping_yellow", "pulping_blue",
-        "sigil_of_suffering_red", "sigil_of_suffering_yellow", "sigil_of_suffering_blue",
-        "snapback_red", "snapback_yellow", "snapback_blue"
+        "snapdragon_scalers", "stubby_hammers", "vest_of_the_first_fist", "waning_moon", "zephyr_needle",
+        "bracers_of_belief", "beckoning_haunt", "deathly_delight_red", "deathly_delight_yellow", "deathly_delight_blue",
+        "ebon_fold", "flourish_yellow", "flourish_blue", "reaping_blade", "volzar_the_lightning_rod",
+        "vantom_wraith_red", "vantom_wraith_yellow", "vantom_wraith_blue",
+        "sirens_of_safe_harbor_red", "sirens_of_safe_harbor_yellow", "sirens_of_safe_harbor_blue"
       ], $benched)),
-      "gage" => array_flip(["bravo_star_of_the_show", "bloodsheath_skeleta", "heavy_industry_power_plant", "krakens_aethervein", "stubby_hammerers",
+      "gage" => array_flip(["bravo_star_of_the_show", "bloodsheath_skeleta", "heavy_industry_power_plant", "kraken_aethervein", "stubby_hammerers",
         "count_your_blessings_red", "count_your_blessings_yellow", "count_your_blessings_blue", "chane_bound_by_shadow",
         "drone_of_brutality_red", "drone_of_brutality_yellow", "drone_of_brutality_blue", "zephyr_needle",
-        "open_the_flood_gates_red", "open_the_flood_gates_yellow", "open_the_flood_gates_blue",
+        "open_the_floodgates_red", "open_the_floodgates_yellow", "open_the_floodgates_blue",
         "tome_of_firebrand_red", "art_of_war_yellow", "berserk_yellow", "cash_in_yellow", "remembrance_yellow",
         "tome_of_divinity_yellow", "tome_of_fyendal_yellow", "awakening_blue", "orihon_of_mystic_tenets_blue",
         "channel_lightning_valley_yellow",

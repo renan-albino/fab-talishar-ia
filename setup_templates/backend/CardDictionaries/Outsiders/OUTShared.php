@@ -75,7 +75,7 @@ function OUTAbilityCost($cardID)
       $dashSuffix = substr($cardID, $dashPos + 1);
       $cardID = substr($cardID, 0, $dashPos);
     }
-    $cardID = StripCardIDSuffix($cardID);
+    if (($commaPos = strpos($cardID, ",")) !== false) $cardID = substr($cardID, 0, $commaPos);
     if ($cardID == "premeditate_red" && $dashSuffix === "2") return 3;
     if ($cardID == "silken_gi" && $dashSuffix === "2") return -1;
     switch($cardID)
@@ -265,7 +265,7 @@ function OUTAbilityCost($cardID)
         }
         return "";
       case "trench_of_sunken_treasure":
-        GainResources(1, $currentPlayer);
+        GainResources($currentPlayer, 1);
         return "";
       case "quiver_of_abyssal_depths":
         AddDecisionQueue("FINDINDICES", $currentPlayer, "MYDISCARDARROW"); // With a different names
@@ -288,9 +288,9 @@ function OUTAbilityCost($cardID)
               $deck->Top(remove:true);
             }
             $char = GetPlayerCharacter($currentPlayer);
-            $quiverIndex = GetClassState($currentPlayer, $CS_PlayIndex);
-            if (($char[$quiverIndex] ?? "-") != $cardID) $quiverIndex = FindCharacterIndex($currentPlayer, $cardID);
-            if ($quiverIndex >= 0) DestroyCharacter($currentPlayer, $quiverIndex);
+            if ($char[GetClassState($currentPlayer, $CS_PlayIndex)] == $cardID) {
+              DestroyCharacter($currentPlayer, GetClassState($currentPlayer, $CS_PlayIndex));
+            }
           }
         }
         return "";
@@ -432,7 +432,7 @@ function OUTAbilityCost($cardID)
         AddCurrentTurnEffectNextAttack($cardID . "-2", $currentPlayer);
         return "";
       case "threadbare_tunic":
-        GainResources(1, $currentPlayer);
+        GainResources($currentPlayer, 1);
         break;
       case "fleet_foot_sandals":
         GiveAttackGoAgain();
@@ -650,12 +650,10 @@ function OUTAbilityCost($cardID)
       case "humble_red": case "humble_yellow": case "humble_blue":
         if(IsHeroAttackTarget())
         {
-          $defHero = new CharacterCard(0, $defPlayer);
-          if ($defHero->Status() != 4) {
-            AddCurrentTurnEffect($cardID, $defPlayer);
-            AddNextTurnEffect($cardID, $defPlayer);
-            $defHero->SetUsed(3);
-          }
+          AddCurrentTurnEffect($cardID, $defPlayer);
+          AddNextTurnEffect($cardID, $defPlayer);
+          $char = &GetPlayerCharacter($defPlayer);
+          $char[1] = 3;
         }
         break;
       case "wreck_havoc_red": case "wreck_havoc_yellow": case "wreck_havoc_blue":
@@ -747,9 +745,6 @@ function OUTAbilityCost($cardID)
       }
       else {
         $index = SearchCharacterForUniqueID($targetWeapon, $currentPlayer);
-        if ($index == -1 && is_numeric($targetWeapon)) {
-          $index = (int)$targetWeapon;
-        }
         $char = GetPlayerCharacter($currentPlayer);
         if ($index == -1 || $char[$index + 1] == 0) {
           WriteLog("The targeted dagger is no longer there, the layer fails to resolve");
@@ -831,10 +826,10 @@ function OUTAbilityCost($cardID)
     }
     else AddDecisionQueue("PASSPARAMETER", $player, $setPlayer);
     AddDecisionQueue("WRITELOG", $player, CardLink($source, $source) . " shows your top deck", 1);
-    AddDecisionQueue("PASSPARAMETER", $player, "SELF", 1);
-    AddDecisionQueue("SETDQVAR", $player, "1", 1);
     AddDecisionQueue("DECKCARDS", $player, "0", 1);
-    AddDecisionQueue("PEEKTOPCARD", $player, $player, 1);
+    AddDecisionQueue("SETDQVAR", $player, "1", 1);
+    AddDecisionQueue("SETDQCONTEXT", $player, CardLink($source, $source) . " shows the top of your deck is <1>", 1);
+    AddDecisionQueue("OK", $player, "-", 1);
     AddDecisionQueue("PASSPARAMETER", $player, "{1}");
     AddDecisionQueue("NOTEQUALPASS", $player, "ELSE");
     if($showHand) {
@@ -843,7 +838,9 @@ function OUTAbilityCost($cardID)
     }
     else AddDecisionQueue("WRITELOG", $otherPlayer, "Shows opponent's top deck", 1);
     AddDecisionQueue("DECKCARDS", $otherPlayer, "0", 1);
-    AddDecisionQueue("PEEKTOPCARD", $player, $otherPlayer, 1);
+    AddDecisionQueue("SETDQVAR", $otherPlayer, "1", 1);
+    AddDecisionQueue("SETDQCONTEXT", $otherPlayer, CardLink($source, $source) . " shows the top of their deck is <1>", 1);
+    AddDecisionQueue("OK", $player, "-", 1);
     AddDecisionQueue("SETDQCONTEXT", $player, "-");
   }
 

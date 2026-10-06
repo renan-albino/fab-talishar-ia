@@ -209,14 +209,6 @@ def finalize_match(client, state: dict, turn: int, my_h: int, opp_h: int, is_sta
                 player_id=client.player_id,
                 epoch_ratio=getattr(client, "epoch_ratio", 0.0),
             )
-            buf = get_global_buffer(client.buffer_capacity)
-            buf.add_trajectory(
-                client.trajectory,
-                winner_player_id=winner_id,
-                weights=weights,
-                epoch_ratio=getattr(client, "epoch_ratio", 0.0)
-            )
-            buf.save()
 
             if is_vs_human:
                 from ai.training.assimilation import trigger_human_match_assimilation

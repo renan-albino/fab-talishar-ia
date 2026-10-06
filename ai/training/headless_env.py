@@ -222,6 +222,7 @@ class HeadlessSelfPlayLoop:
                             "type": "weapon",
                             "name": w_meta["name"],
                             "cardNumber": w_meta.get("name"),
+                            "mode": 17,
                             "cost": cost,
                             "power": int(w_meta.get("power", 2)),
                             "has_go_again": bool(w_meta.get("has_go_again", False))
@@ -239,6 +240,7 @@ class HeadlessSelfPlayLoop:
                             "name": meta["name"],
                             "cardNumber": meta.get("name"),
                             "card_index": idx,
+                            "mode": min(idx, 7),
                             "cost": cost,
                             "power": int(meta.get("power", 3)),
                             "has_go_again": bool(meta.get("has_go_again", False)),
@@ -246,11 +248,11 @@ class HeadlessSelfPlayLoop:
                         })
 
             # Sempre pode passar prioridade
-            actions.append({"type": "pass_priority"})
+            actions.append({"type": "pass_priority", "mode": 31})
 
         elif phase in ("B", "DEFENSE"):
             # Fase defensiva: pode passar (não bloquear) ou bloquear com cartas da mão
-            actions.append({"type": "pass_priority"})
+            actions.append({"type": "pass_priority", "mode": 31})
             hand = list(state.get("playerHand", []))
             for idx, card in enumerate(hand):
                 meta = GameSimulator.extract_card_meta(card)
@@ -260,11 +262,12 @@ class HeadlessSelfPlayLoop:
                         "type": "block",
                         "name": meta["name"],
                         "cardNumber": meta.get("name"),
+                        "mode": 28,
                         "defense": def_val,
                         "cards": [card]
                     })
         else:
-            actions.append({"type": "pass_priority"})
+            actions.append({"type": "pass_priority", "mode": 31})
 
         return actions
 
@@ -425,18 +428,16 @@ class HeadlessSelfPlayLoop:
                 legal_actions = self._get_legal_actions(state)
                 mcts = mcts1 if active_player == 1 else mcts2
 
-                best_idx, policy_probs = mcts.search(state.to_dict(), legal_actions, num_simulations=self.mcts_sims)
+                vec = FaBPolicyValueNetwork.extract_state_vector(state)
+                best_idx, policy_probs = mcts.search(state, legal_actions, num_simulations=self.mcts_sims, state_vec=vec)
                 if not policy_probs.any() or sum(policy_probs) == 0:
                     policy_probs = np.ones(32, dtype=np.float32) / 32.0
 
                 action_idx = best_idx if best_idx < len(legal_actions) else 0
                 action = legal_actions[action_idx]
 
-                # Vetor de estado em O(1) com card embeddings reais
-                vec = FaBPolicyValueNetwork.extract_state_vector(state.to_dict())
                 full_policy = np.zeros(32, dtype=np.float32)
-                for i, p in enumerate(policy_probs[:32]):
-                    full_policy[i] = p
+                full_policy[:min(32, len(policy_probs))] = policy_probs[:32]
 
                 trajectory.append((vec, full_policy, active_player))
 
@@ -460,17 +461,16 @@ class HeadlessSelfPlayLoop:
                     def_actions = self._get_legal_actions(state)
                     def_mcts = mcts2 if defending_player == 2 else mcts1
 
-                    def_best_idx, def_policy = def_mcts.search(state.to_dict(), def_actions, num_simulations=max(3, self.mcts_sims // 2))
+                    def_vec = FaBPolicyValueNetwork.extract_state_vector(state)
+                    def_best_idx, def_policy = def_mcts.search(state, def_actions, num_simulations=max(3, self.mcts_sims // 2), state_vec=def_vec)
                     if not def_policy.any() or sum(def_policy) == 0:
                         def_policy = np.ones(32, dtype=np.float32) / 32.0
 
                     def_idx = def_best_idx if def_best_idx < len(def_actions) else 0
                     def_action = def_actions[def_idx]
 
-                    def_vec = FaBPolicyValueNetwork.extract_state_vector(state.to_dict())
                     def_full_policy = np.zeros(32, dtype=np.float32)
-                    for i, p in enumerate(def_policy[:32]):
-                        def_full_policy[i] = p
+                    def_full_policy[:min(32, len(def_policy))] = def_policy[:32]
 
                     trajectory.append((def_vec, def_full_policy, defending_player))
 

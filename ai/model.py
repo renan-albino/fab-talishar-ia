@@ -21,6 +21,8 @@ ACTION_DIM = 32
 CARD_EMBEDDING_DIM = 48
 NUM_CARD_SLOTS = 16
 
+from collections.abc import Mapping
+
 # ══════════════════════════════════════════════════════════════════
 # CARREGAMENTO EM MEMÓRIA DA MATRIZ DE EMBEDDINGS (CACHED O(1))
 # ══════════════════════════════════════════════════════════════════
@@ -210,10 +212,9 @@ class FaBCardTransformerNetwork(nn.Module):
         valid_slots = (card_tokens.abs().sum(dim=-1) > 1e-5)
         padding_mask = ~valid_slots
 
-        # Garante que amostras vazias não causem NaNs no Transformer
+        # Garante que amostras vazias não causem NaNs no Transformer sem sincronização host-device
         all_pad = padding_mask.all(dim=-1)
-        if all_pad.any():
-            padding_mask[all_pad, 0] = False
+        padding_mask[:, 0] = padding_mask[:, 0] & ~all_pad
 
         # Projeção das cartas + Zone Embeddings
         h_cards = self.card_proj(card_tokens)
@@ -256,9 +257,10 @@ class FaBCardTransformerNetwork(nn.Module):
 
     def predict_state(self, state_vector: np.ndarray, device: Optional[str] = None) -> Tuple[np.ndarray, float]:
         """Avalia um estado único e retorna probabilidades e value escalar."""
-        self.eval()
+        if self.training:
+            self.eval()
         dev = torch.device(device) if device else next(self.parameters()).device
-        with torch.no_grad():
+        with torch.inference_mode():
             x = torch.from_numpy(state_vector).unsqueeze(0).float().to(dev)
             logits, val = self(x)
             probs = F.softmax(logits, dim=-1).cpu().numpy()[0]
@@ -277,9 +279,10 @@ class FaBCardTransformerNetwork(nn.Module):
         if not state_vectors:
             return np.zeros((0, self.action_dim), dtype=np.float32), np.zeros((0, 1), dtype=np.float32)
 
-        self.eval()
+        if self.training:
+            self.eval()
         dev = torch.device(device) if device else next(self.parameters()).device
-        with torch.no_grad():
+        with torch.inference_mode():
             if isinstance(state_vectors, np.ndarray):
                 batch_arr = state_vectors.astype(np.float32)
             else:
@@ -312,7 +315,7 @@ class FaBCardTransformerNetwork(nn.Module):
         usando lookup tensorial O(1) sem dependência de expressões regulares ou strings lentas.
         """
         vec = np.zeros(STATE_DIM, dtype=np.float32)
-        if not isinstance(state, dict):
+        if not isinstance(state, Mapping):
             return vec
 
         table, c2idx = _get_card_embeddings_table()
@@ -325,7 +328,7 @@ class FaBCardTransformerNetwork(nn.Module):
         vec[1] = o_hp / 40.0
 
         resources = state.get("playerResources", [0, 0])
-        fl_res = float(resources[0]) if isinstance(resources, list) and resources else 0.0
+        fl_res = float(resources[0]) if isinstance(resources, (list, tuple)) and resources else 0.0
         vec[2] = min(fl_res / 10.0, 1.0)
 
         ap = float(state.get("playerAP", state.get("actionPoints", 1)))
@@ -340,12 +343,12 @@ class FaBCardTransformerNetwork(nn.Module):
 
         # Combat Chain (Índices 14 a 16)
         combat_chain = state.get("combatChain", [])
-        if isinstance(combat_chain, list) and combat_chain:
+        if isinstance(combat_chain, (list, tuple)) and combat_chain:
             vec[14] = min(len(combat_chain) / 5.0, 1.0)
-            curr_atk = combat_chain[0] if isinstance(combat_chain[0], dict) else {}
+            curr_atk = combat_chain[0] if isinstance(combat_chain[0], Mapping) else {}
             atk_power = float(curr_atk.get("attackPower", curr_atk.get("power", 4)))
             vec[15] = min(atk_power / 15.0, 1.0)
-            total_def = sum(float(c.get("defenseValue") or 0) for c in combat_chain[1:] if isinstance(c, dict))
+            total_def = sum(float(c.get("defenseValue") or 0) for c in combat_chain[1:] if isinstance(c, Mapping))
             vec[16] = min(total_def / 15.0, 1.0)
 
         # Janela de Letalidade e Diferencial de Vida
@@ -353,11 +356,11 @@ class FaBCardTransformerNetwork(nn.Module):
         vec[18] = max(-1.0, min(1.0, (p_hp - o_hp) / 40.0))
 
         # Contagens de Zonas (Índices 19 a 25)
-        deck_cards = state.get("playerDeck", [])
-        grave_cards = state.get("playerDiscard", state.get("playerGraveyard", []))
-        banish_cards = state.get("playerBanish", [])
-        soul_cards = state.get("playerSoul", [])
-        allies = state.get("playerAllies", [])
+        deck_cards = state.get("playerDeck", ())
+        grave_cards = state.get("playerDiscard", state.get("playerGraveyard", ()))
+        banish_cards = state.get("playerBanish", ())
+        soul_cards = state.get("playerSoul", ())
+        allies = state.get("playerAllies", ())
 
         vec[19] = min(len(deck_cards) / 60.0, 1.0)
         vec[20] = min(len(grave_cards) / 40.0, 1.0)
@@ -365,13 +368,13 @@ class FaBCardTransformerNetwork(nn.Module):
         vec[22] = min(len(soul_cards) / 10.0, 1.0)
         vec[23] = min(len(allies) / 5.0, 1.0)
 
-        auras_tokens = (state.get("playerAuras") or []) + (state.get("playerTokens") or [])
-        gold_count = sum(1 for t in auras_tokens if isinstance(t, dict) and "gold" in str(t.get("cardNumber") or t.get("name", "")).lower())
+        auras_tokens = list(state.get("playerAuras") or ()) + list(state.get("playerTokens") or ())
+        gold_count = sum(1 for t in auras_tokens if isinstance(t, Mapping) and "gold" in str(t.get("cardNumber") or t.get("name", "")).lower())
         vec[24] = min(float(gold_count) / 4.0, 1.0)
 
         runechants = float(state.get("playerRunechants", 0) or 0)
-        for a in (state.get("playerAuras") or []):
-            if isinstance(a, dict) and "runechant" in str(a.get("cardNumber", "")).lower():
+        for a in (state.get("playerAuras") or ()):
+            if isinstance(a, Mapping) and "runechant" in str(a.get("cardNumber", "")).lower():
                 runechants += max(1, int(a.get("counters") or a.get("count") or 1))
         vec[25] = min(runechants / 10.0, 1.0)
 
@@ -380,12 +383,12 @@ class FaBCardTransformerNetwork(nn.Module):
         vec[26] = 1.0 if (p_hp <= 20 or "young" in hero) else 0.0
 
         # Ciclo de Pitch e Densidade de Cores Vistas (Índices 27 e 28)
-        pitch_cards = state.get("playerPitch", [])
-        seen_cards = (grave_cards if isinstance(grave_cards, list) else []) + (pitch_cards if isinstance(pitch_cards, list) else [])
+        pitch_cards = state.get("playerPitch", ())
+        seen_cards = (list(grave_cards) if isinstance(grave_cards, (list, tuple)) else []) + (list(pitch_cards) if isinstance(pitch_cards, (list, tuple)) else [])
         if seen_cards:
             total_seen = len(seen_cards)
-            blue_cnt = sum(1 for c in seen_cards if "blue" in str(c.get("cardNumber") if isinstance(c, dict) else c).lower())
-            red_cnt = sum(1 for c in seen_cards if "red" in str(c.get("cardNumber") if isinstance(c, dict) else c).lower())
+            blue_cnt = sum(1 for c in seen_cards if "blue" in str(c.get("cardNumber") if isinstance(c, Mapping) else c).lower())
+            red_cnt = sum(1 for c in seen_cards if "red" in str(c.get("cardNumber") if isinstance(c, Mapping) else c).lower())
             vec[27] = blue_cnt / total_seen
             vec[28] = red_cnt / total_seen
 
@@ -394,7 +397,7 @@ class FaBCardTransformerNetwork(nn.Module):
             if slot_idx >= NUM_CARD_SLOTS:
                 return
             c_id = ""
-            if isinstance(card_dict_or_name, dict):
+            if isinstance(card_dict_or_name, Mapping):
                 c_id = str(card_dict_or_name.get("cardNumber") or card_dict_or_name.get("name", "")).lower().strip()
             elif isinstance(card_dict_or_name, str):
                 c_id = card_dict_or_name.lower().strip()
@@ -406,31 +409,31 @@ class FaBCardTransformerNetwork(nn.Module):
                 vec[start:end] = table_np[idx]
 
         # Slots 0..7: Mão (até 8 cartas)
-        hand = state.get("playerHand", [])
-        if isinstance(hand, list):
+        hand = state.get("playerHand", ())
+        if isinstance(hand, (list, tuple)):
             for i, c in enumerate(hand[:8]):
                 _fill_slot(i, c)
 
         # Slots 8..11: Equipamentos (4 slots)
-        equip = state.get("playerEquipment", [])
-        if isinstance(equip, list):
+        equip = state.get("playerEquipment", ())
+        if isinstance(equip, (list, tuple)):
             for i, eq in enumerate(equip[:4]):
                 _fill_slot(8 + i, eq)
 
         # Slots 12..13: Arsenal (até 2 slots)
-        arsenal = state.get("playerArsenal") or state.get("playerArse") or []
-        if isinstance(arsenal, list):
+        arsenal = state.get("playerArsenal") or state.get("playerArse") or ()
+        if isinstance(arsenal, (list, tuple)):
             for i, ars in enumerate(arsenal[:2]):
                 _fill_slot(12 + i, ars)
 
         # Slot 14: Active Chain Link
         active_chain = state.get("activeChainLink", {})
-        if isinstance(active_chain, dict) and active_chain.get("cardNumber"):
+        if isinstance(active_chain, Mapping) and active_chain.get("cardNumber"):
             _fill_slot(14, active_chain.get("cardNumber"))
 
         # Slot 15: Opponent Key Arena Threat (ex: Boom Grenade armada)
-        opp_items = state.get("opponentItems") or state.get("theirItems") or []
-        if isinstance(opp_items, list) and opp_items:
+        opp_items = state.get("opponentItems") or state.get("theirItems") or ()
+        if isinstance(opp_items, (list, tuple)) and opp_items:
             # Seleciona o primeiro item perigoso da arena
             _fill_slot(15, opp_items[0])
 

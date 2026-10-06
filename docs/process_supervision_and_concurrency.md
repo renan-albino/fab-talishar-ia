@@ -72,3 +72,21 @@ Para evitar que anomalias em modais ou respostas HTTP retenham o fluxo de jogo:
    - Arrays associativos retornados pelo Talishar (`{'turnPhase': 'CHOOSEHAND', 'caption': '...'}`) são automaticamente desempacotados para string canônica no dicionário `state`, prevenindo contaminação da rede neural.
 3. **Limite de Retentativas de Sideboard no Lobby:**
    - Caso `client.submit_sideboard()` falhe repetidamente por 3 vezes consecutivas (ex: baralho com cartas a menos), o lobby é cancelado graciosamente com log explícito, erradicando o antigo travamento de 300 segundos.
+
+---
+
+## 5. Inferência em Lote Dinâmica Multi-Thread (`ThreadBatchedEvaluator` - ADR-0014)
+
+No auto-treinamento headless (`HeadlessSelfPlayLoop`), múltiplos workers concorrentes simulam partidas simultaneamente via `concurrent.futures.ThreadPoolExecutor`. 
+
+Sem inferência agrupada, cada thread realiza chamadas individuais e fragmentadas ao modelo PyTorch, gerando múltiplos lançamentos de kernel CUDA com overhead de sincronização host-device.
+
+### Arquitetura de Dynamic Batching
+O [`ai/mcts/batched_evaluator.py`](file:///home/renan-albino/Documents/fab-talishar-ia/ai/mcts/batched_evaluator.py) resolve isso através de uma fila central assíncrona:
+1. **Enfileiramento Thread-Safe:** Cada worker de MCTS envia requisições `(batch_numpy, Future)` para uma fila em memória (`queue.Queue`).
+2. **Janela Temporal Adaptativa:** Uma thread dedicada em background agrupa requisições subsequentes até atingir `max_batch_size` (ex: 128) ou o deadline temporal (`batch_timeout_ms = 1.0` a `2.0 ms`).
+3. **Forward Pass Conjunto em GPU:** Executa uma única chamada `model(x_tensor)` na GPU utilizando `torch.inference_mode()` e Mixed Precision (`torch.amp.autocast("cuda")`).
+4. **Despacho Assíncrono:** As fatias de tensores (políticas, valores e saídas KataGo) são devolvidas diretamente aos `Futures` de cada worker sem bloqueio mútuo.
+
+Pode ser ativado no orquestrador via CLI com a flag `--batched-inference` ou pela variável de ambiente `FAB_BATCHED_INFERENCE=1`.
+
