@@ -122,6 +122,7 @@ class GPUTrainingOrchestrator:
             "max_epochs":          self._extra.get("max_epochs", None),
             "bot_device":          self._extra.get("bot_device", None),
             "train_steps":         self._extra.get("train_steps", 1),
+            "matchup_mode":        self._extra.get("matchup_mode", "cross"),
         }
 
     # ── Métricas persistidas (API pública para dashboard) ────────
@@ -556,7 +557,11 @@ class GPUTrainingOrchestrator:
             log_probs  = F.log_softmax(policy_logits, dim=-1)
             # Perdas individuais por amostra
             sample_loss_policy = -(policies_b * log_probs).sum(dim=-1)
-            sample_loss_value  = (value_preds.squeeze(-1) - values_b.squeeze(-1)) ** 2
+            use_huber = bool(self.config.get("use_huber_loss", True))
+            if use_huber:
+                sample_loss_value = F.smooth_l1_loss(value_preds.squeeze(-1), values_b.squeeze(-1), reduction="none", beta=1.0)
+            else:
+                sample_loss_value = (value_preds.squeeze(-1) - values_b.squeeze(-1)) ** 2
 
             # Ponderação por Importance Sampling (Schaul et al. 2016)
             loss_policy = (is_weights_b * sample_loss_policy).mean()
@@ -567,7 +572,8 @@ class GPUTrainingOrchestrator:
             loss_aux_dmg   = F.mse_loss(aux_preds["turn_dmg"].squeeze(-1), aux_targets["turn_dmg"].squeeze(-1))
             aux_loss = 0.2 * (loss_aux_delta + loss_aux_dmg)
 
-            total_loss  = loss_policy + loss_value + aux_loss
+            val_weight = float(self.config.get("value_loss_weight", 0.5))
+            total_loss = loss_policy + (val_weight * loss_value) + aux_loss
 
         scaler.scale(total_loss).backward()
         scaler.unscale_(optimizer)
@@ -598,7 +604,8 @@ class GPUTrainingOrchestrator:
         )
 
     def _next_deck_pair(self, pool: List[str]):
-        d1, d2 = self.matchup_engine.next_pair(pool)
+        matchup_mode = str(self.config.get("matchup_mode", "cross")).lower()
+        d1, d2 = self.matchup_engine.next_pair(pool, mode=matchup_mode)
         self.deck_rot_idx += 1
         return d1, d2
 
@@ -677,6 +684,8 @@ if __name__ == "__main__":
     parser.add_argument("--train-steps", type=int, default=None, help="Number of gradient optimization steps per epoch (default: 1)")
     parser.add_argument("--max-resources", action="store_true", help="Enable maximum hardware utilization mode")
     parser.add_argument("--batched-inference", action="store_true", help="Enable dynamic batching of MCTS neural evaluations across concurrent workers")
+    parser.add_argument("--decks", type=str, default=None, help="Lista de decks separados por vírgula (ex: jarl,levia,cindra)")
+    parser.add_argument("--matchup-mode", type=str, choices=["cross", "mirror", "mixed"], default="cross", help="Modo de pareamento: cross (todos contra todos), mirror (apenas espelhados) ou mixed")
     args = parser.parse_args()
 
     if args.max_resources:
@@ -724,6 +733,12 @@ if __name__ == "__main__":
         custom_cfg["bot_device"] = args.bot_device
     if args.train_steps is not None:
         custom_cfg["train_steps"] = args.train_steps
+    if args.matchup_mode is not None:
+        custom_cfg["matchup_mode"] = args.matchup_mode
+    if args.decks is not None:
+        raw_slugs = [d.strip() for d in args.decks.split(",") if d.strip()]
+        cleaned_slugs = [s.replace(".json", "").replace("decks/", "") for s in raw_slugs]
+        custom_cfg["training_decks"] = cleaned_slugs
 
     orchestrator = GPUTrainingOrchestrator()
     if args.epochs is not None:

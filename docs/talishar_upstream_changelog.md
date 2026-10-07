@@ -9,8 +9,8 @@ Ele serve como referência para os agentes de IA entenderem exatamente quais mud
 
 | Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
 | :--- | :--- | :--- | :--- | :--- |
-| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `adda159c1` (`adda159c1c36769ff0d141e8df77de1e6ecdc81d`) | 2026-10-04 | ✅ Sincronizado + Patches Aplicados |
-| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `4d11c8c92` (`4d11c8c924a05c54454decf3a5614e0135a3b277`) | 2026-10-03 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `0a6078151` (`0a607815173abf16f7e345bb1714a9658693eecd`) | 2026-10-06 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `b84081c0e` (`b84081c0eb25b71d6d2ddca067cf570e3993b4b7`) | 2026-10-06 | ✅ Sincronizado + Patches Aplicados |
 
 ---
 
@@ -24,6 +24,123 @@ Quando o Talishar oficial atualizar:
 ---
 
 ## 🕒 Histórico de Sincronizações
+
+### 🔄 Sincronização em 2026-10-06 23:09:56
+
+#### Talishar Backend
+- **Transição de Versão**: `adda159c1` (2026-10-04) ➔ `0a6078151` (2026-10-06)
+- **Novos commits incorporados**: 31
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Banco fab_cards_db.json reindexado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `0a6078151` (2026-10-06 por **Paul Gibby**) — update disease order
+* `74804a924` (2026-10-06 por **Paul Gibby**) — outbreak prototype
+* `d0d628104` (2026-10-06 por **Paul Gibby**) — allow subtracting opponent's life in dev environments
+* `ae40fc896` (2026-10-06 por **PvtVoid**) — Merge pull request #1427 from Blighting/feat/hand-instance-ids
+* `f258d95e2` (2026-10-06 por **Evgeny**) — Route hand removal hints through RemoveHand and AddPlayerHand
+* `fd49fc5c2` (2026-10-06 por **Evgeny**) — Give hand cards stable instance ids in the game state
+* `90c9eb99e` (2026-10-06 por **Paul Gibby**) — fix error
+* `0faeb34aa` (2026-10-06 por **Paul Gibby**) — cleaning up
+* `5789881a7` (2026-10-06 por **Paul Gibby**) — refactor long whisker loyalty
+* `1dfd3a06f` (2026-10-06 por **Paul Gibby**) — fix hit the gas drawing prematurely
+* `8cba9c375` (2026-10-06 por **Paul Gibby**) — fix shelter from the storm and corrupt and conquer
+* `e091b0ccc` (2026-10-06 por **Paul Gibby**) — fix find indices to skip facedown cards in GY
+* `a10cbfd92` (2026-10-06 por **PvtVoid**) — Improve GetGameList performances
+* `89ecac2d1` (2026-10-06 por **PvtVoid**) — Php performance improvements
+* `383e53f91` (2026-10-05 por **PvtVoid**) — Merge branch 'main' of https://github.com/Talishar/Talishar
+* `1dffa7d76` (2026-10-05 por **PvtVoid**) — Update ModeratorList.inc.php
+* `c9a20ee1a` (2026-10-05 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `4adc19c6b` (2026-10-05 por **Paul Gibby**) — refactor sigil of aether
+* `f2681d5c4` (2026-10-05 por **PvtVoid**) — Puzzles improvements and fixes
+* `862874f8f` (2026-10-05 por **PvtVoid**) — ClearGemSnooze when gem turned on after being snoozed
+* `8b711ba63` (2026-10-05 por **Paul Gibby**) — refactor already dead
+* `3da464846` (2026-10-05 por **Paul Gibby**) — allow ordering of danse macabre and decay
+* `6018f1fd4` (2026-10-05 por **Paul Gibby**) — specify banisher for some more assassin cards
+* `fc73919e6` (2026-10-05 por **Paul Gibby**) — Merge branch 'main' of https://github.com/Talishar/Talishar into main
+* `31a87d8b1` (2026-10-05 por **Paul Gibby**) — refactor dead-eye
+* `ab14e8c1e` (2026-10-05 por **PvtVoid**) — Another puzzle update
+* `9fb30a1f2` (2026-10-05 por **PvtVoid**) — Marvel Malice + Corpses
+* `4ec1ce6c4` (2026-10-05 por **PvtVoid**) — Only undo start of turn if an action was taken that turn
+* `b211742aa` (2026-10-04 por **Paul Gibby**) — redo how meklovossen tracks subcards
+* `2f4ba828d` (2026-10-04 por **Paul Gibby**) — prolonged illness live
+* `06f56df64` (2026-10-04 por **Paul Gibby**) — prolonged illness prototype
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `APIs/GetDailyPuzzle.php`
+- `APIs/GetGameInfo.php`
+- `APIs/GetGameList.php`
+- `APIs/GetLastActiveGame.php`
+- `APIs/GetPuzzleCandidates.php`
+- `APIs/SchedulePuzzle.php`
+- `APIs/StartDailyPuzzle.php`
+- `APIs/UserProfileAPI.php`
+- `Assets/AllAltArtVariations.php`
+- `AuraAbilities.php`
+- `BuildGameState.php`
+- `CardDictionaries/ArcaneRising/ARCWizard.php`
+- `CardDictionaries/Dynasty/DYNShared.php`
+- `CardDictionaries/HitEffects.php`
+- `CardDictionaries/Hunted/HNTShared.php`
+- `CardDictionaries/MasteryPacks/MPAShared.php`
+- `CardDictionaries/WelcomeToRathe/WTRShared.php`
+- `CardDictionary.php`
+- `CardLogic.php`
+- `CardSetters.php`
+- *(e mais 30 arquivos...)*
+
+</details>
+
+#### Talishar Frontend
+- **Transição de Versão**: `4d11c8c92` (2026-10-03) ➔ `b84081c0e` (2026-10-06)
+- **Novos commits incorporados**: 6
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Frontend Vite recompilado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `b84081c` (2026-10-06 por **PvtVoid**) — Fix ads blocker detection
+* `af4e172` (2026-10-05 por **PvtVoid**) — Update useAuth.tsx
+* `2ac3f88` (2026-10-05 por **PvtVoid**) — More puzzles fixes
+* `7b2c916` (2026-10-05 por **PvtVoid**) — Let people navigate their deck after confirming equipments
+* `b2fbfd8` (2026-10-05 por **PvtVoid**) — Another puzzle update
+* `20fae29` (2026-10-04 por **PvtVoid**) — Ads fixes
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `index.html`
+- `public/locales/en/translation.json`
+- `src/components/AdBlockingRecovery/AdBlockingRecovery.tsx`
+- `src/hooks/useAdScript.ts`
+- `src/hooks/useAuth.tsx`
+- `src/hooks/useSupporterStatus.ts`
+- `src/interface/API/DailyPuzzleAPI.ts`
+- `src/interface/API/ModPageAPI.ts`
+- `src/routes/game/lobby/Lobby.module.css`
+- `src/routes/game/lobby/Lobby.tsx`
+- `src/routes/game/lobby/components/stickyFooter/StickyFooter.module.css`
+- `src/routes/mod/AdStats.tsx`
+- `src/routes/mod/PuzzleCandidates.module.css`
+- `src/routes/mod/PuzzleCandidates.tsx`
+- `src/routes/mod/PuzzleSchedule.tsx`
+- `src/routes/puzzle/DailyPuzzle.module.css`
+- `src/routes/puzzle/DailyPuzzle.tsx`
+- `src/utils/adAnalytics.ts`
+- `src/utils/adBlockDetection.test.ts`
+- `src/utils/adBlockDetection.ts`
+
+</details>
+
+
+---
 
 ### 🔄 Sincronização em 2026-10-04 12:30:10
 

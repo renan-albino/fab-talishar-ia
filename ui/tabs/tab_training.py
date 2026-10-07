@@ -38,11 +38,50 @@ def render_tab_training(deck_options=None, gpu_available=None):
     st.markdown("Acelere o aprendizado da rede neural com **Self-Play em lote**, rotação dinâmica de decks e amostragem na GPU.")
 
     all_deck_keys = list(deck_options.keys())
-    selected_training_decks = st.multiselect(
-        "🎴 Selecione os Decks que a IA irá usar no Treinamento (Rotativo):",
-        all_deck_keys,
-        default=all_deck_keys[: min(3, len(all_deck_keys))],
+
+    # Preset dos Mais Jogados (Jarl, Levia, Cindra)
+    popular_heroes = ["jarl", "levia", "cindra"]
+    popular_keys = [
+        k for k in all_deck_keys
+        if any(h in deck_options[k].lower() for h in popular_heroes)
+    ]
+
+    col_deck_title, col_deck_preset = st.columns([2, 1])
+    with col_deck_title:
+        st.markdown("**🎴 Decks Selecionados para Treinamento:**")
+    with col_deck_preset:
+        if st.button("🎯 Preset Mais Jogados (Jarl, Levia, Cindra)", use_container_width=True, key="btn_preset_popular"):
+            st.session_state["sel_training_decks"] = popular_keys
+            st.toast("Decks Jarl, Levia e Cindra selecionados!", icon="🎯")
+            st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+
+    default_selected = st.session_state.get(
+        "sel_training_decks",
+        popular_keys if popular_keys else all_deck_keys[: min(3, len(all_deck_keys))]
     )
+
+    selected_training_decks = st.multiselect(
+        "Selecione os baralhos que participarão do ciclo de treino:",
+        all_deck_keys,
+        default=default_selected,
+        key="sel_training_decks",
+    )
+
+    col_matchup_mode, col_dev_spacer = st.columns([2, 2])
+    with col_matchup_mode:
+        matchup_mode_options = {
+            "Confrontos Cruzados (Cross - Todos contra Todos)": "cross",
+            "Apenas Partidas Espelhadas (Mirror Matches - Fase 1)": "mirror",
+            "Misto (Partidas Cruzadas + Espelhadas)": "mixed",
+        }
+        selected_matchup_label = st.selectbox(
+            "⚔️ Modo de Pareamento de Partidas:",
+            list(matchup_mode_options.keys()),
+            index=0,
+            key="train_matchup_mode_select",
+            help="Mirror é recomendado para a Fase 1 (calibrar valor simétrico). Cross treina dinâmicas assimétricas de classe.",
+        )
+        selected_matchup_mode = matchup_mode_options[selected_matchup_label]
 
     device_options = ["cuda:0 (GPU)", "cpu"] if gpu_available else ["cpu"]
 
@@ -258,6 +297,7 @@ def render_tab_training(deck_options=None, gpu_available=None):
                     "fp16": use_fp16,
                     "save_interval_games": save_interval,
                     "training_decks": deck_slugs,
+                    "matchup_mode": selected_matchup_mode,
                     "ismcts_concurrency": selected_concurrency,
                 })
                 st.toast("⚡ Treinador de Deep RL iniciado com sucesso!", icon="🚀")

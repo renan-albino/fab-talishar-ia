@@ -140,25 +140,29 @@ class MCTSEngine:
         if training_mode and root.children:
             self._add_dirichlet_noise(root, len(root.children) + len(root.pending))
 
-        # ── 4. Seleção de todas as folhas (Phase 1) ───────────────
-        leaf_nodes: List[MCTSNode] = []
-        for sim_idx in range(num_simulations):
-            self._progressive_widen(root, sim_idx)
-            node = self._select(root, sim_idx)
-            leaf_nodes.append(node)
+        # ── 4. Seleção e Avaliação em Mini-Batches ───────────────
+        # Processar em batches de até 8 simulações preserva o ganho de inferência
+        # ao mesmo tempo em que permite que Q-values atualizados guiem seleções posteriores.
+        batch_step = min(8, max(1, num_simulations // 4))
+        for start_sim in range(0, num_simulations, batch_step):
+            current_batch_size = min(batch_step, num_simulations - start_sim)
+            leaf_nodes: List[MCTSNode] = []
+            for b_idx in range(current_batch_size):
+                sim_idx = start_sim + b_idx
+                self._progressive_widen(root, sim_idx)
+                node = self._select(root, sim_idx)
+                leaf_nodes.append(node)
 
-        # ── 5. Batch Evaluation das folhas (1 forward pass) ───────
-        leaf_values = self._batch_evaluate_leaves(
-            root_state_vec=state_vec,
-            nodes=leaf_nodes,
-            base_value=base_value,
-            state=state,
-            legal_actions=legal_actions,
-        )
+            leaf_values = self._batch_evaluate_leaves(
+                root_state_vec=state_vec,
+                nodes=leaf_nodes,
+                base_value=base_value,
+                state=state,
+                legal_actions=legal_actions,
+            )
 
-        # ── 6. Backpropagação de todos os resultados ──────────────
-        for node, leaf_value in zip(leaf_nodes, leaf_values):
-            self._backpropagate(node, leaf_value)
+            for node, leaf_value in zip(leaf_nodes, leaf_values):
+                self._backpropagate(node, leaf_value)
 
         # ── 7. Distribuição de visitas e seleção de ação ─────────
         policy_dist = np.zeros(32, dtype=np.float32)
@@ -265,24 +269,32 @@ class MCTSEngine:
                 self.model.eval()
 
             with torch.inference_mode():
-                if hasattr(self.model, "to") and isinstance(self.model, torch.nn.Module):
-                    x = torch.from_numpy(batch).float().to(self.device)
+                # Se o modelo implementar predict_states_from_nodes ou aceitar lista de estados
+                if hasattr(self.model, "predict_simulated_states"):
+                    # Mapeia slots ordenados para os estados correspondentes
+                    slot_states = [None] * len(unique_vecs)
+                    for aid, (st, s_idx) in cache.items():
+                        slot_states[s_idx] = st
+                    values_flat = self.model.predict_simulated_states(slot_states)
                 else:
-                    x = torch.from_numpy(batch).float()
-                out = self.model(x)
-                if isinstance(out, (tuple, list)) and len(out) == 3:
-                    _, values, _ = out
-                elif isinstance(out, (tuple, list)) and len(out) == 2:
-                    _, values = out
-                else:
-                    values = out
+                    if hasattr(self.model, "to") and isinstance(self.model, torch.nn.Module):
+                        x = torch.from_numpy(batch).float().to(self.device)
+                    else:
+                        x = torch.from_numpy(batch).float()
+                    out = self.model(x)
+                    if isinstance(out, (tuple, list)) and len(out) == 3:
+                        _, values, _ = out
+                    elif isinstance(out, (tuple, list)) and len(out) == 2:
+                        _, values = out
+                    else:
+                        values = out
 
-                if hasattr(values, "cpu"):
-                    values_flat = values.cpu().numpy().flatten().tolist()
-                elif isinstance(values, np.ndarray):
-                    values_flat = values.flatten().tolist()
-                else:
-                    values_flat = list(values)
+                    if hasattr(values, "cpu"):
+                        values_flat = values.cpu().numpy().flatten().tolist()
+                    elif isinstance(values, np.ndarray):
+                        values_flat = values.flatten().tolist()
+                    else:
+                        values_flat = list(values)
 
             return [values_flat[s_idx] for s_idx in slot_map]
 

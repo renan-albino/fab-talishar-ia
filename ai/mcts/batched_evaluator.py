@@ -233,7 +233,13 @@ class ThreadBatchedEvaluator:
                 except queue.Empty:
                     break
 
-            self._dispatch_batch(batch_items)
+            try:
+                self._dispatch_batch(batch_items)
+            except Exception as e:
+                logger.error(f"[ThreadBatchedEvaluator] Exceção em _batch_loop: {e}", exc_info=True)
+                for _, fut, _ in batch_items:
+                    if not fut.done():
+                        fut.set_exception(e)
 
     def _dispatch_batch(self, batch_items: List[Tuple[np.ndarray, concurrent.futures.Future, bool]]) -> None:
         """Executa forward pass conjunto para os items agrupados e distribui os resultados."""

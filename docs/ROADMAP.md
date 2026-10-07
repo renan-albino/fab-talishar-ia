@@ -47,8 +47,8 @@ $$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{T
 | **Pós-Passos 1, 2 e 3** | 444 testes | 5.833 / 8.687 | 2.854 | 67,1% | 88% |
 | **CR & Tokens de Arena (ADR-0011)** | 452 testes | 5.910 / 8.710 | 2.800 | 67,8% | 90% |
 | **Anomalias & Anti-Gravy** | 454 testes | 5.928 / 8.715 | 2.787 | 68,0% | 91% |
-| **Tuning Causal & Stratified PER (ADR-0012)** | 465 testes | 6.015 / 8.730 | 2.715 | 68,9% | 93% |
-| **Performance, Zero-Copy & Batched Inference (ADR-0014 - Atual)** | **495 testes** | **6.150 / 8.780** | **2.630** | **70,0%** | **95%** |
+| **Puzzles Táticos ISMCTS & Invariantes do Simulador** | 500 testes | 6.195 / 8.780 | 2.585 | 70,6% | 96% |
+| **Treinamento Cross/Mirror Matchups & Presets Populares (Atual)** | **504 testes** | **6.230 / 8.780** | **2.550** | **70,9%** | **96%** |
 
 ---
 

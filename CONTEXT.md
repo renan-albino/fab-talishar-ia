@@ -219,3 +219,7 @@ Glossário oficial de termos de domínio utilizados no projeto FaB Talishar AI. 
   - _Avoid_: buffer.save() em bot client, Releitura síncrona de buffer na época, Concorrência sobre replay_buffer.npz.
 - **Thread-Batched Evaluator (`ai/mcts/batched_evaluator.py` & ADR-0014)**: Fachada multithread dinâmica que agrupa vetores de estado de múltiplos workers MCTS concorrentes em batches dinâmicos $[N, 832]$ para um único forward pass em GPU/PyTorch sob `torch.inference_mode()` e AMP FP16, despachando fatias resolvidas via `concurrent.futures.Future`.
   - _Avoid_: Forward individual por thread, Forward síncrono concorrente sem batching, Concorrência de GPU fragmentada.
+- **Adaptive Mini-Batched MCTS (`ai/mcts/standard_mcts.py`)**: Divisão da busca MCTS em mini-batches dinâmicos (até 8 simulações) com backpropagação intermediária, preservando a aceleração de batching matricial e ao mesmo tempo garantindo que o PUCT adapte suas seleções com base em $Q(s, a)$ atualizados.
+  - _Avoid_: Batch cego de todas as simulações sem atualização de Q, Simulação puramente estática.
+- **Puzzles Táticos & Invariantes de Simulação (`tests/test_ismcts_tactical_puzzles.py` & `tests/test_game_simulator_invariants.py`)**: Suíte de integração e oráculos determinísticos que validam a convergência do MCTS (Mate em 1 / Sobrevivência letal) e invariantes matemáticas de conservação de zonas, pitch e combate sem necessidade de carregar a rede neural.
+  - _Avoid_: Teste dependente de pesos aleatórios da rede, Avaliação não-determinística de árvore.

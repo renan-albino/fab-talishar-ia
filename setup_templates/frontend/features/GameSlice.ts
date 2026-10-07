@@ -14,11 +14,7 @@ import {
 import InitialGameState from './InitialGameState';
 import GameStaticInfo, { AltArt } from '../GameStaticInfo';
 import { Card, isAllyCard } from '../Card';
-import {
-  BACKEND_URL,
-  PROCESS_INPUT,
-  URL_END_POINT
-} from 'appConstants';
+import { BACKEND_URL, PROCESS_INPUT, URL_END_POINT } from 'appConstants';
 import Button from '../Button';
 import GameState from '../GameState';
 import Player from '../Player';
@@ -253,7 +249,9 @@ export const submitButton = createAsyncThunk(
       game.gameInfo,
       queryParams
     );
-    return params.button.mode === PROCESS_INPUT.CREATE_REPLAY
+    return params.button.mode === PROCESS_INPUT.CREATE_REPLAY ||
+      params.button.mode === PROCESS_INPUT.SAVE_SNAPSHOT ||
+      params.button.mode === PROCESS_INPUT.PUZZLE_HINT
       ? response
       : undefined;
   }
@@ -290,6 +288,8 @@ const FALLBACK_GAME_INFO_FIELDS = [
   'isPrivate',
   'isReplay',
   'isOpponentAI',
+  'isPuzzle',
+  'puzzle',
   'gameFormat',
   'deckLink',
   'canCustomizeDeck',
@@ -316,9 +316,13 @@ function mergeReceivedGameState(
   state.isPlayerInputInProgress = false;
   state.isFullRematch = payload.isFullRematch ?? false;
   const incomingTurnPhase = payload.turnPhase?.turnPhase;
+  const isPuzzle = payload.gameInfo?.isPuzzle ?? state.gameInfo.isPuzzle;
   if (incomingTurnPhase === 'OVER') {
     state.hasGameEnded = true;
-  } else if (incomingTurnPhase !== undefined && incomingTurnPhase !== 'YESNO') {
+  } else if (
+    incomingTurnPhase !== undefined &&
+    (incomingTurnPhase !== 'YESNO' || isPuzzle)
+  ) {
     state.hasGameEnded = false;
   }
 
@@ -338,14 +342,14 @@ function mergeReceivedGameState(
     payload.oldCombatChain
   );
 
-  {
+  if (!state.showChatModal) {
     const prevChatLog = state.chatLog ?? [];
     let prevLen = 0;
     for (let i = 0; i < prevChatLog.length; i++) {
       if (prevChatLog[i].length > 0) prevLen++;
     }
     const incoming = payload.chatLog ?? [];
-    if (!state.showChatModal && prevLen > 0) {
+    if (prevLen > 0) {
       let nonEmptySeen = 0;
       let newPlayerChats = 0;
       for (let i = 0; i < incoming.length; i++) {
@@ -435,11 +439,9 @@ function mergeReceivedGameState(
   state.aiHasInfiniteHP = payload.aiHasInfiniteHP ?? false;
   state.practiceDummyWeaponPower = payload.practiceDummyWeaponPower ?? 4;
   state.opponentInactive = payload.opponentInactive ?? false;
-  state.inactivityDeadline =
-    payload.inactivityDeadline ?? state.inactivityDeadline;
-  state.gameDeleteDeadline =
-    payload.gameDeleteDeadline ?? state.gameDeleteDeadline;
-  state.serverTimeOffset = payload.serverTimeOffset ?? state.serverTimeOffset;
+  state.inactivityDeadline = payload.inactivityDeadline;
+  state.gameDeleteDeadline = payload.gameDeleteDeadline;
+  state.serverTimeOffset = payload.serverTimeOffset;
   state.preventPassPrompt = payload.preventPassPrompt;
 }
 
@@ -614,21 +616,6 @@ export const gameSlice = createSlice({
     removeHealingPopup: healingPopupReducers.remove,
     addActionPointPopup: actionPointPopupReducers.add,
     removeActionPointPopup: actionPointPopupReducers.remove,
-    openUndoReasonPrompt: (state) => {
-      if (state.undoReasonPrompt?.dismissed) return;
-      if (state.undoReasonPrompt?.active) return;
-      state.undoReasonPrompt = { active: true, dismissed: false };
-    },
-    dismissUndoReasonPrompt: (state) => {
-      if (state.undoReasonPrompt?.dismissed && !state.undoReasonPrompt?.active)
-        return;
-      state.undoReasonPrompt = { active: false, dismissed: true };
-    },
-    clearUndoReasonPrompt: (state) => {
-      if (!state.undoReasonPrompt?.active && !state.undoReasonPrompt?.dismissed)
-        return;
-      state.undoReasonPrompt = { active: false, dismissed: false };
-    },
     openOptionsMenu: (state) => {
       state.optionsMenu = { active: true };
     },
@@ -662,6 +649,13 @@ export const gameSlice = createSlice({
 
       // Check if this is a NEW game or a RECONNECTION to the same game
       const isNewGame = previousGameID !== newGameID;
+
+      if (isNewGame) {
+        state.opponentInactive = false;
+        state.inactivityDeadline = undefined;
+        state.gameDeleteDeadline = undefined;
+        state.serverTimeOffset = undefined;
+      }
 
       // Always update gameID
       state.gameInfo.gameID = newGameID;
@@ -784,6 +778,9 @@ export const gameSlice = createSlice({
     setSpectatorCameraView: (state, action: PayloadAction<number>) => {
       state.spectatorCameraView = action.payload;
     },
+    setReplayHideOpponentHand: (state, action: PayloadAction<boolean>) => {
+      state.replayHideOpponentHand = action.payload;
+    },
     removeCardFromHand: (state, action: PayloadAction<{ card: Card }>) => {
       state.playerOne.Hand = state.playerOne?.Hand?.filter(
         (cardObj) =>
@@ -896,6 +893,15 @@ export const gameSlice = createSlice({
       state.addBotDeckCard = action.payload.cardNumber;
     },
     setClashReveal: createRevealReducer('clashReveal'),
+    setDeckPeek: (
+      state,
+      action: PayloadAction<{ cardNumber: string; isPlayer?: boolean }>
+    ) => {
+      state.deckPeekCard = action.payload.cardNumber;
+      if (!action.payload.cardNumber) return;
+      state.deckPeekIsPlayer = action.payload.isPlayer ?? true;
+      state.deckPeekTrigger += 1;
+    },
     setHeroTransform: createRevealReducer('heroTransform'),
     setArsenalFlip: createRevealReducer('arsenalFlip'),
     setArsenalDestroy: createRevealReducer('arsenalDestroy'),
@@ -1109,9 +1115,6 @@ export const {
   removeCardFromHand,
   openOptionsMenu,
   closeOptionsMenu,
-  openUndoReasonPrompt,
-  dismissUndoReasonPrompt,
-  clearUndoReasonPrompt,
   openInventory,
   closeInventory,
   showChainLinkSummary,
@@ -1132,6 +1135,7 @@ export const {
   setShuffling,
   setAddBotDeck,
   setClashReveal,
+  setDeckPeek,
   setHeroTransform,
   setArsenalFlip,
   setArsenalDestroy,
@@ -1147,6 +1151,7 @@ export const {
   addActionPointPopup,
   removeActionPointPopup,
   setSpectatorCameraView,
+  setReplayHideOpponentHand,
   receiveGameState
 } = actions;
 
@@ -1177,6 +1182,11 @@ const stacksTogether = (a: Card, b: Card): boolean => {
   return aCount === bCount;
 };
 
+const gemStackIDsFor = (card: Card): string[] | undefined =>
+  card.gem && card.gem !== 'none' && card.actionDataOverride !== undefined
+    ? [card.actionDataOverride]
+    : undefined;
+
 const buildPermanentsAsStack = (
   permanents: Card[] | undefined
 ): CardStack[] => {
@@ -1195,7 +1205,8 @@ const buildPermanentsAsStack = (
       result.push({
         card: currentCard,
         count: 1,
-        id: `${currentCard.cardNumber}-${idIndex++}`
+        id: `${currentCard.cardNumber}-${idIndex++}`,
+        gemStackIDs: gemStackIDsFor(currentCard)
       });
       continue;
     }
@@ -1207,6 +1218,10 @@ const buildPermanentsAsStack = (
       for (const idx of candidates) {
         if (stacksTogether(result[idx].card, currentCard)) {
           result[idx].count++;
+          const stackIDs = result[idx].gemStackIDs;
+          if (stackIDs && currentCard.actionDataOverride !== undefined) {
+            stackIDs.push(currentCard.actionDataOverride);
+          }
           matched = true;
           break;
         }
@@ -1223,7 +1238,8 @@ const buildPermanentsAsStack = (
       result.push({
         card: currentCard,
         count: 1,
-        id: `${currentCard.cardNumber}-${idIndex++}`
+        id: `${currentCard.cardNumber}-${idIndex++}`,
+        gemStackIDs: gemStackIDsFor(currentCard)
       });
     }
   }

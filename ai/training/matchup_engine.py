@@ -37,34 +37,41 @@ class RoundRobinMatchupEngine:
         except Exception:
             return "betsy"
 
-    def _generate_cycle(self, pool: List[str]) -> collections.deque:
+    def _generate_cycle(self, pool: List[str], mode: str = "cross") -> collections.deque:
         if not pool:
             fallback = self._get_fallback_deck()
             return collections.deque([(fallback, fallback)])
-        if len(pool) == 1:
-            return collections.deque([(pool[0], pool[0])])
+        if len(pool) == 1 or mode == "mirror":
+            pairs = [(d, d) for d in pool]
+            self.rng.shuffle(pairs)
+            return collections.deque(pairs)
 
         pairs: List[Tuple[str, str]] = []
         for i in range(len(pool)):
             for j in range(len(pool)):
-                if i != j:
+                if mode == "mixed" or i != j:
                     pairs.append((pool[i], pool[j]))
 
         self.rng.shuffle(pairs)
         return collections.deque(pairs)
 
-    def next_pair(self, pool: List[str]) -> Tuple[str, str]:
+    def next_pair(self, pool: List[str], mode: str = "cross") -> Tuple[str, str]:
         with self._lock:
             if not pool:
                 fallback = self._get_fallback_deck()
                 return (fallback, fallback)
-            if len(pool) == 1:
-                return (pool[0], pool[0])
+            if len(pool) == 1 or mode == "mirror":
+                if mode == "mirror" and len(pool) > 1:
+                    pass
+                else:
+                    return (pool[0], pool[0])
 
             normalized_pool = sorted(list(pool))
-            if normalized_pool != self._current_pool or not self._cycle_queue:
+            cache_key = (tuple(normalized_pool), mode)
+            if getattr(self, "_current_cache_key", None) != cache_key or not self._cycle_queue:
+                self._current_cache_key = cache_key
                 self._current_pool = normalized_pool
-                self._cycle_queue = self._generate_cycle(self._current_pool)
+                self._cycle_queue = self._generate_cycle(self._current_pool, mode=mode)
 
             pair = self._cycle_queue.popleft()
             self.pair_counts[pair] += 1

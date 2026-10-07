@@ -95,28 +95,35 @@ class GameSimulator:
                 return res
         elif isinstance(card, Mapping):
             card_num = str(card.get("cardNumber") or card.get("name") or card.get("id") or "").lower().strip()
+            def _to_hashable(val):
+                if isinstance(val, (list, tuple)):
+                    return tuple(_to_hashable(x) for x in val)
+                if isinstance(val, Mapping):
+                    return tuple(sorted((k, _to_hashable(v)) for k, v in val.items()))
+                return val
+
             cache_key = (
                 card_num,
-                card.get("pitch"),
-                card.get("power"),
-                card.get("defense"),
-                card.get("defenseValue"),
-                card.get("block"),
-                card.get("cost"),
-                card.get("has_go_again"),
-                card.get("go_again"),
-                card.get("dominate"),
-                card.get("has_dominate"),
-                card.get("overpower"),
-                card.get("has_overpower"),
-                card.get("piercing"),
-                card.get("phantasm"),
-                card.get("has_phantasm"),
-                card.get("on_hit_severity"),
-                card.get("has_on_hit"),
-                card.get("has_intimidate"),
-                card.get("intimidate"),
-                card.get("intimidate_count"),
+                _to_hashable(card.get("pitch")),
+                _to_hashable(card.get("power")),
+                _to_hashable(card.get("defense")),
+                _to_hashable(card.get("defenseValue")),
+                _to_hashable(card.get("block")),
+                _to_hashable(card.get("cost")),
+                _to_hashable(card.get("has_go_again")),
+                _to_hashable(card.get("go_again")),
+                _to_hashable(card.get("dominate")),
+                _to_hashable(card.get("has_dominate")),
+                _to_hashable(card.get("overpower")),
+                _to_hashable(card.get("has_overpower")),
+                _to_hashable(card.get("piercing")),
+                _to_hashable(card.get("phantasm")),
+                _to_hashable(card.get("has_phantasm")),
+                _to_hashable(card.get("on_hit_severity")),
+                _to_hashable(card.get("has_on_hit")),
+                _to_hashable(card.get("has_intimidate")),
+                _to_hashable(card.get("intimidate")),
+                _to_hashable(card.get("intimidate_count")),
             )
             if cache_key in _CARD_META_CACHE:
                 res = dict(_CARD_META_CACHE[cache_key])
@@ -384,7 +391,7 @@ class GameSimulator:
         updates["playerDiscard"] = tuple(discard_zone)
 
         atk_buff = int(state.get("currentAttackBuff", 0))
-        base_power = int(action.get("power", card_meta.get("power", 4)))
+        base_power = int(action.get("attackPower", action.get("power", card_meta.get("attackPower", card_meta.get("power", 4)))))
         atk_power = base_power + atk_buff
 
         updates["combatChainPower"] = atk_power
@@ -395,7 +402,7 @@ class GameSimulator:
             active_chain["cardNumber"] = act_name
             updates["activeChainLink"] = ImmutableGameState(active_chain)
 
-        opp_hp = int(state.get("opponentHealth", state.get("theirHealth", 40)))
+        opp_hp = int(state.get("opponentHealth", state.get("opponentHP", state.get("theirHealth", state.get("theirHP", 40)))))
         opp_hand = list(state.get("opponentHand", []))
 
         raw_intim = action.get("intimidate")
@@ -488,8 +495,11 @@ class GameSimulator:
                 cards_used_to_block = min(opp_hand_count, (expected_block + 2) // 3)
 
         unblocked_damage = max(0, atk_power - expected_block)
-        updates["opponentHealth"] = max(0, opp_hp - unblocked_damage)
-        updates["theirHealth"] = max(0, opp_hp - unblocked_damage)
+        new_opp_hp = max(0, opp_hp - unblocked_damage)
+        updates["opponentHealth"] = new_opp_hp
+        updates["theirHealth"] = new_opp_hp
+        updates["opponentHP"] = new_opp_hp
+        updates["theirHP"] = new_opp_hp
 
         new_opp_hand = max(0, opp_hand_count - cards_used_to_block)
         
@@ -513,10 +523,17 @@ class GameSimulator:
             state = ImmutableGameState(state)
             
         updates = {}
-        my_hp = int(state.get("playerHealth", state.get("yourHealth", 20)))
+        my_hp = int(state.get("playerHealth", state.get("playerHP", state.get("yourHealth", state.get("yourHP", 20)))))
         active_chain = dict(state.get("activeChainLink", {}))
-        
-        incoming_power = int(active_chain.get("totalPower", active_chain.get("power", state.get("combatChainPower", 4))))
+        chain_cards = state.get("combatChain", [])
+        first_chain_atk = chain_cards[0] if (chain_cards and isinstance(chain_cards, (list, tuple)) and isinstance(chain_cards[0], Mapping)) else {}
+        incoming_power = int(
+            active_chain.get("totalPower")
+            or active_chain.get("power")
+            or first_chain_atk.get("attackPower")
+            or first_chain_atk.get("power")
+            or state.get("combatChainPower", 4)
+        )
 
         if isinstance(block_action, (list, tuple)):
             cards_to_block = list(block_action)
@@ -554,9 +571,18 @@ class GameSimulator:
             action_def += val
 
             found_idx = -1
+            raw_c_num = str(c.get("cardNumber", "")).lower() if isinstance(c, Mapping) else ""
+            raw_c_name = str(c.get("name", "")).lower() if isinstance(c, Mapping) else ""
             for idx, h_card in enumerate(hand):
-                h_name = cls.extract_card_meta(h_card)["name"]
-                if h_name == c_name or str(h_card.get("cardNumber", "")).lower() == c_name:
+                h_meta = cls.extract_card_meta(h_card)
+                h_name = str(h_meta.get("name", "")).lower()
+                h_num = str(h_card.get("cardNumber", "")).lower() if isinstance(h_card, Mapping) else ""
+                h_raw_name = str(h_card.get("name", "")).lower() if isinstance(h_card, Mapping) else ""
+                if (
+                    (c_name and (h_name == c_name or h_num == c_name or h_raw_name == c_name))
+                    or (raw_c_num and h_num == raw_c_num)
+                    or (raw_c_name and (h_name == raw_c_name or h_raw_name == raw_c_name))
+                ):
                     found_idx = idx
                     break
             if found_idx >= 0:
@@ -578,8 +604,11 @@ class GameSimulator:
 
         eff_incoming = incoming_power + (1 if (has_piercing and used_equipment_block) else 0)
         taken_damage = max(0, eff_incoming - total_def)
-        updates["playerHealth"] = max(0, base_hp - taken_damage)
-        updates["yourHealth"] = max(0, base_hp - taken_damage)
+        new_hp = max(0, base_hp - taken_damage)
+        updates["playerHealth"] = new_hp
+        updates["playerHP"] = new_hp
+        updates["yourHealth"] = new_hp
+        updates["yourHP"] = new_hp
         updates["_simulated_projected_damage"] = taken_damage
 
         return state.replace(**updates)
@@ -632,9 +661,11 @@ class GameSimulator:
         act_type = str(action.get("type", "")).lower()
         phase = str(state.get("turnPhase", state.get("phase", "M"))).upper()
 
-        if act_type in ("pass", "end_turn", "close_chain", "pass_priority"):
+        if phase in ("B", "DEFENSE") and (act_type in ("pass", "no_block", "pass_priority") or "block" in act_type):
+            next_state = cls.simulate_defense(state, action)
+        elif act_type in ("pass", "end_turn", "close_chain", "pass_priority"):
             next_state = state
-        elif "block" in act_type or phase in ("B", "DEFENSE"):
+        elif "block" in act_type:
             next_state = cls.simulate_defense(state, action)
         elif "pitch" in act_type or phase in ("P", "PDECK"):
             next_state = cls.simulate_pitch(state, action)
