@@ -29,7 +29,9 @@ def resolve_sideboard(
     Armas e Deck Principal vs Inventário (Sideboard).
     """
     is_cc = deck_format.lower() in ("cc", "compcc", "llcc", "compllcc", "futurecc", "futurell", "gage")
-    is_arcane = "wizard" in opp_class or "runeblade" in opp_class
+    arcane_classes = ("wizard", "runeblade")
+    arcane_heroes = ("kano", "iyslander", "oscilio", "verdance", "blaze", "chane", "viserai", "briar", "vynnset", "florian", "aurora", "emperor")
+    is_arcane = any(ac in opp_class.lower() for ac in arcane_classes) or any(ah in opp_hero.lower() for ah in arcane_heroes)
 
     # Detecção dinâmica de fadiga baseada no histórico de turnos médios do oponente (SQLite)
     is_fatigue = False
@@ -131,30 +133,51 @@ def resolve_sideboard(
             main_cards.extend([cid] * tot)
 
     # ── Resolução Inteligente de Equipamentos ─────────────
+    def has_arcane_barrier(cid, meta):
+        text = str(meta.get("text", "")).lower()
+        keywords = str(meta.get("keywords", "")).lower()
+        return bool(
+            meta.get("has_arcane_barrier")
+            or "arcane barrier" in text
+            or "spellvoid" in text
+            or "quell" in text
+            or "arcane_barrier" in keywords
+            or "nullrune" in cid
+        )
+
+    def score_equipment(cid, is_arcane):
+        meta = get_card_meta(cid)
+        is_ab = has_arcane_barrier(cid, meta)
+        defense = int(meta.get("defense", 0) or 0)
+        score = float(defense) * 4.0
+
+        if is_arcane:
+            if is_ab:
+                score += 35.0
+        else:
+            if is_ab and defense == 0:
+                score -= 60.0  # Sem dano arcano, equipamento com 0 de defesa física é inútil
+            elif is_ab:
+                score -= 10.0  # Prefere equipamentos focados em combate físico
+
+        if "providence" in cid:
+            score += 12.0
+        elif "tunic" in cid:
+            score += 6.0
+
+        try:
+            from ai.equipment_learning import get_equipment_learning_engine
+            mult = get_equipment_learning_engine().get_equipment_multiplier(hero or "generic", cid)
+            score *= float(mult)
+        except Exception:
+            pass
+
+        return score
+
     def pick_best_equip(cands, is_arcane):
         if not cands: return None
         if len(cands) == 1: return cands[0]
-        
-        # Se for arcano, procura Arcane Barrier, Spellvoid, Ward
-        # Senao, EVITA equipamentos com arcane barrier se houver alternativas melhores.
-        for c in cands:
-            meta = get_card_meta(c)
-            text = str(meta.get("text", "")).lower()
-            keywords = str(meta.get("keywords", "")).lower()
-            has_ab = "arcane barrier" in text or "spellvoid" in text or "quell" in text or "ward" in text
-            if is_arcane and has_ab:
-                return c
-                
-        # Se is_arcane é falso, priorize quem NÃO tem arcane barrier
-        if not is_arcane:
-            for c in cands:
-                meta = get_card_meta(c)
-                text = str(meta.get("text", "")).lower()
-                has_ab = "arcane barrier" in text or "spellvoid" in text
-                if not has_ab:
-                    return c
-        
-        return cands[0]
+        return max(cands, key=lambda c: score_equipment(c, is_arcane))
 
     # Filter out Evo bases if needed, but normally they just exist in the cands
     if base_head_cands:

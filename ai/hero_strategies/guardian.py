@@ -291,22 +291,22 @@ class JarlStrategy(GuardianStrategy):
                     c_text = str(c_db.get("text", "")).lower()
                     pitch = int(c.get("pitch", 1))
 
-                    is_earth = "earth" in c_name or "earth" in c_sub or "earth" in c_text or any(
+                    is_earth = "EARTH" in str(c_db.get("talents", c_db.get("talent", ""))).upper() or "earth" in c_name or "earth" in c_sub or any(
                         k in c_name for k in ["autumn", "rootbound", "boulder", "fruits", "crumble", "channel_lake"]
                     )
-                    is_ice = "ice" in c_name or "ice" in c_sub or "ice" in c_text or any(
+                    is_ice = "ICE" in str(c_db.get("talents", c_db.get("talent", ""))).upper() or "ice" in c_name or "ice" in c_sub or any(
                         k in c_name for k in ["blizzard", "frigid", "frost", "glaze", "winter", "pulse_of_isenloft", "hypothermia"]
                     )
 
                     if earth_card is None and is_earth:
                         earth_card = c
-                    elif ice_card is None and is_ice:
+                    elif ice_card is None and is_ice and c is not earth_card:
                         ice_card = c
 
-                    if pitch == 3 and blue_pitch_card is None:
+                    if pitch == 3 and blue_pitch_card is None and c is not earth_card and c is not ice_card:
                         blue_pitch_card = c
 
-                # Se temos uma carta híbrida de Terra e Gelo (como pulse_of_isenloft)
+                # Se temos uma carta híbrida de Terra e Gelo (como pulse_of_isenloft), ela pode cumprir ambos se sobrar
                 for c in hand:
                     if c is oaken_card:
                         continue
@@ -317,7 +317,14 @@ class JarlStrategy(GuardianStrategy):
                         if ice_card is None:
                             ice_card = c
 
-                has_resources = (blue_pitch_card is not None or floating_res >= 3)
+                # Oaken Old custa 3 recursos.
+                # Se houver outra carta azul na mão além das reservadas para revelar, ótimo.
+                # Se uma das cartas de fusão tem pitch 3 e há pelo menos 1 carta sobrando na mão, ou floating_res >= 3:
+                has_resources = (
+                    blue_pitch_card is not None
+                    or floating_res >= 3
+                    or any(int(c.get("pitch", 1)) == 3 for c in [earth_card, ice_card] if c is not None)
+                )
                 if earth_card is not None and ice_card is not None and has_resources:
                     reserved: Set[str] = {str(oaken_card.get("cardNumber") or oaken_card.get("name", ""))}
                     reserved.add(str(earth_card.get("cardNumber") or earth_card.get("name", "")))

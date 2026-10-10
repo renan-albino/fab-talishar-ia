@@ -558,18 +558,77 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
             time.sleep(0.002)
             return True
 
-        # Heurística Tática: Selecionar a melhor carta de primeira tentativa
-        best_idx = 0
-        if len(target_list) > 1:
-            best_score = -9999.0
-            for c_idx, c_item in enumerate(target_list):
-                score = score_choice_candidate(client, c_item, turn_phase=turn_phase, state=state, popup=popup)
-                if score > best_score:
-                    best_score = score
-                    best_idx = c_idx
+        # Respeito a minCount / minNo de form_opts (ex: Decompose exige 3 cartas: 2 Earth + 1 Action)
+        min_cnt = int(form_opts.get("minNo", form_opts.get("minCount", 1)))
+        max_cnt = int(form_opts.get("maxNo", form_opts.get("maxCount", len(target_list))))
 
-        chk_cnt = 1
-        chk_inp = [str(best_idx)]
+        # Tratamento dedicado para mecânica Decompose
+        is_decompose = (
+            min_cnt == 3
+            or "decompose" in str(state.get("promptText", "")).lower()
+            or "decompose" in str((popup if isinstance(popup, dict) else {}).get("title", "")).lower()
+            or "earth" in str(state.get("promptText", "")).lower() and "action" in str(state.get("promptText", "")).lower()
+        )
+
+        if is_decompose:
+            from ai.policy.constants import _get_cards_db
+            cdb = _get_cards_db()
+            earth_indices = []
+            action_indices = []
+
+            for idx, c_item in enumerate(target_list):
+                c_name = str(c_item.get("cardNumber") if isinstance(c_item, dict) else c_item).lower()
+                c_meta = cdb.get(c_name, {})
+                c_talents = str(c_meta.get("talents", c_meta.get("talent", ""))).upper()
+                c_type = str(c_meta.get("type", "")).upper()
+
+                is_earth = "EARTH" in c_talents or "earth" in c_name or any(k in c_name for k in ["autumn", "rootbound", "boulder", "fruits", "crumble"])
+                is_action = c_type in ("A", "AA", "ACTION", "ATTACK ACTION") or not is_earth
+
+                if is_earth:
+                    earth_indices.append(idx)
+                if is_action:
+                    action_indices.append(idx)
+
+            # Para um decompose válido são necessárias 2 cartas de Terra e 1 de Ação
+            chosen_decomp = []
+            if len(earth_indices) >= 2:
+                # Ordena cartas de Terra por menor valor para preservar recursos mais valiosos
+                earth_sorted = sorted(earth_indices, key=lambda i: score_choice_candidate(client, target_list[i], turn_phase=turn_phase, state=state, popup=popup))
+                chosen_decomp.extend(earth_sorted[:2])
+
+                # Escolhe 1 ação que não esteja entre as duas terras selecionadas
+                avail_actions = [i for i in action_indices if i not in chosen_decomp]
+                if avail_actions:
+                    avail_actions.sort(key=lambda i: score_choice_candidate(client, target_list[i], turn_phase=turn_phase, state=state, popup=popup))
+                    chosen_decomp.append(avail_actions[0])
+
+            if len(chosen_decomp) == 3:
+                chk_cnt = 3
+                chk_inp = [str(i) for i in chosen_decomp]
+                client.log(f"[AÇÃO JOGADOR {client.player_id}] Decompose Multi-Seleção -> Mode 19 (Count: 3, Pick: {chk_inp})")
+                client.send_action(mode=19, button_input=btn_inp, chk_count=chk_cnt, chk_input=chk_inp)
+                time.sleep(0.002)
+                return True
+            elif turn_phase.startswith("MAY"):
+                client.log(f"[AÇÃO JOGADOR {client.player_id}] Decompose Opcional sem 3 cartas válidas -> Pass (Mode 99)")
+                client.send_action(mode=99, button_input="PASS")
+                time.sleep(0.002)
+                return True
+
+        # Heurística Tática Geral para Seleção Múltipla
+        scored_indices = sorted(
+            range(len(target_list)),
+            key=lambda idx: score_choice_candidate(client, target_list[idx], turn_phase=turn_phase, state=state, popup=popup),
+            reverse=True
+        )
+
+        count_to_pick = max(1, min_cnt)
+        if count_to_pick > len(target_list):
+            count_to_pick = len(target_list)
+
+        chk_cnt = count_to_pick
+        chk_inp = [str(idx) for idx in scored_indices[:count_to_pick]]
 
         client.log(f"[AÇÃO JOGADOR {client.player_id}] Multi-Seleção -> {turn_phase} (Mode: 19, Count: {chk_cnt}, Pick: {chk_inp})")
         client.send_action(mode=19, button_input=btn_inp, chk_count=chk_cnt, chk_input=chk_inp)

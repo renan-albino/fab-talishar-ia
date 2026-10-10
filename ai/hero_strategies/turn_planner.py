@@ -213,7 +213,10 @@ def analyze_turn_plan(
     on_hit_penalty = 3.5 if has_dangerous_on_hit else 0.0
 
     absorb_mult = 1.0
-    if strategy is not None and hasattr(strategy, "get_dynamic_multiplier"):
+    if strategy is not None and getattr(strategy, "is_heavy_hero", False):
+        # Guardiões e heróis pesados não possuem Go Again natural; dependem de Value Trade e vida
+        absorb_mult = 0.65 if my_hp < 25 else 0.8
+    elif strategy is not None and hasattr(strategy, "get_dynamic_multiplier"):
         absorb_mult = strategy.get_dynamic_multiplier("absorb_tempo_bonus", 1.0)
     else:
         try:

@@ -168,7 +168,21 @@ def evaluate_equipment_ability(
     elif grants_ga:
         base_score = 16.0
 
-    # Caso F: Outras habilidades ativas
+    # Caso F: Gauntlets of the Boreal Domain (Mangle ou ciclo de turno 0/1)
+    elif "gauntlets_of_the_boreal_domain" in eq_name:
+        has_mangle = any("mangle" in str(c.get("cardNumber", c.get("name", ""))).lower() for c in list(hand) + list(arsenal))
+        if has_mangle:
+            base_score = 22.0
+        else:
+            # Em Turno 0 ou 1, ou com pitch muito abundante, pode ser usado para ciclar a mão sem perda de tempo
+            is_early_turn = int(actual_state.get("turnNo", actual_state.get("turnNumber", 1)) or 1) <= 1
+            pitch_sum = sum(int(c.get("pitch", 1)) for c in hand if isinstance(c, dict))
+            if is_early_turn and (floating_resources >= 2 or pitch_sum >= 5):
+                base_score = 8.0
+            else:
+                return 0.0
+
+    # Caso G: Outras habilidades ativas
     else:
         ab_type = str(eq_meta.get("ability_type", "")).upper()
         if ab_type in ("A", "AR", "I", "AA"):

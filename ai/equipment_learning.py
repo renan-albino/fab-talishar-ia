@@ -243,10 +243,12 @@ class EquipmentLearningEngine:
                         eq_stat["avg_eval_gain"] = round((prev_avg * 0.7) + (new_avg * 0.3), 4)
 
                     # Calibração do multiplicador aprendido:
-                    # Com poucas partidas, converge suavemente para baseline.
-                    confidence = min(1.0, total_m / 10.0)
-                    eval_bonus = max(-0.2, min(0.2, eq_stat.get("avg_eval_gain", 0.0) * 0.05))
-                    raw_mult = 1.0 + ((wr - 0.5) * 1.0 * confidence) + (eval_bonus * confidence)
+                    # Converge rapidamente com janela de confiança em 3 partidas.
+                    confidence = min(1.0, total_m / 3.0)
+                    eval_bonus = max(-0.25, min(0.25, eq_stat.get("avg_eval_gain", 0.0) * 0.05))
+                    # Penalidade se o equipamento nunca bloqueou nem ativou em partidas terminadas
+                    inactivity_penalty = -0.15 if (eq_stat["times_activated"] == 0 and eq_stat["times_blocked"] == 0 and total_m >= 2) else 0.0
+                    raw_mult = 1.0 + ((wr - 0.5) * 1.2 * confidence) + (eval_bonus * confidence) + inactivity_penalty
                     eq_stat["learned_multiplier"] = round(max(0.5, min(2.0, raw_mult)), 4)
 
             try:
