@@ -119,19 +119,47 @@ def get_average_match_length(hero_name: str) -> Optional[float]:
         pass
     return None
 
-def get_recent_sim2real_anomalies(limit: int = 50) -> List[Dict[str, Any]]:
-    """Retorna as anomalias Sim2Real mais recentes registradas."""
+def get_recent_sim2real_anomalies(
+    limit: int = 50,
+    hero: Optional[str] = None,
+    anomaly_type: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """Retorna as anomalias Sim2Real mais recentes registradas com suporte a filtros opcionais."""
     try:
         with get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute('''
+            query = """
                 SELECT id, room_id, hero, opponent_hero, turn, phase, anomaly_type, raw_message, last_action_json, created_at
                 FROM sim2real_anomalies
-                ORDER BY id DESC LIMIT ?
-            ''', (limit,))
+            """
+            conditions = []
+            params = []
+            if hero:
+                conditions.append("LOWER(hero) LIKE ?")
+                params.append(f"%{hero.lower()}%")
+            if anomaly_type:
+                conditions.append("anomaly_type = ?")
+                params.append(anomaly_type)
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+            query += " ORDER BY id DESC LIMIT ?"
+            params.append(limit)
+
+            cursor.execute(query, tuple(params))
             return [dict(row) for row in cursor.fetchall()]
     except Exception:
         return []
+
+def clear_sim2real_anomalies() -> int:
+    """Remove todas as anomalias Sim2Real registradas no SQLite."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM sim2real_anomalies")
+            deleted = cursor.rowcount
+            return deleted if deleted is not None else 0
+    except Exception:
+        return 0
 
 # Initialize DB on load
 init_db()

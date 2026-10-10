@@ -29,7 +29,13 @@ Este documento estabelece o direcionamento estratégico, as metas de evolução 
 - [x] **Táticas Ofensivas de Kassai, Defesa de Sobrevivência & Perfis MCTS no Duelo (489 Testes)**: Sequenciamento consciente de recursos para buffs de armas (*Spoils of War*, *Blood on Her Hands*), priorização dinâmica do swing de arma com buff ativo (+30.0 score), guarda mandatória contra dano fatal e eliminação de letargia defensiva em `defense_pruner.py`, e painel com perfis de velocidade MCTS (0 sims instantâneo <50ms até 50 sims) no Dashboard (489 testes unitários).
 - [x] **Passo 4 (Fase 0 - Benchmark Humano)**: Modo Sombra (Shadow Mode) funcional salvando diffs de estado, rastreador de herói humano e suíte de extração/avaliação de Puzzles Dourados (`extract_puzzle.py`, `puzzle_score.py`).
 - [x] **Passo 5 (Pipeline de Treinamento Neural PyTorch & Alta Performance - ADR-0014)**: Extração zero-copy de vetores de estado, memoização determinística de folhas MCTS, spooling atômico de trajetórias e checkpoints assíncronos no Replay Buffer, dynamic batched inference na GPU (`ThreadBatchedEvaluator`), e alinhamento canônico da distribuição de política (latência MCTS reduzida de 199.8ms para 12.9ms, 30.5× mais rápido, 495 testes unitários e de equivalência).
+- [x] **Orçamento Adaptativo de MCTS (Adaptive Simulation Budget)**: Variação dinâmica do orçamento MCTS/ISMCTS (`calculate_adaptive_mcts_budget`) usando `base_sims` como piso/referência, acelerando turnos triviais/forçados e escalonando simulações em até 1.5× ou 2.0× sob alta incerteza da rede neural, Delta-Eval ou letalidade crítica em `ai/mcts/ismcts.py`, `ai/policy/engine.py` e `ai/training/headless_env.py`.
+- [x] **Resolvedor Dinâmico de Go Again & Poda Rígida de Sequenciamento de Ataque (ADR-0015)**: Módulo `ai/policy/go_again_resolver.py` para avaliação canônica de Go Again natural e condicional (Links Dracônicos $\ge 2$, cartas vermelhas jogadas para Blaze Headlong, combos Ninja em cadeia e tokens Quicken/Agility no 1º elo), penalidade rígida de $-35.0$ em `ai/policy/attack_pruner.py` contra aberturas ilegítimas e starters dinâmicos em `ai/hero_strategies/ninja.py` (suíte dedicada em `tests/test_go_again_resolver.py`).
+- [x] **Modelo Dinâmico de On-Hits e Bloqueio Seletivo no Turno 0 (CR 4.4.3f)**: Avaliação dinâmica de On-Hits (`ai/policy/on_hit_evaluator.py`) com normalização de slugs, metadados semânticos em `fab_card_semantics.json`, valor dinâmico por arquétipo (compra, descarte/banimento forçado, destruição de arsenal e tributos) escalados por alavancagem de HP; e Bloqueio Seletivo no Turno 0 (`ai/policy/defense_pruner.py`) sem absorção cega, custo de oportunidade zero de mão, preservação de combos insubstituíveis e proteção contra queima de armaduras no vazio (suíte em `tests/test_on_hit_and_turn_zero_rules.py`).
+- [x] **Resolução de Anomalias Sim2Real, Poda Preventiva de Flick Knives & Suporte a Arsenal no Shadow Mode (537 Testes)**: Poda preventiva a montante de *Flick Knives* em `phase_decider.py` e `assassin.py` exigindo adaga não quebrada, `overlay=0` e livre do elo ativo de combate (CR 245), rejeição estrita de opções indisponíveis em popups (`overlay=1`) e envio de PASS (Mode 99) em `MAYCHOOSEMULTIZONE` no `choice_handler.py`, sincronização de AP e Go-Again condicional (*Burning Blade Dance*) no `GameSimulator`, e suporte completo ao Mode 5 (Arsenal) e temporização de HP de Phase B no `Shadow Mode` (suíte dedicada em `tests/test_sim2real_corrections.py`, 537 testes unitários no total).
+- [x] **Checkup de Go-Again, Validação de Condicionais & Defesa de Sobrevivência (544 Testes)**: Universalização da verificação de Go-Again em aberturas de cadeia para Hand e Arsenal com AP $\le$ 1 em `attack_pruner.py`, penalização estrita de cartas jogadas sem pré-condições satisfeitas (*Hunt the Hunter* sem carta vermelha prévia, *Lava Burst* antes do elo 4 de Rupture, *Mark with Magma* sem 2 elos dracônicos), e eliminação de desistência prematura de bloqueio em HP $\le$ 10 contra ataques com Go-Again e oponente ativo em `defense_pruner.py` e `turn_planner.py` (suíte dedicada em `tests/test_match_13229_corrections.py`, 544 testes unitários no total).
 - [ ] **Passo 6 (Interface Gráfica Streamlit)**: Mocks automatizados de renderização de abas com `streamlit.testing.v1.AppTest`.
+- [ ] **Motor Dinâmico de Resolução de Sideboard e Loadout de Armas/Equipamentos (Próximo Marco)**: Sistema dinâmico e adaptativo de configuração de loadouts (Head, Chest, Arms, Legs, Off-Hand/Quiver) e armas (1H/2H) conforme arquétipo e herói adversário, com plano detalhado reservado para o próximo marco.
 
 ---
 
@@ -47,8 +53,8 @@ $$\text{Cobertura Global} = \frac{\text{Linhas Executadas pelos Testes}}{\text{T
 | **Pós-Passos 1, 2 e 3** | 444 testes | 5.833 / 8.687 | 2.854 | 67,1% | 88% |
 | **CR & Tokens de Arena (ADR-0011)** | 452 testes | 5.910 / 8.710 | 2.800 | 67,8% | 90% |
 | **Anomalias & Anti-Gravy** | 454 testes | 5.928 / 8.715 | 2.787 | 68,0% | 91% |
-| **Puzzles Táticos ISMCTS & Invariantes do Simulador** | 500 testes | 6.195 / 8.780 | 2.585 | 70,6% | 96% |
-| **Treinamento Cross/Mirror Matchups & Presets Populares (Atual)** | **504 testes** | **6.230 / 8.780** | **2.550** | **70,9%** | **96%** |
+| **Treinamento Cross/Mirror Matchups & Presets Populares** | 504 testes | 6.230 / 8.780 | 2.550 | 70,9% | 96% |
+| **Orçamento Adaptativo de MCTS, Go-Again & State Cleaner (Atual)** | **529 testes** | **6.350 / 8.780** | **2.430** | **72,3%** | **97%** |
 
 ---
 
@@ -146,3 +152,13 @@ graph LR
 - **Objetivo**: Cobrir as 868 linhas das abas de interface em `ui/tabs/`:
   - Utilizar o módulo oficial `streamlit.testing.v1.AppTest` para renderizar as abas em memória sem navegador aberto.
   - Exercitar os fluxos de alternância de abas, submissão de formulários de duelo e renderização de tabelas de telemetria.
+
+### 🛡️ Meta Estratégica: Motor Dinâmico de Resolução de Sideboard e Loadout de Armas/Equipamentos (Próximo Marco)
+- **Objetivo & Visão Arquitetural**:
+  - Eliminar heurísticas estáticas e codificações rígidas de sideboard, dotando o bot de um motor de resolução adaptativo pré-combate.
+  - Otimização combinatória do loadout de equipamentos (*Head*, *Chest*, *Arms*, *Legs*, *Off-Hand* / *Quiver*) e armas (1H dual-wield, 1H + escudo, 2H) em estrita conformidade com CR 2.8.2 e CR 3.0.
+  - Alocação dinâmica de peças de prevenção arcana (*Arcane Barrier*, *Spellvoid*, *Ward*) calibrada contra a densidade arcana do herói adversário (ex: Kano, Enigma, Vynnset, Rosetta).
+  - Ajuste autônomo do tamanho de baralho (40/60 base vs até 65 cartas) em função de matchups de atrito e fadiga.
+  - Sinergias de pool de cartas no inventário e substituição de cartas de baixo rendimento relativo contra o arquétipo adversário.
+- **Diretriz**: Elaboração de plano detalhado e incisivo reservada para a abertura formal do próximo marco.
+

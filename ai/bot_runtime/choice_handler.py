@@ -52,6 +52,17 @@ def score_choice_candidate(client, candidate, turn_phase: str = "", state: dict 
     else:
         c_name = str(candidate).lower()
 
+    # Candidatos desabilitados/arremessados/quebrados em popups recebem penalidade máxima
+    if isinstance(candidate, dict):
+        is_unavailable = bool(
+            candidate.get("overlay") == 1
+            or candidate.get("isBroken") is True
+            or candidate.get("status") in ("broken", "destroyed", "unavailable")
+            or (candidate.get("status") == 0 and candidate.get("action") == 16)
+        )
+        if is_unavailable:
+            return -500.0
+
     # Pass tem prioridade mínima a menos que seja forçado
     if c_name in ("pass", "pass priority", "cancel") or c_mode == 10000:
         return -100.0
@@ -487,12 +498,17 @@ def handle_popup_and_choices(client, state: dict, turn_phase: str, popup: dict, 
                 time.sleep(0.002)
                 return True
 
-            best_card = cards_arr[0]
-            best_idx = 0
-            if len(cards_arr) > 1:
-                ranked = rank_choice_candidates(client, cards_arr, turn_phase=turn_phase, state=state, popup=popup)
-                best_card = ranked[0]
-                best_idx = cards_arr.index(best_card) if best_card in cards_arr else 0
+            ranked = rank_choice_candidates(client, cards_arr, turn_phase=turn_phase, state=state, popup=popup)
+            best_card = ranked[0]
+            best_idx = cards_arr.index(best_card) if best_card in cards_arr else 0
+            best_score = score_choice_candidate(client, best_card, turn_phase=turn_phase, state=state, popup=popup)
+
+            # Se todas as opções forem indisponíveis/quebradas (score <= -200) e for escolha opcional, passa (Mode 99)
+            if turn_phase == "MAYCHOOSEMULTIZONE" and best_score <= -200.0:
+                client.log(f"[AÇÃO JOGADOR {client.player_id}] {turn_phase} Todas as opções indisponíveis/quebradas -> Pass (Mode 99)")
+                client.send_action(mode=99, button_input="PASS")
+                time.sleep(0.002)
+                return True
 
             best_card_id = str(best_card.get("actionDataOverride") or best_card.get("cardNumber") or best_idx) if isinstance(best_card, dict) else str(best_card)
             action_mode = int(best_card.get("action", 16) or 16) if isinstance(best_card, dict) else 16

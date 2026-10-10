@@ -26,29 +26,52 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
         turn_phase = str(pre_state.get("turnPhase").get("turnPhase", "")).upper()
 
     # Mapeamento de fase para tipo de ação
+    zone = "hand"
     if turn_phase in ("P", "PDECK"):
         act_type = "pitch"
     elif turn_phase in ("B", "DEFENSE"):
         act_type = "block"
     elif turn_phase in ("M", ""):
-        act_type = "hand"
+        if mode == 5:
+            act_type = "arsenal"
+            zone = "arsenal"
+        elif mode == 3:
+            act_type = "equipment_ability"
+            zone = "equipment"
+        else:
+            act_type = "hand"
     else:
         return None
 
     actual_card_name = str(card_id).lower().strip()
     card_obj = None
-    if str(card_id).isdigit():
+    if mode == 5:
+        zone = "arsenal"
+        act_type = "arsenal"
+        ars = pre_state.get("playerArsenal", []) or pre_state.get("playerArse", [])
+        if str(card_id).isdigit():
+            idx = int(card_id)
+            if 0 <= idx < len(ars) and isinstance(ars[idx], dict):
+                card_obj = ars[idx]
+                actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
+        elif ars:
+            for item in ars:
+                if isinstance(item, dict) and str(item.get("cardNumber", item.get("name", ""))).lower().strip() == actual_card_name:
+                    card_obj = item
+                    break
+    elif str(card_id).isdigit():
         idx = int(card_id)
         if mode == 3:
+            zone = "equipment"
             equips = pre_state.get("playerEquipment", [])
             if 0 <= idx < len(equips) and isinstance(equips[idx], dict):
                 card_obj = equips[idx]
-                actual_card_name = str(card_obj.get("cardNumber", "")).lower().strip()
+                actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
         else:
             hand = pre_state.get("playerHand", [])
             if 0 <= idx < len(hand) and isinstance(hand[idx], dict):
                 card_obj = hand[idx]
-                actual_card_name = str(card_obj.get("cardNumber", "")).lower().strip()
+                actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
 
     action = {"type": act_type, "cardNumber": actual_card_name, "name": actual_card_name}
     if card_obj:
@@ -57,14 +80,20 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
     try:
         next_state, _ = GameSimulator.simulate_step(pre_state, action)
         ns_dict = next_state.to_dict() if hasattr(next_state, "to_dict") else next_state
+
+        # Em Phase B (declaração de bloco), o dano no Talishar só é deduzido no Damage Step (após reactions).
+        # No tick intermediário após o bloco, o HP permanece o mesmo do pre_state.
+        expected_hp = int(pre_state.get("playerHealth", 40)) if act_type == "block" else int(ns_dict.get("playerHealth", pre_state.get("playerHealth", 40)))
+
         return {
             "hand_count": len(ns_dict.get("playerHand", [])),
             "resources": int(ns_dict.get("playerResources", [0, 0])[0]),
             "action_points": int(ns_dict.get("playerAP", ns_dict.get("actionPoints", 0))),
             "arsenal_count": len(ns_dict.get("playerArsenal", [])),
-            "player_health": int(ns_dict.get("playerHealth", pre_state.get("playerHealth", 40))),
+            "player_health": expected_hp,
             "opponent_health": int(ns_dict.get("opponentHealth", pre_state.get("opponentHealth", 40))),
             "card_consumed": actual_card_name,
+            "zone": zone,
         }
     except Exception:
         return None
@@ -84,7 +113,7 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
         "hand_count": len(post_state.get("playerHand", [])),
         "resources": int(post_state.get("playerResources", [0, 0])[0]),
         "action_points": int(post_state.get("playerAP", post_state.get("actionPoints", 0))),
-        "arsenal_count": len(post_state.get("playerArsenal", [])),
+        "arsenal_count": len(post_state.get("playerArsenal", []) or post_state.get("playerArse", [])),
         "player_health": int(post_state.get("playerHealth", 40)),
         "opponent_health": int(post_state.get("opponentHealth", 40)),
     }
@@ -94,20 +123,33 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
         if k in expected and actual[k] != expected[k]:
             diffs[k] = {"expected": expected[k], "actual": actual[k]}
 
-    # Checar se a carta foi consumida (não deve permanecer na mão após ser jogada/bloqueada/pitch)
+    # Checar se a carta foi consumida (não deve permanecer na zona de origem após ser jogada/bloqueada/pitch)
     card_id = expected.get("card_consumed")
+    zone = expected.get("zone", "hand")
     if card_id and not confounded:
-        post_hand = [
-            str(c.get("cardNumber", c.get("name", "")) if isinstance(c, dict) else c).lower()
-            for c in post_state.get("playerHand", [])
-        ]
-        pre_hand = [
-            str(c.get("cardNumber", c.get("name", "")) if isinstance(c, dict) else c).lower()
-            for c in pre_state.get("playerHand", [])
-        ]
-        # Se a contagem da carta não diminuiu na mão
-        if pre_hand.count(card_id.lower()) > 0 and post_hand.count(card_id.lower()) == pre_hand.count(card_id.lower()):
-            diffs["card_unconsumed"] = {"expected": f"consumed {card_id}", "actual": "still_in_hand"}
+        if zone == "arsenal":
+            post_ars = [
+                str(c.get("cardNumber", c.get("name", "")) if isinstance(c, dict) else c).lower()
+                for c in (post_state.get("playerArsenal", []) or post_state.get("playerArse", []))
+            ]
+            pre_ars = [
+                str(c.get("cardNumber", c.get("name", "")) if isinstance(c, dict) else c).lower()
+                for c in (pre_state.get("playerArsenal", []) or pre_state.get("playerArse", []))
+            ]
+            if pre_ars.count(card_id.lower()) > 0 and post_ars.count(card_id.lower()) == pre_ars.count(card_id.lower()):
+                diffs["card_unconsumed"] = {"expected": f"consumed {card_id} from arsenal", "actual": "still_in_arsenal"}
+        elif zone == "hand":
+            post_hand = [
+                str(c.get("cardNumber", c.get("name", "")) if isinstance(c, dict) else c).lower()
+                for c in post_state.get("playerHand", [])
+            ]
+            pre_hand = [
+                str(c.get("cardNumber", c.get("name", "")) if isinstance(c, dict) else c).lower()
+                for c in pre_state.get("playerHand", [])
+            ]
+            # Se a contagem da carta não diminuiu na mão
+            if pre_hand.count(card_id.lower()) > 0 and post_hand.count(card_id.lower()) == pre_hand.count(card_id.lower()):
+                diffs["card_unconsumed"] = {"expected": f"consumed {card_id}", "actual": "still_in_hand"}
 
     return diffs, confounded
 

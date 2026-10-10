@@ -2,19 +2,19 @@
 
 error_reporting(E_ALL);
 
-include "WriteLog.php";
-include "GameLogic.php";
-include "GameTerms.php";
-include "HostFiles/Redirector.php";
+include_once "WriteLog.php";
+include_once "GameLogic.php";
+include_once "GameTerms.php";
+include_once "HostFiles/Redirector.php";
 include_once "Libraries/SHMOPLibraries.php";
-include "Libraries/StatFunctions.php";
-include "Libraries/UILibraries.php";
-include "Libraries/PlayerSettings.php";
-include "Libraries/NetworkingLibraries.php";
-include "Libraries/CacheLibraries.php";
+include_once "Libraries/StatFunctions.php";
+include_once "Libraries/UILibraries.php";
+include_once "Libraries/PlayerSettings.php";
+include_once "Libraries/NetworkingLibraries.php";
+include_once "Libraries/CacheLibraries.php";
 include_once "includes/MetafyHelper.php";
-include "AI/CombatDummy.php";
-include "Libraries/HTTPLibraries.php";
+include_once "AI/CombatDummy.php";
+include_once "Libraries/HTTPLibraries.php";
 require_once "Libraries/CoreLibraries.php";
 include_once "./includes/dbh.inc.php";
 include_once "./includes/functions.inc.php";

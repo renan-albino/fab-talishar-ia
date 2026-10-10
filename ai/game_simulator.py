@@ -220,6 +220,14 @@ class GameSimulator:
                 "zero_to_sixty", "throttle", "zipper", "expedite", "out_pace", "fast_and_furious", "leg_tap", "snatch", "rising_knee", "fai"
             ])
 
+        # Se a carta possui requisitos condicionais (links dracônicos, combos ou cartas vermelhas),
+        # não pode ser assumida com Go-Again incondicional no extrator estático
+        if has_go_again and any(k in card_num for k in [
+            "burning_blade_dance", "display_loyalty", "demonstrate_devotion", "cinderskin_devotion",
+            "lava_vein_loyalty", "hot_on_their_heels", "mark_with_magma", "blaze_headlong"
+        ]):
+            has_go_again = False
+
         # dominate
         card_dom = bool(card.get("dominate") or card.get("has_dominate")) if isinstance(card, Mapping) else False
         sem_dom = bool(sem_evasion.get("dominate") or "dominate" in sem_keywords) if sem_entry else False
@@ -379,7 +387,15 @@ class GameSimulator:
         updates["playerResources"] = (floating, 0)
 
         ap = int(state.get("playerAP", state.get("actionPoints", 1)))
-        has_go_again = bool(action.get("has_go_again", card_meta.get("has_go_again", False)))
+        if action.get("has_go_again") is not None:
+            has_go_again = bool(action["has_go_again"])
+        else:
+            try:
+                from ai.policy.go_again_resolver import resolve_attack_go_again
+                resolved_ga, _ = resolve_attack_go_again(act_name, state if isinstance(state, dict) else dict(state), hand_info=card_meta)
+                has_go_again = resolved_ga
+            except Exception:
+                has_go_again = bool(card_meta.get("has_go_again", False))
         new_ap = ap if has_go_again else max(0, ap - 1)
         updates["playerAP"] = new_ap
         updates["actionPoints"] = new_ap

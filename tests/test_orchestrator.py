@@ -96,15 +96,17 @@ def test_update_elo_reasons(mock_update_match):
     m1_data = json.dumps({"metrics": {"health": 20, "turn": 5}})
     m2_data = json.dumps({"metrics": {"health": 18, "turn": 5}})
 
+    def custom_open(file, *args, **kwargs):
+        if "Bot1.json" in str(file):
+            return unittest.mock.mock_open(read_data=m1_data).return_value
+        if "Bot2.json" in str(file):
+            return unittest.mock.mock_open(read_data=m2_data).return_value
+        return unittest.mock.mock_open().return_value
+
     # Case 1: is_running is True -> Timeout
     orch.is_running = True
     with patch('os.path.exists', return_value=True), \
-         patch('builtins.open', unittest.mock.mock_open(read_data=m1_data)) as m_open:
-        # Alternates returning m1_data and m2_data
-        m_open.side_effect = [
-            unittest.mock.mock_open(read_data=m1_data).return_value,
-            unittest.mock.mock_open(read_data=m2_data).return_value,
-        ]
+         patch('builtins.open', side_effect=custom_open):
         orch._update_elo("room_timeout", "d1", "d2")
 
     mock_update_match.assert_called_with(
@@ -116,11 +118,7 @@ def test_update_elo_reasons(mock_update_match):
     # Case 2: is_running is False -> Interrupted by User
     orch.is_running = False
     with patch('os.path.exists', return_value=True), \
-         patch('builtins.open', unittest.mock.mock_open(read_data=m1_data)) as m_open:
-        m_open.side_effect = [
-            unittest.mock.mock_open(read_data=m1_data).return_value,
-            unittest.mock.mock_open(read_data=m2_data).return_value,
-        ]
+         patch('builtins.open', side_effect=custom_open):
         orch._update_elo("room_user_stop", "d1", "d2")
 
     mock_update_match.assert_called_with(

@@ -583,6 +583,14 @@ class FabBotClient:
                 from ai import sim2real_detector
                 anomalies = sim2real_detector.scan_log_for_anomalies(delta)
                 for a in anomalies:
+                    # Se a anomalia for LAYER_TARGET_LOST e a rodada/gatilho pertencer ao oponente
+                    # (ex: turno do adversário e o bot estava apenas passando prioridade com Mode 99), ignorar atribuição ao bot
+                    is_opp_turn = int(state.get("turnPlayer", 1)) != self.player_id
+                    last_act = getattr(self, "_last_sent_action", {}) or {}
+                    if a["code"] == "LAYER_TARGET_LOST" and is_opp_turn and int(last_act.get("mode", 0)) == 99:
+                        self.debug(f"[SIM2REAL OPPONENT EVENT] {a['code']}: {a['raw_message']} (ação exclusiva do oponente)")
+                        continue
+
                     self.error(f"[SIM2REAL DETECTED] {a['code']}: {a['raw_message']}")
                     turn_val = safe_int(state.get("turnNo", state.get("currentTurn", 1)), default=1)
                     opp_hero_str = str(state.get("theirHero", state.get("opponentHero", "Unknown")))

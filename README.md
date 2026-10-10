@@ -127,7 +127,7 @@ A arquitetura de IA em `ai/` é composta por módulos altamente desacoplados e e
 | Módulo | Responsabilidade Principal |
 | :--- | :--- |
 | [`ai/model.py`](ai/model.py) | Rede Neural Transformer Dual-Head (`FaBCardTransformerNetwork`) com Self/Cross-Attention e 832 dimensões de estado. |
-| [`ai/policy/`](ai/policy/) & [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tático unificado modular (`constants`, `card_evaluator`, `attack_pruner`, `defense_pruner`, `pitch_pruner`, `arsenal_pruner`, `engine`). Alterna dinamicamente entre **ISMCTS** (mão oculta) e **MCTS clássico** (informação completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl`, quantifica ameaças On-Hit e resolve defesa por knapsack de breakpoint com fachada raiz retrocompatível. |
+| [`ai/policy/`](ai/policy/) & [`ai/policy_engine.py`](ai/policy_engine.py) | Motor de decisão tático unificado modular (`constants`, `card_evaluator`, `attack_pruner`, `go_again_resolver`, `defense_pruner`, `pitch_pruner`, `arsenal_pruner`, `engine`). Alterna dinamicamente entre **ISMCTS** (mão oculta) e **MCTS clássico** (informação completa), persiste telemetria direta em `logs/ismcts_decisions.jsonl`, quantifica ameaças On-Hit e resolve defesa por knapsack de breakpoint com fachada raiz retrocompatível. |
 | [`ai/mcts/`](ai/mcts/) | Motores `MCTSEngine` e `ISMCTSEngine` decompostos (`node`, `standard_mcts`, `world_generator`, `ismcts`). Amostragem de mundos (*Deck-Aware World Sampling*) e busca paralela multithread com `ThreadPoolExecutor`. |
 | [`ai/bot_runtime/`](ai/bot_runtime/) & [`bot_client.py`](bot_client.py) | Runtime modular do bot (`lobby_manager`, `match_tracker`, `choice_handler`, `phase_decider`, `client`). Gerencia ciclo de vida de salas, anti-loop heurístico, tratamento de modais e modulação de fases de combate. |
 | [`ai/training/`](ai/training/) | Orquestrador de self-play e treino GPU decomposto (`matchup_engine`, `process_supervisor`, `orchestrator`). Distilação Assimétrica contra $\pi_{\text{MCTS}}$, Prioritized Experience Replay (PER), AMP FP16 e prioridade `nice 10`. |
@@ -176,7 +176,38 @@ python scripts/manage_state.py --publish-release checkpoint-latest
 
 # Baixar o checkpoint mais recente publicado no GitHub:
 python scripts/manage_state.py --download-release checkpoint-latest
+
+# Limpar o estado de treinamento com backup automático:
+python scripts/manage_state.py --clean-training
 ```
+
+### 🧹 Limpeza e Reset do Estado de Treinamento (`clean_training_state.py` & `--clean-training`)
+
+Ao aplicar grandes atualizações táticas, novas podas ou correções de regras oficiais (como Go-Again estrito e bloqueio de Turno 0), manter o histórico anterior polui os gradientes do treinamento (*Policy Poisoning*) e exibe anomalias superadas. Para reiniciar um ciclo de auto-treinamento com pureza matemática sem risco de perda de dados:
+
+* **O que é limpo/resetado**:
+  * **Replay Buffer & Trajetórias**: `data/replay_buffer.npz` e arquivos transitórios em `data/trajectories/`.
+  * **Métricas e Épocas**: `data/training_metrics.json` (zera épocas, samples, partidas e histórico) e `data/training_stats.json`.
+  * **Divergências Sim2Real**: Log `logs/sim2real_anomalies.jsonl` e registros da tabela `sim2real_anomalies` no SQLite (`talishar_stats.db`).
+* **Backup de Segurança Automático**: Por padrão, antes de qualquer remoção, todos os arquivos afetados são compactados com timestamp em `data/backups/training_state_backup_YYYYMMDD_HHMMSS.tar.gz`.
+
+#### Comandos da CLI:
+```bash
+# 1. Limpeza completa com backup automático em data/backups/ (Recomendado):
+python scripts/clean_training_state.py
+# (Ou via manage_state.py):
+python scripts/manage_state.py --clean-training
+
+# 2. Limpeza direta sem backup (descarte total imediato):
+python scripts/clean_training_state.py --no-backup
+
+# 3. Controle fino por flags:
+python scripts/clean_training_state.py --skip-sim2real   # Preserva histórico de divergências Sim2Real
+python scripts/clean_training_state.py --skip-metrics    # Preserva o contador de épocas e gráficos de loss
+python scripts/clean_training_state.py --skip-buffer     # Mantém o arquivo replay_buffer.npz
+python scripts/clean_training_state.py --backup-path meu_backup.tar.gz
+```
+> *Nota: O botão **"Limpar Replay Buffer"** na aba Treinamento do Streamlit Dashboard também executa esse reset atômico integrado.*
 
 ### 🔄 Automação Completa via Hook Git `post-commit`
 Ao instalar os hooks via `./scripts/sync_and_clean.sh --install-hook`:
@@ -257,7 +288,7 @@ Para navegar a alta complexidade tática de Flesh and Blood e eliminar a explos�
 
 | # | Poda Tática / Regra Oficial | Fundamento (CR / Heurística) | Impacto no Motor de IA |
 | :-: | :--- | :--- | :--- |
-| **1** | **Ataque e Sequenciamento de Cadeia** | CR 2.1.2 & CR 2.3 | Prioriza *starters* de custo 0 e *Go Again*; penaliza quebrar cadeia sem *Go Again*; proíbe flechas na mão. |
+| **1** | **Ataque e Sequenciamento de Cadeia** | CR 2.1.2, CR 2.3 & ADR-0015 | Prioriza *starters* com *Go Again* dinâmico via `go_again_resolver` (natural, Dracônico $\ge 2$, Blaze Headlong e Ninja Combos); penalidade rígida de $-35.0$ contra aberturas sem *Go Again*; proíbe flechas na mão. |
 | **2** | **Pitch Eficiente (Blue > Yellow > Red)** | CR 1.14 | Hierarquia de pitch (Azul $+4.0$, Vermelha $-3.0$); protege finalizadores reservados do plano ofensivo. |
 | **3** | **Bloqueio Inteligente & Tempo Pivot** | CR 2.4 | Anti-overblocking imediato; preserva cartas nobres para contra-ataque; autoriza bloqueio de *Ambush* e *Down and Dirty*. |
 | **4** | **Poda Global de Arsenal & Modo Cavar** | CR 3.1.5 & CR 4.3.2 | Proíbe recursos/gemas no Arsenal; desvaloriza blocos comuns; ativa Modo Cavar com $\ge 3$ recursos para destravar compras no EOT. |
@@ -358,7 +389,7 @@ Para garantir que todos os módulos de IA, simulador, ISMCTS, podas táticas e e
 ```bash
 ./venv/bin/pytest
 ```
-*(Todos os 465 testes automatizados executam e passam em ~40 segundos, isolados nativamente via `pytest.ini`).*
+*(Todos os 529 testes automatizados executam e passam em ~50 segundos, isolados nativamente via `pytest.ini`).*
 
 ---
 
@@ -369,10 +400,11 @@ Para subir o backend Docker (Talishar PHP, MySQL, Redis) e o Dashboard Streamlit
 ```
 
 **Opções úteis do `./start.sh`:**
+* `./start.sh` : Inicia todos os serviços nas versões locais estáveis atuais, exibindo a contagem de commits de diferença em relação ao upstream oficial.
 * `./start.sh -v` : Exibe logs detalhados durante a inicialização.
 * `./start.sh --status` : Verifica se o backend Docker, Dashboard e processos de bots estão rodando.
-* `./start.sh --update` : Força a verificação e atualização dos repositórios oficiais upstream do Talishar antes de iniciar.
-* `./start.sh --no-update` : Pula a checagem remota e inicia instantaneamente offline.
+* `./start.sh --update` : Sincroniza e atualiza os repositórios oficiais upstream do Talishar, reaplicando patches antes de iniciar.
+* `./start.sh --no-update` : Pula a checagem remota e inicia instantaneamente offline nas versões locais.
 * `./start.sh --no-docker` : Inicia apenas o Streamlit Dashboard (se o Docker já estiver ativo).
 * `./start.sh --no-dashboard` : Inicia apenas o backend Docker do Talishar.
 * `./start.sh --port 8502` : Altera a porta do Streamlit Dashboard.
@@ -435,7 +467,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 O Git Hook `pre-push` é executado automaticamente a cada `git push` para garantir que falhas nunca cheguem ao repositório remoto ou quebrem o GitHub Actions. Ele executa:
 1. **Sintaxe Completa Python** (`compileall`).
 2. **Dry-Run do ISMCTS** (`scripts/analyze_ismcts.py --dry-run`).
-3. **Execução da Suíte de Testes** (`pytest tests/`, 478 testes) [Incremental: pula se apenas documentação foi alterada].
+3. **Execução da Suíte de Testes** (`pytest tests/`, 529 testes) [Incremental: pula se apenas documentação foi alterada].
 4. **Verificação de Sincronização dos Templates** (`prepare_environment.py --export-templates` & diff).
 5. **Build de Produção do Frontend Vite** (`npx vite build`) [Incremental: pula se não houve alterações no frontend].
 
@@ -525,9 +557,10 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 │   ├── analyze_ismcts.py     # Analisador local ISMCTS (--dry-run sem servidor)
 │   ├── prepare_environment.sh # Script shell de setup automático
 │   ├── prepare_environment.py # Sincronização de templates, permissões e cartas
-│   ├── manage_state.py       # Gestão de checkpoints compactos e releases no GitHub
+│   ├── manage_state.py       # Gestão de checkpoints compactos, releases e reset com backup
+│   ├── clean_training_state.py # Limpeza atômica e reset de replay buffer, métricas e Sim2Real
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 478 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 529 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -640,6 +673,8 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Tuning Causal Anti-Espiral, MCTS Avançado & Stratified PER** | Diagnóstico causal de Hand Value Conversion Rate (HVCR) e clamp estrito [0.85, 1.15] no auto-tuner (eliminando o efeito espiral), Pitch Stacking ordenado no fundo do deck simulado no ISMCTS, calibração do ruído de Dirichlet para o espaço de ações do FaB, decaimento da temperatura de fusão knapsack-NN, atenuação de falsos blunders por consistência temporal e amostragem estratificada por herói no buffer PER |
 | **Resolução de Modais de Adagas, Poda de Flick Knives & Criação Resiliente de Salas (484 Testes)** | Mapeamento unificado de extração de opções de popup (`extract_popup_cards`), targeting cirúrgico de adagas (*Pain in the Backside*, *Flick Knives*) via Mode 16 com `actionDataOverride` (`MYCHAR-X`), detecção rigorosa de adagas quebradas/arremessadas (`isBroken`, `overlay=1`), normalização bidirecional de slugs de decks no dashboard/backend sem fallback espúrio para URLs externas e suporte direto a payload JSON de baralhos (484 testes unitários no pytest) |
 | **Táticas de Kassai, Defesa de Sobrevivência & Perfis MCTS no Duelo (489 Testes)** | Sequenciamento consciente de recursos para buffs de armas (*Spoils of War*, *Blood on Her Hands*), priorização dinâmica do swing de arma com buff ativo (+30.0 score), guarda mandatória contra dano fatal e eliminação de letargia defensiva em `defense_pruner.py`, e painel com perfis de velocidade MCTS (0 sims instantâneo <50ms até 50 sims) no Dashboard (489 testes unitários no pytest) |
+| **Resolução de Anomalias Sim2Real, Poda Preventiva de Flick Knives & Suporte a Arsenal no Shadow Mode (537 Testes)** | Poda preventiva a montante de *Flick Knives* em `phase_decider.py` e `assassin.py` exigindo adaga não quebrada, `overlay=0` e livre do elo ativo de combate (CR 245), rejeição estrita de opções indisponíveis em popups (`overlay=1`) e envio de PASS (Mode 99) em `MAYCHOOSEMULTIZONE` no `choice_handler.py`, sincronização de AP e Go-Again condicional (*Burning Blade Dance*) no `GameSimulator`, e suporte completo ao Mode 5 (Arsenal) e temporização de HP de Phase B no `Shadow Mode` (537 testes unitários no pytest) |
+| **Checkup de Go-Again, Validação de Condicionais & Defesa de Sobrevivência (544 Testes)** | Universalização da verificação de Go-Again em aberturas de cadeia para Hand e Arsenal com AP $\le$ 1 em `attack_pruner.py`, penalização estrita de cartas jogadas sem pré-condições satisfeitas (*Hunt the Hunter* sem carta vermelha prévia, *Lava Burst* antes do elo 4 de Rupture, *Mark with Magma* sem 2 elos dracônicos), e eliminação de desistência prematura de bloqueio em HP $\le$ 10 contra ataques com Go-Again e oponente ativo em `defense_pruner.py` e `turn_planner.py` (544 testes unitários no pytest) |
 
 ### 📋 Pendente
  

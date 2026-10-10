@@ -277,3 +277,62 @@ def create_human_vs_bot_match(
         "bot_deck": bot_deck_slug,
         "player_deck": player_deck_slug
     }
+
+
+def is_bot_running_for_game(game_name: str) -> bool:
+    """Verifica se há um processo do bot em execução ativa para a sala especificada."""
+    try:
+        import psutil
+        for p in psutil.process_iter(['cmdline', 'status']):
+            if p.info.get('status') == psutil.STATUS_ZOMBIE:
+                continue
+            cmd = p.info.get('cmdline') or []
+            if any("bot_client.py" in str(arg) for arg in cmd) and any(str(game_name) in str(arg) for arg in cmd):
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def reconnect_bot_to_match(
+    game_name: str,
+    bot_deck_slug: str,
+    mcts_sims: Optional[int] = 10,
+    ismcts_concurrency: Optional[str] = "threads",
+    device: Optional[str] = None,
+    torch_threads: Optional[int] = 2,
+) -> Dict[str, Any]:
+    """Reconecta o Bot AI a uma partida existente cujo processo anterior foi encerrado."""
+    clean_b_slug = bot_deck_slug[:-5] if bot_deck_slug.endswith(".json") else bot_deck_slug
+    clean_b_slug = clean_b_slug[6:] if clean_b_slug.startswith("decks/") else clean_b_slug
+    bot_deck_param = f"decks/{clean_b_slug}.json"
+
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    bot_log_path = os.path.join(logs_dir, f"Human_vs_Bot_{game_name}.log")
+    out_f = open(bot_log_path, "a")
+
+    bot_cmd = [
+        PYTHON_BIN, "-u", os.path.join(BASE_DIR, "bot_client.py"),
+        "--room", str(game_name),
+        "--deck", bot_deck_param,
+        "--role", "join",
+        "--name", "AIMaster_Bot",
+    ]
+    if mcts_sims is not None:
+        bot_cmd.extend(["--mcts-sims", str(mcts_sims)])
+    if ismcts_concurrency:
+        bot_cmd.extend(["--ismcts-concurrency", str(ismcts_concurrency)])
+    if device:
+        bot_cmd.extend(["--device", str(device)])
+    if torch_threads:
+        bot_cmd.extend(["--torch-threads", str(torch_threads)])
+
+    bot_proc = subprocess.Popen(
+        bot_cmd,
+        cwd=BASE_DIR,
+        stdout=out_f,
+        stderr=out_f,
+        start_new_session=True
+    )
+    return {"success": True, "bot_pid": bot_proc.pid}

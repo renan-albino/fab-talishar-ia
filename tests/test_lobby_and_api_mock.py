@@ -1078,7 +1078,7 @@ class TestLobbyManagerSetupGameRoomJoin:
     def test_setup_join_server_error(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "logs").mkdir(exist_ok=True)
-        (tmp_path / "logs" / "err_room_game_id.txt").write_text("8006")
+        (tmp_path / "logs" / "err_room_game_id.txt").write_text("88888888")
 
         client = DummyBotClient(role="join", room_id="err_room")
         mock_resp = MagicMock(spec=requests.Response)

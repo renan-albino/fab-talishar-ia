@@ -354,11 +354,12 @@ def get_suggested_training_profile(device_str: str, mode: str = "balanced") -> d
                 "description": f"⚖️ {gpu_name_str} (~80% carga) • {safe_workers} workers • Batch 2048 • Capacidade extrema sem travar o desktop.",
             }
 
-def clear_replay_buffer() -> bool:
-    """Remove o arquivo do replay buffer e as métricas."""
+def clear_replay_buffer(include_sim2real: bool = True) -> bool:
+    """Remove o arquivo do replay buffer, reseta as métricas e opcionalmente limpa anomalias sim2real."""
     import os
     buffer_file = os.path.join("data", "replay_buffer.npz")
     metrics_file = os.path.join("data", "training_metrics.json")
+    sim2real_log = os.path.join("logs", "sim2real_anomalies.jsonl")
     success = True
     
     if os.path.exists(buffer_file):
@@ -372,6 +373,18 @@ def clear_replay_buffer() -> bool:
             os.remove(metrics_file)
         except Exception:
             success = False
+
+    if include_sim2real:
+        if os.path.exists(sim2real_log):
+            try:
+                os.remove(sim2real_log)
+            except Exception:
+                pass
+        try:
+            from stats.db import clear_sim2real_anomalies
+            clear_sim2real_anomalies()
+        except Exception:
+            pass
             
     # Reset in-memory stats
     orch = get_orchestrator()
@@ -384,6 +397,7 @@ def clear_replay_buffer() -> bool:
     orch.stats["history"] = []
     orch.stats["policy_entropy"] = 0.0
     orch.stats["value_mean"] = 0.0
-    orch.stats["last_summary"] = "Nenhuma partida concluída nesta sessão."
+    orch.stats["active_matchup"] = "none"
+    orch.stats["last_summary"] = "Buffer e métricas resetados."
     
     return success

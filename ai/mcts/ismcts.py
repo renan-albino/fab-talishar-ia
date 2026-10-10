@@ -40,6 +40,97 @@ def _get_ismcts_worlds() -> int:
         return 4
 
 
+def calculate_adaptive_mcts_budget(
+    base_sims: int,
+    legal_actions: List[Dict[str, Any]],
+    priors: Optional[np.ndarray] = None,
+    delta_eval: Optional[float] = None,
+    state: Optional[Dict[str, Any]] = None,
+    is_critical: Optional[bool] = None,
+) -> int:
+    """
+    Calcula dinamicamente o orçamento adaptativo de simulações MCTS/ISMCTS.
+    O valor base_sims configurado pelo usuário serve como piso/referência.
+
+    Variação dinâmica:
+      - 1 ação legal: min(3, base_sims) para acelerar decisão forçada.
+      - 2 ações com escolha trivial: max(5, int(base_sims * 0.6)) (ou min(3, base_sims) se base < 5).
+      - Alta incerteza (entropia >= 0.85, Delta-Eval >= 1.5 ou letalidade crítica HP <= 6):
+        escalona para int(base_sims * 1.5) ou até int(base_sims * 2.0).
+      - Turnos normais: respeita rigorosamente base_sims configurado pelo usuário.
+    """
+    if base_sims <= 0:
+        return 0
+
+    num_legal = len(legal_actions)
+    if num_legal == 0:
+        return 0
+    if num_legal == 1:
+        return min(3, base_sims)
+
+    # Detecção de escolha trivial com 2 ações
+    is_trivial = False
+    if num_legal == 2:
+        s0 = float(legal_actions[0].get("score", 0.0))
+        s1 = float(legal_actions[1].get("score", 0.0))
+        if abs(s0 - s1) >= 15.0 or (s0 > 0 and s1 == 0 and legal_actions[1].get("type") == "pass_priority"):
+            is_trivial = True
+
+    # Detecção de momento crítico de letalidade
+    critical_lethality = bool(is_critical)
+    bot_hp, opp_hp = 40, 40
+    if state is not None:
+        try:
+            bot_hp = int(state.get("playerHealth", state.get("yourHealth", 40)))
+            opp_hp = int(state.get("opponentHealth", state.get("theirHealth", 40)))
+            if bot_hp <= 6 or opp_hp <= 6 or state.get("is_lethal_danger", False):
+                critical_lethality = True
+        except (ValueError, TypeError):
+            pass
+
+    # Detecção de alta incerteza nos priors da política (entropia alta)
+    high_entropy = False
+    if priors is not None and num_legal >= 2:
+        try:
+            # Vetor perfeitamente uniforme indica fallback de modelo não inicializado
+            if not np.allclose(priors, priors[0]):
+                p_vals = []
+                if len(priors) == num_legal:
+                    p_vals = [float(p) for p in priors]
+                elif len(priors) >= 32:
+                    for act in legal_actions:
+                        m = act.get("mode", 99)
+                        idx = min(m, len(priors) - 1) if m < len(priors) else 0
+                        p_vals.append(float(priors[idx]))
+                if len(p_vals) >= 2:
+                    p_arr = np.array(p_vals, dtype=np.float32)
+                    p_sum = p_arr.sum()
+                    if p_sum > 0:
+                        p_norm = p_arr / p_sum
+                        ent = float(-np.sum(p_norm * np.log(p_norm + 1e-9)))
+                        max_ent = float(np.log(len(p_vals)))
+                        if max_ent > 0 and (ent / max_ent) >= 0.85:
+                            high_entropy = True
+        except Exception:
+            pass
+
+    # Detecção de Delta-Eval >= 1.5
+    high_delta = bool(delta_eval is not None and abs(float(delta_eval)) >= 1.5)
+
+    # Escolha trivial em turno sem perigo nem incerteza: reduz simulações
+    if is_trivial and not critical_lethality and not high_entropy and not high_delta:
+        return max(5, int(base_sims * 0.6)) if base_sims >= 5 else min(3, base_sims)
+
+    # Alta incerteza ou criticidade: escala para cima
+    if (critical_lethality and (high_entropy or high_delta or bot_hp <= 3 or opp_hp <= 3)) or (delta_eval is not None and abs(float(delta_eval)) >= 2.0):
+        return max(base_sims, int(base_sims * 2.0))
+    elif critical_lethality or high_entropy or high_delta:
+        return max(base_sims, int(base_sims * 1.5))
+
+    # Turnos normais: respeita rigorosamente base_sims
+    return base_sims
+
+
 def _extract_level1_summary(
     root: MCTSNode,
     best_idx: int,
@@ -344,6 +435,9 @@ class ISMCTSEngine:
         training_mode: bool = False,
         use_multiprocessing: Optional[bool] = None,
         concurrency_mode: Optional[str] = None,
+        adaptive_budget: bool = True,
+        delta_eval: Optional[float] = None,
+        is_critical: Optional[bool] = None,
     ) -> Tuple[int, np.ndarray, Dict[str, Any]]:
         """
         Executa ISMCTS via Concorrência Híbrida e retorna (best_idx, policy_dist, ismcts_log).
@@ -363,8 +457,24 @@ class ISMCTSEngine:
         if num_legal == 0:
             return 0, np.zeros(32, dtype=np.float32), {}
 
-        # Vetor raiz base: para telemetria de diagnóstico
+        base_simulations_input = num_simulations
         state_vec = FaBPolicyValueNetwork.extract_state_vector(state)
+
+        # ── Orçamento Adaptativo de MCTS ───────────────────────────
+        if adaptive_budget and num_simulations > 0:
+            priors_for_budget = None
+            try:
+                priors_for_budget, _ = self._mcts._evaluate(state_vec)
+            except Exception:
+                pass
+            num_simulations = calculate_adaptive_mcts_budget(
+                base_sims=num_simulations,
+                legal_actions=legal_actions,
+                priors=priors_for_budget,
+                delta_eval=delta_eval,
+                state=state,
+                is_critical=is_critical,
+            )
 
         worlds = generate_worlds(state=state, opp_hand_count=None, num_worlds=self.num_worlds)
         actual_worlds = len(worlds)
@@ -651,6 +761,7 @@ class ISMCTSEngine:
         ismcts_log = {
             "worlds_sampled"  : actual_worlds,
             "num_simulations" : num_simulations,
+            "base_simulations": base_simulations_input,
             "candidates"      : action_names,
             "votes"           : {action_names[i]: vote_counts.get(i, 0) for i in range(num_legal)},
             "chosen"          : chosen_name,

@@ -27,7 +27,11 @@ def review_anomalies(limit: int = 50, filter_type: str = None, filter_hero: str 
     print("   RELATÓRIO DE DIAGNÓSTICO SIM2REAL (TALISHAR vs AI ENGINE)")
     print("=" * 65)
 
-    anomalies = get_recent_sim2real_anomalies(limit=limit)
+    anomalies = get_recent_sim2real_anomalies(
+        limit=limit,
+        hero=filter_hero,
+        anomaly_type=filter_type
+    )
 
     if not anomalies:
         # Fallback para JSONL caso o banco ainda não tenha registros

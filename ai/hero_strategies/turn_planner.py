@@ -102,6 +102,14 @@ def should_trigger_survival_block(
     if is_fatal or my_hp <= survival_hp_threshold:
         return True
 
+    # Em zona de risco crítico (HP <= 10), contra ataques com Go-Again e oponente com cartas na mão,
+    # a ameaça cumulativa de múltiplos ataques na cadeia é letal no mesmo turno.
+    if isinstance(state_or_hp, dict) and my_hp <= 10:
+        opp_hand_count = int(state_or_hp.get("opponentHandCount", state_or_hp.get("theirHandCount", 0)))
+        incoming_ga = bool(active_chain.get("goAgain") or "go again" in str(active_chain.get("keywords", [])).lower().replace("_", " "))
+        if incoming_ga and opp_hand_count >= 1:
+            return True
+
     if not has_dangerous_on_hit:
         return False
 

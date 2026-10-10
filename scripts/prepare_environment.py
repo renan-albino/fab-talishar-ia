@@ -45,6 +45,7 @@ BACKEND_MAPPINGS = [
     ("Libraries/FormatCodes.php", "Libraries/FormatCodes.php"),
     ("Libraries/HTTPLibraries.php", "Libraries/HTTPLibraries.php"),
     ("Libraries/PlayerSettings.php", "Libraries/PlayerSettings.php"),
+    ("Libraries/CacheLibraries.php", "Libraries/CacheLibraries.php"),
     ("ProcessInput.php", "ProcessInput.php"),
     ("CardDictionaries/Outsiders/OUTShared.php", "CardDictionaries/Outsiders/OUTShared.php"),
 ]
@@ -53,7 +54,6 @@ FRONTEND_MAPPINGS = [
     ("chatBox/ChessAdvantageTracker.tsx", "src/routes/game/components/elements/chatBox/ChessAdvantageTracker.tsx"),
     ("chatBox/ChessAdvantageTracker.module.css", "src/routes/game/components/elements/chatBox/ChessAdvantageTracker.module.css"),
     ("chatBox/ChatBox.tsx", "src/routes/game/components/elements/chatBox/ChatBox.tsx"),
-    ("features/GameSlice.ts", "src/features/game/GameSlice.ts"),
     ("lobby/StickyFooter.tsx", "src/routes/game/lobby/components/stickyFooter/StickyFooter.tsx"),
     ("lobby/LobbyChat.tsx", "src/routes/game/lobby/components/lobbyChat/LobbyChat.tsx"),
     ("components/Header.tsx", "src/components/header/Header.tsx"),
@@ -384,8 +384,11 @@ def ensure_frontend_dependencies():
         log("Validando compilação do Frontend pela primeira vez (npx vite build)...")
         npx_cmd = shutil.which("npx") or "npx"
         try:
-            subprocess.run([npx_cmd, "vite", "build"], cwd=TALISHAR_FE_DIR, check=False)
-            log_success("Compilação inicial do Frontend concluída.")
+            build_res = subprocess.run([npx_cmd, "vite", "build"], cwd=TALISHAR_FE_DIR, check=False)
+            if build_res.returncode == 0:
+                log_success("Compilação inicial do Frontend concluída.")
+            else:
+                log_warn(f"Aviso durante validação do build do frontend: código de erro {build_res.returncode}")
         except Exception as e:
             log_warn(f"Aviso durante validação do build do frontend: {e}")
 def ensure_git_hooks():
@@ -579,7 +582,7 @@ def sync_upstream_repositories(check_only: bool = False) -> bool:
 
         if commits_behind > 0:
             has_updates = True
-            log(f"[!] {name}: {commits_behind} novos commits disponíveis ({old_sha[:9]} -> {new_sha[:9]}).")
+            log_warn(f"{name}: {commits_behind} commit(s) atrás do upstream oficial ({old_sha[:9]} -> {new_sha[:9]}).")
 
             if check_only:
                 continue
@@ -648,8 +651,11 @@ def sync_upstream_repositories(check_only: bool = False) -> bool:
             log("Recompilando Talishar-FE para garantir integridade do build...")
             npx_cmd = shutil.which("npx") or "npx"
             try:
-                subprocess.run([npx_cmd, "vite", "build"], cwd=TALISHAR_FE_DIR, check=False)
-                log_success("Frontend Talishar-FE recompilado com sucesso.")
+                build_res = subprocess.run([npx_cmd, "vite", "build"], cwd=TALISHAR_FE_DIR, check=False)
+                if build_res.returncode == 0:
+                    log_success("Frontend Talishar-FE recompilado com sucesso.")
+                else:
+                    log_warn(f"Falha na compilação do Frontend Talishar-FE (código de saída: {build_res.returncode}).")
             except Exception as e:
                 log_warn(f"Aviso ao recompilar frontend: {e}")
 
@@ -811,13 +817,13 @@ def main():
     parser.add_argument("--check-upstream", action="store_true", help="Verifica se há novos commits upstream (código 0 se houver atualizações, 1 se não)")
     args = parser.parse_args()
 
-    print("==================================================")
-    print("   FAB TALISHAR AI - PREPARAÇÃO DE AMBIENTE       ")
-    print("==================================================")
-
     if args.check_upstream:
         has_updates = sync_upstream_repositories(check_only=True)
         sys.exit(0 if has_updates else 1)
+
+    print("==================================================")
+    print("   FAB TALISHAR AI - PREPARAÇÃO DE AMBIENTE       ")
+    print("==================================================")
 
     if args.update_upstream:
         sync_upstream_repositories(check_only=False)

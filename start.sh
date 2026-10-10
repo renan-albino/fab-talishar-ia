@@ -51,16 +51,16 @@ Opções:
   -v, --verbose         Mostra logs detalhados durante a inicialização
   --no-docker           Não inicia os containers Docker (inicia apenas o Dashboard)
   --no-dashboard        Não inicia o Dashboard (inicia apenas o Docker Talishar)
-  --update              Força a verificação e atualização dos repositórios Talishar upstream antes de iniciar
-  --no-update           Não verifica atualizações do upstream (inicia imediatamente offline)
+  --update              Atualiza os repositórios Talishar upstream para a versão mais recente e reaplica patches
+  --no-update           Não verifica o upstream remoto (inicia imediatamente offline)
   --port <PORT>         Porta para o Streamlit Dashboard (padrão: 8501)
   --status              Exibe o status atual dos serviços sem iniciá-los
   -h, --help            Exibe esta mensagem de ajuda
 
 Exemplos:
-  ./start.sh                    # Inicia tudo com verificação inteligente de updates
-  ./start.sh --update           # Força a atualização do Talishar upstream e sobe os serviços
-  ./start.sh --no-update        # Inicia imediatamente sem verificar a internet/upstream
+  ./start.sh                    # Inicia nas versões locais, exibindo a diferença de commits para o upstream
+  ./start.sh --update           # Sincroniza e atualiza o Talishar upstream antes de subir os serviços
+  ./start.sh --no-update        # Inicia imediatamente sem consultar o remoto (offline)
   ./start.sh -v                 # Inicia com saída detalhada
   ./start.sh --no-dashboard     # Inicia apenas o backend Talishar
   ./start.sh --status           # Verifica se os serviços estão rodando
@@ -148,14 +148,18 @@ if [ ! -f "$VENV_PYTHON" ]; then
 fi
 
 if [ "$FORCE_UPDATE" = true ]; then
-    echo -e "${BLUE}[+] Forçando sincronização com os repositórios oficiais do Talishar...${NC}"
-    "$VENV_PYTHON" scripts/prepare_environment.py --update-upstream
+    echo -e "${BLUE}[+] Forçando sincronização e atualização com os repositórios oficiais do Talishar...${NC}"
+    if ! "$VENV_PYTHON" scripts/prepare_environment.py --update-upstream; then
+        echo -e "${RED}[ERRO] Falha ao atualizar Talishar upstream. Você pode iniciar na versão local atual com: ./start.sh --no-update${NC}"
+        exit 1
+    fi
 elif [ "$CHECK_UPDATES" = true ]; then
-    # Verificação rápida e silenciosa (com timeout)
-    if "$VENV_PYTHON" scripts/prepare_environment.py --check-upstream >/dev/null 2>&1; then
-        echo -e "${BLUE}[!] Detectadas atualizações no Talishar upstream!${NC}"
-        echo -e "${BLUE}    Sincronizando código, reaplicando patches da IA e gerando changelog...${NC}"
-        "$VENV_PYTHON" scripts/prepare_environment.py --update-upstream
+    echo -e "${BLUE}[+] Verificando diferença para os repositórios oficiais upstream do Talishar...${NC}"
+    if "$VENV_PYTHON" scripts/prepare_environment.py --check-upstream; then
+        echo -e "${YELLOW}[!] Executando nas versões locais estáveis atuais (sem auto-update).${NC}"
+        echo -e "${YELLOW}    Para sincronizar e atualizar para a versão mais recente do Talishar: ./start.sh --update${NC}"
+    else
+        echo -e "${GREEN}[OK] Repositórios locais em dia com o upstream oficial.${NC}"
     fi
 fi
 

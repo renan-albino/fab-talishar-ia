@@ -10,7 +10,8 @@ def solve_knapsack_defense(
     has_dominate: bool,
     has_overpower: bool,
     has_piercing: bool,
-    turn_plan: Any
+    turn_plan: Any,
+    is_first_turn_of_game: bool = False
 ) -> List[Tuple[int, str, str, int]]:
     """
     Encontra o subconjunto de menor custo total que neutraliza completamente o dano.
@@ -19,9 +20,13 @@ def solve_knapsack_defense(
         return []
 
     valid_subsets = []
-    max_hand_in_subset = int(getattr(turn_plan, "max_block_cards", 2)) if getattr(turn_plan, "can_absorb_damage", False) else (
-        2 if my_hp > 12 else 3
-    )
+    if is_first_turn_of_game:
+        max_hand_in_subset = len(block_candidates)
+    elif getattr(turn_plan, "can_absorb_damage", False):
+        max_hand_in_subset = int(getattr(turn_plan, "max_block_cards", 2))
+    else:
+        max_hand_in_subset = 2 if my_hp > 12 else 3
+
     if has_dominate:
         max_hand_in_subset = min(max_hand_in_subset, 1)
 

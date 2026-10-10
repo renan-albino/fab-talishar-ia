@@ -6,8 +6,9 @@ Foco em cadeias de combo, starters de custo zero com Go Again e múltiplos ataqu
 """
 
 from functools import lru_cache
-from typing import Optional, List, Tuple, Dict, Any, Set, Union,  Set
+from typing import Optional, List, Tuple, Dict, Any, Set, Union
 from .base import HeroStrategy, TurnPlan, DANGEROUS_ON_HITS
+from ai.policy.go_again_resolver import resolve_attack_go_again
 
 
 class NinjaStrategy(HeroStrategy):
@@ -53,13 +54,14 @@ class NinjaStrategy(HeroStrategy):
                 reason="Ninja survival mode: blocking critical or fatal damage"
             )
 
-        # Identificar starter com Go Again de custo baixo
+        # Identificar starter com Go Again garantido de custo baixo via go_again_resolver
         starters = []
         follow_ups = []
         for c in hand:
             c_cost = int(c.get("cost", 0))
-            c_ga = bool(c.get("has_go_again", False))
             c_pow = int(c.get("power", 0))
+            c_name = str(c.get("cardNumber") or c.get("name", "")).lower()
+            c_ga, _ = resolve_attack_go_again(c_name, state, c if isinstance(c, dict) else None)
             if c_cost == 0 and c_ga and c_pow > 0:
                 starters.append(c)
             elif c_pow > 0:

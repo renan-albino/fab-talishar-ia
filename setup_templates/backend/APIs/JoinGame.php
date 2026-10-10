@@ -1052,7 +1052,7 @@ function isBannedInFormat($cardID, $format) {
           "count_your_blessings_red", "count_your_blessings_yellow", "nuu_alluring_desire", "beckoning_mistblade", "dash_inventor_extraordinaire", "teklo_plasma_pistol",
           "azalea_ace_in_the_hole", "death_dealer", "bonds_of_agony_blue", "golden_tipple_red", "golden_tipple_yellow",
           "plume_of_evergrowth", "orb_weaver_spinneret_yellow", "orb_weaver_spinneret_blue",
-          "chart_the_high_seas_blue", "wrath_of_retribution_red", "brand_with_cinderclaw_red", "brand_with_cinderclaw_yellow", "brand_with_cinderclaw_blue",
+          "chart_the_high_seas_blue", "wrath_of_retribution_red", "entwine_lightning_red", "entwine_lightning_yellow", "entwine_lightning_blue",
           "crucible_of_aetherweave", "rotwood_reaper", "mandible_claw", "staff_of_verdant_shoots",
           "electromagnetic_somersault_red", "electromagnetic_somersault_yellow",
           "channel_lightning_valley_yellow", "phantom_tidemaw_blue", "reaping_blade",

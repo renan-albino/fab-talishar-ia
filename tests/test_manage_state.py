@@ -80,3 +80,63 @@ def test_show_info_executes_cleanly(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert "INFORMAÇÕES DE ESTADO ATUAL" in captured.out
+
+
+def test_clean_training_state_with_backup(tmp_path):
+    mock_base = tmp_path / "project"
+    mock_data = mock_base / "data"
+    mock_logs = mock_base / "logs"
+    mock_data.mkdir(parents=True)
+    mock_logs.mkdir(parents=True)
+
+    # Cria arquivos simulados de buffer, métricas e anomalias
+    buf = mock_data / "replay_buffer.npz"
+    buf.write_bytes(b"mock_buffer_content")
+
+    metrics = mock_data / "training_metrics.json"
+    metrics.write_text('{"epochs_completed": 100, "samples_collected": 5000, "total_games": 200}')
+
+    stats = mock_data / "training_stats.json"
+    stats.write_text('{"total_matches": 50, "bot1_elo": 1400}')
+
+    sim2real = mock_logs / "sim2real_anomalies.jsonl"
+    sim2real.write_text('{"anomaly_type": "MOCK_ANOMALY"}\n')
+
+    backup_bundle = str(tmp_path / "custom_backup.tar.gz")
+
+    with patch.object(manage_state, "BASE_DIR", str(mock_base)), \
+         patch.object(manage_state, "DATA_DIR", str(mock_data)), \
+         patch("stats.db.clear_sim2real_anomalies", return_value=5):
+
+        summary = manage_state.clean_training_state(
+            backup=True,
+            include_buffer=True,
+            include_metrics=True,
+            include_sim2real=True,
+            backup_path=backup_bundle,
+        )
+
+        # 1. Verifica backup
+        assert summary["backup_created"] == backup_bundle
+        assert os.path.exists(backup_bundle)
+        with tarfile.open(backup_bundle, "r:gz") as tar:
+            names = tar.getnames()
+            assert any("replay_buffer.npz" in n for n in names)
+            assert any("training_metrics.json" in n for n in names)
+            assert any("sim2real_anomalies.jsonl" in n for n in names)
+
+        # 2. Verifica remoção do buffer
+        assert not buf.exists()
+        assert summary["buffer_cleared"] is True
+
+        # 3. Verifica reset de métricas para 0
+        import json
+        with open(metrics, "r") as f:
+            m = json.load(f)
+            assert m["epochs_completed"] == 0
+            assert m["samples_collected"] == 0
+            assert m["total_games"] == 0
+
+        # 4. Verifica limpeza de anomalias
+        assert not sim2real.exists()
+        assert summary["sim2real_db_records_cleared"] == 5

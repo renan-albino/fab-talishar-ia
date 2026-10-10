@@ -14,6 +14,7 @@ from typing import List, Dict, Any, Tuple, Optional
 import torch
 
 from ai.mcts.standard_mcts import MCTSEngine
+from ai.mcts.ismcts import calculate_adaptive_mcts_budget
 from ai.game_simulator import GameSimulator
 from ai.model import FaBPolicyValueNetwork
 from config.settings import SETTINGS, DATA_DIR, PROJECT_ROOT
@@ -429,7 +430,12 @@ class HeadlessSelfPlayLoop:
                 mcts = mcts1 if active_player == 1 else mcts2
 
                 vec = FaBPolicyValueNetwork.extract_state_vector(state)
-                best_idx, policy_probs = mcts.search(state, legal_actions, num_simulations=self.mcts_sims, state_vec=vec)
+                adaptive_sims = calculate_adaptive_mcts_budget(
+                    base_sims=self.mcts_sims,
+                    legal_actions=legal_actions,
+                    state=state,
+                )
+                best_idx, policy_probs = mcts.search(state, legal_actions, num_simulations=adaptive_sims, state_vec=vec, adaptive_budget=False)
                 if not policy_probs.any() or sum(policy_probs) == 0:
                     policy_probs = np.ones(32, dtype=np.float32) / 32.0
 
@@ -462,7 +468,13 @@ class HeadlessSelfPlayLoop:
                     def_mcts = mcts2 if defending_player == 2 else mcts1
 
                     def_vec = FaBPolicyValueNetwork.extract_state_vector(state)
-                    def_best_idx, def_policy = def_mcts.search(state, def_actions, num_simulations=max(3, self.mcts_sims // 2), state_vec=def_vec)
+                    base_def_sims = max(3, self.mcts_sims // 2)
+                    adaptive_def_sims = calculate_adaptive_mcts_budget(
+                        base_sims=base_def_sims,
+                        legal_actions=def_actions,
+                        state=state,
+                    )
+                    def_best_idx, def_policy = def_mcts.search(state, def_actions, num_simulations=adaptive_def_sims, state_vec=def_vec, adaptive_budget=False)
                     if not def_policy.any() or sum(def_policy) == 0:
                         def_policy = np.ones(32, dtype=np.float32) / 32.0
 

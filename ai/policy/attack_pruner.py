@@ -13,6 +13,51 @@ from .constants import (
 )
 
 from .card_semantics import parse_card_semantics
+from .go_again_resolver import resolve_attack_go_again, has_prior_red_card_played, is_draconic_card
+
+
+def evaluate_conditional_attack_penalty(c_name: str, state: dict, candidate_attacks: list) -> float:
+    """
+    Penaliza o uso prematuro de cartas com requisitos condicionais não satisfeitos.
+    Evita abrir cadeias ou turnos queimando efeitos de Rupture, Mark ou Combos.
+    """
+    clean_name = c_name.lower().replace(" ", "_").replace("-", "_")
+    penalty = 0.0
+
+    # 1. Hunt the Hunter (Requer outra carta vermelha jogada previamente no turno para aplicar Mark)
+    if "hunt_the_hunter" in clean_name:
+        if not has_prior_red_card_played(state):
+            has_other_reds = any(
+                atk.get("name") != c_name and ("_red" in str(atk.get("name", "")) or atk.get("pitch") == 1)
+                for atk in candidate_attacks
+            )
+            if has_other_reds:
+                penalty -= 25.0
+
+    # 2. Rupture (Ex: Lava Burst, Breaking Point, etc. - Requer elo de cadeia >= 4)
+    chain_link = int(state.get("currentChainLink", 1))
+    combat_chain_links = state.get("combatChainLinks", [])
+    combat_chain = state.get("combatChain", [])
+    active_link = state.get("activeChainLink")
+    resolved_links = len(combat_chain_links) or len(combat_chain)
+    if active_link:
+        resolved_links += 1
+    effective_link = max(chain_link, resolved_links)
+
+    is_rupture_card = any(r in clean_name for r in [
+        "lava_burst", "breaking_point", "liquefy", "red_hot", "rise_up", "searing_touch"
+    ])
+    if is_rupture_card and effective_link < 4:
+        if len(candidate_attacks) > 1:
+            penalty -= 30.0
+
+    # 3. Mark with Magma (Requer >= 2 links dracônicos prévios para marcar e ter efeito pleno)
+    if "mark_with_magma" in clean_name:
+        prior_draconic = sum(1 for link in (combat_chain_links or combat_chain) if is_draconic_card(link))
+        if prior_draconic < 2 and len(candidate_attacks) > 1:
+            penalty -= 20.0
+
+    return penalty
 
 
 def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = None) -> Optional[Dict[str, Any]]:
@@ -72,8 +117,9 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
             # O pitch disponível para esta carta é (total_res - info["pitch"])
             pitch_from_other_cards = total_res - info["pitch"]
             if pitch_from_other_cards >= card_cost:
+                effective_ga, ga_reason = resolve_attack_go_again(c_name, state, info)
                 base_score = engine.strategy.evaluate_attack_card(
-                    c_name, info["power"], card_cost, info["has_go_again"], info["pitch"]
+                    c_name, info["power"], card_cost, effective_ga, info["pitch"]
                 )
                 base_score = engine.strategy.modify_attack_candidate_score(
                     c_name, info, turn_plan, base_score, state
@@ -113,30 +159,30 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
                 elif c_name in turn_plan.reserved_card_names or c_clean in turn_plan.reserved_card_names:
                     base_score += 15.0  # Peça chave do plano ofensivo reservada
 
-                if info["has_go_again"]:
+                if effective_ga and info.get("power", 0) > 0:
                     has_any_go_again = True
                 hand_attacks.append({
                     "type": "hand", "idx": idx, "card_id": c_id, "mode": c_action,
                     "name": c_name, "score": base_score, "cost": card_cost,
-                    "power": info["power"], "has_go_again": info["has_go_again"],
+                    "power": info["power"], "has_go_again": effective_ga,
+                    "go_again_reason": ga_reason,
                     "pitch": info["pitch"]
                 })
 
     tracker = state.get("opponent_tracker")
 
     # ── 1.2 Poda Tática de Go Again (Evitar quebrar a cadeia prematuramente)
-    # CR 8.6.1 & CR 8.6.28: Quicken e Agility concedem Go Again gratuito ao primeiro ataque!
-    chain_link = int(state.get("currentChainLink", 1))
-    grants_free_go_again = (has_quicken or has_agility) and chain_link <= 1
-
     for atk in hand_attacks:
-        effective_go_again = atk["has_go_again"] or grants_free_go_again
+        effective_go_again = atk["has_go_again"]
         if player_ap <= 1 and has_any_go_again and not effective_go_again and len(hand_attacks) > 1:
-            # Se não for letal (power < oponente_hp), penaliza iniciar com non-go-again
-            atk["score"] -= 4.0
+            # Se player_ap <= 1 e há opções com Go Again na mão, penalidade rígida de -35.0 impede abertura sem Go Again
+            atk["score"] -= 35.0
         elif effective_go_again and atk["cost"] == 0:
             # Bônus para abrir cadeia com starter de custo zero (ou tornado 0 com go again)
             atk["score"] += 1.5
+
+        # Poda de Condicionais não satisfeitos (Hunt the Hunter, Rupture, Draconic)
+        atk["score"] += evaluate_conditional_attack_penalty(atk["name"], state, hand_attacks)
 
         if has_own_on_hit_item:
             # Ataques rápidos ou de alto poder têm prioridade para garantir que o dano extra do item da arena converta
@@ -342,15 +388,31 @@ def select_best_attack(engine: Any, state: dict, unpayable_set: Optional[set] = 
 
                 # Cartas de Arsenal/Banish/Graveyard usam total_res da mão inteira (ou effective_cost de Runegate)
                 if total_res >= effective_cost:
+                    effective_ga, ga_reason = resolve_attack_go_again(c_name, state, c_info)
                     base_score = engine.strategy.evaluate_attack_card(
-                        c_name, c_info["power"], effective_cost, c_info["has_go_again"], c_info["pitch"]
+                        c_name, c_info["power"], effective_cost, effective_ga, c_info["pitch"]
                     )
-                    has_ga = c_info["has_go_again"]
+                    has_ga = effective_ga
                     zone_result = engine.strategy.evaluate_zone_card_play(zone_name, c_name, c_info, base_score, state, turn_plan)
                     if zone_result is None:
                         continue
                         
                     play_score, is_instant, has_ga = zone_result
+
+                    if zone_name == "Arsenal":
+                        # Universal Go-Again Check: se player_ap <= 1 e cadeia de combate não está ativa
+                        combat_chain_active = bool(
+                            state.get("combatChain") or state.get("combatChainLinks") or state.get("activeChainLink")
+                        )
+                        is_arrow = any(k in c_name for k in ["arrow", "harpoon", "bolt", "trophy", "goldfin", "king_kraken", "king_shark", "endless"])
+                        if player_ap <= 1 and not combat_chain_active and not has_ga and has_any_go_again and not is_arrow:
+                            # Não abre cadeia a partir do Arsenal sem Go-Again se há opções com Go-Again na mão com AP limitado!
+                            play_score -= 35.0
+
+                        # Checagem de requisitos condicionais no Arsenal (Hunt the Hunter / Rupture / Mark)
+                        play_score += evaluate_conditional_attack_penalty(c_name, state, hand_attacks)
+                    elif zone_name in ("Banish", "Graveyard"):
+                        play_score += evaluate_conditional_attack_penalty(c_name, state, hand_attacks)
                     
                     if zone_name == "Graveyard":
                         if getattr(engine.strategy, "is_ally_hero", False) or bool(state.get("playerAllies")):

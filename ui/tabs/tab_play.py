@@ -248,8 +248,32 @@ def render_tab_play(saved_decks=None, deck_options=None, fe_running=None, be_run
 
     if "active_human_match" in st.session_state:
         match_info = st.session_state["active_human_match"]
-        st.info(f"🎮 **Partida Ativa:** Sala #{match_info['game_name']} | Seu Deck: `{match_info['player_deck']}` | Bot Deck: `{match_info['bot_deck']}`")
-        st.link_button("👉 ENTRAR NA PARTIDA (Abrir Lobby no Navegador)", match_info["lobby_url"], type="primary", use_container_width=True)
+        g_name = str(match_info.get("game_name", ""))
+        bot_is_live = frontend_manager.is_bot_running_for_game(g_name)
+
+        col_m1, col_m2 = st.columns([3, 1])
+        with col_m1:
+            bot_badge = "🟢 Bot Conectado" if bot_is_live else "⚠️ Bot Desconectado"
+            st.info(f"🎮 **Partida Ativa:** Sala #{g_name} | Seu Deck: `{match_info.get('player_deck')}` | Bot Deck: `{match_info.get('bot_deck')}` | **{bot_badge}**")
+        with col_m2:
+            if not bot_is_live:
+                if st.button("🤖 Reconectar Bot", type="secondary", use_container_width=True):
+                    rec = frontend_manager.reconnect_bot_to_match(
+                        g_name,
+                        match_info.get("bot_deck", "betsy"),
+                        mcts_sims=selected_mcts_sims,
+                        ismcts_concurrency=selected_concurrency,
+                        device=selected_device,
+                        torch_threads=2
+                    )
+                    if rec.get("success"):
+                        st.success("Bot reconectado com sucesso à sala!")
+                        time.sleep(1)
+                        st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
+                    else:
+                        st.error("Falha ao reconectar bot.")
+
+        st.link_button("👉 ENTRAR NA PARTIDA (Abrir Lobby no Navegador)", match_info.get("lobby_url", match_info.get("game_url")), type="primary", use_container_width=True)
 
     st.markdown("---")
     st.subheader("🕹️ Monitor de Sala & Análise de Pruning (Humano vs Bot)")

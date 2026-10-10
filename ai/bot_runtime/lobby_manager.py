@@ -315,10 +315,30 @@ def setup_game_room(client) -> bool:
             client.log(f"[JOIN RAW RESPONSE] HTTP {res.status_code}: {res.text[:120]}")
             data = res.json()
             if "error" in data:
-                client.log(f"[ERRO AO ENTRAR NA SALA] {data['error']}")
-                return False
-            client.player_id = data.get("playerID", 2)
-            client.auth_key = data.get("authKey", "")
+                err = str(data["error"])
+                recovered = False
+                base_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+                for gfp in [os.path.join("Talishar", "Games", str(client.game_id), "GameFile.txt"),
+                            os.path.join(base_root, "Talishar", "Games", str(client.game_id), "GameFile.txt")]:
+                    if os.path.exists(gfp):
+                        try:
+                            with open(gfp, "r", encoding="utf-8") as gf:
+                                lines = [l.strip() for l in gf.readlines()]
+                                if len(lines) >= 9 and len(lines[8]) > 10:
+                                    client.player_id = 2
+                                    client.auth_key = lines[8]
+                                    recovered = True
+                                    client.log(f"[RECONEXÃO SUCESSO] Partida #{client.game_id} recuperada de GameFile.txt (Auth: {client.auth_key[:8]}...).")
+                                    break
+                        except Exception:
+                            pass
+                if not recovered:
+                    client.log(f"[ERRO AO ENTRAR NA SALA] {err}")
+                    return False
+            else:
+                client.player_id = data.get("playerID", 2)
+                client.auth_key = data.get("authKey", "")
+
             if not client.auth_key:
                 base_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
                 for gfp in [os.path.join("Talishar", "Games", str(client.game_id), "GameFile.txt"),
@@ -336,6 +356,12 @@ def setup_game_room(client) -> bool:
             
             with open(f"logs/{client.room_id}_p2_ready.txt", "w", encoding="utf-8") as f:
                 f.write("ready")
+
+            # Se a partida já estiver em andamento com gamestate gerado, inicia o jogo sem aguardar lobby
+            for gsp in [f"Talishar/Games/{client.game_id}/gamestate.txt", f"Games/{client.game_id}/gamestate.txt"]:
+                if os.path.exists(gsp) and os.path.getsize(gsp) > 200:
+                    client.log(f"[RECONEXÃO] Gamestate detectado na sala #{client.game_id}. Partida em andamento, iniciando loop!")
+                    return True
             
             return client.wait_in_lobby_and_start()
         except Exception as e:

@@ -421,6 +421,15 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
             unpayable_set.add(eq_name)
 
         if eq_action > 0 and eq_name not in unpayable_set:
+            raw_turn = state.get("turnNo") if "turnNo" in state else state.get("currentTurn")
+            is_first_turn_of_game = bool(
+                raw_turn is not None
+                and int(raw_turn) <= 1
+                and int(state.get("turnPlayer", 1)) != int(state.get("playerID", 2))
+            )
+            if is_first_turn_of_game and any(k in eq_name for k in ["boots_of_omni", "omniward", "flick_knives", "snapdragon"]):
+                continue
+
             # ── Poda 1: Equipamentos de Prevenção / Defesa (Boots of Omniward, Ward, Barrier, Prevent) ──
             is_prevention_eq = any(k in eq_name for k in ["boots_of_omni", "omniward", "barrier", "ward", "prevent", "spellvoid"])
             if is_prevention_eq:
@@ -450,22 +459,46 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
             elif "flick_knives" in eq_name:
                 if not is_attacking:
                     continue
-                # Poda Sim2Real: Flick Knives exige uma adaga equipada funcional e não arremessada/destruída
-                cards_db = getattr(client.policy_engine, "cards_db", {}) if hasattr(client, "policy_engine") else {}
+                # Poda Sim2Real (CR 245 & Talishar REMOVEINDICESIFACTIVECHAINLINK):
+                # Flick Knives exige uma adaga equipada funcional, não quebrada/arremessada (overlay=0)
+                # e que NÃO seja a carta de ataque ativa no elo atual da cadeia de combate.
+                from ai.policy.constants import _load_cards_db
+                cards_db = getattr(client.policy_engine, "cards_db", None) or _load_cards_db() or {}
                 equip_list = state.get("playerEquipment", [])
+                atk_card_name = ""
+                if active_chain:
+                    atk_card = active_chain.get("attackingCard")
+                    if isinstance(atk_card, dict):
+                        atk_card_name = str(atk_card.get("cardNumber") or atk_card.get("name", "")).lower().strip()
+                    if not atk_card_name:
+                        atk_card_name = str(active_chain.get("cardNumber") or active_chain.get("name", "")).lower().strip()
+
                 has_active_dagger = False
                 for item in equip_list:
                     if not isinstance(item, dict):
                         continue
-                    if item.get("status", 1) == 0 or item.get("broken", False) or item.get("isBroken", False) or item.get("destroyed", False) or item.get("overlay", 0) == 1:
+                    if (
+                        item.get("status", 1) == 0
+                        or item.get("broken", False)
+                        or item.get("isBroken", False)
+                        or item.get("destroyed", False)
+                        or item.get("overlay", 0) == 1
+                        or item.get("onChain", False)
+                    ):
                         continue
                     c_id = str(item.get("cardNumber", "")).lower().strip()
+                    c_name_val = str(item.get("name", "")).lower().strip()
+                    # A adaga no elo ativo não pode ser alvo de Flick Knives!
+                    if atk_card_name and (c_id == atk_card_name or c_name_val == atk_card_name):
+                        continue
                     sub = str(item.get("subType", item.get("subtype", ""))).lower()
                     meta_sub = str(cards_db.get(c_id, {}).get("subtype", "")).lower() if cards_db else ""
-                    if "dagger" in sub or "dagger" in meta_sub or c_id in (
-                        "spider's_bite", "harmonized_kodachi", "kunai_of_retribution",
+                    if not meta_sub and cards_db:
+                        meta_sub = str(cards_db.get(c_name_val, {}).get("subtype", "")).lower()
+                    if "dagger" in sub or "dagger" in meta_sub or "dagger" in c_name_val or c_id in (
+                        "spider's_bite", "spiders_bite", "harmonized_kodachi", "kunai_of_retribution",
                         "hunters_klaive", "nerve_scalpel", "orbitoclast", "scale_peeler",
-                        "obsidian_fire_vein", "mark_of_the_huntsman"
+                        "obsidian_fire_vein", "mark_of_the_huntsman", "claw_of_vynserakai"
                     ):
                         has_active_dagger = True
                         break

@@ -436,6 +436,153 @@ def download_release(tag: str = "latest"):
         print("     -> Copie 'fab_ai_checkpoint_bundle.tar.gz' para esta máquina e execute:")
         print("        python3 scripts/manage_state.py --import fab_ai_checkpoint_bundle.tar.gz")
 
+def clean_training_state(
+    backup: bool = True,
+    include_buffer: bool = True,
+    include_metrics: bool = True,
+    include_sim2real: bool = True,
+    backup_path: str = None
+) -> dict:
+    """
+    Limpa de forma atômica e segura os artefatos de treinamento (replay buffer,
+    métricas/épocas e anomalias de divergência Sim2Real), opcionalmente criando
+    um backup consolidado em .tar.gz antes da remoção.
+    """
+    print("==================================================")
+    print("   LIMPEZA E RESET DO ESTADO DE TREINAMENTO      ")
+    print("==================================================")
+
+    summary = {
+        "backup_created": None,
+        "buffer_cleared": False,
+        "trajectories_cleared": 0,
+        "metrics_reset": False,
+        "sim2real_log_cleared": False,
+        "sim2real_db_records_cleared": 0,
+    }
+
+    files_to_backup = []
+
+    # 1. Identificar arquivos
+    buffer_file = os.path.join(DATA_DIR, "replay_buffer.npz")
+    trajectories_dir = os.path.join(DATA_DIR, "trajectories")
+    metrics_file = os.path.join(DATA_DIR, "training_metrics.json")
+    stats_file = os.path.join(DATA_DIR, "training_stats.json")
+    sim2real_log = os.path.join(BASE_DIR, "logs", "sim2real_anomalies.jsonl")
+
+    if include_buffer and os.path.exists(buffer_file):
+        files_to_backup.append((buffer_file, "data/replay_buffer.npz"))
+    if include_buffer and os.path.exists(trajectories_dir):
+        for fname in os.listdir(trajectories_dir):
+            if fname.endswith(".npz"):
+                fpath = os.path.join(trajectories_dir, fname)
+                files_to_backup.append((fpath, f"data/trajectories/{fname}"))
+
+    if include_metrics and os.path.exists(metrics_file):
+        files_to_backup.append((metrics_file, "data/training_metrics.json"))
+    if include_metrics and os.path.exists(stats_file):
+        files_to_backup.append((stats_file, "data/training_stats.json"))
+
+    if include_sim2real and os.path.exists(sim2real_log):
+        files_to_backup.append((sim2real_log, "logs/sim2real_anomalies.jsonl"))
+
+    # 2. Realizar Backup se solicitado
+    if backup and files_to_backup:
+        backups_dir = os.path.join(DATA_DIR, "backups")
+        os.makedirs(backups_dir, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        target_backup = backup_path or os.path.join(backups_dir, f"training_state_backup_{ts}.tar.gz")
+
+        with tarfile.open(target_backup, "w:gz") as tar:
+            for src, arc in files_to_backup:
+                tar.add(src, arcname=arc)
+                print(f"  + Backup: {arc} ({format_size(os.path.getsize(src))})")
+        print(f"[OK] Backup consolidado salvo em: {target_backup} ({format_size(os.path.getsize(target_backup))})")
+        summary["backup_created"] = target_backup
+    elif backup:
+        print("  [*] Nenhum arquivo existente para backup.")
+
+    # 3. Limpeza do Replay Buffer e Trajetórias
+    if include_buffer:
+        if os.path.exists(buffer_file):
+            try:
+                os.remove(buffer_file)
+                print("  ✓ Replay buffer removido: data/replay_buffer.npz")
+                summary["buffer_cleared"] = True
+            except Exception as e:
+                print(f"  ✗ Falha ao remover replay_buffer.npz: {e}")
+
+        if os.path.exists(trajectories_dir):
+            cleared_trajs = 0
+            for fname in os.listdir(trajectories_dir):
+                if fname.endswith(".npz"):
+                    try:
+                        os.remove(os.path.join(trajectories_dir, fname))
+                        cleared_trajs += 1
+                    except Exception:
+                        pass
+            if cleared_trajs > 0:
+                print(f"  ✓ {cleared_trajs} arquivos transitórios de trajetória removidos em data/trajectories/")
+            summary["trajectories_cleared"] = cleared_trajs
+
+    # 4. Reset das Métricas e Épocas
+    if include_metrics:
+        clean_metrics = {
+            "total_games": 0,
+            "samples_collected": 0,
+            "epochs_completed": 0,
+            "policy_loss": 0.0,
+            "value_loss": 0.0,
+            "total_loss": 0.0,
+            "active_matchup": "none",
+            "last_summary": "Estado e métricas resetados.",
+            "history": []
+        }
+        try:
+            with open(metrics_file, "w", encoding="utf-8") as f:
+                json.dump(clean_metrics, f, indent=2)
+            print("  ✓ data/training_metrics.json resetado para épocas=0, samples=0, loss=0.0")
+            summary["metrics_reset"] = True
+        except Exception as e:
+            print(f"  ✗ Falha ao resetar training_metrics.json: {e}")
+
+        clean_stats = {
+            "total_matches": 0,
+            "recent_matches": [],
+            "bot1_elo": 1200,
+            "bot2_elo": 1200
+        }
+        try:
+            with open(stats_file, "w", encoding="utf-8") as f:
+                json.dump(clean_stats, f, indent=2)
+            print("  ✓ data/training_stats.json resetado para Elo padrão 1200")
+        except Exception as e:
+            print(f"  ✗ Falha ao resetar training_stats.json: {e}")
+
+    # 5. Limpeza de Divergências Sim2Real
+    if include_sim2real:
+        if os.path.exists(sim2real_log):
+            try:
+                os.remove(sim2real_log)
+                print("  ✓ Arquivo de log logs/sim2real_anomalies.jsonl limpo")
+                summary["sim2real_log_cleared"] = True
+            except Exception as e:
+                print(f"  ✗ Falha ao remover sim2real_anomalies.jsonl: {e}")
+
+        try:
+            sys.path.insert(0, BASE_DIR)
+            from stats.db import clear_sim2real_anomalies
+            del_count = clear_sim2real_anomalies()
+            print(f"  ✓ {del_count} anomalias Sim2Real expurgadas do SQLite (talishar_stats.db)")
+            summary["sim2real_db_records_cleared"] = del_count
+        except Exception as e:
+            print(f"  ✗ Falha ao expurgar tabela sim2real_anomalies do SQLite: {e}")
+
+    print("--------------------------------------------------")
+    print("[OK] Limpeza e reset de estado concluídos com sucesso!")
+    print("==================================================")
+    return summary
+
 def main():
     parser = argparse.ArgumentParser(description="Gerenciador de Estado e Checkpoints do FaB Talishar AI")
     parser.add_argument("--info", action="store_true", help="Exibe informações do estado e checkpoints atuais")
@@ -447,9 +594,23 @@ def main():
     parser.add_argument("--auto-release", action="store_true", help="Chamado pelo hook post-commit: publica se o checkpoint foi alterado")
     parser.add_argument("--install-hook", action="store_true", help="Instala o hook post-commit para upload automático em git commit")
     parser.add_argument("--uninstall-hook", action="store_true", help="Remove o hook post-commit")
+    parser.add_argument("--clean-training", "--clean", dest="clean_training", action="store_true", help="Limpa o replay buffer, reseta métricas/épocas e anomalias sim2real")
+    parser.add_argument("--no-backup", action="store_true", help="Não cria arquivo .tar.gz de backup antes de limpar")
+    parser.add_argument("--backup-path", help="Caminho customizado para salvar o arquivo de backup")
+    parser.add_argument("--skip-sim2real", action="store_true", help="Não limpa os registros e logs de divergências Sim2Real")
+    parser.add_argument("--skip-metrics", action="store_true", help="Não reseta as épocas e métricas de treinamento")
+    parser.add_argument("--skip-buffer", action="store_true", help="Não remove o arquivo de replay buffer")
     args = parser.parse_args()
 
-    if args.init_checkpoint:
+    if args.clean_training:
+        clean_training_state(
+            backup=not args.no_backup,
+            include_buffer=not args.skip_buffer,
+            include_metrics=not args.skip_metrics,
+            include_sim2real=not args.skip_sim2real,
+            backup_path=args.backup_path,
+        )
+    elif args.init_checkpoint:
         init_checkpoint()
     elif args.install_hook:
         install_git_hook()

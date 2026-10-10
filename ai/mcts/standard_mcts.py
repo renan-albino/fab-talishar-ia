@@ -106,18 +106,22 @@ class MCTSEngine:
         num_simulations: int = 25,
         training_mode: bool = False,
         state_vec: Optional[np.ndarray] = None,
+        adaptive_budget: bool = True,
+        delta_eval: Optional[float] = None,
+        is_critical: Optional[bool] = None,
     ) -> Tuple[int, np.ndarray]:
         """
-        Busca MCTS com batch leaf evaluation.
+        Busca MCTS com batch leaf evaluation e orçamento adaptativo.
 
         Fluxo:
           1. Avaliar estado raiz (1 forward pass).
-          2. Expandir raiz com Prior Threshold Pruning.
-          3. [Opcional] Adicionar Dirichlet na raiz (treino).
-          4. Para cada simulação: Progressive Widen → Selecionar folha.
-          5. Batch evaluate TODAS as folhas com 1 único forward pass.
-          6. Backpropagate todos os resultados.
-          7. Selecionar ação por temperatura.
+          2. [Opcional] Calcular orçamento adaptativo de simulações.
+          3. Expandir raiz com Prior Threshold Pruning.
+          4. [Opcional] Adicionar Dirichlet na raiz (treino).
+          5. Para cada simulação: Progressive Widen → Selecionar folha.
+          6. Batch evaluate TODAS as folhas com 1 único forward pass.
+          7. Backpropagate todos os resultados.
+          8. Selecionar ação por temperatura.
 
         Returns:
             best_action_idx : Índice em `legal_actions` da melhor ação.
@@ -131,6 +135,18 @@ class MCTSEngine:
         if state_vec is None:
             state_vec = FaBPolicyValueNetwork.extract_state_vector(state)
         priors, base_value = self._evaluate(state_vec)
+
+        # ── Orçamento Adaptativo de MCTS ───────────────────────────
+        if adaptive_budget and num_simulations > 0:
+            from .ismcts import calculate_adaptive_mcts_budget
+            num_simulations = calculate_adaptive_mcts_budget(
+                base_sims=num_simulations,
+                legal_actions=legal_actions,
+                priors=priors,
+                delta_eval=delta_eval,
+                state=state,
+                is_critical=is_critical,
+            )
 
         # ── 2. Expandir raiz com Prior Threshold Pruning ──────────
         root = MCTSNode(prior=1.0)

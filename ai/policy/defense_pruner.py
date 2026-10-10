@@ -43,10 +43,17 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     # Identificar se o ataque vem de um Aliado (ex: Riggermortis, Sawbones, Anka, Chum, Scooba)
     is_ally_incoming = any(a_name in incoming_name for a_name in ["riggermortis", "sawbones", "anka", "chum", "scooba"]) or arena_ctx.has_opponent_allies
 
+    raw_turn = state.get("turnNo") if "turnNo" in state else state.get("currentTurn")
+    is_first_turn_of_game = bool(
+        raw_turn is not None
+        and int(raw_turn) <= 1
+        and int(state.get("turnPlayer", 1)) != int(state.get("playerID", 2))
+    )
+
     is_fatal = (my_hp - opp_power) <= 0
     from .on_hit_evaluator import estimate_on_hit_value
     on_hit_ev = estimate_on_hit_value(incoming_name, state)
-    if not is_fatal and my_hp > 4 and on_hit_ev > 0 and not is_ally_incoming:
+    if not is_fatal and my_hp > 4 and on_hit_ev > 0 and not is_ally_incoming and not is_first_turn_of_game:
         import math
         cards_needed = math.ceil(opp_power / 3.0)
         offensive_value_lost = cards_needed * 3.5
@@ -121,6 +128,15 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         # na End Phase. Pivotar ou reter cartas na mão é fútil; usar a mão para defender.
         turn_plan.can_absorb_damage = False
 
+    if is_first_turn_of_game and turn_plan:
+        # Turno 0 (CR 4.4.3f): Ambos os jogadores compram até o Intelecto no fim do turno.
+        # Desativar absorção cega e planos de pivot/tempo.
+        turn_plan.can_absorb_damage = False
+        if getattr(turn_plan, "plan_type", None) == "TEMPO_COUNTER_ATTACK":
+            turn_plan.plan_type = "SELECTIVE_BLOCK_TURN_0"
+            turn_plan.reserved_card_names.clear()
+            turn_plan.key_cards.clear()
+
     # Contagem dinâmica de cartas Runegate na mão
     runegate_in_hand = sum(
         1 for hc in hand
@@ -182,8 +198,14 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             info["name"] in turn_plan.reserved_card_names
             or c_clean_name in turn_plan.reserved_card_names
             or any(r.lower() == c_clean_name for r in turn_plan.reserved_card_names)
+            or (c_clean_name in getattr(turn_plan, "key_cards", set()))
         )
-        if is_reserved and turn_plan.can_absorb_damage and not is_phantasm_popper:
+        if is_first_turn_of_game and not has_inertia:
+            # Turno 0: Preservar apenas cartas verdadeiramente insubstituíveis (peça única de combo),
+            # enquanto todas as demais cartas da mão bloqueiam até cobrir opp_power.
+            if is_reserved and not is_phantasm_popper:
+                score -= 150.0
+        elif is_reserved and turn_plan.can_absorb_damage and not is_phantasm_popper:
             # Se o plano determinou absorver dano para pivotar, peças reservadas
             # NUNCA bloqueiam a menos que estejamos sob risco letal iminente
             if my_hp > 6 and not (has_dangerous_on_hit and opp_power >= my_hp):
@@ -191,11 +213,11 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
 
         # ── Custo de Oportunidade Dinâmico de Bloqueio (Felt Table & AI Unsheathed)
         opp_cost = 0.0
-        if hasattr(engine.strategy, "calculate_card_opportunity_cost"):
+        if not is_first_turn_of_game and hasattr(engine.strategy, "calculate_card_opportunity_cost"):
             avail_fl, _ = engine.calculate_available_resources(state)
             opp_cost = engine.strategy.calculate_card_opportunity_cost(hand, c, floating_res=avail_fl)
 
-        if opp_cost > 0 and not is_phantasm_popper and not has_inertia:
+        if opp_cost > 0 and not is_phantasm_popper and not has_inertia and not is_first_turn_of_game:
             absorb_mult = engine.strategy.get_dynamic_multiplier("absorb_tempo_bonus", 1.0)
             score -= opp_cost * 1.5 * absorb_mult
             is_catastrophic = on_hit_threat >= 8.0 or (my_hp - opp_power) <= 0
@@ -205,15 +227,15 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         # ── Poda de Preservação de Mão Ofensiva:
         # Se temos vida alta (> 20) e o ataque inimigo é fraco (<= 2 sem on-hit),
         # penaliza queimar cartas vermelhas de ataque chave (power >= 4 e pitch == 1)
-        if not has_inertia and my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2 and not is_phantasm_popper:
+        if not is_first_turn_of_game and not has_inertia and my_hp > 20 and not has_dangerous_on_hit and opp_power <= 2 and not is_phantasm_popper:
             if info["power"] >= 4 and info["pitch"] == 1:
                 score -= 5.0
 
-        if is_early_chain_no_onhit:
+        if is_early_chain_no_onhit and not is_first_turn_of_game and my_hp > 10:
             score -= 4.0
 
         # ── Poda de Tempo Pivot e Reserva Estrita de Pitch Crítico:
-        if not has_inertia and (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
+        if not is_first_turn_of_game and not has_inertia and (is_heavy_hero or turn_plan.can_absorb_damage) and my_hp >= 8 and not has_dangerous_on_hit:
             if info["pitch"] == 1 and info["power"] >= 6 and not has_phantasm:
                 score -= 25.0  # Nunca bloqueia com a bomba de ataque de Pivot (a menos que estoure Phantasm!)
             elif hasattr(engine.strategy, "is_critical_pitch_resource") and engine.strategy.is_critical_pitch_resource(info, hand, state) and not is_phantasm_popper:
@@ -234,11 +256,15 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
             score += 3.0
 
-        hand_cost = 3.5 + opp_cost
-        if is_reserved:
-            hand_cost = 25.0
-        elif info["power"] >= 5 or (info["pitch"] == 1 and info["power"] >= 4):
-            hand_cost = 5.0 + opp_cost
+        if is_first_turn_of_game:
+            # No Turno 0 (CR 4.4.3f), recompra até o Intelecto: cartas normais da mão têm custo 0
+            hand_cost = 25.0 if is_reserved else 0.0
+        else:
+            hand_cost = 3.5 + opp_cost
+            if is_reserved:
+                hand_cost = 25.0
+            elif info["power"] >= 5 or (info["pitch"] == 1 and info["power"] >= 4):
+                hand_cost = 5.0 + opp_cost
 
         if score > -100.0 and info["block"] > 0:
             block_candidates.append({
@@ -411,8 +437,17 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
 
         has_active_ability = bool(db_entry.get("ability_cost") is not None or any(k in eq_name for k in [
             "goliath_gauntlet", "heartened_cross_strap", "snapdragon_scalers",
-            "fyendals_spring_tunic", "scabskin_leathers", "barkbone_strapping", "tunic"
+            "fyendals_spring_tunic", "scabskin_leathers", "barkbone_strapping", "tunic",
+            "boots_of_omnis_ward", "flick_knives", "omniward"
         ]))
+
+        if is_first_turn_of_game:
+            # Proibir ativação de habilidades de armadura no vazio (boots_of_omnis_ward, flick_knives, etc.) no Turno 0
+            if (has_bb and has_active_ability) or any(k in eq_name for k in [
+                "boots_of_omnis_ward", "flick_knives", "omniward", "cross_strap",
+                "snapdragon", "goliath_gauntlet", "scabskin_leathers", "tunic"
+            ]):
+                continue
 
         eq_cost = 3.5
         eq_score = float(effective_block) * 3.0
@@ -505,7 +540,8 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         has_dominate=has_dominate,
         has_overpower=has_overpower,
         has_piercing=has_piercing,
-        turn_plan=turn_plan
+        turn_plan=turn_plan,
+        is_first_turn_of_game=is_first_turn_of_game,
     )
     if knapsack_result:
         return knapsack_result
@@ -551,7 +587,9 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
     current_blocked = 0
 
     # Limite máximo de cartas da MÃO para bloquear
-    if my_hp <= 6 or arena_ctx.is_lethal_danger or (has_dangerous_on_hit and opp_power >= my_hp):
+    if is_first_turn_of_game:
+        max_hand_blocks = len(block_candidates)
+    elif my_hp <= 8 or arena_ctx.is_lethal_danger or (has_dangerous_on_hit and opp_power >= my_hp) or (my_hp <= 10 and has_go_again and opp_hand_count_eval >= 1):
         max_hand_blocks = len(block_candidates)  # Modo Sobrevivência (Bloqueio total)
     elif turn_plan.plan_type in ("DEFENSIVE_TRAP", "FULL_DEFENSE", "DEFENSIVE"):
         max_hand_blocks = min(int(getattr(turn_plan, "max_block_cards", 2)), len(block_candidates))
@@ -596,11 +634,11 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             continue
 
         # Poda de Bloqueio Ineficiente com Block <= 2 quando o plano é absorver dano:
-        if turn_plan.can_absorb_damage and not is_equip and item["block"] <= 2 and my_hp > 12 and not is_popper:
+        if not is_first_turn_of_game and turn_plan.can_absorb_damage and not is_equip and item["block"] <= 2 and my_hp > 12 and not is_popper:
             continue
 
         # Poda de Bloqueio Ineficiente: Não bloqueia se score for muito negativo com HP alto
-        if not has_inertia and my_hp > 15 and item["score"] < 0 and not has_dangerous_on_hit and not is_popper:
+        if not is_first_turn_of_game and not has_inertia and my_hp > 15 and item["score"] < 0 and not has_dangerous_on_hit and not is_popper:
             continue
 
         # Bloodrot Pox (CR 8.6.20): Prevenção de morte por dano de Bloodrot na End Phase
@@ -634,7 +672,7 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         # ── Defesa Mínima Viável (FaB Minimum Viable Defense / Preservação de Contra-Ataque) ──
         remaining_dmg = max(0, opp_power - current_blocked)
         projected_hp = my_hp - remaining_dmg
-        if current_blocked > 0 and turn_plan.plan_type not in ("DEFENSIVE_TRAP", "FULL_DEFENSE"):
+        if not is_first_turn_of_game and current_blocked > 0 and turn_plan.plan_type not in ("DEFENSIVE_TRAP", "FULL_DEFENSE"):
             remaining_hand = len(hand) - hand_blocks_count
             # Se o ataque ameaça destruir Arsenal mas não temos cartas no Arsenal, o on-hit é inócuo
             arsenal_cards = state.get("playerArsenal") or state.get("playerArse") or []
@@ -642,7 +680,9 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
                 any(k in incoming_name for k in ["command_and_conquer", "leave_no_witnesses", "wreck_havoc", "eradicate"])
                 and len(arsenal_cards) == 0
             )
-            if projected_hp >= 2 and remaining_hand <= 1 and not is_real_on_hit:
+            # Não aborta bloqueio para preservar mão se o oponente tem Go-Again e cartas na mão quando estamos em zona de risco (my_hp <= 10)
+            is_chain_threat = (has_go_again and opp_hand_count_eval >= 1) or (opp_power >= my_hp - 2)
+            if projected_hp >= 2 and remaining_hand <= 1 and not is_real_on_hit and not (my_hp <= 10 and is_chain_threat):
                 # Preserva a última carta da mão para poder dar pitch / jogar ação ofensiva
                 break
             elif projected_hp >= 1 and opp_hp <= 4 and remaining_hand <= 1:

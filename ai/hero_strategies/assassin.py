@@ -106,7 +106,22 @@ class ArakniMarionetteStrategy(AssassinStrategy):
             eq_name = str(state_or_name or "").lower()
 
         if "flick_knives" in eq_name:
-            # Arremessar adaga na Reaction Step é a finalização perfeita de Arakni Marionette
+            # Arremessar adaga na Reaction Step só é válido se houver adaga pronta fora da cadeia ativa
+            if isinstance(state_or_name, dict):
+                equips = state_or_name.get("playerEquipment", [])
+                has_valid_dagger = False
+                for it in equips:
+                    if not isinstance(it, dict):
+                        continue
+                    if it.get("status", 1) == 0 or it.get("broken") or it.get("isBroken") or it.get("overlay", 0) == 1 or it.get("onChain"):
+                        continue
+                    cid = str(it.get("cardNumber", "")).lower()
+                    sub = str(it.get("subType", it.get("subtype", ""))).lower()
+                    if "dagger" in sub or "dagger" in cid or cid in ("claw_of_vynserakai", "harmonized_kodachi", "kunai_of_retribution", "spiders_bite", "spider's_bite"):
+                        has_valid_dagger = True
+                        break
+                if not has_valid_dagger:
+                    return 0.0
             return 18.0
         elif "blacktek_whisperers" in eq_name:
             return 14.0  # Concede Go Again ao ataque de adaga/contrato

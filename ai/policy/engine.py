@@ -165,3 +165,24 @@ class PolicyEngine:
     def select_arsenal_card(self, state: dict) -> Optional[Tuple[str, str]]:
         """Seleciona a melhor carta para o Arsenal respeitando a proibição de pitch e modo cavar."""
         return select_arsenal_card(self, state)
+
+    def calculate_adaptive_budget(
+        self,
+        state: dict,
+        legal_actions: List[dict],
+        base_sims: Optional[int] = None,
+        delta_eval: Optional[float] = None,
+        priors: Optional[Any] = None,
+        is_critical: Optional[bool] = None,
+    ) -> int:
+        """Calcula o orçamento adaptativo de simulações MCTS/ISMCTS para a decisão atual."""
+        from ..mcts.ismcts import calculate_adaptive_mcts_budget
+        ref_sims = base_sims if base_sims is not None else self.num_mcts_sims
+        return calculate_adaptive_mcts_budget(
+            base_sims=ref_sims,
+            legal_actions=legal_actions,
+            priors=priors,
+            delta_eval=delta_eval,
+            state=state,
+            is_critical=is_critical,
+        )

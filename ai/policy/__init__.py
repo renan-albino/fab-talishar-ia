@@ -22,6 +22,7 @@ from .card_evaluator import (
     get_all_known_zone_cards,
 )
 from .attack_pruner import select_best_attack
+from .go_again_resolver import resolve_attack_go_again, is_draconic_card
 from .defense_pruner import select_defense_blocks
 from .pitch_pruner import select_best_pitch_card
 from .arsenal_pruner import select_arsenal_card
@@ -43,6 +44,8 @@ __all__ = [
     "get_weapon_cost",
     "get_all_known_zone_cards",
     "select_best_attack",
+    "resolve_attack_go_again",
+    "is_draconic_card",
     "select_defense_blocks",
     "select_best_pitch_card",
     "select_arsenal_card",

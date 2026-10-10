@@ -9,8 +9,8 @@ Ele serve como referência para os agentes de IA entenderem exatamente quais mud
 
 | Repositório | Repositório Remoto | Commit SHA Atual | Data do Commit | Status Local |
 | :--- | :--- | :--- | :--- | :--- |
-| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `0a6078151` (`0a607815173abf16f7e345bb1714a9658693eecd`) | 2026-10-06 | ✅ Sincronizado + Patches Aplicados |
-| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `b84081c0e` (`b84081c0eb25b71d6d2ddca067cf570e3993b4b7`) | 2026-10-06 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar (Backend)** | `https://github.com/Talishar/Talishar.git` | `8de9ddfc3` (`8de9ddfc3cba0632fad793fd45cff05888336d96`) | 2026-10-07 | ✅ Sincronizado + Patches Aplicados |
+| **Talishar-FE (Frontend)** | `https://github.com/Talishar/Talishar-FE.git` | `ffc19dd90` (`ffc19dd905778d3678bbbd2a8a8c25653010525f`) | 2026-10-07 | ✅ Sincronizado + Patches Aplicados |
 
 ---
 
@@ -24,6 +24,150 @@ Quando o Talishar oficial atualizar:
 ---
 
 ## 🕒 Histórico de Sincronizações
+
+### 🔄 Sincronização em 2026-10-07 22:07:14
+
+#### Talishar Backend
+- **Transição de Versão**: `0a6078151` (2026-10-06) ➔ `8de9ddfc3` (2026-10-07)
+- **Novos commits incorporados**: 15
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Banco fab_cards_db.json reindexado
+- **Hotfixes e Compatibilidade Aplicados**:
+  - `Libraries/CacheLibraries.php` & `ProcessInput.php`: Corrigido erro fatal `Cannot redeclare _apcuAvailable()` tornando `include` em `include_once` e inserindo idempotency guard no topo de `CacheLibraries.php`.
+  - `Libraries/PlayerSettings.php`: Removida duplicata de `FormatCode()` / `FormatName()` que colidia com `Libraries/FormatCodes.php`.
+  - `APIs/JoinGame.php`: Removido ban incorreto de `Brand with Cinderclaw` no Classic Constructed.
+  - `Talishar-FE/.../StickyFooter.tsx`: Restaurado suporte aos botões de confirmação de equipamento (fase 1) e deck (fase 2) no lobby.
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `8de9ddfc3` (2026-10-07 por **OotTheMonk**) — Merge pull request #1428 from Talishar/Game-log-in-memory
+* `a57f0e770` (2026-10-07 por **OotTheMonk**) — Merge branch 'main' into Game-log-in-memory
+* `d72be7158` (2026-10-07 por **PvtVoid**) — Remove all stuff related to prompt. Project is done
+* `a52ec359e` (2026-10-07 por **PvtVoid**) — Puzzles updates
+* `4c57f900b` (2026-10-07 por **Paul Gibby**) — enable outbreak
+* `7d79e8230` (2026-10-07 por **OotTheMonk**) — Put game log in memory
+* `c64184e1a` (2026-10-07 por **PvtVoid**) — Add Unpreventable icon
+* `4cdb34a54` (2026-10-07 por **OotTheMonk**) — Merge branch 'main' of https://github.com/Talishar/Talishar
+* `57ab1f3f7` (2026-10-07 por **OotTheMonk**) — Start logging APCu game sentinels to hopefully avoid full directory scans
+* `077eaf118` (2026-10-07 por **Paul Gibby**) — better fix for coprse cover going to grave
+* `07abbdc60` (2026-10-07 por **Paul Gibby**) — fix copper cogs not going to grave
+* `563ac45e6` (2026-10-07 por **Paul Gibby**) — remove more token stealers from autoChoose
+* `5542a4094` (2026-10-07 por **Paul Gibby**) — remove thespian charm from autoChooseAllSameContexts
+* `7ca76ab4f` (2026-10-07 por **Paul Gibby**) — add a failsafe to catch activated abilities going to graveyard
+* `e54af0ea0` (2026-10-07 por **Paul Gibby**) — fix long whisker loyalty mark not going away on hit
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `AI/PlayerMacros.php`
+- `APIs/ClearPromptStats.php`
+- `APIs/CreateGame.php`
+- `APIs/CreateReplayGame.php`
+- `APIs/CreateSharedReplayGame.php`
+- `APIs/CreateSnapshotGame.php`
+- `APIs/GetGameListV2.php`
+- `APIs/GetPromptStats.php`
+- `APIs/JoinGame.php`
+- `APIs/SubmitSideboard.php`
+- `BuildGameState.php`
+- `BuildPlayerInputPopup.php`
+- `Classes/CardObjects/HNTCards.php`
+- `Classes/CardObjects/IARCards.php`
+- `Classes/CardObjects/MPACards.php`
+- `CoreLogic.php`
+- `CreateReplayGame.php`
+- `Database/migrations/017_create_prompt_stats.sql`
+- `Database/migrations/023_drop_prompt_stats.sql`
+- `GetUpdateSSE.php`
+- *(e mais 20 arquivos...)*
+
+</details>
+
+#### Talishar Frontend
+- **Transição de Versão**: `b84081c0e` (2026-10-06) ➔ `ffc19dd90` (2026-10-07)
+- **Novos commits incorporados**: 43
+- **Ações automáticas executadas**: Código upstream atualizado via fast-forward, Templates customizados reaplicados, Frontend Vite recompilado
+
+<details>
+<summary><b>Clique para ver a lista de commits incorporados</b></summary>
+
+* `ffc19dd` (2026-10-07 por **PvtVoid**) — Remove all stuff related to prompt. Project is done
+* `472de39` (2026-10-07 por **PvtVoid**) — Puzzles updates
+* `680b081` (2026-10-07 por **PvtVoid**) — Allow for rust counters ads to load early before the user click on it. To help with fill %
+* `90a942e` (2026-10-07 por **PvtVoid**) — Merge pull request #812 from Blighting/fix/fan-two-state-hand
+* `6af892d` (2026-10-07 por **PvtVoid**) — Update profile page style
+* `f79e49f` (2026-10-07 por **PvtVoid**) — GiOpenWound was nicer
+* `98308a5` (2026-10-07 por **Evgeny**) — Make the fanned hand two-state: raised and hovered
+* `a2cbd8b` (2026-10-07 por **PvtVoid**) — Add Unpreventable icon
+* `ddf1195` (2026-10-07 por **PvtVoid**) — Merge pull request #811 from Blighting/fix/fan-pitch-stay-up
+* `48987cd` (2026-10-07 por **Evgeny**) — Keep the fanned hand raised while pitching
+* `948c6ce` (2026-10-07 por **PvtVoid**) — Merge branch 'main' of https://github.com/Talishar/Talishar-FE
+* `6705ee0` (2026-10-07 por **PvtVoid**) — Merge pull request #810 from Blighting/fix/fan-unhover-at-hero
+* `acb75ec` (2026-10-07 por **Evgeny**) — Remove the new fanned hand animations on unusable cards
+* `dc5852f` (2026-10-07 por **PvtVoid**) — Fix gameList new pill
+* `b26c01f` (2026-10-07 por **Evgeny**) — Drop the fanned hand hover at the hero and weapon row
+* `0b7179b` (2026-10-07 por **OotTheMonk**) — Try using V2 API for loading games
+* `76a56bf` (2026-10-07 por **PvtVoid**) — Merge pull request #808 from Blighting/feat/phone-effects-under-equipment
+* `cb728ca` (2026-10-07 por **PvtVoid**) — Merge pull request #807 from Blighting/fix/fan-idle-no-slide
+* `4a041d1` (2026-10-07 por **Evgeny**) — Merge main into feat/phone-effects-under-equipment
+* `a37c2c8` (2026-10-07 por **Evgeny**) — Merge main into fix/fan-idle-no-slide
+* `79ccc4e` (2026-10-07 por **PvtVoid**) — Merge pull request #809 from Blighting/fix/i18n-lint-test-strings
+* `4c759c2` (2026-10-07 por **Evgeny**) — Stop the fanned hand cards from tilting on hover
+* `bf40f3a` (2026-10-07 por **Evgeny**) — Soften the hand dim and calm the fanned hover
+* `52dbada` (2026-10-07 por **Evgeny**) — Use test ids in the home page tests so the i18n lint passes
+* `c3b8bd9` (2026-10-07 por **Evgeny**) — Show the player's effects under their equipment on phone portrait
+* `c95095d` (2026-10-07 por **Evgeny**) — Keep the fanned hand in place when priority changes
+* `3c65885` (2026-10-07 por **OotTheMonk**) — Another CLS/LCP improvement
+* `3b04f35` (2026-10-07 por **OotTheMonk**) — Reduce loading jitter
+* `9d9a6bb` (2026-10-07 por **PvtVoid**) — Merge pull request #806 from Blighting/fix/fan-playable-glow
+* `b4f22ef` (2026-10-07 por **Evgeny**) — Stop the fanned hand return ghost from flinging off-screen
+* `36fb116` (2026-10-07 por **Evgeny**) — Remove test changes from the fanned hand mobile PR
+* `fc42e9d` (2026-10-07 por **Evgeny**) — Preview fanned hand cards on touch by lifting them like PC hover
+* `54fc36e` (2026-10-07 por **Evgeny**) — Drop the white glow from the fanned hand playable flash
+* `98f10bc` (2026-10-07 por **PvtVoid**) — Merge pull request #805 from Blighting/feat/sts-hand
+* `a1898fa` (2026-10-07 por **Evgeny**) — Keep a fanned hand card hovered while the pointer is inside it
+* `38300e9` (2026-10-07 por **Evgeny**) — Make the fanned hand opt-in and keep main's hand logic when it is off
+* `523ce87` (2026-10-07 por **Evgeny**) — Unlock the hand when the play lands and use the fan in portrait
+* `01a85a5` (2026-10-07 por **Evgeny**) — Make the new hand optional behind the Fanned hand setting
+* `d59db15` (2026-10-06 por **Evgeny**) — Remove test changes from the hand PR
+* `67f8c1e` (2026-10-06 por **Evgeny**) — Queue fast block clicks and treat small mouse moves as clicks
+* `8a1892d` (2026-10-06 por **Evgeny**) — Keep the hand lifted when blocking card by card
+* `9ab63bf` (2026-10-06 por **Evgeny**) — Grow hovered hand cards by layout size and drop the hand like LoR
+* `7c76c01` (2026-10-06 por **Evgeny**) — Add a fanned hand with hover lift, drag-to-play line and stable card ids
+
+</details>
+
+<details>
+<summary><b>Arquivos principais alterados upstream</b></summary>
+
+- `public/locales/en/translation.json`
+- `public/locales/fr/translation.json`
+- `public/locales/ja/translation.json`
+- `public/locales/zh/translation.json`
+- `src/app/ParseGameState.ts`
+- `src/appConstants.ts`
+- `src/components/ImageSelect/ImageSelect.module.css`
+- `src/components/ImageSelect/ImageSelect.tsx`
+- `src/components/LoadingSkeleton/LoadingSkeleton.module.css`
+- `src/components/LoadingSkeleton/LoadingSkeleton.tsx`
+- `src/components/header/Header.test.tsx`
+- `src/components/header/Header.tsx`
+- `src/features/CombatChainLink.ts`
+- `src/features/GameState.ts`
+- `src/features/api/apiSlice.ts`
+- `src/features/game/GameSlice.ts`
+- `src/features/settings/settingsRegistry.ts`
+- `src/index.tsx`
+- `src/interface/API/ModPageAPI.ts`
+- `src/routes/game/components/activeEffects/ActiveEffects.module.css`
+- *(e mais 54 arquivos...)*
+
+</details>
+
+
+---
 
 ### 🔄 Sincronização em 2026-10-06 23:09:56
 

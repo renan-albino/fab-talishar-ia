@@ -78,7 +78,7 @@ const IndexGuard = ({ children }: { children: JSX.Element }) => {
     return (
       <Navigate
         to={{
-          pathname: '/game/play',
+          pathname: `/game/lobby/${searchParams.gameName}`,
           search: createSearchParams(searchParams).toString()
         }}
         replace={true}

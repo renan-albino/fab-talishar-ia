@@ -266,6 +266,7 @@ class GPUTrainingOrchestrator:
             py_bin = sys.executable
 
         games_since_save = 0
+        last_saved_epoch = self.stats.get("epochs_completed", 0)
 
         while self.is_running:
             cfg = self.config
@@ -336,6 +337,7 @@ class GPUTrainingOrchestrator:
                             r0 = batch_rooms[0]
                             extra_label = f" (+{len(batch_rooms)-1} partidas)" if len(batch_rooms) > 1 else ""
                             self.stats["active_matchup"] = f"{r0[1]} vs {r0[2]}{extra_label} (Headless)"
+                            print(f"[Treinador] ⚔️ Lote Headless: {len(batch_rooms)} partidas | Pareamento: {self.stats['active_matchup']}", flush=True)
 
                         # Espera a conclusão
                         for future in concurrent.futures.as_completed(futures):
@@ -351,6 +353,7 @@ class GPUTrainingOrchestrator:
                 num_finished = len(futures)
                 self.stats["total_games"] += num_finished
                 games_since_save += num_finished
+                print(f"[Treinador] 🎮 Lote Headless concluído: {num_finished} partidas | +{headless_samples_ingested} amostras ingeridas | Total: {self.stats['total_games']} partidas", flush=True)
 
             else:
                 cpu_cores = os.cpu_count() or 4
@@ -425,6 +428,7 @@ class GPUTrainingOrchestrator:
                     r0 = batch_rooms[0]
                     extra_label = f" (+{len(batch_rooms)-1} partidas)" if len(batch_rooms) > 1 else ""
                     self.stats["active_matchup"] = f"{r0[1]} vs {r0[2]}{extra_label}"
+                    print(f"[Treinador] ⚔️ Lote Sim2Real: {len(batch_rooms)} partidas no Talishar | Pareamento: {self.stats['active_matchup']}", flush=True)
 
                 def _on_room_finished(idx: int, item: Any):
                     if idx < len(batch_rooms):
@@ -446,11 +450,17 @@ class GPUTrainingOrchestrator:
                 )
     
                 # Garante que nenhum processo deste lote continue vivo
-                num_finished = len(self._active_procs)
+                failed_procs = sum(1 for p1, p2 in self._active_procs if (p1 and p1.poll() not in (0, None)) or (p2 and p2.poll() not in (0, None)))
+                num_finished = max(0, len(self._active_procs) - failed_procs)
                 self._kill_active_processes()
     
                 self.stats["total_games"] += num_finished
                 games_since_save += num_finished
+
+                if failed_procs > 0:
+                    print(f"[Treinador] ⚠ {failed_procs} processo(s) de bot terminaram prematuramente. Verifique se o Talishar está em execução ou utilize '--headless' para treino autônomo em memória.", flush=True)
+                else:
+                    print(f"[Treinador] 🎮 Lote Sim2Real concluído: {num_finished} partidas finalizadas | Total: {self.stats['total_games']} partidas", flush=True)
 
             # ── 3. Atualizar ELO com resultados das partidas ────────
             for room_id, d1_slug, d2_slug in batch_rooms:
@@ -478,7 +488,7 @@ class GPUTrainingOrchestrator:
             self.stats["samples_collected"] = len(buffer)
 
             min_train = min(batch_size, max(32, len(buffer)))
-            if len(buffer) >= min_train:
+            if len(buffer) >= min_train and len(buffer) >= 32:
                 num_train_steps = max(1, int(cfg.get("train_steps", 1)))
                 for _ in range(num_train_steps):
                     loss_p, loss_v, loss_t, entropy, val_mean = self._train_step(
@@ -504,7 +514,7 @@ class GPUTrainingOrchestrator:
                     "samples":      self.stats["samples_collected"],
                     "lr":           round(scheduler.get_last_lr()[0], 6),
                 }
-                print(f"[Treinador] Época {self.stats['epochs_completed']} | Jogos Concluídos: {self.stats['total_games']} | Amostras no Buffer: {self.stats['samples_collected']} | Total Loss: {self.stats['total_loss']:.4f}", flush=True)
+                print(f"[Treinador] 🎯 Época {self.stats['epochs_completed']} | Jogos Concluídos: {self.stats['total_games']} | Amostras no Buffer: {self.stats['samples_collected']} | Total Loss: {self.stats['total_loss']:.4f} (Pol: {self.stats['policy_loss']:.4f}, Val: {self.stats['value_loss']:.4f})", flush=True)
                 
                 self.stats["history"].append(epoch_entry)
                 if len(self.stats["history"]) > 200:
@@ -515,12 +525,16 @@ class GPUTrainingOrchestrator:
                     print(f"[Treinador] 🏁 Meta de {max_ep} época(s) atingida. Finalizando loop...", flush=True)
                     self.is_running = False
                     break
+            else:
+                target_min = 32 if len(buffer) < 32 else min_train
+                print(f"[Treinador] 📦 Buffer: {len(buffer)}/{target_min} amostras para otimização neural | Jogos: {self.stats['total_games']} | Acumulando dados...", flush=True)
 
             self.save_metrics()
 
             # ── 6. Salvar checkpoint periodicamente ─────────────────
-            if games_since_save >= save_interval:
+            if games_since_save >= save_interval and (self.stats["epochs_completed"] > last_saved_epoch or newly_ingested > 0):
                 games_since_save = 0
+                last_saved_epoch = self.stats["epochs_completed"]
                 self._save_checkpoint(self.model, buffer)
 
             time.sleep(0.05)
