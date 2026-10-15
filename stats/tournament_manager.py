@@ -8,10 +8,11 @@ import os
 import json
 import time
 import uuid
+import math
 import subprocess
 import threading
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 import stats_manager
 
@@ -20,9 +21,19 @@ STATS_FILE = os.path.join(DATA_DIR, "training_stats.json")
 TOURNAMENT_RESULTS_FILE = os.path.join(DATA_DIR, "tournament_results.json")
 
 class TournamentManager:
-    def __init__(self, tournament_name: str = "FaB Championship", format_type: str = "round_robin"):
+    def __init__(
+        self,
+        tournament_name: str = "FaB Championship",
+        format_type: str = "round_robin",
+        execution_mode: str = "talishar",
+        mcts_sims: int = 3,
+        num_rounds: Optional[int] = None,
+    ):
         self.tournament_name = tournament_name
         self.format_type = format_type.lower()  # "round_robin" ou "swiss"
+        self.execution_mode = execution_mode.lower()  # "headless" ou "talishar"
+        self.mcts_sims = mcts_sims
+        self.num_rounds = num_rounds
         self.id = str(uuid.uuid4())[:8]
         self.participants: List[Dict[str, Any]] = []
         self.matches: List[Dict[str, Any]] = []
@@ -30,6 +41,7 @@ class TournamentManager:
         self.is_running = False
         self.completed = False
         self.logs: List[str] = []
+        self._headless_model = None
         os.makedirs(DATA_DIR, exist_ok=True)
 
     def log(self, message: str):
@@ -62,7 +74,11 @@ class TournamentManager:
                             "wins": 0,
                             "losses": 0,
                             "draws": 0,
-                            "elo": 1200
+                            "byes": 0,
+                            "elo": 1200,
+                            "opponents": [],
+                            "buchholz": 0.0,
+                            "sonneborn_berger": 0.0,
                         })
                 except Exception as e:
                     self.log(f"Erro ao carregar deck {fname}: {e}")
@@ -72,6 +88,11 @@ class TournamentManager:
         """Configura os participantes do torneio com base nos decks selecionados."""
         all_decks = self.load_available_decks()
         self.participants = [d for d in all_decks if d["id"] in deck_ids or d["name"] in deck_ids]
+        for p in self.participants:
+            p.setdefault("opponents", [])
+            p.setdefault("byes", 0)
+            p.setdefault("buchholz", 0.0)
+            p.setdefault("sonneborn_berger", 0.0)
         self.log(f"Torneio '{self.tournament_name}' configurado com {len(self.participants)} decks.")
 
         if self.format_type == "round_robin":
@@ -104,17 +125,86 @@ class TournamentManager:
                 match_id += 1
         self.log(f"Total de {len(self.matches)} partidas geradas para o formato Round-Robin.")
 
+    def _calculate_tie_breakers(self):
+        """Calcula pontuação de desempate oficial Buchholz e Sonneborn-Berger."""
+        id_to_points = {p["id"]: p["points"] for p in self.participants}
+        for p in self.participants:
+            opps = p.get("opponents", [])
+            p["buchholz"] = float(sum(id_to_points.get(opp_id, 0) for opp_id in opps))
+
+            sb = 0.0
+            for opp_id in opps:
+                opp_pts = id_to_points.get(opp_id, 0)
+                for m in self.matches:
+                    if m.get("status") == "Concluída" and not m.get("is_bye"):
+                        if (m["deck1"] == p["id"] and m["deck2"] == opp_id) or (m["deck2"] == p["id"] and m["deck1"] == opp_id):
+                            if m.get("winner") == p["name"]:
+                                sb += opp_pts
+                            elif m.get("winner") == "Empate":
+                                sb += 0.5 * opp_pts
+            p["sonneborn_berger"] = float(sb)
+
     def _generate_swiss_round(self, round_num: int):
-        """Gera pareamento para a rodada suíça ordenando por pontuação."""
+        """
+        Gera pareamento para a rodada suíça sem rematches e com suporte a Bye oficial.
+        Critérios de ordenação: (pontos, Buchholz, Sonneborn-Berger, ELO).
+        """
         self.current_round = round_num
-        sorted_participants = sorted(self.participants, key=lambda x: x["points"], reverse=True)
-        
+        self._calculate_tie_breakers()
+
+        sorted_participants = sorted(
+            self.participants,
+            key=lambda x: (x["points"], x.get("buchholz", 0.0), x.get("sonneborn_berger", 0.0), x.get("elo", 1200)),
+            reverse=True,
+        )
+
         round_matches = []
         match_id_offset = len(self.matches) + 1
-        
-        for i in range(0, len(sorted_participants) - 1, 2):
-            p1 = sorted_participants[i]
-            p2 = sorted_participants[i + 1]
+        unpaired = list(sorted_participants)
+
+        # Tratar número ímpar: atribui Bye ao jogador de menor ranking sem Bye prévio
+        if len(unpaired) % 2 != 0:
+            bye_idx = None
+            for idx in reversed(range(len(unpaired))):
+                if unpaired[idx].get("byes", 0) == 0:
+                    bye_idx = idx
+                    break
+            if bye_idx is None:
+                bye_idx = len(unpaired) - 1
+
+            bye_player = unpaired.pop(bye_idx)
+            round_matches.append({
+                "id": match_id_offset,
+                "round": round_num,
+                "deck1": bye_player["id"],
+                "deck2": "BYE",
+                "deck1_name": bye_player["name"],
+                "deck2_name": "BYE",
+                "winner": bye_player["name"],
+                "p1_health": 20,
+                "p2_health": 0,
+                "turns": 0,
+                "status": "Concluída",
+                "is_bye": True,
+            })
+            match_id_offset += 1
+            self.log(f"[Rodada {round_num}] Bye concedido a {bye_player['name']} (+3 pontos).")
+
+        # Parear jogadores restantes evitando rematches passados
+        while len(unpaired) >= 2:
+            p1 = unpaired.pop(0)
+            p1_opps = set(p1.get("opponents", []))
+
+            chosen_idx = None
+            for idx, candidate in enumerate(unpaired):
+                if candidate["id"] not in p1_opps:
+                    chosen_idx = idx
+                    break
+
+            if chosen_idx is None:
+                chosen_idx = 0
+
+            p2 = unpaired.pop(chosen_idx)
             round_matches.append({
                 "id": match_id_offset,
                 "round": round_num,
@@ -126,23 +216,93 @@ class TournamentManager:
                 "p1_health": None,
                 "p2_health": None,
                 "turns": None,
-                "status": "Pendente"
+                "status": "Pendente",
+                "is_bye": False,
             })
             match_id_offset += 1
-            
+
         self.matches.extend(round_matches)
         self.log(f"Rodada {round_num} gerada com {len(round_matches)} partidas.")
 
     def run_single_match(self, match: Dict[str, Any]) -> bool:
-        """Executa uma partida de torneio lançando os bots em subprocessos."""
+        """Executa uma partida única (via Headless em memória ou Talishar bots)."""
+        if match.get("is_bye"):
+            match["status"] = "Concluída"
+            self._update_standings(match)
+            self.log(f"Partida #{match['id']} Concluída por Bye para {match['deck1_name']}!")
+            return True
+
+        if self.execution_mode == "headless":
+            return self._run_single_match_headless(match)
+        return self._run_single_match_talishar(match)
+
+    def _run_single_match_headless(self, match: Dict[str, Any]) -> bool:
+        """Execução ultrarrápida da partida em memória via GameSimulator e HeadlessSelfPlayLoop."""
         match_id = match["id"]
         deck1_id = match["deck1"]
         deck2_id = match["deck2"]
-        
+
+        match["status"] = "Em Progresso"
+        self.log(f"Iniciando Partida Headless #{match_id}: {match['deck1_name']} vs {match['deck2_name']}")
+
+        try:
+            from ai.training.headless_env import HeadlessSelfPlayLoop
+            from ai.model import FaBPolicyValueNetwork
+
+            if self._headless_model is None:
+                self._headless_model = FaBPolicyValueNetwork()
+                self._headless_model.eval()
+
+            env = HeadlessSelfPlayLoop(self._headless_model, mcts_sims=self.mcts_sims, device="cpu")
+            trajectory, winner_id = env.play_game(deck1_id, deck2_id)
+
+            if winner_id == 1:
+                match["winner"] = match["deck1_name"]
+            elif winner_id == 2:
+                match["winner"] = match["deck2_name"]
+            else:
+                match["winner"] = "Empate"
+
+            match["p1_health"] = 20 if winner_id == 1 else (0 if winner_id == 2 else 10)
+            match["p2_health"] = 20 if winner_id == 2 else (0 if winner_id == 1 else 10)
+            match["turns"] = max(1, len(trajectory) // 2)
+            match["status"] = "Concluída"
+
+            try:
+                stats_manager.update_match_result(
+                    room_id=f"Tourney_{self.id}_{match_id}",
+                    p1_deck=deck1_id,
+                    p2_deck=deck2_id,
+                    p1_health=match["p1_health"],
+                    p2_health=match["p2_health"],
+                    total_turns=match["turns"],
+                    winner_id=winner_id,
+                )
+            except Exception as e:
+                self.log(f"Aviso ao registrar stats no banco: {e}")
+
+        except Exception as e:
+            self.log(f"Erro na simulação headless: {e}")
+            match["winner"] = "Empate"
+            match["status"] = "Concluída"
+            match["p1_health"] = 0
+            match["p2_health"] = 0
+            match["turns"] = 0
+
+        self._update_standings(match)
+        self.log(f"Partida #{match_id} Concluída! Vencedor: {match['winner']}")
+        return True
+
+    def _run_single_match_talishar(self, match: Dict[str, Any]) -> bool:
+        """Executa uma partida de torneio lançando os bots em subprocessos contra o servidor Talishar."""
+        match_id = match["id"]
+        deck1_id = match["deck1"]
+        deck2_id = match["deck2"]
+
         room_name = f"Tourney_{self.id}_{match_id}"
         deck1_path = f"decks/{deck1_id}.json"
         deck2_path = f"decks/{deck2_id}.json"
-        
+
         match["status"] = "Em Progresso"
         self.log(f"Iniciando Partida #{match_id}: {match['deck1_name']} vs {match['deck2_name']} (Sala: {room_name})")
 
@@ -194,7 +354,7 @@ class TournamentManager:
             match["p1_health"] = 0
             match["p2_health"] = 0
             match["turns"] = 0
-            
+
             # Atualização do banco de dados/stat_manager para empate/timeout
             stats_manager.update_match_result(
                 room_id=room_name,
@@ -214,34 +374,90 @@ class TournamentManager:
         return True
 
     def _update_standings(self, match: Dict[str, Any]):
-        """Atualiza a tabela de classificação com base no resultado da partida."""
-        winner_name = match["winner"]
-        if winner_name == "Empate":
+        """Atualiza a tabela de classificação e ratings ELO oficiais."""
+        if match.get("is_bye"):
             for p in self.participants:
-                if p["name"] in (match["deck1_name"], match["deck2_name"]):
-                    p["draws"] += 1
-                    p["points"] += 1
+                if p["id"] == match["deck1"] or p["name"] == match["deck1_name"]:
+                    p["wins"] += 1
+                    p["points"] += 3
+                    p["byes"] = p.get("byes", 0) + 1
             return
 
-        for p in self.participants:
-            if p["name"] == winner_name:
-                p["wins"] += 1
-                p["points"] += 3
-                p["elo"] += 16
-            elif p["name"] in (match["deck1_name"], match["deck2_name"]):
-                p["losses"] += 1
-                p["elo"] = max(1000, p["elo"] - 16)
+        winner_name = match.get("winner")
+        p1 = next((p for p in self.participants if p["name"] == match.get("deck1_name") or p["id"] == match.get("deck1")), None)
+        p2 = next((p for p in self.participants if p["name"] == match.get("deck2_name") or p["id"] == match.get("deck2")), None)
+
+        if p1 is not None and p2 is not None:
+            p1.setdefault("opponents", []).append(p2["id"])
+            p2.setdefault("opponents", []).append(p1["id"])
+
+        if winner_name == "Empate":
+            winner_code = 0
+            for p in self.participants:
+                if p["name"] in (match.get("deck1_name"), match.get("deck2_name")):
+                    p["draws"] += 1
+                    p["points"] += 1
+        elif p1 is not None and winner_name == p1["name"]:
+            winner_code = 1
+            p1["wins"] += 1
+            p1["points"] += 3
+            if p2 is not None:
+                p2["losses"] += 1
+        else:
+            winner_code = 2
+            if p2 is not None:
+                p2["wins"] += 1
+                p2["points"] += 3
+            if p1 is not None:
+                p1["losses"] += 1
+
+        if p1 is not None and p2 is not None:
+            try:
+                from stats.elo import calculate_elo_ratings
+                p1["elo"], p2["elo"] = calculate_elo_ratings(p1["elo"], p2["elo"], winner_code, k=32)
+            except Exception:
+                if winner_code == 1:
+                    p1["elo"] += 16
+                    p2["elo"] = max(1000, p2["elo"] - 16)
+                elif winner_code == 2:
+                    p2["elo"] += 16
+                    p1["elo"] = max(1000, p1["elo"] - 16)
 
     def run_all_matches(self):
         """Executa todas as partidas pendentes do torneio em sequência."""
         self.is_running = True
-        self.log(f"Iniciando execução do torneio '{self.tournament_name}'...")
-        
-        for m in self.matches:
-            if m["status"] == "Pendente":
-                self.run_single_match(m)
-                time.sleep(0.5)
+        self.log(f"Iniciando execução do torneio '{self.tournament_name}' ({self.format_type}, {self.execution_mode})...")
 
+        if self.format_type == "round_robin":
+            for m in self.matches:
+                if m["status"] == "Pendente":
+                    self.run_single_match(m)
+                    if self.execution_mode == "talishar":
+                        time.sleep(0.5)
+        elif self.format_type == "swiss":
+            n = len(self.participants)
+            total_rounds = self.num_rounds or max(1, int(math.ceil(math.log2(max(2, n)))))
+            # Roda rodada 1
+            for m in list(self.matches):
+                if m["status"] == "Pendente":
+                    self.run_single_match(m)
+                    if self.execution_mode == "talishar":
+                        time.sleep(0.5)
+
+            # Roda rodadas subsequentes
+            for r in range(2, total_rounds + 1):
+                self._generate_swiss_round(r)
+                round_matches = [m for m in self.matches if m.get("round") == r and m["status"] == "Pendente"]
+                for m in round_matches:
+                    self.run_single_match(m)
+                    if self.execution_mode == "talishar":
+                        time.sleep(0.5)
+
+        self._calculate_tie_breakers()
+        self.participants.sort(
+            key=lambda x: (x["points"], x.get("buchholz", 0.0), x.get("sonneborn_berger", 0.0), x["elo"]),
+            reverse=True,
+        )
         self.is_running = False
         self.completed = True
         self.save_results()
@@ -249,13 +465,20 @@ class TournamentManager:
 
     def save_results(self):
         """Salva a tabela de classificação e histórico de confrontos em JSON."""
+        self._calculate_tie_breakers()
+        standings = sorted(
+            self.participants,
+            key=lambda x: (x["points"], x.get("buchholz", 0.0), x.get("sonneborn_berger", 0.0), x["elo"]),
+            reverse=True,
+        )
         results = {
             "id": self.id,
             "tournament_name": self.tournament_name,
             "format": self.format_type,
+            "execution_mode": self.execution_mode,
             "date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            "standings": sorted(self.participants, key=lambda x: x["points"], reverse=True),
-            "matches": self.matches
+            "standings": standings,
+            "matches": self.matches,
         }
         with open(TOURNAMENT_RESULTS_FILE, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)

@@ -59,26 +59,30 @@ def start_backend() -> bool:
         return False
 
 def start_frontend() -> bool:
-    if is_frontend_running():
+    if is_frontend_running(deep=False):
         return True
     try:
         logs_dir = os.path.join(BASE_DIR, "logs")
         os.makedirs(logs_dir, exist_ok=True)
         log_f = open(os.path.join(logs_dir, "frontend.log"), "a")
+        fe_dir = os.path.join(BASE_DIR, "Talishar-FE")
+        local_vite = os.path.join(fe_dir, "node_modules", ".bin", "vite")
+        cmd = [local_vite, "--port", "3000", "--host"] if os.path.exists(local_vite) else ["npx", "vite", "--port", "3000", "--host"]
         subprocess.Popen(
-            ["npx", "vite", "--port", "3000", "--host"],
-            cwd=os.path.join(BASE_DIR, "Talishar-FE"),
+            cmd,
+            cwd=fe_dir,
             stdout=log_f,
             stderr=log_f,
             start_new_session=True
         )
-        for _ in range(12):
-            time.sleep(1)
-            if is_frontend_running(deep=True):
+        for _ in range(40):
+            time.sleep(0.5)
+            if is_frontend_running(deep=False):
                 return True
-        return is_frontend_running(deep=True)
+        return is_frontend_running(deep=False)
     except Exception as e:
-        print(f"Erro ao iniciar frontend: {e}")
+        logger.error(f"Erro ao iniciar frontend: {e}")
+        return False
 import threading
 
 _watcher_thread = None

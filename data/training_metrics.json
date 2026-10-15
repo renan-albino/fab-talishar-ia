@@ -1,44 +1,11 @@
 {
-  "total_games": 184,
-  "samples_collected": 106,
-  "epochs_completed": 2,
-  "policy_loss": 1.0452,
-  "value_loss": 0.2654,
-  "total_loss": 1.1785,
-  "active_matchup": "jarl vs jarl (+1 partidas) (Headless)",
-  "last_summary": "Nenhuma partida concluída nesta sessão.",
-  "history": [
-    {
-      "epoch": 1,
-      "policy_loss": 0.6803,
-      "value_loss": 0.3176,
-      "total_loss": 0.8395,
-      "entropy": 2.2006,
-      "value_mean": -0.0061,
-      "games": 182,
-      "samples": 62,
-      "lr": 0.0003
-    },
-    {
-      "epoch": 2,
-      "policy_loss": 1.0452,
-      "value_loss": 0.2654,
-      "total_loss": 1.1785,
-      "entropy": 2.3836,
-      "value_mean": -0.1515,
-      "games": 184,
-      "samples": 106,
-      "lr": 0.0003
-    }
-  ],
-  "policy_entropy": 2.3836,
-  "value_mean": -0.1515,
-  "current_phase": "teacher",
-  "device": "cuda:0",
-  "batch_size": 1024,
-  "num_workers": 3,
-  "mcts_sims": 50,
-  "max_resources": false,
-  "ismcts_concurrency": "threads",
-  "buffer_capacity": 725121
+  "total_games": 0,
+  "samples_collected": 0,
+  "epochs_completed": 0,
+  "policy_loss": 0.0,
+  "value_loss": 0.0,
+  "total_loss": 0.0,
+  "active_matchup": "none",
+  "last_summary": "Estado e m\u00e9tricas resetados.",
+  "history": []
 }

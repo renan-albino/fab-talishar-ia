@@ -157,6 +157,8 @@ def clear_sim2real_anomalies() -> int:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM sim2real_anomalies")
             deleted = cursor.rowcount
+            cursor.execute("DELETE FROM shadow_steps")
+            conn.commit()
             return deleted if deleted is not None else 0
     except Exception:
         return 0

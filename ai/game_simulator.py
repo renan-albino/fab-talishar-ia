@@ -330,7 +330,12 @@ class GameSimulator:
             updates["currentAttackBuff"] = int(state.get("currentAttackBuff", 0)) + buff_power
             ap = int(state.get("playerAP", state.get("actionPoints", 1)))
             has_go_again = bool(action.get("has_go_again", False))
-            new_ap = ap if has_go_again else max(0, ap - 1)
+            costs_ap = bool(
+                action.get("costs_ap", False)
+                or (act_type == "hero_ability" and not has_go_again)
+                or (action.get("action_type") == "action" and not has_go_again)
+            )
+            new_ap = max(0, ap - 1) if costs_ap else ap
             updates["playerAP"] = new_ap
             updates["actionPoints"] = new_ap
             return state.without("_simulated_projected_damage").replace(**updates)
@@ -352,8 +357,14 @@ class GameSimulator:
             if played_card is None:
                 played_card = action.get("raw") or action
         elif act_type == "arsenal":
-            ars = state.get("playerArsenal", [])
-            updates["playerArsenal"] = tuple([c for c in ars if cls.extract_card_meta(c)["name"] != act_name])
+            ars = list(state.get("playerArsenal") or state.get("playerArse") or [])
+            target_idx = action.get("card_idx")
+            if isinstance(target_idx, int) and 0 <= target_idx < len(ars):
+                rem_ars = tuple(c for i, c in enumerate(ars) if i != target_idx)
+            else:
+                rem_ars = tuple(c for c in ars if (action.get("raw") is None or c is not action.get("raw")) and cls.extract_card_meta(c)["name"] != act_name)
+            updates["playerArsenal"] = rem_ars
+            updates["playerArse"] = rem_ars
             played_card = action.get("raw") or action
         elif act_type == "banish":
             banish = state.get("playerBanish", [])
@@ -640,6 +651,7 @@ class GameSimulator:
         updates = {}
         resources = state.get("playerResources", [0, 0])
         floating = int(resources[0]) if resources and isinstance(resources, (list, tuple)) else 0
+        required_cost = int(resources[1]) if resources and isinstance(resources, (list, tuple)) and len(resources) > 1 else 0
         
         card_name = cls.extract_card_meta(pitch_action)["name"]
         if "pitch" in pitch_action:
@@ -652,22 +664,41 @@ class GameSimulator:
         pitch_zone = list(state.get("playerPitch", []))
         new_hand = []
         found = False
-        for c in hand:
-            if not found and cls.extract_card_meta(c)["name"] == card_name:
-                found = True
-                pitch_zone.append(c)
-            else:
-                new_hand.append(c)
+
+        target_idx = pitch_action.get("card_idx")
+        if isinstance(target_idx, int) and 0 <= target_idx < len(hand):
+            found = True
+            found_card = hand[target_idx]
+            new_hand = [c for i, c in enumerate(hand) if i != target_idx]
+            pitch_zone.append(found_card)
+        else:
+            for c in hand:
+                if not found and (
+                    (pitch_action.get("raw") is not None and c is pitch_action.get("raw"))
+                    or (card_name and cls.extract_card_meta(c)["name"] == card_name)
+                    or (isinstance(c, Mapping) and str(c.get("cardNumber", "")).lower() == card_name)
+                    or (isinstance(c, Mapping) and str(c.get("name", "")).lower() == card_name)
+                ):
+                    found = True
+                    pitch_zone.append(c)
+                else:
+                    new_hand.append(c)
 
         updates["playerHand"] = tuple(new_hand)
         updates["playerPitch"] = tuple(pitch_zone)
         if found:
-            updates["playerResources"] = (floating + pitch_val, 0)
+            surplus = max(0, pitch_val - required_cost)
+            rem_req = max(0, required_cost - pitch_val)
+            updates["playerResources"] = (floating + surplus, rem_req)
+            if required_cost > 0 and rem_req == 0:
+                current_ap = int(state.get("playerAP", state.get("actionPoints", 1)))
+                updates["playerAP"] = max(0, current_ap - 1)
+                updates["actionPoints"] = max(0, current_ap - 1)
 
         return state.replace(**updates)
 
     @classmethod
-    def simulate_step(cls, state, action: dict):
+    def simulate_step(cls, state, action: dict, with_vector: bool = True):
         """
         Ponto de entrada unificado para simulação de passo.
         """
@@ -688,5 +719,5 @@ class GameSimulator:
         else:
             next_state = cls.simulate_attack(state, action)
 
-        vec = FaBPolicyValueNetwork.extract_state_vector(next_state)
+        vec = FaBPolicyValueNetwork.extract_state_vector(next_state) if with_vector else None
         return next_state, vec

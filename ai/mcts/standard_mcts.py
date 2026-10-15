@@ -138,6 +138,12 @@ class MCTSEngine:
 
         # ── Orçamento Adaptativo de MCTS ───────────────────────────
         if adaptive_budget and num_simulations > 0:
+            val_uncertainty = None
+            if hasattr(self.model, "predict_value_with_uncertainty"):
+                try:
+                    _, val_uncertainty = self.model.predict_value_with_uncertainty(state_vec, num_samples=4)
+                except Exception:
+                    pass
             from .ismcts import calculate_adaptive_mcts_budget
             num_simulations = calculate_adaptive_mcts_budget(
                 base_sims=num_simulations,
@@ -146,6 +152,7 @@ class MCTSEngine:
                 delta_eval=delta_eval,
                 state=state,
                 is_critical=is_critical,
+                value_uncertainty=val_uncertainty,
             )
 
         # ── 2. Expandir raiz com Prior Threshold Pruning ──────────
@@ -156,29 +163,24 @@ class MCTSEngine:
         if training_mode and root.children:
             self._add_dirichlet_noise(root, len(root.children) + len(root.pending))
 
-        # ── 4. Seleção e Avaliação em Mini-Batches ───────────────
-        # Processar em batches de até 8 simulações preserva o ganho de inferência
-        # ao mesmo tempo em que permite que Q-values atualizados guiem seleções posteriores.
-        batch_step = min(8, max(1, num_simulations // 4))
-        for start_sim in range(0, num_simulations, batch_step):
-            current_batch_size = min(batch_step, num_simulations - start_sim)
-            leaf_nodes: List[MCTSNode] = []
-            for b_idx in range(current_batch_size):
-                sim_idx = start_sim + b_idx
-                self._progressive_widen(root, sim_idx)
-                node = self._select(root, sim_idx)
-                leaf_nodes.append(node)
+        # ── 4. Seleção e Avaliação com Memoização 1-Ply ───────────────
+        # ponytail: a árvore FaB opera em profundidade 1 determinística.
+        # Avaliar os filhos (ativos + pending) em lote único e reaproveitar os valores
+        # preserva rigorosamente a distribuição de visitas do PUCT com 1 único forward pass.
+        all_candidates = list(root.children.values())
+        leaf_vals = self._batch_evaluate_leaves(
+            root_state_vec=state_vec,
+            nodes=all_candidates,
+            base_value=base_value,
+            state=state,
+            legal_actions=legal_actions,
+        )
+        vals_map = {c.action_id: val for c, val in zip(all_candidates, leaf_vals)}
 
-            leaf_values = self._batch_evaluate_leaves(
-                root_state_vec=state_vec,
-                nodes=leaf_nodes,
-                base_value=base_value,
-                state=state,
-                legal_actions=legal_actions,
-            )
-
-            for node, leaf_value in zip(leaf_nodes, leaf_values):
-                self._backpropagate(node, leaf_value)
+        for sim_idx in range(num_simulations):
+            self._progressive_widen(root, sim_idx)
+            node = self._select(root)
+            self._backpropagate(node, vals_map.get(node.action_id, base_value))
 
         # ── 7. Distribuição de visitas e seleção de ação ─────────
         policy_dist = np.zeros(32, dtype=np.float32)
@@ -211,14 +213,6 @@ class MCTSEngine:
         except Exception as e:
             logger.warning(f"Erro na avaliação da rede: {e}. Usando fallback.")
             return np.ones(32, dtype=np.float32) / 32.0, 0.0
-
-    def _node_depth(self, node: MCTSNode) -> int:
-        depth = 0
-        curr = node
-        while curr.parent is not None:
-            depth += 1
-            curr = curr.parent
-        return depth
 
     def _batch_evaluate_leaves(
         self,
@@ -442,9 +436,7 @@ class MCTSEngine:
         path = [node]
         while node.is_expanded and any(k >= 0 for k in node.children):
             best_score, best_child = -float("inf"), None
-            parent_visits = node.visit_count
-            if node == root:
-                parent_visits += sim_idx
+            parent_visits = node.visit_count + node.virtual_loss
             for key, child in node.children.items():
                 if key < 0:
                     continue

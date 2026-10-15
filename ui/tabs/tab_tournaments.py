@@ -8,6 +8,7 @@ e exibir tabela de classificação e matriz de matchups.
 
 import os
 import json
+import math
 import pandas as pd
 import streamlit as st
 from stats.tournament_manager import TournamentManager
@@ -37,7 +38,13 @@ def render_tab_tournaments(deck_options=None):
             st.caption(f"Decks selecionados: **{len(selected_tourney_decks)}**")
         with col_t2:
             tourney_format = st.selectbox("Formato do Torneio:", ["Round-Robin (Todos contra Todos)", "Sistema Suíço (Swiss)"])
-            st.write("")
+            tourney_exec = st.selectbox("Modo de Execução:", ["Simulação Rápida em Memória (Headless)", "Servidor Talishar (Bots WebSocket)"])
+            custom_rounds = None
+            if "Suíço" in tourney_format:
+                n_decks = max(2, len(selected_tourney_decks))
+                auto_r = max(1, int(math.ceil(math.log2(n_decks))))
+                custom_rounds = st.number_input(f"Número de Rodadas (Automático: {auto_r}):", min_value=1, max_value=10, value=auto_r)
+
             st.write("")
             btn_start_tourney = st.button("🏁 Iniciar Torneio", type="primary", use_container_width=True)
 
@@ -47,9 +54,15 @@ def render_tab_tournaments(deck_options=None):
             else:
                 deck_slugs = [deck_options[k] for k in selected_tourney_decks]
                 fmt = "round_robin" if "Round-Robin" in tourney_format else "swiss"
-                tm = TournamentManager(tournament_name=tourney_name, format_type=fmt)
+                exec_mode = "headless" if "Headless" in tourney_exec else "talishar"
+                tm = TournamentManager(
+                    tournament_name=tourney_name,
+                    format_type=fmt,
+                    execution_mode=exec_mode,
+                    num_rounds=int(custom_rounds) if custom_rounds else None,
+                )
                 tm.setup_tournament(deck_slugs)
-                with st.spinner(f"Executando confrontos do torneio ({len(tm.matches)} partidas)..."):
+                with st.spinner(f"Executando confrontos do torneio ({len(tm.matches)} partidas programadas)..."):
                     tm.run_all_matches()
                 st.success(f"Torneio **{tourney_name}** concluído com sucesso!")
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
@@ -66,8 +79,22 @@ def render_tab_tournaments(deck_options=None):
                 st.markdown("#### 🥇 Tabela de Classificação")
                 standings = t_data.get("standings", [])
                 if standings:
-                    df_std = pd.DataFrame(standings)[["name", "hero", "points", "wins", "losses", "elo"]]
-                    df_std.columns = ["Deck / Jogador", "Herói", "Pontos", "Vitórias", "Derrotas", "Rating ELO"]
+                    cols_to_show = ["name", "hero", "points", "wins", "losses"]
+                    cols_labels = ["Deck / Jogador", "Herói", "Pontos", "Vitórias", "Derrotas"]
+                    if any(s.get("byes", 0) > 0 for s in standings):
+                        cols_to_show.append("byes")
+                        cols_labels.append("Byes")
+                    if any("buchholz" in s for s in standings):
+                        cols_to_show.append("buchholz")
+                        cols_labels.append("Buchholz")
+                    if any("sonneborn_berger" in s for s in standings):
+                        cols_to_show.append("sonneborn_berger")
+                        cols_labels.append("Sonneborn-Berger")
+                    cols_to_show.append("elo")
+                    cols_labels.append("Rating ELO")
+
+                    df_std = pd.DataFrame(standings)[cols_to_show]
+                    df_std.columns = cols_labels
                     st.dataframe(df_std, use_container_width=True)
             with col_res2:
                 st.markdown("#### ⚔️ Matriz de Matchups")

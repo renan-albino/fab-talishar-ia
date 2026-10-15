@@ -29,9 +29,17 @@ def resolve_sideboard(
     Armas e Deck Principal vs Inventário (Sideboard).
     """
     is_cc = deck_format.lower() in ("cc", "compcc", "llcc", "compllcc", "futurecc", "futurell", "gage")
-    arcane_classes = ("wizard", "runeblade")
+    
+    # Detecção dinâmica de dano arcano via classes, keywords e texto da carta de herói
+    opp_meta = get_card_meta(opp_hero) if opp_hero else {}
+    opp_classes = [str(c).lower() for c in opp_meta.get("classes", [])] + [str(c).lower() for c in opp_meta.get("types", [])]
+    opp_text = str(opp_meta.get("text", "")).lower()
+    opp_keywords = [str(k).lower() for k in opp_meta.get("keywords", [])]
+
+    is_arcane_class = any(ac in opp_class.lower() for ac in ("wizard", "runeblade")) or any(ac in opp_classes for ac in ("wizard", "runeblade"))
+    is_arcane_meta = "arcane" in opp_text or "runechant" in opp_text or any("arcane" in k or "runechant" in k for k in opp_keywords)
     arcane_heroes = ("kano", "iyslander", "oscilio", "verdance", "blaze", "chane", "viserai", "briar", "vynnset", "florian", "aurora", "emperor")
-    is_arcane = any(ac in opp_class.lower() for ac in arcane_classes) or any(ah in opp_hero.lower() for ah in arcane_heroes)
+    is_arcane = is_arcane_class or is_arcane_meta or any(ah in opp_hero.lower() for ah in arcane_heroes)
 
     # Detecção dinâmica de fadiga baseada no histórico de turnos médios do oponente (SQLite)
     is_fatigue = False
@@ -141,7 +149,9 @@ def resolve_sideboard(
             or "arcane barrier" in text
             or "spellvoid" in text
             or "quell" in text
+            or "ward" in text
             or "arcane_barrier" in keywords
+            or "spellvoid" in keywords
             or "nullrune" in cid
         )
 
@@ -150,6 +160,14 @@ def resolve_sideboard(
         is_ab = has_arcane_barrier(cid, meta)
         defense = int(meta.get("defense", 0) or 0)
         score = float(defense) * 4.0
+        text = str(meta.get("text", "")).lower()
+        keywords = str(meta.get("keywords", "")).lower()
+
+        # Keywords de durabilidade e mitigação repetível
+        if "battleworn" in keywords or "battleworn" in text:
+            score += 5.0
+        elif "temper" in keywords or "temper" in text:
+            score += 4.0
 
         if is_arcane:
             if is_ab:
@@ -224,15 +242,25 @@ def resolve_sideboard(
         else:
             w_2h.append(cid)
 
+    def score_offhand(cid, is_arcane):
+        meta = get_card_meta(cid)
+        defense = int(meta.get("defense", 0) or 0)
+        is_ab = has_arcane_barrier(cid, meta)
+        score = float(defense) * 4.0
+        if is_arcane and is_ab:
+            score += 30.0
+        text = str(meta.get("text", "")).lower()
+        if "frostbite" in text or "seismic" in text or "damage" in text:
+            score += 5.0
+        if "stalagmite" in cid:
+            score += 6.0
+        return score
+
     chosen_weapons = []
     if w_2h and is_fatigue and not is_arcane:
         chosen_weapons = [w_2h[0]]
     elif w_1h and offhands:
-        best_off = offhands[0]
-        for off in offhands:
-            if "stalagmite" in off:
-                best_off = off
-                break
+        best_off = max(offhands, key=lambda off: score_offhand(off, is_arcane))
         chosen_weapons = [w_1h[0], best_off]
     elif len(w_1h) >= 2:
         chosen_weapons = [w_1h[0], w_1h[1]]
@@ -241,7 +269,8 @@ def resolve_sideboard(
     elif w_1h:
         chosen_weapons = [w_1h[0]]
     elif offhands:
-        chosen_weapons = [offhands[0]]
+        best_off = max(offhands, key=lambda off: score_offhand(off, is_arcane))
+        chosen_weapons = [best_off]
 
     weapons = chosen_weapons
     for cid in raw_weapon_candidates:
@@ -300,13 +329,29 @@ def resolve_sideboard(
             pitch = int(meta.get("pitch", 0)) if str(meta.get("pitch", 0)).isdigit() else 0
             defense = int(meta.get("defense", 0)) if str(meta.get("defense", 0)).isdigit() else 0
             power = int(meta.get("power", 0)) if str(meta.get("power", 0)).isdigit() else 0
+            text = str(meta.get("text", "")).lower()
+            name = str(meta.get("name", "")).lower()
+
+            # Cartas de prevenção ou resposta arcana (Oasis Respite, Peace of Mind, Spellvoid, Arcane Barrier)
+            is_anti_arcane = (
+                "arcane barrier" in text
+                or "spellvoid" in text
+                or ("prevent" in text and "arcane" in text)
+                or "oasis respite" in name or "oasis respite" in cid
+                or "peace of mind" in name or "peace of mind" in cid
+            )
             if is_arcane:
+                if is_anti_arcane:
+                    return 200 + power + defense
                 if equipped_arcane_count >= 2:
                     if pitch == 3:
                         return 100 + power + defense
                 else:
                     if pitch == 3:
                         return (defense * 2) + power - 10
+            elif is_fatigue:
+                return (defense * 10.0) + (power * 2.0) + (5.0 if pitch == 3 else 0.0)
+
             return power + defense + (3 - pitch)
 
         flat_deck.sort(key=card_score, reverse=True)

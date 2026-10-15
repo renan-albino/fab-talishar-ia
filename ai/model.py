@@ -159,6 +159,7 @@ class FaBCardTransformerNetwork(nn.Module):
         )
 
         # 7. Value Head ([-1.0, +1.0])
+        self.value_dropout = nn.Dropout(p=dropout if dropout is not None else 0.15)
         value_mid = max(32, hidden_dim // 4)
         self.value_head = nn.Sequential(
             nn.Linear(hidden_dim, value_mid),
@@ -244,7 +245,7 @@ class FaBCardTransformerNetwork(nn.Module):
         fused = self.fusion_fc(torch.cat([h_context, card_pool], dim=-1))
 
         policy_logits = self.policy_head(fused)
-        value = self.value_head(fused)
+        value = self.value_head(self.value_dropout(fused))
 
         if return_aux:
             aux_dict = {
@@ -256,15 +257,17 @@ class FaBCardTransformerNetwork(nn.Module):
         return policy_logits, value
 
     def predict_state(self, state_vector: np.ndarray, device: Optional[str] = None) -> Tuple[np.ndarray, float]:
-        """Avalia um estado único e retorna probabilidades e value escalar."""
+        """Avalia um estado único e retorna probabilidades e value escalar em uma única transferência."""
         if self.training:
             self.eval()
         dev = torch.device(device) if device else next(self.parameters()).device
         with torch.inference_mode():
             x = torch.from_numpy(state_vector).unsqueeze(0).float().to(dev)
             logits, val = self(x)
-            probs = F.softmax(logits, dim=-1).cpu().numpy()[0]
-            value = float(val.cpu().numpy()[0][0])
+            probs_t = F.softmax(logits, dim=-1)
+            out = torch.cat([probs_t, val], dim=-1).cpu().numpy()[0]
+            probs = out[:-1]
+            value = float(out[-1])
         return probs, value
 
     def predict_states(
@@ -274,7 +277,7 @@ class FaBCardTransformerNetwork(nn.Module):
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Avalia múltiplos vetores de estado simultaneamente em batch.
-        Retorna (probs, values) com probs [N, action_dim] e values [N, 1].
+        Retorna (probs, values) com probs [N, action_dim] e values [N, 1] em transferência única.
         """
         if not state_vectors:
             return np.zeros((0, self.action_dim), dtype=np.float32), np.zeros((0, 1), dtype=np.float32)
@@ -289,9 +292,50 @@ class FaBCardTransformerNetwork(nn.Module):
                 batch_arr = np.stack(state_vectors, axis=0).astype(np.float32)
             x = torch.from_numpy(batch_arr).to(dev)
             logits, val = self(x)
-            probs = F.softmax(logits, dim=-1).cpu().numpy()
-            values = val.cpu().numpy()
+            probs_t = F.softmax(logits, dim=-1)
+            out = torch.cat([probs_t, val], dim=-1).cpu().numpy()
+            probs = out[:, :-1]
+            values = out[:, -1:]
         return probs, values
+
+    def predict_value_with_uncertainty(
+        self,
+        state_vector: np.ndarray,
+        num_samples: int = 8,
+        device: Optional[str] = None,
+    ) -> Tuple[float, float]:
+        """
+        Estima o valor esperado e a incerteza epistêmica (desvio padrão sigma) do estado
+        utilizando Monte Carlo Dropout (Gal & Ghahramani, 2016).
+        Retorna (mean_value, uncertainty_sigma).
+        """
+        if num_samples <= 1:
+            _, val = self.predict_state(state_vector, device=device)
+            return val, 0.0
+
+        dev = torch.device(device) if device else next(self.parameters()).device
+        was_training = self.training
+        was_val_dropout_training = self.value_dropout.training
+
+        # Mantém o modelo geral e normalizações determinísticos,
+        # ativando exclusivamente o dropout estocástico na cabeça de valor.
+        self.eval()
+        self.value_dropout.train(True)
+
+        try:
+            with torch.no_grad():
+                x = torch.from_numpy(state_vector).float().unsqueeze(0).to(dev)
+                x_rep = x.repeat(num_samples, 1)
+                _, vals = self(x_rep)
+                vals_sq = vals.squeeze(-1)
+                mean_val = float(vals_sq.mean().item())
+                sigma = float(vals_sq.std(unbiased=True).item()) if num_samples > 1 else 0.0
+        finally:
+            self.value_dropout.train(was_val_dropout_training)
+            if was_training:
+                self.train(True)
+
+        return mean_val, sigma
 
     def count_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)

@@ -49,7 +49,7 @@ def test_equipment_defense_battleworn_vs_blade_break():
         "combatChainPower": 5,
         "activeChainLink": {"cardNumber": "command_and_conquer", "totalPower": 5},
         "playerHand": [
-            {"cardNumber": "staunch_response_blue", "action": 27, "block": 3, "defense": 3, "pitch": 3}
+            {"cardNumber": "buckling_blow_blue", "name": "Buckling Blow", "action": 27, "block": 3, "defense": 3, "pitch": 3}
         ],
         "playerArsenal": [],
         "playerEquipment": [
@@ -145,7 +145,7 @@ def test_equipment_defense_preserves_hand_during_pivot():
 
 def test_equipment_activated_ability_main_phase():
     """Testa ativação de habilidade de equipamento na Fase Principal (M)."""
-    pe = PolicyEngine(hero_name="rhinar_reckless_rampage")
+    pe = PolicyEngine(hero_name="rhinar_reckless_rampage", num_mcts_sims=0)
 
     state_eq_ability = {
         "turnPlayer": 1,

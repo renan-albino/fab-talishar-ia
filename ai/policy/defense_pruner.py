@@ -5,7 +5,7 @@ Módulo de poda e seleção de defesa, otimização de breakpoints e preservaç�
 """
 
 import itertools
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional
 
 from .constants import (
     _get_cards_db,
@@ -17,7 +17,7 @@ from ..model import FaBPolicyValueNetwork
 from .card_semantics import build_arena_threat_context
 
 
-def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str, int]]:
+def select_defense_blocks(engine: Any, state: dict, value_uncertainty: Optional[float] = None) -> List[Tuple[int, str, str, int]]:
     """
     Seleciona a melhor combinação de bloqueadores (mão, arsenal com ambush, e equipamentos),
     otimizando breakpoints contra On-Hit perigosos, evitando overblocking e preservando
@@ -57,7 +57,8 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         import math
         cards_needed = math.ceil(opp_power / 3.0)
         offensive_value_lost = cards_needed * 3.5
-        if offensive_value_lost > on_hit_ev + opp_power:
+        uncertainty_safety = 1.30 if (value_uncertainty is not None and value_uncertainty >= 0.25) else 1.0
+        if offensive_value_lost > (on_hit_ev + opp_power) * uncertainty_safety:
             return []
 
     opp_hand_count_eval = int(state.get("opponentHandCount", state.get("theirHandCount", 0)))
@@ -137,6 +138,17 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
             turn_plan.reserved_card_names.clear()
             turn_plan.key_cards.clear()
 
+    if value_uncertainty is not None and value_uncertainty >= 0.25 and turn_plan:
+        # Incerteza Bayesiana (Monte Carlo Dropout): Sob alta variância de valor,
+        # anula a presunção otimista de Tempo Pivot / absorção livre de dano para
+        # priorizar sobrevivência e mitigação de breakpoints.
+        turn_plan.can_absorb_damage = False
+        if getattr(turn_plan, "plan_type", None) == "TEMPO_COUNTER_ATTACK":
+            turn_plan.plan_type = "UNCERTAINTY_SAFETY_BLOCK"
+            turn_plan.reserved_card_names.clear()
+            turn_plan.key_cards.clear()
+            turn_plan.max_block_cards = len(hand)
+
     # Contagem dinâmica de cartas Runegate na mão
     runegate_in_hand = sum(
         1 for hc in hand
@@ -170,6 +182,9 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         # ── Identificação de Tipo e Classe para Regras Oficiais de Combate ──
         c_clean_name = str(c.get("cardNumber") or info["name"]).lower()
         c_db = cards_db.get(c_clean_name, {})
+        if not c_db:
+            c_slug = c_clean_name.replace(" ", "_").replace("-", "_")
+            c_db = cards_db.get(c_slug, {})
         c_type = str(c.get("type") or c_db.get("type", "")).upper()
         c_subtype = str(c.get("subtype") or c_db.get("subtype", "")).lower()
         c_class = str(c.get("class") or c_db.get("class", "")).upper()
@@ -180,8 +195,13 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
         is_dr = (
             c_type in ("DR", "DEFENSE REACTION")
             or "defense reaction" in c_subtype
-            or any(k in c_clean_name for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable"])
+            or "defense reaction" in c_type.lower()
+            or any(k in c_clean_name for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable", "rootbound", "carapace"])
+            or any(k in str(info.get("name", "")).lower() for k in ["sink below", "fate foreseen", "staunch response", "unmovable", "rootbound carapace"])
         )
+        if is_dr:
+            continue
+
         is_action = not is_dr and (
             c_type in ("A", "AA", "ACTION", "ATTACK ACTION")
             or "action" in c_subtype
@@ -252,9 +272,6 @@ def select_defense_blocks(engine: Any, state: dict) -> List[Tuple[int, str, str,
                 # Preserva recurso vital para pagar {r}{r}{r} na End Phase e não sofrer dano letal
                 score -= 40.0
 
-        # Bônus para reações de defesa dedicadas (Sink, Fate, Staunch)
-        if info["block"] >= 3 and any(k in info["name"] for k in ["sink", "fate", "staunch", "unmovable"]):
-            score += 3.0
 
         if is_first_turn_of_game:
             # No Turno 0 (CR 4.4.3f), recompra até o Intelecto: cartas normais da mão têm custo 0

@@ -46,17 +46,25 @@ def render_tab_play(saved_decks=None, deck_options=None, fe_running=None, be_run
             if st.button("🚀 Iniciar Frontend Talishar", type="primary", use_container_width=True):
                 with st.spinner("Iniciando Frontend Vite..."):
                     if frontend_manager.start_frontend():
+                        try:
+                            get_cached_services_status.clear()
+                        except Exception:
+                            pass
                         st.success("Frontend iniciado com sucesso!")
                         time.sleep(1)
                         st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
                     else:
-                        st.error("Falha ao iniciar o Frontend.")
+                        st.error("Falha ao iniciar o Frontend. Verifique os logs em logs/frontend.log.")
         else:
             st.link_button("🌐 Abrir Talishar no Navegador", "http://localhost:3000", use_container_width=True)
     with col_fe3:
         if fe_running:
             if st.button("🛑 Parar Frontend", use_container_width=True):
                 frontend_manager.stop_frontend()
+                try:
+                    get_cached_services_status.clear()
+                except Exception:
+                    pass
                 st.warning("Frontend finalizado.")
                 time.sleep(1)
                 st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()

@@ -512,6 +512,14 @@ def clean_training_state(
             except Exception as e:
                 print(f"  ✗ Falha ao remover replay_buffer.npz: {e}")
 
+        # Limpar arquivos órfãos de salvamento temporário (*.tmp.npz)
+        for fname in os.listdir(DATA_DIR):
+            if fname.startswith("replay_buffer.npz.") and fname.endswith(".tmp.npz"):
+                try:
+                    os.remove(os.path.join(DATA_DIR, fname))
+                except Exception:
+                    pass
+
         if os.path.exists(trajectories_dir):
             cleared_trajs = 0
             for fname in os.listdir(trajectories_dir):

@@ -43,14 +43,22 @@ class ImmutableGameState(Mapping):
     def copy(self):
         return self
 
+    @classmethod
+    def _from_frozen(cls, frozen_data: dict) -> "ImmutableGameState":
+        obj = object.__new__(cls)
+        obj._data = frozen_data
+        obj._hash = None
+        return obj
+
     def replace(self, **kwargs) -> "ImmutableGameState":
         """
         Retorna uma nova instância com os campos atualizados (imutável).
+        Congela apenas os novos campos passados, reutilizando referências já imutáveis.
         """
         new_data = dict(self._data)
         for k, v in kwargs.items():
-            new_data[k] = v
-        return ImmutableGameState(new_data)
+            new_data[k] = _freeze_value(v)
+        return self._from_frozen(new_data)
 
     def without(self, *keys) -> "ImmutableGameState":
         """
@@ -59,7 +67,7 @@ class ImmutableGameState(Mapping):
         new_data = dict(self._data)
         for k in keys:
             new_data.pop(k, None)
-        return ImmutableGameState(new_data)
+        return self._from_frozen(new_data)
 
     def __hash__(self):
         if self._hash is None:

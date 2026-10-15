@@ -16,6 +16,7 @@ import subprocess
 import shutil
 import uuid
 import math
+import random
 from collections import defaultdict
 from typing import Dict, Any, List, Optional
 
@@ -35,7 +36,10 @@ from ai.training.process_supervisor import (
     kill_active_processes,
     kill_orphan_bots,
     wait_for_processes,
+    get_room_telemetry,
+    get_room_summary_info,
 )
+
 
 # ── Caminhos derivados do SETTINGS ───────────────────────────────
 DATA_DIR      = os.path.join(BASE_DIR, "data")
@@ -331,7 +335,8 @@ class GPUTrainingOrchestrator:
                             d1, d2 = self._next_deck_pair(decks_pool)
                             room_id = f"Train_{uuid.uuid4().hex[:8]}"
                             batch_rooms.append((room_id, d1, d2))
-                            futures.append(executor.submit(headless_env.play_game, d1, d2))
+                            opp_net = self._sample_league_opponent(cfg)
+                            futures.append(executor.submit(headless_env.play_game, d1, d2, opp_net))
 
                         if batch_rooms:
                             r0 = batch_rooms[0]
@@ -340,12 +345,18 @@ class GPUTrainingOrchestrator:
                             print(f"[Treinador] ⚔️ Lote Headless: {len(batch_rooms)} partidas | Pareamento: {self.stats['active_matchup']}", flush=True)
 
                         # Espera a conclusão
+                        completed_headless = 0
                         for future in concurrent.futures.as_completed(futures):
                             try:
                                 traj, winner = future.result(timeout=SETTINGS.game_timeout_seconds)
-                                headless_samples_ingested += buffer.ingest_from_memory([(traj, winner)])
+                                completed_headless += 1
+                                headless_samples_ingested += buffer.ingest_from_memory([(traj, winner)], epoch_ratio=epoch_ratio)
+                                d_cnt = len(traj) if isinstance(traj, list) else "?"
+                                w_label = f"Vencedor: {winner}" if winner else "Empate"
+                                print(f"[Treinador] 🏁 Jogo Headless {completed_headless}/{len(futures)} concluído ({w_label}, {d_cnt} decisões)", flush=True)
                             except Exception as e:
                                 print(f"[Treinador] Erro no headless worker: {e}", flush=True)
+
                 finally:
                     if evaluator is not None:
                         evaluator.stop()
@@ -436,7 +447,14 @@ class GPUTrainingOrchestrator:
                         if r_id not in recorded_rooms:
                             self._update_elo(r_id, d1, d2)
                             recorded_rooms.add(r_id)
-    
+                            telem = get_room_telemetry(r_id, base_dir=BASE_DIR)
+                            s_info = get_room_summary_info(r_id, base_dir=BASE_DIR)
+                            gid = f"#{telem['game_id']}" if telem.get("game_id") else r_id[:10]
+                            winner = s_info.get("winner") or "Concluída"
+                            dur_str = f" em {s_info['duration']}" if s_info.get("duration") else (f" (T{telem['turn']})" if telem.get("turn") else "")
+                            hps_str = f" [{s_info['p1_hp']} vs {s_info['p2_hp']}]" if s_info.get("p1_hp") else (f" [{telem['p1_hp']}v{telem['p2_hp']} HP]" if telem.get("p1_hp") is not None else "")
+                            print(f"[Treinador] 🏁 Sala {gid} finalizada{dur_str}: {winner}{hps_str} | Progresso: {len(recorded_rooms)}/{len(batch_rooms)} concluídas", flush=True)
+
                 # ── 2. Aguardar término das partidas (com timeout) ──────
                 timeout = SETTINGS.game_timeout_seconds
                 wait_for_processes(
@@ -447,6 +465,8 @@ class GPUTrainingOrchestrator:
                     proc_lock=self._proc_lock,
                     on_item_finished=_on_room_finished,
                     room_ids=[r[0] for r in batch_rooms],
+                    stagnant_timeout=120.0,
+                    progress_interval=8.0,
                 )
     
                 # Garante que nenhum processo deste lote continue vivo
@@ -489,7 +509,11 @@ class GPUTrainingOrchestrator:
 
             min_train = min(batch_size, max(32, len(buffer)))
             if len(buffer) >= min_train and len(buffer) >= 32:
-                num_train_steps = max(1, int(cfg.get("train_steps", 1)))
+                configured_steps = cfg.get("train_steps")
+                if configured_steps is not None and int(configured_steps) > 0:
+                    num_train_steps = int(configured_steps)
+                else:
+                    num_train_steps = max(1, min(16, newly_ingested // max(1, batch_size)))
                 for _ in range(num_train_steps):
                     loss_p, loss_v, loss_t, entropy, val_mean = self._train_step(
                         self.model, optimizer, scaler, buffer, device, batch_size, use_fp16
@@ -537,7 +561,8 @@ class GPUTrainingOrchestrator:
                 last_saved_epoch = self.stats["epochs_completed"]
                 self._save_checkpoint(self.model, buffer)
 
-            time.sleep(0.05)
+            if newly_ingested == 0 and headless_samples_ingested == 0:
+                time.sleep(0.05)
 
         # Ao parar, garante que salva o estado final de forma síncrona
         if self.model is not None:
@@ -558,9 +583,19 @@ class GPUTrainingOrchestrator:
     ):
         model.train()
         eff_batch = min(batch_size, len(buffer))
-        states_b, policies_b, values_b, is_weights_b, aux_targets = buffer.sample_batch(
-            batch_size=eff_batch, device=device, prioritized=True, return_is_weights=True, return_aux=True
+        batch_out = buffer.sample_batch(
+            batch_size=eff_batch,
+            device=device,
+            prioritized=True,
+            return_is_weights=True,
+            return_aux=True,
+            return_indices=True,
         )
+        if len(batch_out) == 6:
+            states_b, policies_b, values_b, is_weights_b, aux_targets, batch_indices = batch_out
+        else:
+            states_b, policies_b, values_b, is_weights_b, aux_targets = batch_out
+            batch_indices = None
 
         optimizer.zero_grad()
 
@@ -596,11 +631,18 @@ class GPUTrainingOrchestrator:
         scaler.update()
 
         with torch.no_grad():
+            if batch_indices is not None and hasattr(buffer, "update_priorities"):
+                val_err = torch.abs(value_preds.squeeze(-1) - values_b.squeeze(-1)).detach().cpu().numpy()
+                buffer.update_priorities(batch_indices, val_err)
+
             detached_log_p = log_probs.detach()
             probs = detached_log_p.exp()
             entropy_elem = -probs * detached_log_p
-            raw_entropy = (entropy_elem.sum(dim=-1).mean() / float(np.log(2))).item()
-            raw_val_mean = value_preds.mean().item()
+            raw_entropy = entropy_elem.sum(dim=-1).mean() / float(np.log(2))
+            raw_val_mean = value_preds.mean()
+            # Consolidar 5 sincronizações .item() em uma única transferência assíncrona
+            metrics = torch.stack([loss_policy, loss_value, total_loss, raw_entropy, raw_val_mean]).detach().cpu()
+            m_list = metrics.tolist()
 
         def _safe_float(v: Any, default: float = 0.0) -> float:
             try:
@@ -609,19 +651,43 @@ class GPUTrainingOrchestrator:
             except Exception:
                 return default
 
-        return (
-            _safe_float(loss_policy.item()),
-            _safe_float(loss_value.item()),
-            _safe_float(total_loss.item()),
-            _safe_float(raw_entropy),
-            _safe_float(raw_val_mean),
-        )
+        return tuple(_safe_float(x) for x in m_list)
 
     def _next_deck_pair(self, pool: List[str]):
         matchup_mode = str(self.config.get("matchup_mode", "cross")).lower()
         d1, d2 = self.matchup_engine.next_pair(pool, mode=matchup_mode)
         self.deck_rot_idx += 1
         return d1, d2
+
+    def _sample_league_opponent(self, cfg: Dict[str, Any]) -> Optional[FaBPolicyValueNetwork]:
+        """
+        Self-Play League: Amostra um checkpoint histórico como oponente (AlphaStar/KataGo style)
+        para mitigar esquecimento catastrófico e drift de política.
+        """
+        if not bool(cfg.get("league_play", False)):
+            return None
+
+        league_prob = float(cfg.get("league_prob", 0.25))
+        if random.random() > league_prob:
+            return None
+
+        ckpt_dir = str(cfg.get("checkpoint_dir") or SETTINGS.checkpoint_dir)
+        if not os.path.exists(ckpt_dir):
+            return None
+
+        ckpts = [os.path.join(ckpt_dir, f) for f in os.listdir(ckpt_dir) if f.endswith(".pt")]
+        if not ckpts:
+            return None
+
+        chosen_ckpt = random.choice(ckpts)
+        try:
+            from ai.model import create_model
+            opp_net, _ = create_model()
+            opp_net.load_state_dict(torch.load(chosen_ckpt, map_location="cpu", weights_only=True))
+            opp_net.eval()
+            return opp_net
+        except Exception:
+            return None
 
     @staticmethod
     def _get_all_decks() -> List[str]:
@@ -698,6 +764,7 @@ if __name__ == "__main__":
     parser.add_argument("--train-steps", type=int, default=None, help="Number of gradient optimization steps per epoch (default: 1)")
     parser.add_argument("--max-resources", action="store_true", help="Enable maximum hardware utilization mode")
     parser.add_argument("--batched-inference", action="store_true", help="Enable dynamic batching of MCTS neural evaluations across concurrent workers")
+    parser.add_argument("--league-play", action="store_true", help="Enable Self-Play League against historical checkpoints")
     parser.add_argument("--decks", type=str, default=None, help="Lista de decks separados por vírgula (ex: jarl,levia,cindra)")
     parser.add_argument("--matchup-mode", type=str, choices=["cross", "mirror", "mixed"], default="cross", help="Modo de pareamento: cross (todos contra todos), mirror (apenas espelhados) ou mixed")
     args = parser.parse_args()
@@ -728,10 +795,13 @@ if __name__ == "__main__":
         sys.exit(1)
     
     print("[Pre-flight] Hardware Check aprovado. Iniciando Orquestrador...", flush=True)
+    if args.batched_inference and not args.headless:
+        print("[Pre-flight] ℹ️ Dica: '--batched-inference' acelera o treinamento em memória GPU via '--headless'. Em Sim2Real, as partidas rodam via subprocessos no Talishar.", flush=True)
     
     custom_cfg = {
         "headless": args.headless,
         "batched_inference": args.batched_inference,
+        "league_play": args.league_play,
     }
     if args.max_epochs is not None:
         custom_cfg["max_epochs"] = args.max_epochs

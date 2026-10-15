@@ -261,3 +261,86 @@ def test_orchestrator_train_steps_and_bot_device():
     assert cfg.get("train_steps") == 5
     assert cfg.get("headless") is False
     GPUTrainingOrchestrator.reset_instance()
+
+
+def test_get_room_telemetry_and_summary_info(tmp_path):
+    from ai.training.process_supervisor import get_room_telemetry, get_room_summary_info
+    import json
+
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir(parents=True)
+
+    r_id = "Train_test_123"
+
+    # Nonexistent files fallback
+    telem_empty = get_room_telemetry(r_id, base_dir=str(tmp_path))
+    assert telem_empty["room_id"] == r_id
+    assert telem_empty["game_id"] is None
+    assert telem_empty["turn"] is None
+    assert telem_empty["status"] == "Iniciando"
+
+    # Write game_id and bot1 metrics
+    (logs_dir / f"{r_id}_game_id.txt").write_text("13499", encoding="utf-8")
+    (logs_dir / f"{r_id}_Bot1.json").write_text(
+        json.dumps({"metrics": {"turn": 7, "health": 24, "opp_health": 18, "status": "Jogando"}}),
+        encoding="utf-8",
+    )
+
+    telem = get_room_telemetry(r_id, base_dir=str(tmp_path))
+    assert telem["game_id"] == "13499"
+    assert telem["turn"] == 7
+    assert telem["p1_hp"] == 24
+    assert telem["p2_hp"] == 18
+    assert telem["status"] == "Jogando"
+
+    # Write summary.log
+    summary_text = (
+        "═══════════════════════════════════════════════\n"
+        f"🏆 RESULTADO DA PARTIDA: {r_id}\n"
+        "═══════════════════════════════════════════════\n"
+        "• Vencedor: Jogador 1 (jarl) (Jogador 1)\n"
+        "• Jogador 1 (jarl): 5 HP\n"
+        "• Jogador 2 (jarl): -2 HP\n"
+        "• Duração: 16 turnos\n"
+        "• Decisões Coletadas para Treino: 19 amostras\n"
+        "═══════════════════════════════════════════════\n"
+    )
+    (logs_dir / f"{r_id}_summary.log").write_text(summary_text, encoding="utf-8")
+
+    s_info = get_room_summary_info(r_id, base_dir=str(tmp_path))
+    assert s_info["winner"] == "Jogador 1 (jarl) (Jogador 1)"
+    assert s_info["duration"] == "16 turnos"
+    assert s_info["p1_hp"] == "5 HP"
+    assert s_info["p2_hp"] == "-2 HP"
+
+
+def test_wait_for_processes_progress_ticker():
+    from ai.training.process_supervisor import wait_for_processes
+
+    p1 = MagicMock()
+    p2 = MagicMock()
+    # Finish on 4th poll iteration
+    poll_counts = [0]
+    def poll_func():
+        poll_counts[0] += 1
+        return 0 if poll_counts[0] >= 4 else None
+
+    p1.poll.side_effect = poll_func
+    p2.poll.side_effect = poll_func
+
+    progress_ticks = []
+    def on_prog(elapsed, total, finished, telems):
+        progress_ticks.append((elapsed, total, finished, telems))
+
+    res = wait_for_processes(
+        [(p1, p2)],
+        timeout=1.0,
+        check_interval=0.01,
+        progress_interval=0.02,
+        room_ids=["Train_ticker_test"],
+        on_progress=on_prog,
+    )
+    assert res is True
+    assert len(progress_ticks) >= 1
+    assert progress_ticks[0][1] == 1  # total_rooms
+

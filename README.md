@@ -389,7 +389,7 @@ Para garantir que todos os módulos de IA, simulador, ISMCTS, podas táticas e e
 ```bash
 ./venv/bin/pytest
 ```
-*(Todos os 529 testes automatizados executam e passam em ~50 segundos, isolados nativamente via `pytest.ini`).*
+*(Todos os 564 testes automatizados executam e passam em ~50 segundos, isolados nativamente via `pytest.ini`).*
 
 ---
 
@@ -467,7 +467,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 O Git Hook `pre-push` é executado automaticamente a cada `git push` para garantir que falhas nunca cheguem ao repositório remoto ou quebrem o GitHub Actions. Ele executa:
 1. **Sintaxe Completa Python** (`compileall`).
 2. **Dry-Run do ISMCTS** (`scripts/analyze_ismcts.py --dry-run`).
-3. **Execução da Suíte de Testes** (`pytest tests/`, 529 testes) [Incremental: pula se apenas documentação foi alterada].
+3. **Execução da Suíte de Testes** (`pytest tests/`, 564 testes) [Incremental: pula se apenas documentação foi alterada].
 4. **Verificação de Sincronização dos Templates** (`prepare_environment.py --export-templates` & diff).
 5. **Build de Produção do Frontend Vite** (`npx vite build`) [Incremental: pula se não houve alterações no frontend].
 
@@ -560,7 +560,7 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 │   ├── manage_state.py       # Gestão de checkpoints compactos, releases e reset com backup
 │   ├── clean_training_state.py # Limpeza atômica e reset de replay buffer, métricas e Sim2Real
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 529 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 577 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -676,11 +676,18 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Resolução de Anomalias Sim2Real, Poda Preventiva de Flick Knives & Suporte a Arsenal no Shadow Mode (537 Testes)** | Poda preventiva a montante de *Flick Knives* em `phase_decider.py` e `assassin.py` exigindo adaga não quebrada, `overlay=0` e livre do elo ativo de combate (CR 245), rejeição estrita de opções indisponíveis em popups (`overlay=1`) e envio de PASS (Mode 99) em `MAYCHOOSEMULTIZONE` no `choice_handler.py`, sincronização de AP e Go-Again condicional (*Burning Blade Dance*) no `GameSimulator`, e suporte completo ao Mode 5 (Arsenal) e temporização de HP de Phase B no `Shadow Mode` (537 testes unitários no pytest) |
 | **Checkup de Go-Again, Validação de Condicionais & Defesa de Sobrevivência (544 Testes)** | Universalização da verificação de Go-Again em aberturas de cadeia para Hand e Arsenal com AP $\le$ 1 em `attack_pruner.py`, penalização estrita de cartas jogadas sem pré-condições satisfeitas (*Hunt the Hunter* sem carta vermelha prévia, *Lava Burst* antes do elo 4 de Rupture, *Mark with Magma* sem 2 elos dracônicos), e eliminação de desistência prematura de bloqueio em HP $\le$ 10 contra ataques com Go-Again e oponente ativo em `defense_pruner.py` e `turn_planner.py` (544 testes unitários no pytest) |
 | **Resolução de Decompose, Sideboard Inteligente (Arcane vs Físico) & Calibração de Equipamentos (547 Testes)** | Respeito estrito a `minNo=3` em `MAYCHOOSEMULTIZONE` (2 cartas de Terra e 1 de Ação ou PASS seguro) em `choice_handler.py`, seleção contextual de equipamentos no Sideboard priorizando defesa física/Crown of Providence contra oponentes físicos e reservando Arcane Barrier para matchups arcanos com aprendizado acelerado em 3 partidas em `sideboard_manager.py` e `equipment_learning.py`, ativação contextual de Gauntlets of the Boreal Domain e mitigação de ganância de `TEMPO_COUNTER_ATTACK` para Guardiões em `equipment_evaluator.py`, `turn_planner.py` e `guardian.py` (547 testes unitários no pytest) |
+| **Telemetria Sim2Real em Tempo Real & Monitoramento CLI (549 Testes)** | Ticker periódico e não-bloqueante na CLI durante lotes de treino Sim2Real e Headless em `ai/training/process_supervisor.py` e `ai/training/orchestrator.py`, exibindo a cada 8s o número da sala no Talishar, turno atual, HPs relativos dos jogadores, tempo de reflexão MCTS, notificação imediata de partidas concluídas com placar/duração e esclarecimento de uso da flag `--batched-inference` para o modo `--headless` (549 testes unitários no pytest) |
+| **Resolução de Anomalias Sim2Real & Sincronização do Simulador (553 Testes)** | Exclusão estrita de Defense Reactions da declaração de blocos em Phase B (`defense_pruner.py` conforme CR 7.3.2 e regras do Talishar), eliminação de divergências fantasmas de `arsenal_count` unificando `playerArsenal` e `playerArse` no `Shadow Mode`, ajuste da temporização de dano intermediário de ataque (`opponentHealth`), simulação fiel de custos pendentes e consumo de AP na fase de pitch (`simulate_pitch` em `GameSimulator`) e neutralização de consumo indevido de AP em habilidades instantâneas de equipamento (`simulate_attack`) (553 testes unitários no pytest) |
+| **MCTS 1-Ply Memoizado, Fast Immutability & Recompensa Canônica (559 Testes)** | Memoização de nós candidatos em lote único no MCTS/ISMCTS reduzindo latência em 94.9% (de 534ms para 27.2ms p50) e forward passes em 96.7% (de 154 para 5 por decisão), construtor `_from_frozen` em `ImmutableGameState` com zero re-freeze recursivo em `replace`/`without`, extração opcional de vetor em `GameSimulator.simulate_step(with_vector=False)`, eliminação de double-counting de `sim_idx` no PUCT, unificação da recompensa canônica (`0.6 + 0.4r` com annealing) e sincronização atômica de status em `assimilation.py` (559 testes unitários no pytest) |
+| **Vetorização da SumTree (PER), Atualizações Dinâmicas de TD-Error & Throughput de Treinamento (564 Testes - ADR-0017)** | Reconstrução vetorizada nível a nível em `SumTree.set_all` acelerando rebuild em 233.8x (de 203ms para 0.87ms), implementação de `update_priorities` com erro temporal $|V_{pred} - V_{target}|$ e annealing de $\beta$ em `ReplayBuffer.sample_batch(return_indices=True)`, passos de gradiente dinâmicos (`newly_ingested // batch_size`), consolidação de transferências GPU $\to$ CPU em `_train_step` e `predict_state`, e cache de templates pré-compilados de baralhos em `HeadlessSelfPlayLoop` aumentando o throughput de auto-jogo para 42.19 partidas/min (+62.6% total) (suíte dedicada em `tests/test_sprint2_training_throughput.py`, 564 testes unitários no pytest) |
+| **Headless Arena, Suíço Oficial & Self-Play League (569 Testes - ADR-0018)** | Sistema de validação competitiva em memória (`execution_mode="headless"`) com rede oponente (`opp_model`), pareamento suíço com desempates oficiais de Buchholz e Sonneborn-Berger, algoritmo anti-rematch, sistema de Byes (+3 pts), atualização de ELO em SQLite (`data/talishar_stats.db`), suporte a Self-Play League com amostragem probabilística de checkpoints históricos em `orchestrator.py` e aba integrada no Streamlit (`ui/tabs/tab_tournaments.py`) (569 testes unitários no pytest) |
+| **Sideboard Data-Driven & Incerteza Bayesiana / MC Dropout (574 Testes - ADR-0019)** | Resolução de sideboard com detecção semântica dinâmica de dano arcano via classes, keywords e texto do herói adversário, pontuação semântica de equipamentos por durabilidade (`battleworn`, `temper`) e conformidade com CR 2.8.2 e CR 3.0 para armas/escudos; e estimação de incerteza Bayesiana no Value Head via Monte Carlo Dropout em lote único (`predict_value_with_uncertainty`), modulando o orçamento MCTS adaptativo (1.5x a 2.0x) e blindando contra absorções levianas de dano no resolvedor de defesa (suíte em `tests/test_sprint4_sideboard_and_mcdropout.py`, 574 testes unitários no pytest) |
+| **Sincronização Multi-Tick Sim2Real & Suporte a playerArse (577 Testes)** | Detecção de transições multi-tick assíncronas do Talishar (Phase M $\to$ Phase P) marcadas como transitórias (`confounded=True`), reconhecimento de liquidação atômica de custos pendentes na Phase P sem falsos alertas de divergência de recursos/AP, suporte bidirecional à chave `playerArse` em `GameSimulator.simulate_attack`, inicialização ultra-rápida do frontend com binário local do Vite e polling a cada 0.5s (577 testes unitários no pytest) |
 
 ### 📋 Pendente
  
-1. **Interface Visual Completa para Torneios Suíços**: Painel interativo multi-rodadas com gestão de chaves em tempo real na aba dedicada do Dashboard Streamlit (`ui/tabs/tab_tournaments.py`).
-2. **Modelagem de Matchups**: Fine-tuning da rede para arquétipos específicos do meta competitivo.
+1. **Modelagem Avançada de Matchups**: Fine-tuning da rede e calibração de sideboard para arquétipos específicos do meta competitivo.
+2. **Interface Visual Completa para Torneios Suíços**: Polimento e expansão dos painéis interativos de chaves ao vivo no Dashboard Streamlit.
 
 ---
 

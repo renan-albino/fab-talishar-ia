@@ -47,6 +47,7 @@ def calculate_adaptive_mcts_budget(
     delta_eval: Optional[float] = None,
     state: Optional[Dict[str, Any]] = None,
     is_critical: Optional[bool] = None,
+    value_uncertainty: Optional[float] = None,
 ) -> int:
     """
     Calcula dinamicamente o orçamento adaptativo de simulações MCTS/ISMCTS.
@@ -55,7 +56,7 @@ def calculate_adaptive_mcts_budget(
     Variação dinâmica:
       - 1 ação legal: min(3, base_sims) para acelerar decisão forçada.
       - 2 ações com escolha trivial: max(5, int(base_sims * 0.6)) (ou min(3, base_sims) se base < 5).
-      - Alta incerteza (entropia >= 0.85, Delta-Eval >= 1.5 ou letalidade crítica HP <= 6):
+      - Alta incerteza (entropia >= 0.85, Delta-Eval >= 1.5, MC Dropout sigma >= 0.20 ou letalidade crítica HP <= 6):
         escalona para int(base_sims * 1.5) ou até int(base_sims * 2.0).
       - Turnos normais: respeita rigorosamente base_sims configurado pelo usuário.
     """
@@ -117,14 +118,18 @@ def calculate_adaptive_mcts_budget(
     # Detecção de Delta-Eval >= 1.5
     high_delta = bool(delta_eval is not None and abs(float(delta_eval)) >= 1.5)
 
+    # Detecção de alta incerteza Bayesiana (Monte Carlo Dropout no Value Head)
+    high_uncertainty_value = bool(value_uncertainty is not None and float(value_uncertainty) >= 0.20)
+    extreme_uncertainty_value = bool(value_uncertainty is not None and float(value_uncertainty) >= 0.35)
+
     # Escolha trivial em turno sem perigo nem incerteza: reduz simulações
-    if is_trivial and not critical_lethality and not high_entropy and not high_delta:
+    if is_trivial and not critical_lethality and not high_entropy and not high_delta and not high_uncertainty_value:
         return max(5, int(base_sims * 0.6)) if base_sims >= 5 else min(3, base_sims)
 
     # Alta incerteza ou criticidade: escala para cima
-    if (critical_lethality and (high_entropy or high_delta or bot_hp <= 3 or opp_hp <= 3)) or (delta_eval is not None and abs(float(delta_eval)) >= 2.0):
+    if extreme_uncertainty_value or (critical_lethality and (high_entropy or high_delta or high_uncertainty_value or bot_hp <= 3 or opp_hp <= 3)) or (delta_eval is not None and abs(float(delta_eval)) >= 2.0):
         return max(base_sims, int(base_sims * 2.0))
-    elif critical_lethality or high_entropy or high_delta:
+    elif critical_lethality or high_entropy or high_delta or high_uncertainty_value:
         return max(base_sims, int(base_sims * 1.5))
 
     # Turnos normais: respeita rigorosamente base_sims
@@ -460,20 +465,26 @@ class ISMCTSEngine:
         base_simulations_input = num_simulations
         state_vec = FaBPolicyValueNetwork.extract_state_vector(state)
 
-        # ── Orçamento Adaptativo de MCTS ───────────────────────────
+        # ── Avaliação Raiz Única & Orçamento Adaptativo de MCTS ─────
+        # Os mundos determinizados diferem apenas na mão oculta do oponente,
+        # a qual não é codificada no vetor de estado raiz. Avaliamos a raiz 1 única vez.
+        root_priors, root_base_value = self._mcts._evaluate(state_vec)
+
         if adaptive_budget and num_simulations > 0:
-            priors_for_budget = None
-            try:
-                priors_for_budget, _ = self._mcts._evaluate(state_vec)
-            except Exception:
-                pass
+            val_uncertainty = None
+            if hasattr(self.model, "predict_value_with_uncertainty"):
+                try:
+                    _, val_uncertainty = self.model.predict_value_with_uncertainty(state_vec, num_samples=4)
+                except Exception:
+                    pass
             num_simulations = calculate_adaptive_mcts_budget(
                 base_sims=num_simulations,
                 legal_actions=legal_actions,
-                priors=priors_for_budget,
+                priors=root_priors,
                 delta_eval=delta_eval,
                 state=state,
                 is_critical=is_critical,
+                value_uncertainty=val_uncertainty,
             )
 
         worlds = generate_worlds(state=state, opp_hand_count=None, num_worlds=self.num_worlds)
@@ -512,8 +523,10 @@ class ISMCTSEngine:
                             legal_actions=legal_actions,
                             num_simulations=num_simulations,
                             training_mode=training_mode,
-                            state_vec=FaBPolicyValueNetwork.extract_state_vector(world_state),
+                            state_vec=state_vec,
                             world_seed=idx,
+                            priors=root_priors,
+                            base_value=root_base_value,
                         )
                         for idx, world_state in enumerate(worlds)
                     ]
@@ -673,14 +686,15 @@ class ISMCTSEngine:
         elif mode == "sequential":
             results = []
             for idx, world_state in enumerate(worlds):
-                world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
                 best_idx_w, root = self._run_world_mcts(
                     world_state=world_state,
                     legal_actions=legal_actions,
                     num_simulations=num_simulations,
                     training_mode=training_mode,
-                    state_vec=world_vec,
+                    state_vec=state_vec,
                     world_seed=idx,
+                    priors=root_priors,
+                    base_value=root_base_value,
                 )
                 results.append(_extract_level1_summary(root, best_idx_w, idx))
 
@@ -691,14 +705,15 @@ class ISMCTSEngine:
             logger.warning(f"ISMCTS modo '{mode}' não retornou resultados válidos. Executando fallback sequencial.")
             results = []
             for idx, world_state in enumerate(worlds):
-                world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
                 best_idx_w, root = self._run_world_mcts(
                     world_state=world_state,
                     legal_actions=legal_actions,
                     num_simulations=num_simulations,
                     training_mode=training_mode,
-                    state_vec=world_vec,
+                    state_vec=state_vec,
                     world_seed=idx,
+                    priors=root_priors,
+                    base_value=root_base_value,
                 )
                 results.append(_extract_level1_summary(root, best_idx_w, idx))
 
@@ -743,7 +758,7 @@ class ISMCTSEngine:
         confidence = best_votes / total_votes if total_votes > 0 else 0.0
 
         # ── Log de Diagnóstico e Telemetria Nível 1 ────────────────
-        _, base_value = self._mcts._evaluate(state_vec)
+        base_value = root_base_value
         action_names = [a.get("name", str(i)) for i, a in enumerate(legal_actions)]
         chosen_name = action_names[best_idx] if best_idx < len(action_names) else str(best_idx)
 
@@ -786,19 +801,19 @@ class ISMCTSEngine:
         training_mode: bool,
         state_vec: np.ndarray,
         world_seed: int = 0,
+        priors: Optional[np.ndarray] = None,
+        base_value: Optional[float] = None,
     ) -> Tuple[int, MCTSNode]:
         """
-        Executa MCTSEngine em um mundo determinizado com batch leaf evaluation.
-
+        Executa MCTSEngine em um mundo determinizado com memoização de 1-ply.
         Retorna (best_idx, root) para extração de estatísticas e vote_counts.
-        Reutiliza o `state_vec` da raiz entre mundos — os mundos diferem apenas
-        na mão oculta do oponente, não no vetor de estado do próprio bot.
         """
         num_legal = len(legal_actions)
         if num_legal == 0:
             return 0, MCTSNode(prior=1.0)
 
-        priors, base_value = self._mcts._evaluate(state_vec)
+        if priors is None or base_value is None:
+            priors, base_value = self._mcts._evaluate(state_vec)
 
         root = MCTSNode(prior=1.0)
         self._mcts._expand(root, legal_actions, priors)
@@ -806,19 +821,25 @@ class ISMCTSEngine:
         if training_mode and root.children:
             self._mcts._add_dirichlet_noise(root, len(root.children) + len(root.pending))
 
+        # ── Memoização de 1-Ply: Avalia todos os nós candidatos em lote único ──
+        # ponytail: como a árvore FaB opera em profundidade 1 determinística,
+        # avaliamos os filhos (ativos e pendentes em root.children) em lote único.
+        kids = list(root.children.values())
+        leaf_vals = self._mcts._batch_evaluate_leaves(
+            root_state_vec=state_vec,
+            nodes=kids,
+            base_value=base_value,
+            state=world_state,
+            legal_actions=legal_actions,
+            world_seed=world_seed,
+        )
+        vals_map = {c.action_id: val for c, val in zip(kids, leaf_vals)}
+
         # ── Phase 1, 2, 3: Simulate, Evaluate, Backpropagate ──────
         for sim_idx in range(num_simulations):
             self._mcts._progressive_widen(root, sim_idx)
             node = self._mcts._select(root)
-            leaf_value = self._mcts._batch_evaluate_leaves(
-                root_state_vec=state_vec,
-                nodes=[node],
-                base_value=base_value,
-                state=world_state,
-                legal_actions=legal_actions,
-                world_seed=world_seed,
-            )[0]
-            self._mcts._backpropagate(node, leaf_value)
+            self._mcts._backpropagate(node, vals_map.get(node.action_id, base_value))
 
         best_idx = self._mcts._select_action(root, legal_actions, training_mode)
         return best_idx, root

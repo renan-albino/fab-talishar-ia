@@ -89,6 +89,8 @@ def extract_card_info(card: dict) -> dict:
         if any(k in card_number for k in ["_red", "_yellow", "_blue"]) and not any(k in card_number for k in ["heart", "accelerator", "providence", "tunic"]):
             block = 3 if pitch == 3 else (2 if pitch == 2 else 2)
 
+
+
     # Custo de recurso heurístico se não estiver catalogado no banco
     if cost == 0 and not db_entry:
         if any(k in card_number for k in ["throttle", "pounder", "trebuchet", "staunch", "spinal", "mangle", "felling"]):

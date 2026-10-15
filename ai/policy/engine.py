@@ -154,9 +154,9 @@ class PolicyEngine:
         """Seleciona o melhor candidato de ataque coordenando podas e busca ISMCTS/MCTS."""
         return select_best_attack(self, state, unpayable_set=unpayable_set)
 
-    def select_defense_blocks(self, state: dict) -> List[Tuple[int, str, str, int]]:
+    def select_defense_blocks(self, state: dict, value_uncertainty: Optional[float] = None) -> List[Tuple[int, str, str, int]]:
         """Seleciona a melhor combinação de bloqueadores otimizando breakpoints e preservando contra-ataque."""
-        return select_defense_blocks(self, state)
+        return select_defense_blocks(self, state, value_uncertainty=value_uncertainty)
 
     def select_best_pitch_card(self, state: dict, target_cost: int = 1) -> Optional[Tuple[int, str, int]]:
         """Delega a escolha de pitch para o pruner especializado."""
@@ -174,6 +174,7 @@ class PolicyEngine:
         delta_eval: Optional[float] = None,
         priors: Optional[Any] = None,
         is_critical: Optional[bool] = None,
+        value_uncertainty: Optional[float] = None,
     ) -> int:
         """Calcula o orçamento adaptativo de simulações MCTS/ISMCTS para a decisão atual."""
         from ..mcts.ismcts import calculate_adaptive_mcts_budget
@@ -185,4 +186,5 @@ class PolicyEngine:
             delta_eval=delta_eval,
             state=state,
             is_critical=is_critical,
+            value_uncertainty=value_uncertainty,
         )

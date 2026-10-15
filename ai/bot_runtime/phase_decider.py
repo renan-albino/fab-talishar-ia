@@ -277,6 +277,8 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
             c_low = str(c_name).lower()
             cards_db = getattr(client.policy_engine, "cards_db", {}) or {}
             db_entry = cards_db.get(c_low, {})
+            if not db_entry:
+                db_entry = cards_db.get(c_low.replace(" ", "_").replace("-", "_"), {})
             c_type = str(c.get("type") or db_entry.get("type", "")).upper()
             c_subtype = str(c.get("subtype") or db_entry.get("subtype", "")).lower()
 
@@ -284,7 +286,7 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
                 c_type in ("DR", "DEFENSE REACTION")
                 or "defense reaction" in c_subtype
                 or "defense reaction" in c_type.lower()
-                or any(k in c_low for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable", "shelter", "take_cover"])
+                or any(k in c_low for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable", "shelter", "take_cover", "rootbound"])
             )
             is_instant = (
                 c_type in ("I", "INSTANT")
@@ -354,6 +356,8 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
 
         cards_db = getattr(client.policy_engine, "cards_db", {}) or {}
         db_entry = cards_db.get(c_low, {})
+        if not db_entry:
+            db_entry = cards_db.get(c_low.replace(" ", "_").replace("-", "_"), {})
         c_type = str(c.get("type") or db_entry.get("type", "")).upper()
         c_subtype = str(c.get("subtype") or db_entry.get("subtype", "")).lower()
 
@@ -361,7 +365,7 @@ def handle_reaction_phase(client, state: dict, turn_num: int, turn_phase: str, p
             c_type in ("DR", "DEFENSE REACTION")
             or "defense reaction" in c_subtype
             or "defense reaction" in c_type.lower()
-            or any(k in c_low for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable", "shelter", "take_cover"])
+            or any(k in c_low for k in ["sink_below", "fate_foreseen", "staunch_response", "unmovable", "shelter", "take_cover", "rootbound"])
         )
         is_instant = (
             c_type in ("I", "INSTANT")

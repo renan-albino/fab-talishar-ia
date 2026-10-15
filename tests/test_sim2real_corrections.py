@@ -301,3 +301,190 @@ def test_shadow_mode_phase_b_health_timing():
     assert pred is not None
     # No tick intermediário após o bloco, HP esperado é o HP atual (35), pois dano só resolve após reações
     assert pred["player_health"] == 35
+
+
+def test_dr_cards_excluded_from_declare_block():
+    """Valida que Defense Reactions (Sink Below, Rootbound Carapace) são excluídas da declaração de bloco na Phase B (CR 7.3.2)."""
+    from ai.policy.defense_pruner import select_defense_blocks
+
+    engine = MagicMock()
+    engine.hero_class = "GUARDIAN"
+    engine.calculate_available_resources.return_value = (0, 0)
+    engine.extract_card_info.side_effect = lambda c: {
+        "name": c.get("name", c.get("cardNumber", "")),
+        "block": c.get("defense", c.get("block", 0)),
+        "pitch": c.get("pitch", 1),
+        "power": c.get("power", 0),
+        "cost": c.get("cost", 0),
+        "has_go_again": False,
+        "action": 27,
+        "actionDataOverride": None,
+    }
+    engine.strategy.analyze_turn_plan.return_value = MagicMock(
+        reserved_card_names=set(),
+        can_absorb_damage=False,
+        plan_type="FULL_DEFENSE",
+    )
+    engine.strategy.calculate_card_opportunity_cost.return_value = 0.0
+    engine.strategy.evaluate_block_card.return_value = 10.0
+
+    state = {
+        "turnNo": 2,
+        "turnPhase": "B",
+        "activeChainLink": {"power": 4, "totalPower": 4},
+        "playerHealth": 5,
+        "playerEquipment": [],
+        "playerHand": [
+            {"cardNumber": "sink_below_red", "name": "Sink Below", "defense": 4, "type": "DR"},
+            {"cardNumber": "rootbound_carapace_red", "name": "Rootbound Carapace", "defense": 4, "type": "DR"},
+            {"cardNumber": "staunch_defense_red", "name": "Staunch Defense", "defense": 3, "type": "A"},
+        ],
+    }
+
+    blocks = select_defense_blocks(engine, state)
+    # Apenas a carta do tipo Action (Staunch Defense) pode ser candidata a bloco na Phase B;
+    # As DRs (Sink Below e Rootbound Carapace) DEVEM ser excluídas da fase B
+    blocked_names = [b[2] for b in blocks]
+    assert "Sink Below" not in blocked_names
+    assert "Rootbound Carapace" not in blocked_names
+    assert "Staunch Defense" in blocked_names
+
+
+def test_shadow_mode_player_arse_key_and_opponent_health():
+    """Valida que playerArse não acusa falso positivo de arsenal e que ataque não assume dano prematuro."""
+    pre_state = {
+        "turnNo": 1,
+        "turnPlayer": 1,
+        "turnPhase": "M",
+        "playerAP": 1,
+        "playerHand": [{"cardNumber": "snatch_red", "cost": 0, "power": 4}],
+        "playerArse": [{"cardNumber": "sink_below_red", "cost": 0}],
+        "playerResources": [0, 0],
+        "playerHealth": 40,
+        "opponentHealth": 40,
+    }
+
+    pred = shadow_mode.predict(pre_state, card_id="0", mode=27)
+    assert pred is not None
+    # playerArse deve refletir arsenal_count = 1
+    assert pred["arsenal_count"] == 1
+    # Ao declarar ataque no tick intermediário, dano ainda não resolveu, opp HP é 40
+    assert pred["opponent_health"] == 40
+
+    post_state = {
+        "turnNo": 1,
+        "turnPlayer": 1,
+        "playerAP": 0,
+        "playerHand": [],
+        "playerArse": [{"cardNumber": "sink_below_red", "cost": 0}],
+        "playerResources": [0, 0],
+        "playerHealth": 40,
+        "opponentHealth": 40,
+    }
+
+    diffs, confounded = shadow_mode.compare(pred, pre_state, post_state)
+    assert not confounded
+    assert "arsenal_count" not in diffs
+    assert "opponent_health" not in diffs
+
+
+def test_simulate_pitch_pending_costs_and_ap_consumption():
+    """Valida que simulate_pitch consome custos pendentes [0, cost] e consome AP ao quitar o custo da ação."""
+    # Estado com custo pendente de 3 recursos exigido por uma ação declarada
+    state = {
+        "playerAP": 1,
+        "playerResources": [0, 3],
+        "playerHand": [
+            {"cardNumber": "blue_pitch_card", "name": "Blue Pitch Card", "pitch": 3},
+            {"cardNumber": "other_card", "name": "Other Card", "pitch": 1},
+        ],
+        "playerPitch": [],
+    }
+
+    next_state = GameSimulator.simulate_pitch(state, {"cardNumber": "blue_pitch_card", "pitch": 3, "card_idx": 0})
+    # O pitch de 3 quitou o custo exigido de 3: sobra de floating = 0, custo pendente remanescente = 0
+    assert next_state.get("playerResources") == (0, 0)
+    # Ação processada consumiu 1 AP
+    assert next_state.get("playerAP") == 0
+    assert len(next_state.get("playerHand")) == 1
+
+
+def test_simulate_attack_equipment_ability_does_not_spend_ap():
+    """Valida que ativar habilidade de equipamento (Instant) não gasta Action Point."""
+    state = {
+        "playerAP": 1,
+        "currentAttackBuff": 0,
+    }
+
+    action = {
+        "type": "equipment_ability",
+        "cardNumber": "crown_of_providence",
+        "name": "crown_of_providence",
+    }
+    next_state = GameSimulator.simulate_attack(state, action)
+    assert next_state.get("playerAP") == 1
+
+
+def test_shadow_mode_phase_m_to_p_multi_tick_transition_confounded():
+    """Valida que transição multi-tick M -> P (esperando pitch) é marcada como transicional (confounded)."""
+    pre_state = {
+        "turnNo": 1,
+        "turnPlayer": 1,
+        "turnPhase": "M",
+        "playerAP": 1,
+        "playerHand": [{"cardNumber": "attack_cost_3", "cost": 3}],
+        "playerResources": [0, 0],
+    }
+    pred = {"hand_count": 0, "resources": 0, "action_points": 0, "card_consumed": "attack_cost_3", "zone": "hand"}
+    post_state = {
+        "turnNo": 1,
+        "turnPlayer": 1,
+        "turnPhase": "P",
+        "playerAP": 1,
+        "playerHand": [{"cardNumber": "attack_cost_3", "cost": 3}],
+        "playerResources": [0, 0],
+    }
+    diffs, confounded = shadow_mode.compare(pred, pre_state, post_state)
+    assert confounded is True
+
+
+def test_shadow_mode_phase_p_pending_cost_settlement_no_divergence():
+    """Valida que liquidação de pitch na Phase P não acusa divergência de resources/AP consumidos pela ação."""
+    pre_state = {
+        "turnNo": 1,
+        "turnPlayer": 1,
+        "turnPhase": "P",
+        "playerAP": 1,
+        "playerHand": [{"cardNumber": "blue_pitch", "pitch": 3}],
+        "playerResources": [0, 0],
+    }
+    pred = {"hand_count": 0, "resources": 3, "action_points": 1, "card_consumed": "blue_pitch", "zone": "hand"}
+    # Talishar quitou a ação com os 3 recursos e consumiu o AP
+    post_state = {
+        "turnNo": 1,
+        "turnPlayer": 1,
+        "turnPhase": "M",
+        "playerAP": 0,
+        "playerHand": [],
+        "playerResources": [0, 0],
+    }
+    diffs, confounded = shadow_mode.compare(pred, pre_state, post_state)
+    assert not diffs
+    assert "resources" not in diffs
+    assert "action_points" not in diffs
+
+
+def test_game_simulator_simulate_attack_player_arse_support():
+    """Valida que simulate_attack consome corretamente cartas sob a chave playerArse."""
+    state = {
+        "turnPhase": "M",
+        "playerAP": 1,
+        "playerHand": [],
+        "playerArse": [{"cardNumber": "enlightened_strike_red", "name": "enlightened_strike_red", "cost": 0}],
+        "playerResources": [0, 0],
+    }
+    action = {"type": "arsenal", "cardNumber": "enlightened_strike_red", "name": "enlightened_strike_red"}
+    next_state = GameSimulator.simulate_attack(state, action)
+    assert len(next_state.get("playerArsenal", [])) == 0
+    assert len(next_state.get("playerArse", [])) == 0
+

@@ -23,6 +23,7 @@ from ai.mcts.state import ImmutableGameState
 
 _FAB_CARDS_DB: Optional[dict] = None
 _DECKS_CACHE: Dict[str, dict] = {}
+_PARSED_DECKS_CACHE: Dict[str, Tuple[dict, List[dict], List[dict], List[dict]]] = {}
 
 
 def _get_cards_db() -> dict:
@@ -66,8 +67,15 @@ class HeadlessSelfPlayLoop:
     utilizando baralhos reais de decks/*.json, dados de fab_cards_db.json
     e o GameSimulator determinístico para alta velocidade de self-play.
     """
-    def __init__(self, model: FaBPolicyValueNetwork, mcts_sims: int = None, device: str = None):
+    def __init__(
+        self,
+        model: FaBPolicyValueNetwork,
+        opp_model: Optional[FaBPolicyValueNetwork] = None,
+        mcts_sims: int = None,
+        device: str = None,
+    ):
         self.model = model
+        self.opp_model = opp_model or model
         self.device = device or SETTINGS.device
         self.mcts_sims = mcts_sims or SETTINGS.mcts_simulations
         self.cards_db = _get_cards_db()
@@ -77,6 +85,11 @@ class HeadlessSelfPlayLoop:
         Carrega o baralho e separa em:
         (hero_meta, equipment_cards, weapon_cards, main_deck_cards)
         """
+        safe_name = os.path.splitext(os.path.basename(deck_name))[0].lower()
+        if safe_name in _PARSED_DECKS_CACHE:
+            hero_meta, equipment, weapons, main_deck = _PARSED_DECKS_CACHE[safe_name]
+            return dict(hero_meta), [dict(c) for c in equipment], [dict(c) for c in weapons], [dict(c) for c in main_deck]
+
         raw_deck = _get_deck_data(deck_name)
         hero_meta = None
         equipment = []
@@ -134,7 +147,9 @@ class HeadlessSelfPlayLoop:
                 "defense": 3
             } for i in range(40)]
 
-        return hero_meta, equipment, weapons, main_deck
+        parsed_tuple = (hero_meta, equipment, weapons, main_deck)
+        _PARSED_DECKS_CACHE[safe_name] = parsed_tuple
+        return dict(hero_meta), [dict(c) for c in equipment], [dict(c) for c in weapons], [dict(c) for c in main_deck]
 
     def _init_state(self, deck1: str, deck2: str) -> ImmutableGameState:
         """Inicializa o estado com cartas, equipamentos e bibliotecas reais."""
@@ -405,15 +420,22 @@ class HeadlessSelfPlayLoop:
         }
         return state.without("_simulated_projected_damage", "currentAttackBuff").replace(**updates)
 
-    def play_game(self, deck1: str, deck2: str) -> Tuple[List[Any], int]:
+    def play_game(
+        self,
+        deck1: str,
+        deck2: str,
+        opp_model: Optional[FaBPolicyValueNetwork] = None,
+    ) -> Tuple[List[Any], int]:
         """
         Executa uma partida completa e retorna a trajetória e o vencedor:
         winner = 1 (P1 venceu), 2 (P2 venceu), ou 0 (empate/timeout).
+        Suporta rede de oponente distinta (opp_model) para arenas entre checkpoints.
         """
         state = self._init_state(deck1, deck2)
 
+        p2_model = opp_model or self.opp_model
         mcts1 = MCTSEngine(self.model, device=self.device)
-        mcts2 = MCTSEngine(self.model, device=self.device)
+        mcts2 = MCTSEngine(p2_model, device=self.device)
 
         trajectory = []
         turn = 0
@@ -454,7 +476,7 @@ class HeadlessSelfPlayLoop:
                 else:
                     # Executa o ataque via GameSimulator
                     has_go_again = bool(action.get("has_go_again", False))
-                    state, _ = GameSimulator.simulate_step(state, action)
+                    state, _ = GameSimulator.simulate_step(state, action, with_vector=False)
 
                     # Verifica letalidade imediata pós-ataque
                     if state.get("opponentHealth", 40) <= 0:

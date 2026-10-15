@@ -69,29 +69,40 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
                 actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
         else:
             hand = pre_state.get("playerHand", [])
-            if 0 <= idx < len(hand) and isinstance(hand[idx], dict):
+            for c in hand:
+                if isinstance(c, dict) and str(c.get("actionDataOverride", "") or c.get("uniqueID", "")) == str(card_id):
+                    card_obj = c
+                    actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
+                    break
+            if card_obj is None and 0 <= idx < len(hand) and isinstance(hand[idx], dict):
                 card_obj = hand[idx]
                 actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
 
     action = {"type": act_type, "cardNumber": actual_card_name, "name": actual_card_name}
+    if str(card_id).isdigit():
+        action["card_idx"] = int(card_id)
     if card_obj:
         action["raw"] = card_obj
 
     try:
-        next_state, _ = GameSimulator.simulate_step(pre_state, action)
+        next_state, _ = GameSimulator.simulate_step(pre_state, action, with_vector=False)
         ns_dict = next_state.to_dict() if hasattr(next_state, "to_dict") else next_state
 
         # Em Phase B (declaração de bloco), o dano no Talishar só é deduzido no Damage Step (após reactions).
         # No tick intermediário após o bloco, o HP permanece o mesmo do pre_state.
         expected_hp = int(pre_state.get("playerHealth", 40)) if act_type == "block" else int(ns_dict.get("playerHealth", pre_state.get("playerHealth", 40)))
 
+        # Ao declarar ataque, o dano no Talishar só é deduzido no Damage Step (após defesa e reações).
+        # No tick intermediário após o ataque, opponentHealth permanece o mesmo do pre_state.
+        expected_opp_hp = int(pre_state.get("opponentHealth", 40)) if act_type in ("hand", "arsenal", "attack") else int(ns_dict.get("opponentHealth", pre_state.get("opponentHealth", 40)))
+
         return {
             "hand_count": len(ns_dict.get("playerHand", [])),
             "resources": int(ns_dict.get("playerResources", [0, 0])[0]),
             "action_points": int(ns_dict.get("playerAP", ns_dict.get("actionPoints", 0))),
-            "arsenal_count": len(ns_dict.get("playerArsenal", [])),
+            "arsenal_count": len(ns_dict.get("playerArsenal", []) or ns_dict.get("playerArse", [])),
             "player_health": expected_hp,
-            "opponent_health": int(ns_dict.get("opponentHealth", pre_state.get("opponentHealth", 40))),
+            "opponent_health": expected_opp_hp,
             "card_consumed": actual_card_name,
             "zone": zone,
         }
@@ -109,6 +120,20 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
     if pre_state.get("turnPlayer") != post_state.get("turnPlayer"):
         confounded = True
 
+    pre_tp = str(pre_state.get("turnPhase", "")).upper()
+    if isinstance(pre_state.get("turnPhase"), dict):
+        pre_tp = str(pre_state.get("turnPhase").get("turnPhase", "")).upper()
+
+    post_tp = str(post_state.get("turnPhase", "")).upper()
+    if isinstance(post_state.get("turnPhase"), dict):
+        post_tp = str(post_state.get("turnPhase").get("turnPhase", "")).upper()
+
+    # Transições intermediárias de pagamento de custos no Talishar:
+    # Se declarou uma ação na Phase M/B e o Talishar abriu Phase P/PDECK para pitch,
+    # o tick pós-ação é transicional (aguardando pitch antes de abater custos e AP).
+    if pre_tp in ("M", "B", "") and post_tp in ("P", "PDECK"):
+        confounded = True
+
     actual = {
         "hand_count": len(post_state.get("playerHand", [])),
         "resources": int(post_state.get("playerResources", [0, 0])[0]),
@@ -121,6 +146,13 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
     diffs = {}
     for k in ("hand_count", "resources", "action_points", "arsenal_count", "player_health", "opponent_health"):
         if k in expected and actual[k] != expected[k]:
+            # Em Phase P (pitch para pagar custo pendente):
+            # O Talishar consome imediatamente os recursos do pitch e o AP da ação engatilhada.
+            # Se os recursos gerados ou AP foram consumidos pela ação pendente (actual <= expected),
+            # trata-se da liquidação legítima do custo no Talishar.
+            if pre_tp in ("P", "PDECK") and k in ("resources", "action_points"):
+                if actual[k] <= expected[k]:
+                    continue
             diffs[k] = {"expected": expected[k], "actual": actual[k]}
 
     # Checar se a carta foi consumida (não deve permanecer na zona de origem após ser jogada/bloqueada/pitch)

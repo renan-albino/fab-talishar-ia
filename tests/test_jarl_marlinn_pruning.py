@@ -161,8 +161,7 @@ def test_marlinn():
     plan_trap = engine_marlinn.strategy.analyze_turn_plan(state_trap)
     assert plan_trap.plan_type == "DEFENSIVE_TRAP"
     blocks_trap = engine_marlinn.select_defense_blocks(state_trap)
-    print(f"Cartas selecionadas com armadilhas defensivas: {blocks_trap}")
-    assert len(blocks_trap) == 2, "Deve bloquear com as armadilhas para absorver o dano"
+    assert len(blocks_trap) == 0, "Traps são Defense Reactions e não podem ser declaradas na Phase B (CR 7.3.2); são preservadas para a Reaction Phase"
 
     print("[OK] Testes de Marlinn passaram com sucesso!\n")
 

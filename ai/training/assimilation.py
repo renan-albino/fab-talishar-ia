@@ -14,37 +14,7 @@ import threading
 from typing import Dict, Any, Optional
 
 from ai.logger import get_logger
-
-import contextlib
-@contextlib.contextmanager
-def file_lock(path, timeout=5.0):
-    try:
-        from filelock import FileLock
-        lock = FileLock(f"{path}.lock", timeout=timeout)
-        with lock:
-            yield
-    except ImportError:
-        lock_file = f"{path}.lock"
-        start_t = time.time()
-        fd = None
-        while time.time() - start_t < timeout:
-            try:
-                fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)
-                break
-            except OSError:
-                time.sleep(0.05)
-        try:
-            yield
-        finally:
-            if fd is not None:
-                try:
-                    os.close(fd)
-                    os.remove(lock_file)
-                except OSError:
-                    pass
-    except Exception as e:
-        logger.warning(f"[file_lock] Aviso ao obter lock em {path}: {e}")
-        yield
+from ai.experience_collector import file_lock
 
 logger = get_logger("assimilation")
 
@@ -98,8 +68,7 @@ def get_assimilation_status() -> Dict[str, Any]:
 def clear_assimilation_status():
     """Reseta o status de assimilação para idle."""
     try:
-        with open(STATUS_FILE, "w", encoding="utf-8") as f:
-            json.dump({"status": "idle", "timestamp": time.time()}, f, indent=2)
+        atomic_json_save({"status": "idle", "timestamp": time.time()}, STATUS_FILE)
     except Exception as e:
         logger.warning(f"Erro ao resetar status de assimilação: {e}")
 
@@ -212,25 +181,23 @@ def _run_assimilation_job(room_id: str, bot_player_id: int, winner_id: int):
         except Exception:
             pass
 
-        with open(STATUS_FILE, "w", encoding="utf-8") as f:
-            json.dump({
-                "status": "completed",
-                "room_id": str(room_id),
-                "finished_at": time.time(),
-                "message": f"Partida assimilada com sucesso ({steps} passos, loss: {last_loss:.4f}). Pesos neurais atualizados!",
-                "final_loss": round(last_loss, 4),
-            }, f, indent=2)
+        atomic_json_save({
+            "status": "completed",
+            "room_id": str(room_id),
+            "finished_at": time.time(),
+            "message": f"Partida assimilada com sucesso ({steps} passos, loss: {last_loss:.4f}). Pesos neurais atualizados!",
+            "final_loss": round(last_loss, 4),
+        }, STATUS_FILE)
 
     except Exception as e:
         logger.error(f"[Assimilation] ❌ Falha na assimilação pós-partida: {e}", exc_info=True)
-        with open(STATUS_FILE, "w", encoding="utf-8") as f:
-            json.dump({
-                "status": "error",
-                "room_id": str(room_id),
-                "finished_at": time.time(),
-                "message": f"Erro durante a assimilação: {e}",
-                "final_loss": 0.0,
-            }, f, indent=2)
+        atomic_json_save({
+            "status": "error",
+            "room_id": str(room_id),
+            "finished_at": time.time(),
+            "message": f"Erro durante a assimilação: {e}",
+            "final_loss": 0.0,
+        }, STATUS_FILE)
 
 
 def trigger_human_match_assimilation(room_id: str, bot_player_id: int, winner_id: int, wait: bool = True):
