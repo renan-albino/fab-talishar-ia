@@ -389,7 +389,7 @@ Para garantir que todos os módulos de IA, simulador, ISMCTS, podas táticas e e
 ```bash
 ./venv/bin/pytest
 ```
-*(Todos os 564 testes automatizados executam e passam em ~50 segundos, isolados nativamente via `pytest.ini`).*
+*(Todos os 581 testes automatizados executam e passam em ~50 segundos, isolados nativamente via `pytest.ini` e `tests/conftest.py`).*
 
 ---
 
@@ -467,7 +467,7 @@ Você também pode executar o script manualmente a qualquer momento quando quise
 O Git Hook `pre-push` é executado automaticamente a cada `git push` para garantir que falhas nunca cheguem ao repositório remoto ou quebrem o GitHub Actions. Ele executa:
 1. **Sintaxe Completa Python** (`compileall`).
 2. **Dry-Run do ISMCTS** (`scripts/analyze_ismcts.py --dry-run`).
-3. **Execução da Suíte de Testes** (`pytest tests/`, 564 testes) [Incremental: pula se apenas documentação foi alterada].
+3. **Execução da Suíte de Testes** (`pytest tests/`, 581 testes) [Incremental: pula se apenas documentação foi alterada].
 4. **Verificação de Sincronização dos Templates** (`prepare_environment.py --export-templates` & diff).
 5. **Build de Produção do Frontend Vite** (`npx vite build`) [Incremental: pula se não houve alterações no frontend].
 
@@ -518,7 +518,7 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 ├── docs/                     # Documentação técnica, ADRs e Roadmap
 │   ├── ROADMAP.md            # Planejamento estratégico e expansão de cobertura
 │   ├── tactical_rules.md     # Detalhamento técnico das 17 Podas Táticas & Regras FaB (CR)
-│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0012)
+│   ├── adr/                  # Architecture Decision Records formais (ADR-0001 a ADR-0020)
 │   └── agents/               # Guias para agentes (domain.md, issue-tracker.md)
 ├── ai/                       # Módulos de Inteligência Artificial e Deep RL
 │   ├── bot_runtime/          # Runtime modular do bot (lobby, tracker, choices, fases, client)
@@ -560,7 +560,7 @@ Para evitar travamento de processos e estouro de buffer causados por buscas recu
 │   ├── manage_state.py       # Gestão de checkpoints compactos, releases e reset com backup
 │   ├── clean_training_state.py # Limpeza atômica e reset de replay buffer, métricas e Sim2Real
 │   └── sync_talishar_backend.py # Sincronização com containers Docker
-├── tests/                    # Suíte completa de 577 testes automatizados (pytest)
+├── tests/                    # Suíte completa de 581 testes automatizados (pytest)
 │   ├── test_all_hero_strategies.py # Cobertura de todas as estratégias de heróis
 │   ├── test_hero_hierarchical_strategies.py # Testes de planos de turno e decisões
 │   ├── test_equipment_defense_and_abilities.py # Testes de ativação e bloqueio
@@ -682,12 +682,14 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 | **Vetorização da SumTree (PER), Atualizações Dinâmicas de TD-Error & Throughput de Treinamento (564 Testes - ADR-0017)** | Reconstrução vetorizada nível a nível em `SumTree.set_all` acelerando rebuild em 233.8x (de 203ms para 0.87ms), implementação de `update_priorities` com erro temporal $|V_{pred} - V_{target}|$ e annealing de $\beta$ em `ReplayBuffer.sample_batch(return_indices=True)`, passos de gradiente dinâmicos (`newly_ingested // batch_size`), consolidação de transferências GPU $\to$ CPU em `_train_step` e `predict_state`, e cache de templates pré-compilados de baralhos em `HeadlessSelfPlayLoop` aumentando o throughput de auto-jogo para 42.19 partidas/min (+62.6% total) (suíte dedicada em `tests/test_sprint2_training_throughput.py`, 564 testes unitários no pytest) |
 | **Headless Arena, Suíço Oficial & Self-Play League (569 Testes - ADR-0018)** | Sistema de validação competitiva em memória (`execution_mode="headless"`) com rede oponente (`opp_model`), pareamento suíço com desempates oficiais de Buchholz e Sonneborn-Berger, algoritmo anti-rematch, sistema de Byes (+3 pts), atualização de ELO em SQLite (`data/talishar_stats.db`), suporte a Self-Play League com amostragem probabilística de checkpoints históricos em `orchestrator.py` e aba integrada no Streamlit (`ui/tabs/tab_tournaments.py`) (569 testes unitários no pytest) |
 | **Sideboard Data-Driven & Incerteza Bayesiana / MC Dropout (574 Testes - ADR-0019)** | Resolução de sideboard com detecção semântica dinâmica de dano arcano via classes, keywords e texto do herói adversário, pontuação semântica de equipamentos por durabilidade (`battleworn`, `temper`) e conformidade com CR 2.8.2 e CR 3.0 para armas/escudos; e estimação de incerteza Bayesiana no Value Head via Monte Carlo Dropout em lote único (`predict_value_with_uncertainty`), modulando o orçamento MCTS adaptativo (1.5x a 2.0x) e blindando contra absorções levianas de dano no resolvedor de defesa (suíte em `tests/test_sprint4_sideboard_and_mcdropout.py`, 574 testes unitários no pytest) |
-| **Sincronização Multi-Tick Sim2Real & Suporte a playerArse (577 Testes)** | Detecção de transições multi-tick assíncronas do Talishar (Phase M $\to$ Phase P) marcadas como transitórias (`confounded=True`), reconhecimento de liquidação atômica de custos pendentes na Phase P sem falsos alertas de divergência de recursos/AP, suporte bidirecional à chave `playerArse` em `GameSimulator.simulate_attack`, inicialização ultra-rápida do frontend com binário local do Vite e polling a cada 0.5s (577 testes unitários no pytest) |
+| **Auditoria Holística de Performance, Sincronização Multi-Tick Sim2Real & Isolamento (581 Testes - ADR-0020)** | MC Dropout com forward único no backbone Transformer (`fused.repeat`), propagação vetorizada de pais únicos em `SumTree.update_batch`, supervisão de alvos auxiliares KataGo (`board_eval` / `turn_dmg`) no `HeadlessSelfPlayLoop`, `ThreadBatchedEvaluator` com `return_aux` sob demanda e zero-copy NumPy, detecção de transições multi-tick e modais transitórios (`confounded=True`) no `Shadow Mode`, suporte bidirecional à chave `playerArse` em `GameSimulator`, isolamento hermético de SQLite/logs em `tests/conftest.py` e utilitários CLI `diagnose_sim2real.py` e `run_headless_tournament.py` (581 testes unitários no pytest) |
 
-### 📋 Pendente
+### 📋 Pendente (Próximas Sprints — Consulte [`docs/ROADMAP.md`](docs/ROADMAP.md))
  
-1. **Modelagem Avançada de Matchups**: Fine-tuning da rede e calibração de sideboard para arquétipos específicos do meta competitivo.
-2. **Interface Visual Completa para Torneios Suíços**: Polimento e expansão dos painéis interativos de chaves ao vivo no Dashboard Streamlit.
+1. **Passo 6 (~92%+ Cobertura Global)**: Testes automatizados headless das 7 abas do Dashboard Streamlit com `streamlit.testing.v1.AppTest`.
+2. **Passo 7 (*Self-Play League Daemon*)**: Treinamento contínuo em background com promoção automática de checkpoints por gating de Win Rate ($\ge 55\%$) e ELO dinâmico em SQLite.
+3. **Passo 8 (*Curriculum Learning* & Matchups Assimétricos)**: Amostragem priorizada de matchups desfavoráveis (Win Rate $< 45\%$) via `stats/recommendations.py` e progressão de complexidade de oponentes.
+4. **Passo 9 (Inferência Distribuída *Actor-Evaluator*)**: Execução remota de lotes dinâmicos em GPU dedicada via `BatchedInferenceServer` / IPC com múltiplos coletores CPU em paralelo.
 
 ---
 
@@ -702,8 +704,4 @@ O repositório conta com pipeline de Integração Contínua automatizado em `.gi
 3. **Decks em `decks/`:** Nunca crie baralhos dentro das pastas do Talishar; use sempre o diretório central `decks/`.
 4. **Sincronização de Templates:** Se alterar componentes no frontend (`Talishar-FE/`) ou backend (`Talishar/`), execute `./venv/bin/python scripts/prepare_environment.py --export-templates` para manter `setup_templates/` atualizado.
 
-### Próximos Passos Recomendados (Baixa Prioridade / Pesquisa):
-- **1. Incerteza Bayesiana no Pitch:** Dropout no Value Head para calcular a variância do valor esperado antes de gastar recursos de pitch.
-- **2. `num_sims` Adaptativo:** Dobrar simulações de MCTS em situações de dano letal (HP $\le 10$).
-- **3. Interface Interativa de Torneios Suíços:** Conectar `stats/tournament_manager.py` à renderização visual e controles de rodadas na UI do Streamlit.
 

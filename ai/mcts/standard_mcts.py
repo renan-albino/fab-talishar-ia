@@ -286,6 +286,9 @@ class MCTSEngine:
                     for aid, (st, s_idx) in cache.items():
                         slot_states[s_idx] = st
                     values_flat = self.model.predict_simulated_states(slot_states)
+                elif not isinstance(self.model, torch.nn.Module) and hasattr(self.model, "predict_states"):
+                    _, values = self.model.predict_states(batch, self.device)
+                    values_flat = np.asarray(values).flatten().tolist()
                 else:
                     if hasattr(self.model, "to") and isinstance(self.model, torch.nn.Module):
                         x = torch.from_numpy(batch).float().to(self.device)

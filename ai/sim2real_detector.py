@@ -12,7 +12,8 @@ import time
 from typing import Dict, Any, List, Optional
 from stats.db import get_connection
 
-LOG_FILE = "logs/sim2real_anomalies.jsonl"
+_DEFAULT_LOG_FILE = "logs/sim2real_anomalies.jsonl"
+LOG_FILE = os.environ.get("FAB_SIM2REAL_LOG_FILE") or _DEFAULT_LOG_FILE
 
 ENGINE_ERROR_PATTERNS = [
     (re.compile(r"the targeted .* is no longer there.*layer fails to resolve", re.I), "LAYER_TARGET_LOST"),
@@ -74,8 +75,9 @@ def record_anomaly(
 
     # 1. Gravar em arquivo JSONL
     try:
-        os.makedirs("logs", exist_ok=True)
-        with open(LOG_FILE, "a", encoding="utf-8") as f:
+        log_file = LOG_FILE if LOG_FILE != _DEFAULT_LOG_FILE else (os.environ.get("FAB_SIM2REAL_LOG_FILE") or LOG_FILE)
+        os.makedirs(os.path.dirname(log_file) or "logs", exist_ok=True)
+        with open(log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(payload, ensure_ascii=False) + "\n")
     except Exception as e:
         print(f"[Sim2Real] Falha ao gravar JSONL: {e}")

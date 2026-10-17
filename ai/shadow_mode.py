@@ -18,7 +18,7 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
     Constrói a ação a partir do estado e pede para o simulador prever os campos próprios.
     Resolve índices brutos (ex: mode 27 card_id='0') para cartas reais de playerHand/playerEquipment.
     """
-    if not card_id:
+    if not card_id or mode in (16, 18, 23, 24, 99, 100) or str(card_id).upper() == "PASS":
         return None
 
     turn_phase = str(pre_state.get("turnPhase", "")).upper()
@@ -27,6 +27,7 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
 
     # Mapeamento de fase para tipo de ação
     zone = "hand"
+    card_id_str = str(card_id)
     if turn_phase in ("P", "PDECK"):
         act_type = "pitch"
     elif turn_phase in ("B", "DEFENSE"):
@@ -35,7 +36,7 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
         if mode == 5:
             act_type = "arsenal"
             zone = "arsenal"
-        elif mode == 3:
+        elif mode in (1, 3) or card_id_str.startswith(("EQ-", "MYCHAR-")):
             act_type = "equipment_ability"
             zone = "equipment"
         else:
@@ -43,14 +44,14 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
     else:
         return None
 
-    actual_card_name = str(card_id).lower().strip()
+    actual_card_name = card_id_str.lower().strip()
     card_obj = None
     if mode == 5:
         zone = "arsenal"
         act_type = "arsenal"
         ars = pre_state.get("playerArsenal", []) or pre_state.get("playerArse", [])
-        if str(card_id).isdigit():
-            idx = int(card_id)
+        if card_id_str.isdigit():
+            idx = int(card_id_str)
             if 0 <= idx < len(ars) and isinstance(ars[idx], dict):
                 card_obj = ars[idx]
                 actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
@@ -59,9 +60,9 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
                 if isinstance(item, dict) and str(item.get("cardNumber", item.get("name", ""))).lower().strip() == actual_card_name:
                     card_obj = item
                     break
-    elif str(card_id).isdigit():
-        idx = int(card_id)
-        if mode == 3:
+    elif card_id_str.isdigit():
+        idx = int(card_id_str)
+        if mode in (1, 3):
             zone = "equipment"
             equips = pre_state.get("playerEquipment", [])
             if 0 <= idx < len(equips) and isinstance(equips[idx], dict):
@@ -70,7 +71,7 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
         else:
             hand = pre_state.get("playerHand", [])
             for c in hand:
-                if isinstance(c, dict) and str(c.get("actionDataOverride", "") or c.get("uniqueID", "")) == str(card_id):
+                if isinstance(c, dict) and str(c.get("actionDataOverride", "") or c.get("uniqueID", "")) == card_id_str:
                     card_obj = c
                     actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
                     break
@@ -79,8 +80,8 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
                 actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
 
     action = {"type": act_type, "cardNumber": actual_card_name, "name": actual_card_name}
-    if str(card_id).isdigit():
-        action["card_idx"] = int(card_id)
+    if card_id_str.isdigit():
+        action["card_idx"] = int(card_id_str)
     if card_obj:
         action["raw"] = card_obj
 
@@ -119,6 +120,8 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
         confounded = True
     if pre_state.get("turnPlayer") != post_state.get("turnPlayer"):
         confounded = True
+    if bool(pre_state.get("amIActivePlayer")) != bool(post_state.get("amIActivePlayer")):
+        confounded = True
 
     pre_tp = str(pre_state.get("turnPhase", "")).upper()
     if isinstance(pre_state.get("turnPhase"), dict):
@@ -128,10 +131,17 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
     if isinstance(post_state.get("turnPhase"), dict):
         post_tp = str(post_state.get("turnPhase").get("turnPhase", "")).upper()
 
-    # Transições intermediárias de pagamento de custos no Talishar:
-    # Se declarou uma ação na Phase M/B e o Talishar abriu Phase P/PDECK para pitch,
-    # o tick pós-ação é transicional (aguardando pitch antes de abater custos e AP).
-    if pre_tp in ("M", "B", "") and post_tp in ("P", "PDECK"):
+    # Transições intermediárias de pagamento de custos ou janelas de escolha/resolução no Talishar:
+    if pre_tp in ("M", "B", "") and post_tp in ("P", "PDECK", "PAYGOLDORPITCH"):
+        confounded = True
+    # Abertura de combate (M/A -> B/DEFENSE): prioridade passa ao defensor; mão e AP do atacante ficam em espera
+    if pre_tp in ("M", "A") and post_tp in ("B", "DEFENSE"):
+        confounded = True
+    if post_tp in (
+        "CHOOSECARD", "MAYCHOOSECARD", "CHOOSEMULTIZONE", "MAYCHOOSEMULTIZONE",
+        "CHOOSEHAND", "MAYCHOOSEHAND", "OPT", "BUTTONINPUT", "YESNO",
+        "INSTANT", "RESOLUTIONSTEP", "ARS", "ENDTURN", "OVER"
+    ) or bool((post_state.get("playerInputPopUp") or {}).get("active")):
         confounded = True
 
     actual = {
@@ -144,22 +154,38 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
     }
 
     diffs = {}
+    card_consumed = str(expected.get("card_consumed", "")).lower()
     for k in ("hand_count", "resources", "action_points", "arsenal_count", "player_health", "opponent_health"):
         if k in expected and actual[k] != expected[k]:
             # Em Phase P (pitch para pagar custo pendente):
             # O Talishar consome imediatamente os recursos do pitch e o AP da ação engatilhada.
             # Se os recursos gerados ou AP foram consumidos pela ação pendente (actual <= expected),
             # trata-se da liquidação legítima do custo no Talishar.
-            if pre_tp in ("P", "PDECK") and k in ("resources", "action_points"):
+            if pre_tp in ("P", "PDECK", "PAYGOLDORPITCH") and k in ("resources", "action_points"):
                 if actual[k] <= expected[k]:
                     continue
+            if k == "player_health" and pre_tp in ("B", "DEFENSE") and post_tp not in ("B", "DEFENSE"):
+                if actual["player_health"] <= expected["player_health"]:
+                    continue
+            # Cartas com custo adicional / modais (ex: Enlightened Strike): retidas na mão/arsenal pelo Talishar até a resolução do modal
+            if "enlightened_strike" in card_consumed and k in ("hand_count", "arsenal_count", "action_points"):
+                continue
+            # Instants jogados durante a defesa (Phase B): retidos na camada até a passagem de prioridade
+            if pre_tp in ("B", "DEFENSE") and k == "hand_count" and any(inst in card_consumed for inst in ("blizzard", "sigil_of_solace", "oasis_respite")):
+                continue
+            # Timing de cura em resolução de Instants (ex: Sigil of Solace cura 3 HP após resolução de camada):
+            if k in ("player_health", "opponent_health") and "sigil_of_solace" in card_consumed and abs(actual[k] - expected[k]) <= 3:
+                continue
             diffs[k] = {"expected": expected[k], "actual": actual[k]}
 
     # Checar se a carta foi consumida (não deve permanecer na zona de origem após ser jogada/bloqueada/pitch)
     card_id = expected.get("card_consumed")
     zone = expected.get("zone", "hand")
     if card_id and not confounded:
-        if zone == "arsenal":
+        # Cartas com modais de custo adicional ou Instants em camada defensiva não disparam falso positivo de card_unconsumed
+        if "enlightened_strike" in str(card_id).lower() or (pre_tp in ("B", "DEFENSE") and any(inst in str(card_id).lower() for inst in ("blizzard", "sigil_of_solace", "oasis_respite"))):
+            pass
+        elif zone == "arsenal":
             post_ars = [
                 str(c.get("cardNumber", c.get("name", "")) if isinstance(c, dict) else c).lower()
                 for c in (post_state.get("playerArsenal", []) or post_state.get("playerArse", []))

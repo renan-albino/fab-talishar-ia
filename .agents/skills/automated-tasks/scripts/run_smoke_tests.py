@@ -72,10 +72,12 @@ FACADE_MODULES = [
     ("stats_manager", "get_stats_data"),
     ("deck_manager", "load_fab_cards_db"),
     ("stats", "canonicalize_deck_name"),
+    ("stats.tournament_manager", "TournamentManager"),
     ("ai.policy_engine", "PolicyEngine"),
     ("ai.mcts", "MCTSEngine"),
     ("ai.model", "FaBPolicyValueNetwork"),
     ("ai.game_simulator", "GameSimulator"),
+    ("ai.shadow_mode", "predict"),
     ("ai.common", None),
     ("ui.helpers", "get_cached_saved_decks"),
 ]
@@ -312,7 +314,8 @@ Exemplos de uso:
         help="Pula o teste de sanidade de imports das fachadas."
     )
     parser.add_argument(
-        "--skip-tests",
+        "--skip-tests", "--skip-pytest",
+        dest="skip_tests",
         action="store_true",
         help="Pula a execução da suíte de testes pytest."
     )

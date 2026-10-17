@@ -26,6 +26,12 @@ _DECKS_CACHE: Dict[str, dict] = {}
 _PARSED_DECKS_CACHE: Dict[str, Tuple[dict, List[dict], List[dict], List[dict]]] = {}
 
 
+class _TrajectoryStep(tuple):
+    """Tupla (vec, policy, player_id, board_eval) compatível com desempacotamento de 3 itens."""
+    def __iter__(self):
+        return iter(self[:3])
+
+
 def _get_cards_db() -> dict:
     global _FAB_CARDS_DB
     if _FAB_CARDS_DB is None:
@@ -225,13 +231,16 @@ class HeadlessSelfPlayLoop:
             hand = list(state.get("playerHand", []))
 
             # Pitch disponível na mão
-            available_pitch = sum(GameSimulator.extract_card_meta(c)["pitch"] for c in hand)
+            available_pitch = sum(
+                int(c["pitch"]) if isinstance(c, dict) and "pitch" in c else GameSimulator.extract_card_meta(c)["pitch"]
+                for c in hand
+            )
             total_purchasing_power = floating + available_pitch
 
             if ap > 0:
                 # 1. Atacar com armas equipadas
                 for wep in state.get("playerWeapons", []):
-                    w_meta = GameSimulator.extract_card_meta(wep)
+                    w_meta = wep if (isinstance(wep, dict) and "cost" in wep and "power" in wep and "name" in wep) else GameSimulator.extract_card_meta(wep)
                     cost = int(w_meta.get("cost", 0))
                     if total_purchasing_power >= cost:
                         actions.append({
@@ -246,10 +255,10 @@ class HeadlessSelfPlayLoop:
 
                 # 2. Jogar cartas da mão
                 for idx, card in enumerate(hand):
-                    meta = GameSimulator.extract_card_meta(card)
+                    meta = card if (isinstance(card, dict) and "cost" in card and "pitch" in card and "power" in card and "name" in card) else GameSimulator.extract_card_meta(card)
                     cost = int(meta.get("cost", 0))
                     # A carta gasta a si mesma se for jogada, então os outros cards fornecem pitch
-                    pitch_others = total_purchasing_power - meta["pitch"]
+                    pitch_others = total_purchasing_power - int(meta["pitch"])
                     if pitch_others >= cost or floating >= cost:
                         actions.append({
                             "type": "hand",
@@ -271,7 +280,7 @@ class HeadlessSelfPlayLoop:
             actions.append({"type": "pass_priority", "mode": 31})
             hand = list(state.get("playerHand", []))
             for idx, card in enumerate(hand):
-                meta = GameSimulator.extract_card_meta(card)
+                meta = card if (isinstance(card, dict) and "defense" in card and "name" in card) else GameSimulator.extract_card_meta(card)
                 def_val = int(meta.get("defense", 0))
                 if def_val > 0:
                     actions.append({
@@ -467,16 +476,23 @@ class HeadlessSelfPlayLoop:
                 full_policy = np.zeros(32, dtype=np.float32)
                 full_policy[:min(32, len(policy_probs))] = policy_probs[:32]
 
-                trajectory.append((vec, full_policy, active_player))
+                pre_p_hp = float(state.get("playerHealth", 40))
+                pre_o_hp = float(state.get("opponentHealth", 40))
+                board_eval = pre_p_hp - pre_o_hp
 
                 if action.get("type") == "pass_priority":
                     # Fim do turno do jogador ativo: upkeep e passa a vez
+                    trajectory.append(_TrajectoryStep((vec, full_policy, active_player, board_eval, 0.0, 0.0)))
                     state = self._upkeep_and_swap(state)
                     active_player = 2 if active_player == 1 else 1
                 else:
                     # Executa o ataque via GameSimulator
                     has_go_again = bool(action.get("has_go_again", False))
                     state, _ = GameSimulator.simulate_step(state, action, with_vector=False)
+                    post_o_hp = float(state.get("opponentHealth", pre_o_hp))
+                    step_dmg = max(0.0, pre_o_hp - post_o_hp)
+                    step_delta_hp = (float(state.get("playerHealth", pre_p_hp)) - post_o_hp) - (pre_p_hp - pre_o_hp)
+                    trajectory.append(_TrajectoryStep((vec, full_policy, active_player, board_eval, step_delta_hp, step_dmg)))
 
                     # Verifica letalidade imediata pós-ataque
                     if state.get("opponentHealth", 40) <= 0:
@@ -506,11 +522,17 @@ class HeadlessSelfPlayLoop:
                     def_full_policy = np.zeros(32, dtype=np.float32)
                     def_full_policy[:min(32, len(def_policy))] = def_policy[:32]
 
-                    trajectory.append((def_vec, def_full_policy, defending_player))
+                    def_pre_p_hp = float(state.get("playerHealth", 40))
+                    def_pre_o_hp = float(state.get("opponentHealth", 40))
+                    def_board_eval = def_pre_p_hp - def_pre_o_hp
 
                     # Resolução do bloqueio
                     if def_action.get("type") == "block":
                         state = GameSimulator.simulate_defense(state, def_action)
+
+                    def_post_p_hp = float(state.get("playerHealth", def_pre_p_hp))
+                    def_step_delta_hp = def_post_p_hp - def_pre_p_hp
+                    trajectory.append(_TrajectoryStep((def_vec, def_full_policy, defending_player, def_board_eval, def_step_delta_hp, 0.0)))
 
                     # Retorna perspectiva para o atacante
                     state = self._swap_perspective_back_to_attacker(state, has_go_again=has_go_again)

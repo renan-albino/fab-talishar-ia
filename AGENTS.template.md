@@ -21,18 +21,19 @@ Single-context layout: one `CONTEXT.md` at the repo root, ADRs in `docs/adr/`. S
 3. **Decks em `decks/`:** Nunca crie baralhos dentro das pastas do Talishar; use sempre o diretório central `decks/`.
 4. **Sincronização de Templates:** Se alterar componentes no frontend (`Talishar-FE/`) ou backend (`Talishar/`), execute o script de exportação configurado no seu ambiente para manter `setup_templates/` atualizado.
 5. **Vocabulário:** Use os termos definidos em `CONTEXT.md`. Não invente sinônimos.
-6. **Multiagentes & Paralelismo com Subagentes:** Sempre que uma tarefa envolver múltiplas etapas independentes, refatorações em mais de um arquivo/módulo, pesquisas extensas de código, análises comparativas ou testes concorrentes, **SEMPRE distribua a execução utilizando subagentes (`invoke_subagent`)**.
+6. **Multiagentes & Paralelismo com Subagentes (`.agents/rules/multi_agent_workflow.md`):** Sempre que uma tarefa envolver múltiplas etapas independentes, refatorações em mais de um arquivo/módulo, pesquisas extensas de código, análises comparativas ou testes concorrentes, **SEMPRE distribua a execução utilizando subagentes (`invoke_subagent`)**.
    - Priorize disparar subagentes em paralelo para maximizar a velocidade de entrega e economizar a janela de contexto do agente principal.
-   - Atribua papéis especializados e instruções cirúrgicas (ex: `Tooling Specialist`, `Refactor Specialist`, `Test Runner`, `Codebase Researcher`).
+   - Atribua papéis especializados estritos (`Codebase Researcher`, `Refactor Specialist`, `Test & Quality Runner`) com **File Ownership Lock** (listas disjuntas de arquivos por subagente para zero colisão) e **Zero Polling** (aguardo reativo sem loops de status).
    - O agente principal atua como orquestrador: planeja a divisão de trabalho, dispara os subagentes em paralelo, aguarda reativamente as notificações de término (sem polling ativo), valida os resultados e consolida a entrega final.
-7. **Sincronização Obrigatória de Documentação (Zero Doc Drift):** Toda vez que alterar código, refatorar módulos, criar ferramentas/scripts, adicionar flags de CLI, atualizar modelos ou modificar regras táticas:
+7. **Sincronização Obrigatória de Documentação (Zero Doc Drift — `.agents/rules/documentation_sync.md`):** Toda vez que alterar código, refatorar módulos, criar ferramentas/scripts, adicionar flags de CLI, atualizar modelos ou modificar regras táticas:
    - **SEMPRE compare e atualize proativamente a documentação no diretório `docs/` (incluindo ADRs) e na raiz** (`README.md`, `CONTEXT.md`, `docs/ROADMAP.md`) antes de concluir a resposta ou realizar commit/push. Crie novos arquivos em `docs/` se necessário ou altere os existentes para refletir as mudanças realizadas.
-   - Mantenha contadores e métricas (quantidade de testes unitários, heróis suportados, cartas no banco) 100% alinhados com o estado real do código.
+   - Mantenha contadores e métricas (quantidade de testes unitários via `./venv/bin/python -m pytest --collect-only -q`, heróis suportados, cartas no banco) 100% alinhados com o estado real do código.
    - Se introduzir novos conceitos arquiteturais, registre-os imediatamente em `CONTEXT.md` e crie um ADR em `docs/adr/`.
-   - Se alterar frontend ou backend, exporte os templates (`prepare_environment.py --export-templates`) e valide que não há drift em `setup_templates/`.
-8. **Proibido Grep Cego na Raiz (`grep -r .`):** Nunca execute buscas recursivas a partir da raiz sem exclusão de diretórios (`grep -rn "termo" .`). Pastas gigantescas (`node_modules/`, `venv/`, `Talishar/Games/`, `build/`, `logs/`, `data/`) causam travamento de processos e estouro de buffer.
-   - **SEMPRE utilize:**
-     - **`git grep -n "termo"`**: Método prioritário ultra-rápido restrito a arquivos versionados.
+   - Se alterar frontend ou backend, exporte os templates (`./venv/bin/python scripts/prepare_environment.py --export-templates`) e valide que não há drift em `setup_templates/`.
+   - Após modificar arquivos de código, atualize o grafo se a ferramenta estiver instalada (`test -x ./venv/bin/graphify && ./venv/bin/graphify update . || true`).
+8. **Proibido Grep Cego na Raiz (`grep -r .`) e Otimização de Busca (`.agents/rules/search_guidelines.md`):** Nunca execute buscas recursivas a partir da raiz sem exclusão de diretórios (`grep -rn "termo" .`). Pastas gigantescas (`node_modules/`, `venv/`, `Talishar/Games/`, `build/`, `logs/`, `data/`) causam travamento de processos e estouro de buffer. Se estiver em Windows/PowerShell invocando WSL, nunca passe `|` desprotegido (use múltiplos `-e` no `git grep`).
+   - **SEMPRE utilize métodos cirúrgicos:**
+     - **`git grep -n "termo"`** (ou múltiplos `-e "A" -e "B"`): Método prioritário ultra-rápido restrito a arquivos versionados.
      - **`./venv/bin/python scripts/fast_search.py "termo" [pasta]`**: Script otimizado com poda automática de pastas pesadas.
      - **Grep direto no subpacote**: `grep -rn "termo" ai/ tests/ scripts/ deck_manager/ stats/ ui/`.
      - **Grep com exclusão obrigatória**: `grep -rn --exclude-dir={node_modules,venv,Talishar,Talishar-FE,logs,data,build,dist,.git,__pycache__} "termo" .`.
@@ -40,9 +41,9 @@ Single-context layout: one `CONTEXT.md` at the repo root, ADRs in `docs/adr/`. S
 ### Multi-Agent Workflow
 
 - **Distribuição Proativa:** Não execute tarefas sequenciais longas no processo principal se elas puderem ser paralelizadas. Delegue cada frente independente a um subagente dedicado.
-- **Concorrência:** Se houver múltiplos arquivos para refatorar, múltiplos testes para analisar ou múltiplos tópicos de pesquisa, invoque subagentes simultaneamente em uma única chamada de `invoke_subagent`.
-- **Especialização:** Use o campo `Role` com título claro de trabalho e `Prompt` com escopo estrito, arquivos-alvo e critérios de aceitação.
-- **Reatividade:** Não faça loops ou polling de status; a plataforma acorda o agente automaticamente via mensagens quando o subagente finaliza.
+- **Concorrência & File Ownership Lock:** Se houver múltiplos arquivos para refatorar, múltiplos testes para analisar ou múltiplos tópicos de pesquisa, invoque subagentes simultaneamente em uma única chamada de `invoke_subagent` garantindo posse exclusiva de arquivos por subagente.
+- **Especialização:** Use o campo `Role` com título claro de trabalho (`Codebase Researcher`, `Refactor Specialist`, `Test & Quality Runner`) e `Prompt` com escopo estrito, arquivos-alvo e critérios de aceitação.
+- **Reatividade (Zero Polling):** Não faça loops ou polling de status; a plataforma acorda o agente automaticamente via mensagens quando o subagente finaliza.
 
 ### Execução de Comandos (Configurado por scripts/prepare_environment.py)
 
@@ -65,7 +66,7 @@ O script `scripts/prepare_environment.py` detecta automaticamente se seu ambient
 - O dashboard Streamlit é orquestrado por `dashboard.py` delegando para `ui/helpers.py` e `ui/tabs/` (7 abas).
 - Patches do Talishar e Talishar-FE ficam em `setup_templates/` e são aplicados por `scripts/prepare_environment.py`.
 - Banco de cartas oficial fica em `data/fab_cards_db.json` (extraído por `extract_card_db.py`).
-- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini` (577 testes unitários).
+- Testes automatizados usam `./venv/bin/pytest` isolados via `pytest.ini` (581 testes unitários).
 
 
 ### Ponytail Protocol

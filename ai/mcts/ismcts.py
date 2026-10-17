@@ -179,6 +179,8 @@ def _ismcts_worker_process(
     training_mode: bool,
     c_puct: float,
     state_vec: np.ndarray,
+    priors: Optional[np.ndarray] = None,
+    base_value: Optional[float] = None,
 ) -> None:
     """
     Função de execução do Worker (Actor) em processo isolado.
@@ -206,7 +208,8 @@ def _ismcts_worker_process(
             }))
             return
 
-        priors, base_value = mcts._evaluate(state_vec)
+        if priors is None or base_value is None:
+            priors, base_value = mcts._evaluate(state_vec)
 
         root = MCTSNode(prior=1.0)
         mcts._expand(root, legal_actions, priors)
@@ -214,23 +217,21 @@ def _ismcts_worker_process(
         if training_mode and root.children:
             mcts._add_dirichlet_noise(root, len(root.children) + len(root.pending))
 
-        leaf_nodes: List[MCTSNode] = []
-        for sim_idx in range(num_simulations):
-            mcts._progressive_widen(root, sim_idx)
-            node = mcts._select(root)
-            leaf_nodes.append(node)
-
-        leaf_values = mcts._batch_evaluate_leaves(
+        kids = list(root.children.values())
+        leaf_vals = mcts._batch_evaluate_leaves(
             root_state_vec=state_vec,
-            nodes=leaf_nodes,
+            nodes=kids,
             base_value=base_value,
             state=world_state,
             legal_actions=legal_actions,
             world_seed=world_idx,
         )
+        vals_map = {c.action_id: val for c, val in zip(kids, leaf_vals)}
 
-        for node, lv in zip(leaf_nodes, leaf_values):
-            mcts._backpropagate(node, lv)
+        for sim_idx in range(num_simulations):
+            mcts._progressive_widen(root, sim_idx)
+            node = mcts._select(root)
+            mcts._backpropagate(node, vals_map.get(node.action_id, base_value))
 
         best_idx = mcts._select_action(root, legal_actions, training_mode)
         summary = _extract_level1_summary(root, best_idx, world_idx)
@@ -266,6 +267,8 @@ def _ismcts_direct_gpu_worker_process(
     state_vec: np.ndarray,
     device: str,
     model: Optional[Any] = None,
+    priors: Optional[np.ndarray] = None,
+    base_value: Optional[float] = None,
 ) -> None:
     """
     Função de execução do Worker direct_gpu em processo isolado.
@@ -298,7 +301,8 @@ def _ismcts_direct_gpu_worker_process(
             }))
             return
 
-        priors, base_value = mcts._evaluate(state_vec)
+        if priors is None or base_value is None:
+            priors, base_value = mcts._evaluate(state_vec)
 
         root = MCTSNode(prior=1.0)
         mcts._expand(root, legal_actions, priors)
@@ -306,23 +310,21 @@ def _ismcts_direct_gpu_worker_process(
         if training_mode and root.children:
             mcts._add_dirichlet_noise(root, len(root.children) + len(root.pending))
 
-        leaf_nodes: List[MCTSNode] = []
-        for sim_idx in range(num_simulations):
-            mcts._progressive_widen(root, sim_idx)
-            node = mcts._select(root)
-            leaf_nodes.append(node)
-
-        leaf_values = mcts._batch_evaluate_leaves(
+        kids = list(root.children.values())
+        leaf_vals = mcts._batch_evaluate_leaves(
             root_state_vec=state_vec,
-            nodes=leaf_nodes,
+            nodes=kids,
             base_value=base_value,
             state=world_state,
             legal_actions=legal_actions,
             world_seed=world_idx,
         )
+        vals_map = {c.action_id: val for c, val in zip(kids, leaf_vals)}
 
-        for node, lv in zip(leaf_nodes, leaf_values):
-            mcts._backpropagate(node, lv)
+        for sim_idx in range(num_simulations):
+            mcts._progressive_widen(root, sim_idx)
+            node = mcts._select(root)
+            mcts._backpropagate(node, vals_map.get(node.action_id, base_value))
 
         best_idx = mcts._select_action(root, legal_actions, training_mode)
         summary = _extract_level1_summary(root, best_idx, world_idx)
@@ -552,7 +554,6 @@ class ISMCTSEngine:
                     server_pipes.append(p_serv)
                     worker_pipes.append(p_work)
 
-                    world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
                     proc = ctx.Process(
                         target=_ismcts_worker_process,
                         args=(
@@ -563,7 +564,9 @@ class ISMCTSEngine:
                             num_simulations,
                             training_mode,
                             self.c_puct,
-                            world_vec,
+                            state_vec,
+                            root_priors,
+                            root_base_value,
                         ),
                     )
                     processes.append(proc)
@@ -621,7 +624,6 @@ class ISMCTSEngine:
                     server_pipes.append(p_serv)
                     worker_pipes.append(p_work)
 
-                    world_vec = FaBPolicyValueNetwork.extract_state_vector(world_state)
                     proc = ctx.Process(
                         target=_ismcts_direct_gpu_worker_process,
                         args=(
@@ -632,9 +634,11 @@ class ISMCTSEngine:
                             num_simulations,
                             training_mode,
                             self.c_puct,
-                            world_vec,
+                            state_vec,
                             self.device,
                             worker_model,
+                            root_priors,
+                            root_base_value,
                         ),
                     )
                     processes.append(proc)

@@ -1,18 +1,24 @@
+import os
 import json
 from collections import Counter, defaultdict
 
 def main():
     anomalies = []
-    with open("logs/sim2real_anomalies.jsonl", "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                try:
-                    anomalies.append(json.loads(line))
-                except Exception:
-                    pass
+    log_path = "logs/sim2real_anomalies.jsonl"
+    if os.path.exists(log_path):
+        with open(log_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        anomalies.append(json.loads(line))
+                    except Exception:
+                        pass
 
     print(f"Total de anomalias registradas: {len(anomalies)}")
+    if not anomalies:
+        print("[OK] Nenhuma anomalia Sim2Real encontrada no log.")
+        return
     
     types = Counter(a.get("anomaly_type") for a in anomalies)
     print("\n=== Por Tipo de Anomalia ===")

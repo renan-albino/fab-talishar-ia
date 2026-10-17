@@ -15,11 +15,11 @@ Every change in this repo follows the repo's coding guidelines (see AGENTS.md). 
 
 ## Step 1: Detect API Knowledge Gaps
 
-Scan the conversation history for signs the agent was struggling with an API it didn't have a reference for. Look for:
+Scan the conversation history for signs the agent was struggling with an API or module it didn't have a reference for. Look for:
 
-- **Repeated searches** for the same API, module, or crate (multiple `search_graph`, `search_code`, `rg`, or `webfetch` calls targeting the same topic)
-- **Source code exploration** of framework or crate internals (reading a crate's or framework's source to understand how something works)
-- **Web searches** for API documentation (for framework or crate API docs)
+- **Repeated searches** for the same API, module, or package (multiple `graphify` queries on `graphify-out/`, `git grep -n`, `scripts/fast_search.py`, or web searches targeting the same topic)
+- **Source code exploration** of framework or package internals (reading source in `ai/`, `stats/`, `deck_manager/`, `ui/`, or `./venv/` to understand how something works)
+- **Web searches** for API documentation (PyTorch, Streamlit, SQLite3, Talishar engine)
 - **Confusion signals** — the agent asking the user how an API works, or expressing uncertainty about an API's behavior
 - **Trial-and-error patterns** — multiple attempts to use an API incorrectly before finding the right approach
 
@@ -29,10 +29,10 @@ Group findings by **topic** and note which **family** each belongs to (e.g. a fr
 
 For each topic identified, check whether a reference already covers it:
 
-1. Find the home — a family or a singleton.
+1. Find the home — a family or a singleton in `.agents/skills/`.
 2. Look for a topic file — `<family>/references/<topic>.md`, or the singleton's `SKILL.md`. Read it and assess whether it covers the missing information.
 3. If a reference exists but is incomplete, note it for augmentation (skip creation).
-4. **Verify the names too** — an existing reference whose API names (traits, structs, functions, prelude claims) do not exist in the version pinned in the repo manifest (e.g. `Cargo.toml`) is a *correctness* gap, not just a completeness gap. Verify with the Name Verification Gate (Step 3) and fix the stale names.
+4. **Verify the names too** — an existing reference whose API names (classes, functions, CLI flags, module exports) do not exist in the workspace (`requirements.txt` / `./venv/bin/python` / `CONTEXT.md`) is a *correctness* gap, not just a completeness gap. Verify with the Name Verification Gate (Step 3) and fix the stale names.
 
 ## Step 3: Create the Missing Reference
 
@@ -40,14 +40,14 @@ For each topic with no covering reference (or a new singleton/family):
 
 ### Run each topic as a parallel sub-agent
 
-Each missing topic is an **independent unit** — its research, name verification, and drafting don't touch the other topics. So when there is more than one, **spawn one sub-agent per topic, in parallel**: give each a self-contained brief (the pinned version, the Coding Guidelines above, the "Research the API" + "Name Verification Gate" + the format/content rules below, and the target path, e.g. `<family>/references/<topic>.md`) and ask it to return the drafted reference **plus** its Name-Verification evidence and any "needs verification" list. This keeps the deep per-crate research out of the main context and lets several references land at once. Collect the drafts and continue with Steps 4 and 5 in the main session. If subagents aren't available — or the user asks to run without them — do the topics inline in this session, one at a time.
+Each missing topic is an **independent unit** — its research, name verification, and drafting don't touch the other topics. So when there is more than one, **spawn one sub-agent per topic, in parallel**: give each a self-contained brief (the pinned version, the Coding Guidelines above, the "Research the API" + "Name Verification Gate" + the format/content rules below, and the target path, e.g. `<family>/references/<topic>.md`) and ask it to return the drafted reference **plus** its Name-Verification evidence and any "needs verification" list. This keeps the deep per-module research out of the main context and lets several references land at once. Collect the drafts and continue with Steps 4 and 5 in the main session. If subagents aren't available — or the user asks to run without them — do the topics inline in this session, one at a time.
 
 ### Research the API
 
-Anchor everything to the versions the project pins:
+Anchor everything to the versions the project pins in the WSL2 Python/PyTorch environment:
 
-1. **Pinned versions first** — read them from the workspace manifest (e.g. the root `Cargo.toml`). The family `SKILL.md`'s version pin must match.
-2. **Crate source of that exact version** — preferred: the codebase-memory project named after the version (`list_projects` → e.g. `<crate>-<version>`) via `search_graph` / `search_code`; fallback: `rg` over the version-pinned checkout. Follow this repo's AGENTS.md rules for where to source external code.
+1. **Pinned versions first** — read them from `requirements.txt` or inspect via `wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python -c "import <pkg>; print(<pkg>.__version__)"`. The family `SKILL.md`'s version pin must match.
+2. **Module source of that exact version** — preferred: query the knowledge graph at `graphify-out/` (`wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/graphify query "<topic>"`) or search tracked files with `wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia git grep -n "<symbol>"`. Follow `AGENTS.md` rules (never run blind `grep -r .`).
 3. **Official docs** — only at the pinned version, never unversioned "latest". Docs describe the API surface; the names still need source verification (next section).
 
 Focus on what the agent was actually struggling with, but build the reference as a **comprehensive topic reference**, not just the missing piece.
@@ -56,18 +56,18 @@ Focus on what the agent was actually struggling with, but build the reference as
 
 When a reference already covers a topic but its source has changed significantly (a tool added or renamed, a parameter or error-code set changed, an endpoint setting moved), **update that reference** rather than leaving it stale — the gap is now a *correctness* gap, the same kind as a stale name. This is the "exists but incomplete" case from Step 2 resolved by editing, not by skipping.
 
-For external crates or libraries, the Name Verification Gate below applies — verify against the pinned version's source.
+For external libraries or internal facades, the Name Verification Gate below applies — verify against the WSL2 environment's source.
 
 After the edit, re-check the Step 5 report row: "all names resolve against the facade" or the specific facade claims fixed.
 
 ### Name Verification Gate (mandatory before writing)
 
-Before writing the reference file, verify **every** API name it will mention (traits, structs, enums, functions, methods, macros, module paths) against the pinned version's source:
+Before writing the reference file, verify **every** API name it will mention (classes, functions, methods, CLI flags, module paths) against the workspace source and `./venv/bin/python`:
 
-1. `search_graph` (version-named project) or `rg` over the pinned checkout — the name must resolve to a real definition (or a re-export) **in that version**.
-2. Placement claims ("in the crate prelude", "in module X") — read that version's actual prelude module / module declarations and confirm.
-3. If a name only resolves in a *different* version, it must not be written — even if it is a name you "know" from an older release. This is exactly how stale names leak into references and cause compile errors in the session that follows.
-4. Record the evidence (project / `file:line`) — it feeds the Step 5 report.
+1. Query `graphify-out/` or run `wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia git grep -n "<name>"` (or inspect via `./venv/bin/python -c "import ..."`) — the name must resolve to a real definition or re-export.
+2. Placement claims ("in facade module X", "in package Y") — read the actual `__init__.py` / module declarations and confirm.
+3. If a name only resolves in a *different* version, it must not be written — even if it is a name you "know" from an older release. This is exactly how stale names leak into references and cause runtime errors in the session that follows.
+4. Record the evidence (`file:line`) — it feeds the Step 5 report.
 
 ### Reference Format
 

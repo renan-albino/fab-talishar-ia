@@ -48,6 +48,9 @@ def setup_teardown_test_stats(monkeypatch):
         return conn
 
     import stats.db
+    monkeypatch.setenv("FAB_STATS_DB_PATH", temp_db)
+    monkeypatch.setattr(stats.db, "DB_FILE", temp_db)
+    stats.db.init_db()
     monkeypatch.setattr(stats.db, "get_connection", mock_get_connection)
     
     reset_stats()

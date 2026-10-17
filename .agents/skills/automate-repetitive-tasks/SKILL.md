@@ -10,11 +10,11 @@ Turn the work that keeps getting done by hand into scripts under `automated-task
 
 ## 1. Find candidates
 
-Analyze the sessions for tasks that were, or might be, repetitive:
+Analyze the sessions and workspace for tasks that were, or might be, repetitive:
 
-- Read this workspace's session history from `~/.local/share/opencode/opencode.db` (SQLite): `session` rows whose `directory` is this repo, then `message` and `part` (their `data` is JSON) for what actually happened. Recent sessions first.
+- Inspect recent session transcripts, `graphify-out/`, or search command patterns via `wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia git grep -n "<termo>"`.
 - Flag repeated commands, repeated manual sequences, and one-off steps likely to recur.
-- For each candidate, check `automated-tasks/SKILL.md`: is it already automated, or does an existing script need adjusting?
+- For each candidate, check `.agents/skills/automated-tasks/SKILL.md`: is it already automated, or does an existing script need adjusting?
 
 **Done when:** every candidate is classified — new script, adjust existing, or already covered.
 
@@ -24,10 +24,10 @@ Show the user the candidates: the task, how often it appears, and your recommend
 
 ## 3. Build the chosen tasks
 
-For each task the user chose, create or update a Python script in `automated-tasks/scripts/`, updating `automated-tasks/SKILL.md` as you go:
+For each task the user chose, create or update a Python script in `.agents/skills/automated-tasks/scripts/`, updating `.agents/skills/automated-tasks/SKILL.md` as you go:
 
-- The script must run with `uv run` (PEP 723 header: `requires-python`, `dependencies`).
-- Running the script with no args or with `-h` shows its help and possible args.
-- Keep it small and single-purpose.
+- The script must run via WSL2 Python/PyTorch environment: `wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python .agents/skills/automated-tasks/scripts/<script>.py`.
+- Support `--help` (`-h`) and `--json` for structured telemetry.
+- Keep it small and single-purpose (Ponytail standard).
 
-**Done when:** each chosen task has a script that runs (verify with its help path) and a row in `automated-tasks/SKILL.md`.
+**Done when:** each chosen task has a script that runs via `./venv/bin/python` (verify with `-h` and `--json`) and a row in `.agents/skills/automated-tasks/SKILL.md`.

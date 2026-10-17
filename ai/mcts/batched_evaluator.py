@@ -251,19 +251,26 @@ class ThreadBatchedEvaluator:
             if hasattr(self.model, "eval"):
                 self.model.eval()
 
+            need_aux = any(it[2] for it in batch_items)
             with torch.inference_mode():
                 x_tensor = torch.from_numpy(combined_np).float().to(self.device, non_blocking=True)
 
                 if self.use_amp:
                     with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
+                        if need_aux:
+                            try:
+                                out = self.model(x_tensor, return_aux=True)
+                            except TypeError:
+                                out = self.model(x_tensor)
+                        else:
+                            out = self.model(x_tensor)
+                else:
+                    if need_aux:
                         try:
                             out = self.model(x_tensor, return_aux=True)
                         except TypeError:
                             out = self.model(x_tensor)
-                else:
-                    try:
-                        out = self.model(x_tensor, return_aux=True)
-                    except TypeError:
+                    else:
                         out = self.model(x_tensor)
 
                 if isinstance(out, (tuple, list)) and len(out) == 3:
@@ -272,7 +279,7 @@ class ThreadBatchedEvaluator:
                     val_np = val_t.detach().cpu().numpy()
                     aux_np = (
                         {k: v.detach().cpu().numpy() for k, v in aux_t.items()}
-                        if isinstance(aux_t, dict)
+                        if (need_aux and isinstance(aux_t, dict))
                         else {}
                     )
                 elif isinstance(out, (tuple, list)) and len(out) == 2:

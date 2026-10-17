@@ -213,7 +213,99 @@ def run_benchmark_for_engine(
     return stats
 
 
-def print_table(results: List[Dict[str, Any]]) -> None:
+def run_benchmark_headless(
+    num_games: int,
+    num_simulations: int,
+    use_nn: bool,
+    device: str,
+) -> Dict[str, Any]:
+    """Mede vazão do HeadlessSelfPlayLoop (jogos/min e steps/s)."""
+    from ai.training.headless_env import HeadlessSelfPlayLoop
+    from ai.model import FaBPolicyValueNetwork
+
+    model = FaBPolicyValueNetwork().to(device)
+    model.eval()
+    sims = max(1, min(num_simulations, 8))
+    env = HeadlessSelfPlayLoop(model=model, mcts_sims=sims, device=device)
+
+    deck_pairs = [("jarl", "dash_io"), ("kayo", "CYB"), ("verdance", "aurora"), ("oscillio", "ira")]
+    total_steps = 0
+    t0 = time.perf_counter()
+    for i in range(num_games):
+        d1, d2 = deck_pairs[i % len(deck_pairs)]
+        traj, _ = env.play_game(d1, d2)
+        total_steps += len(traj)
+    elapsed = max(time.perf_counter() - t0, 1e-6)
+
+    return {
+        "headless_games": num_games,
+        "mcts_sims": sims,
+        "total_steps": total_steps,
+        "total_time_s": round(elapsed, 4),
+        "games_per_min": round((num_games / elapsed) * 60.0, 2),
+        "steps_per_s": round(total_steps / elapsed, 2),
+        "avg_steps_per_game": round(total_steps / max(1, num_games), 1),
+    }
+
+
+def run_benchmark_per(
+    capacity: int = 16384,
+    batch_size: int = 256,
+    iterations: int = 25,
+) -> Dict[str, Any]:
+    """Mede latência de SumTree/ReplayBuffer (set_all, sample_batch e update_priorities)."""
+    import numpy as np
+    from ai.experience_collector import ReplayBuffer
+
+    buf = ReplayBuffer(max_capacity=capacity)
+    buf.current_size = capacity
+    buf.states[:] = np.random.randn(capacity, buf.state_dim).astype(np.float32)
+    buf.policies[:] = np.full((capacity, 32), 1.0 / 32.0, dtype=np.float32)
+    buf.values[:] = np.random.uniform(-1.0, 1.0, size=(capacity, 1)).astype(np.float32)
+    buf.hero_ids[:] = np.random.randint(0, 16, size=capacity, dtype=np.int32)
+    priorities = np.random.uniform(0.05, 2.0, size=capacity).astype(np.float32)
+
+    set_all_lats = []
+    for _ in range(iterations):
+        t0 = time.perf_counter()
+        buf.sum_tree.set_all(priorities)
+        set_all_lats.append((time.perf_counter() - t0) * 1000.0)
+
+    sample_lats = []
+    last_indices = None
+    for _ in range(iterations):
+        t0 = time.perf_counter()
+        *_, last_indices = buf.sample_batch(
+            batch_size=batch_size,
+            prioritized=True,
+            return_is_weights=True,
+            return_indices=True,
+        )
+        sample_lats.append((time.perf_counter() - t0) * 1000.0)
+
+    td_errors = np.random.uniform(0.0, 1.5, size=batch_size).astype(np.float32)
+    update_lats = []
+    for _ in range(iterations):
+        t0 = time.perf_counter()
+        buf.update_priorities(last_indices, td_errors)
+        update_lats.append((time.perf_counter() - t0) * 1000.0)
+
+    return {
+        "capacity": capacity,
+        "batch_size": batch_size,
+        "iterations": iterations,
+        "set_all_mean_ms": round(statistics.mean(set_all_lats), 3),
+        "sample_batch_mean_ms": round(statistics.mean(sample_lats), 3),
+        "update_priorities_mean_ms": round(statistics.mean(update_lats), 3),
+        "batches_per_s": round(1000.0 / max(statistics.mean(sample_lats), 1e-6), 1),
+    }
+
+
+def print_table(
+    results: List[Dict[str, Any]],
+    headless_res: Optional[Dict[str, Any]] = None,
+    per_res: Optional[Dict[str, Any]] = None,
+) -> None:
     """Imprime tabela formatada de resultados do benchmark."""
     print(f"\n{COLOR_BOLD}{COLOR_CYAN}══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════{COLOR_RESET}")
     print(f"{COLOR_BOLD}{COLOR_CYAN}   FaB Talishar AI — Benchmark de Vazão MCTS / ISMCTS (Throughput & Percentis de Latência)                             {COLOR_RESET}")
@@ -243,18 +335,31 @@ def print_table(results: List[Dict[str, Any]]) -> None:
     print("-" * len(header))
     print(f"{COLOR_BOLD}Legenda:{COLOR_RESET} TH=Threads | SIMS=Simulações/decisão | W=Mundos ISMCTS | DEC=Decisões amostradas | Latências em milissegundos (ms).\n")
 
+    if headless_res:
+        print(f"{COLOR_BOLD}{COLOR_CYAN}[HeadlessSelfPlayLoop]{COLOR_RESET} "
+              f"Jogos: {headless_res['headless_games']} (sims={headless_res['mcts_sims']}) | "
+              f"Vazão: {COLOR_GREEN}{headless_res['games_per_min']:.2f} jogos/min{COLOR_RESET} | "
+              f"Steps/s: {COLOR_CYAN}{headless_res['steps_per_s']:.2f}/s{COLOR_RESET} | "
+              f"Média: {headless_res['avg_steps_per_game']} steps/jogo ({headless_res['total_time_s']:.2f}s)\n")
+
+    if per_res:
+        print(f"{COLOR_BOLD}{COLOR_CYAN}[ReplayBuffer PER]{COLOR_RESET} "
+              f"Cap: {per_res['capacity']} | Batch: {per_res['batch_size']} | "
+              f"set_all: {COLOR_GREEN}{per_res['set_all_mean_ms']:.3f}ms{COLOR_RESET} | "
+              f"sample_batch: {COLOR_CYAN}{per_res['sample_batch_mean_ms']:.3f}ms{COLOR_RESET} ({per_res['batches_per_s']:.1f} batch/s) | "
+              f"update_priorities: {COLOR_YELLOW}{per_res['update_priorities_mean_ms']:.3f}ms{COLOR_RESET}\n")
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Benchmark de Vazão e Latência MCTS / ISMCTS para FaB Talishar AI",
+        description="Benchmark de Vazão e Latência MCTS / ISMCTS / Headless / PER para FaB Talishar AI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemplos de uso:
-  ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py
-  ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py --sims 50 --worlds 4
-  ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py --threads 4 --decisions 20
-  ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py --engine ismcts --no-nn
-  ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py --json
+  wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py
+  wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py --include-headless --include-per
+  wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py --sims 50 --worlds 4
+  wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia ./venv/bin/python .agents/skills/automated-tasks/scripts/benchmark_mcts.py --json
         """
     )
     parser.add_argument(
@@ -283,11 +388,11 @@ Exemplos de uso:
         help="Número de threads simultâneas para despacho de buscas (padrão: 1)."
     )
     parser.add_argument(
-        "--decisions", "--iterations",
+        "--decisions", "--iterations", "--states",
         type=int,
         dest="iterations",
         default=10,
-        help="Número de decisões a avaliar no benchmark (padrão: 10)."
+        help="Número de decisões/estados a avaliar no benchmark (padrão: 10)."
     )
     parser.add_argument(
         "--no-nn",
@@ -299,6 +404,22 @@ Exemplos de uso:
         type=str,
         default="cpu",
         help="Device PyTorch para o modelo: cpu (padrão) ou cuda."
+    )
+    parser.add_argument(
+        "--include-headless",
+        action="store_true",
+        help="Mede a vazão do HeadlessSelfPlayLoop (jogos/min e steps/s)."
+    )
+    parser.add_argument(
+        "--headless-games",
+        type=int,
+        default=4,
+        help="Quantidade de partidas completas para --include-headless (padrão: 4)."
+    )
+    parser.add_argument(
+        "--include-per",
+        action="store_true",
+        help="Mede a latência vetorizada do ReplayBuffer PER (set_all, sample_batch, update_priorities)."
     )
     parser.add_argument(
         "--json",
@@ -324,10 +445,31 @@ Exemplos de uso:
         )
         results.append(res)
 
+    headless_res = None
+    if args.include_headless:
+        headless_res = run_benchmark_headless(
+            num_games=args.headless_games,
+            num_simulations=args.sims,
+            use_nn=not args.no_nn,
+            device=args.device,
+        )
+
+    per_res = None
+    if args.include_per:
+        per_res = run_benchmark_per()
+
     if args.output_json:
-        print(json.dumps(results, indent=2, ensure_ascii=False))
+        if headless_res is not None or per_res is not None:
+            payload: Dict[str, Any] = {"engines": results}
+            if headless_res is not None:
+                payload["headless"] = headless_res
+            if per_res is not None:
+                payload["per"] = per_res
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+        else:
+            print(json.dumps(results, indent=2, ensure_ascii=False))
     else:
-        print_table(results)
+        print_table(results, headless_res=headless_res, per_res=per_res)
 
     return 0
 

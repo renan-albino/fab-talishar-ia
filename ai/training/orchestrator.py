@@ -504,16 +504,17 @@ class GPUTrainingOrchestrator:
 
             # ── 5. Ingerir trajetórias e passo de otimização ─────────
             trajectories_dir = os.path.join(BASE_DIR, "data", "trajectories")
-            newly_ingested = buffer.ingest_trajectories(trajectories_dir) + headless_samples_ingested
+            disk_ingested = 0 if cfg.get("headless") else buffer.ingest_trajectories(trajectories_dir)
+            newly_ingested = disk_ingested + headless_samples_ingested
             self.stats["samples_collected"] = len(buffer)
 
             min_train = min(batch_size, max(32, len(buffer)))
             if len(buffer) >= min_train and len(buffer) >= 32:
                 configured_steps = cfg.get("train_steps")
-                if configured_steps is not None and int(configured_steps) > 0:
+                if "train_steps" in self._extra and configured_steps is not None and int(configured_steps) > 0:
                     num_train_steps = int(configured_steps)
                 else:
-                    num_train_steps = max(1, min(16, newly_ingested // max(1, batch_size)))
+                    num_train_steps = max(int(configured_steps or 1), min(16, newly_ingested // max(1, batch_size)))
                 for _ in range(num_train_steps):
                     loss_p, loss_v, loss_t, entropy, val_mean = self._train_step(
                         self.model, optimizer, scaler, buffer, device, batch_size, use_fp16
@@ -597,7 +598,7 @@ class GPUTrainingOrchestrator:
             states_b, policies_b, values_b, is_weights_b, aux_targets = batch_out
             batch_indices = None
 
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
 
         autocast_ctx = torch.amp.autocast("cuda", enabled=use_amp) if hasattr(torch, "amp") and hasattr(torch.amp, "autocast") else torch.cuda.amp.autocast(enabled=use_amp)
         with autocast_ctx:
@@ -631,18 +632,19 @@ class GPUTrainingOrchestrator:
         scaler.update()
 
         with torch.no_grad():
-            if batch_indices is not None and hasattr(buffer, "update_priorities"):
-                val_err = torch.abs(value_preds.squeeze(-1) - values_b.squeeze(-1)).detach().cpu().numpy()
-                buffer.update_priorities(batch_indices, val_err)
-
             detached_log_p = log_probs.detach()
             probs = detached_log_p.exp()
             entropy_elem = -probs * detached_log_p
             raw_entropy = entropy_elem.sum(dim=-1).mean() / float(np.log(2))
             raw_val_mean = value_preds.mean()
-            # Consolidar 5 sincronizações .item() em uma única transferência assíncrona
-            metrics = torch.stack([loss_policy, loss_value, total_loss, raw_entropy, raw_val_mean]).detach().cpu()
-            m_list = metrics.tolist()
+            metrics_gpu = torch.stack([loss_policy, loss_value, total_loss, raw_entropy, raw_val_mean]).detach()
+            if batch_indices is not None and hasattr(buffer, "update_priorities"):
+                val_err_gpu = torch.abs(value_preds.squeeze(-1) - values_b.squeeze(-1)).detach()
+                combined_cpu = torch.cat([metrics_gpu, val_err_gpu.flatten()]).cpu().numpy()
+                m_list = combined_cpu[:5].tolist()
+                buffer.update_priorities(batch_indices, combined_cpu[5:])
+            else:
+                m_list = metrics_gpu.cpu().tolist()
 
         def _safe_float(v: Any, default: float = 0.0) -> float:
             try:

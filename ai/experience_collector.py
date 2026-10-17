@@ -27,6 +27,8 @@ def compute_shaped_reward(
     r_term: float,
     board_eval: Optional[float],
     epoch_ratio: float = 0.0,
+    step_delta_hp: Optional[float] = None,
+    step_dmg: Optional[float] = None,
 ) -> Tuple[float, float, float]:
     """
     Calcula a recompensa canônica formatada com annealing temporal.
@@ -40,8 +42,8 @@ def compute_shaped_reward(
             eval_weight = 0.4 * (1.0 - max(0.0, min(1.0, float(epoch_ratio))))
             term_weight = 1.0 - eval_weight
             reward = float(np.clip(term_weight * r_term + eval_weight * norm_eval, -1.0, 1.0))
-            aux_delta = norm_eval
-            aux_dmg = max(0.0, float(board_eval) / 5.0)
+            aux_delta = float(math.tanh(float(step_delta_hp) / 10.0)) if step_delta_hp is not None else norm_eval
+            aux_dmg = max(0.0, float(step_dmg) / 5.0) if step_dmg is not None else max(0.0, float(board_eval) / 5.0)
             return reward, aux_delta, aux_dmg
         except Exception:
             pass
@@ -90,6 +92,22 @@ class SumTree:
         while tree_idx != 0:
             tree_idx = (tree_idx - 1) // 2
             self.tree[tree_idx] += change
+
+    def update_batch(self, data_indices: np.ndarray, priorities: np.ndarray):
+        """Atualiza múltiplas folhas em bloco e propaga pelos pais únicos até a raiz."""
+        idx_arr = np.asarray(data_indices, dtype=np.int64).flatten()
+        if idx_arr.size == 0:
+            return
+        p_arr = np.asarray(priorities, dtype=np.float32).flatten()
+        tree_indices = idx_arr + (self.capacity - 1)
+        self.tree[tree_indices] = p_arr
+        parents = np.unique((tree_indices - 1) // 2)
+        while parents.size > 0 and parents[0] >= 0:
+            left = 2 * parents + 1
+            self.tree[parents] = self.tree[left] + self.tree[left + 1]
+            if parents.size == 1 and parents[0] == 0:
+                break
+            parents = np.unique((parents - 1) // 2)
 
     def set_all(self, priorities: np.ndarray):
         """
@@ -223,11 +241,24 @@ class ReplayBuffer:
             policy = step[1]
             p_id = step[2]
             board_eval = step[3] if len(step) > 3 else None
-            step_hero = int(step[4]) if len(step) > 4 and step[4] is not None else hero_id
+            step_delta_hp = step[4] if len(step) >= 6 else None
+            step_dmg = step[5] if len(step) >= 6 else None
+            if len(step) >= 7:
+                step_hero = int(step[6]) if step[6] is not None else hero_id
+            elif len(step) == 5:
+                step_hero = int(step[4]) if step[4] is not None else hero_id
+            else:
+                step_hero = hero_id
 
-            # Recompensa canônica unificada com annealing
+            # Recompensa canônica unificada com annealing e alvos auxiliares KataGo
             r_term = (1.0 if p_id == winner_player_id else -1.0) if winner_player_id in (1, 2) else 0.0
-            reward, aux_delta, aux_dmg = compute_shaped_reward(r_term, board_eval, epoch_ratio=epoch_ratio)
+            reward, aux_delta, aux_dmg = compute_shaped_reward(
+                r_term,
+                board_eval,
+                epoch_ratio=epoch_ratio,
+                step_delta_hp=step_delta_hp,
+                step_dmg=step_dmg,
+            )
 
             w = weights[i] if weights and i < len(weights) else 1.0
             self.add(state, policy, reward, weight=w, aux_delta_hp=aux_delta, aux_turn_dmg=aux_dmg, hero_id=step_hero)
@@ -248,8 +279,7 @@ class ReplayBuffer:
             return
         td = np.asarray(td_errors, dtype=np.float32).flatten()
         priorities = np.clip(np.power(np.abs(td) + eps, alpha), eps, max_p)
-        for idx, p in zip(indices, priorities):
-            self.sum_tree.update(int(idx), float(p))
+        self.sum_tree.update_batch(indices, priorities)
 
     def sample_batch(
         self,
@@ -274,10 +304,23 @@ class ReplayBuffer:
             beta = float(min(1.0, beta + (1.0 - beta) * epoch_ratio))
 
         if prioritized and self.current_size > 1:
-            indices = []
-            is_weights_list = []
+            if not stratified:
+                segment = self.sum_tree.total_priority / batch_size
+                i_arr = np.arange(batch_size, dtype=np.float32)
+                v = np.random.uniform(segment * i_arr, segment * (i_arr + 1.0)).astype(np.float32)
+                _, indices, priority = self.sum_tree.get_leaves(v)
 
-            if stratified:
+                out_of_bounds = indices >= self.current_size
+                if np.any(out_of_bounds):
+                    replacement = np.random.randint(0, self.current_size, size=np.sum(out_of_bounds))
+                    indices[out_of_bounds] = replacement
+                    priority[out_of_bounds] = self.sum_tree.tree[replacement + self.sum_tree.capacity - 1]
+
+                probs = np.maximum(priority / max(self.sum_tree.total_priority, 1e-8), 1e-8)
+                is_weights = ((float(self.current_size) * probs) ** (-beta)).astype(np.float32)
+            else:
+                indices = []
+                is_weights_list = []
                 active_heroes = np.unique(self.hero_ids[:self.current_size])
                 if len(active_heroes) > batch_size:
                     selected_heroes = np.random.choice(active_heroes, batch_size, replace=False)
@@ -295,30 +338,31 @@ class ReplayBuffer:
                     is_weight = (float(self.current_size) * sampled_prob) ** (-beta)
                     is_weights_list.append(is_weight)
 
-            remainder = batch_size - len(indices)
-            if remainder > 0:
-                segment = self.sum_tree.total_priority / remainder
-                i_arr = np.arange(remainder, dtype=np.float32)
-                a = segment * i_arr
-                b = segment * (i_arr + 1.0)
-                v = np.random.uniform(a, b).astype(np.float32)
-                _, data_idx, priority = self.sum_tree.get_leaves(v)
+                remainder = batch_size - len(indices)
+                if remainder > 0:
+                    segment = self.sum_tree.total_priority / remainder
+                    i_arr = np.arange(remainder, dtype=np.float32)
+                    a = segment * i_arr
+                    b = segment * (i_arr + 1.0)
+                    v = np.random.uniform(a, b).astype(np.float32)
+                    _, data_idx, priority = self.sum_tree.get_leaves(v)
 
-                out_of_bounds = data_idx >= self.current_size
-                if np.any(out_of_bounds):
-                    replacement = np.random.randint(0, self.current_size, size=np.sum(out_of_bounds))
-                    data_idx[out_of_bounds] = replacement
-                    priority[out_of_bounds] = self.sum_tree.tree[replacement + self.sum_tree.capacity - 1]
+                    out_of_bounds = data_idx >= self.current_size
+                    if np.any(out_of_bounds):
+                        replacement = np.random.randint(0, self.current_size, size=np.sum(out_of_bounds))
+                        data_idx[out_of_bounds] = replacement
+                        priority[out_of_bounds] = self.sum_tree.tree[replacement + self.sum_tree.capacity - 1]
 
-                probs = np.maximum(priority / max(self.sum_tree.total_priority, 1e-8), 1e-8)
-                is_w = (float(self.current_size) * probs) ** (-beta)
-                indices.extend(data_idx.tolist())
-                is_weights_list.extend(is_w.tolist())
+                    probs = np.maximum(priority / max(self.sum_tree.total_priority, 1e-8), 1e-8)
+                    is_w = (float(self.current_size) * probs) ** (-beta)
+                    indices.extend(data_idx.tolist())
+                    is_weights_list.extend(is_w.tolist())
 
-            indices = np.array(indices)
-            is_weights = np.array(is_weights_list, dtype=np.float32)
-            if np.max(is_weights) > 0:
-                is_weights = is_weights / np.max(is_weights)
+                indices = np.array(indices)
+                is_weights = np.array(is_weights_list, dtype=np.float32)
+            max_is = np.max(is_weights)
+            if max_is > 0:
+                is_weights = is_weights / max_is
         else:
             if stratified:
                 active_heroes = np.unique(self.hero_ids[:self.current_size])
@@ -348,7 +392,7 @@ class ReplayBuffer:
         b_states = torch.from_numpy(self.states[indices]).float()
         b_policies = torch.from_numpy(self.policies[indices]).float()
         b_values = torch.from_numpy(self.values[indices]).float()
-        b_is = torch.from_numpy(is_weights.astype(np.float32)).float()
+        b_is = torch.from_numpy(is_weights.astype(np.float32, copy=False)).float()
 
         is_cuda = False
         if device:
@@ -534,6 +578,8 @@ class ReplayBuffer:
         if not os.path.exists(trajectories_dir):
             return 0
         ingested = 0
+        batch_indices = []
+        batch_priorities = []
         for fname in sorted(os.listdir(trajectories_dir)):
             if fname.endswith(".npz") and not fname.endswith(".tmp.npz"):
                 fpath = os.path.join(trajectories_dir, fname)
@@ -546,12 +592,24 @@ class ReplayBuffer:
                         aux_delta = data.get("aux_delta_hp", np.zeros(len(states)))
                         aux_dmg = data.get("aux_turn_dmg", np.zeros(len(states)))
                         for s, p, r, w, ad, adm in zip(states, policies, rewards, weights, aux_delta, aux_dmg):
-                            self.add(s, p, r, w, ad, adm)
+                            idx = self.pointer
+                            self.states[idx] = s
+                            self.policies[idx] = p
+                            self.values[idx] = float(r)
+                            self.aux_delta_hp[idx] = float(ad)
+                            self.aux_turn_dmg[idx] = float(adm)
+                            self.hero_ids[idx] = 0
+                            batch_indices.append(idx)
+                            batch_priorities.append(max(float(w), 0.01))
+                            self.pointer = (self.pointer + 1) % self.max_capacity
+                            self.current_size = min(self.current_size + 1, self.max_capacity)
                             ingested += 1
                     os.remove(fpath)
                 except Exception as e:
                     import logging
                     logging.warning(f"[ReplayBuffer] Erro ao ingerir trajetória {fpath}: {e}")
+        if batch_indices:
+            self.sum_tree.update_batch(np.array(batch_indices, dtype=np.int64), np.array(batch_priorities, dtype=np.float32))
         return ingested
 
 

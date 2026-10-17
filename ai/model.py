@@ -28,7 +28,10 @@ from collections.abc import Mapping
 # ══════════════════════════════════════════════════════════════════
 
 _CARD_EMBEDDINGS_TABLE: Optional[torch.Tensor] = None
+_CARD_EMBEDDINGS_NP: Optional[np.ndarray] = None
+_CARD_EMBEDDINGS_LAST_TENSOR: Optional[Any] = None
 _CARD_TO_IDX: Optional[Dict[str, int]] = None
+_PHASES_TUPLE = ("M", "B", "A", "D", "P", "PDECK", "ARS", "STARTTURN", "INSTANT", "RESOLUTIONSTEP")
 
 
 def _get_card_embeddings_table() -> Tuple[torch.Tensor, Dict[str, int]]:
@@ -128,7 +131,7 @@ class FaBCardTransformerNetwork(nn.Module):
             batch_first=True,
             norm_first=True,  # Pre-LN para convergência estável
         )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers, enable_nested_tensor=False)
 
         # 4. Cross-Attention Contextual (Global State consulta Cartas Ativas)
         self.cross_attn = nn.MultiheadAttention(
@@ -184,6 +187,37 @@ class FaBCardTransformerNetwork(nn.Module):
             nn.ReLU(),
         )
 
+    def _encode_fused(self, x: torch.Tensor) -> torch.Tensor:
+        batch_size = x.shape[0]
+        global_features = x[:, :64]
+        card_features = x[:, 64:]
+
+        target_len = NUM_CARD_SLOTS * CARD_EMBEDDING_DIM
+        if card_features.shape[1] < target_len:
+            card_features = F.pad(card_features, (0, target_len - card_features.shape[1]))
+        elif card_features.shape[1] > target_len:
+            card_features = card_features[:, :target_len]
+
+        card_tokens = card_features.view(batch_size, NUM_CARD_SLOTS, CARD_EMBEDDING_DIM)
+        valid_slots = (card_tokens.abs().sum(dim=-1) > 1e-5)
+        padding_mask = ~valid_slots
+        all_pad = padding_mask.all(dim=-1)
+        padding_mask[:, 0] = padding_mask[:, 0] & ~all_pad
+
+        h_cards = self.card_proj(card_tokens) + self.zone_embedding(self.slot_zones).unsqueeze(0)
+        encoded_cards = self.transformer(h_cards, src_key_padding_mask=padding_mask)
+        h_global = self.global_proj(global_features).unsqueeze(1)
+        attn_out, _ = self.cross_attn(
+            query=h_global,
+            key=encoded_cards,
+            value=encoded_cards,
+            key_padding_mask=padding_mask,
+        )
+        h_context = self.cross_norm(h_global + attn_out).squeeze(1)
+        card_mask_weights = valid_slots.float().unsqueeze(-1)
+        card_pool = (encoded_cards * card_mask_weights).sum(dim=1) / card_mask_weights.sum(dim=1).clamp(min=1.0)
+        return self.fusion_fc(torch.cat([h_context, card_pool], dim=-1))
+
     def forward(
         self,
         x: torch.Tensor,
@@ -193,57 +227,7 @@ class FaBCardTransformerNetwork(nn.Module):
         Recebe x no formato [batch, 832] (ou [batch, state_dim]).
         Sintetiza features globais e tokens de cartas por atenção e projeta nas saídas.
         """
-        batch_size = x.shape[0]
-
-        # Decomposição do vetor flat-packed
-        global_features = x[:, :64]
-        card_features = x[:, 64:]
-
-        # Se houver inconsistência de tamanho residual, ajusta por corte ou preenchimento
-        target_len = NUM_CARD_SLOTS * CARD_EMBEDDING_DIM
-        if card_features.shape[1] < target_len:
-            pad_len = target_len - card_features.shape[1]
-            card_features = F.pad(card_features, (0, pad_len))
-        elif card_features.shape[1] > target_len:
-            card_features = card_features[:, :target_len]
-
-        card_tokens = card_features.view(batch_size, NUM_CARD_SLOTS, CARD_EMBEDDING_DIM)
-
-        # Máscara de Padding para ignorar slots vazios no cálculo de atenção
-        valid_slots = (card_tokens.abs().sum(dim=-1) > 1e-5)
-        padding_mask = ~valid_slots
-
-        # Garante que amostras vazias não causem NaNs no Transformer sem sincronização host-device
-        all_pad = padding_mask.all(dim=-1)
-        padding_mask[:, 0] = padding_mask[:, 0] & ~all_pad
-
-        # Projeção das cartas + Zone Embeddings
-        h_cards = self.card_proj(card_tokens)
-        h_zones = self.zone_embedding(self.slot_zones)
-        h_cards = h_cards + h_zones.unsqueeze(0)
-
-        # 1. Self-Attention entre cartas ativas
-        encoded_cards = self.transformer(h_cards, src_key_padding_mask=padding_mask)
-
-        # 2. Projeção do contexto global
-        h_global = self.global_proj(global_features).unsqueeze(1)
-
-        # 3. Cross-Attention: Global Context consulta Encoded Cards
-        attn_out, _ = self.cross_attn(
-            query=h_global,
-            key=encoded_cards,
-            value=encoded_cards,
-            key_padding_mask=padding_mask,
-        )
-        h_context = self.cross_norm(h_global + attn_out).squeeze(1)
-
-        # 4. Pooling mascarado das cartas
-        card_mask_weights = valid_slots.float().unsqueeze(-1)
-        card_pool = (encoded_cards * card_mask_weights).sum(dim=1) / card_mask_weights.sum(dim=1).clamp(min=1.0)
-
-        # 5. Fusão final
-        fused = self.fusion_fc(torch.cat([h_context, card_pool], dim=-1))
-
+        fused = self._encode_fused(x)
         policy_logits = self.policy_head(fused)
         value = self.value_head(self.value_dropout(fused))
 
@@ -260,9 +244,9 @@ class FaBCardTransformerNetwork(nn.Module):
         """Avalia um estado único e retorna probabilidades e value escalar em uma única transferência."""
         if self.training:
             self.eval()
-        dev = torch.device(device) if device else next(self.parameters()).device
+        dev = torch.device(device) if device else self.slot_zones.device
         with torch.inference_mode():
-            x = torch.from_numpy(state_vector).unsqueeze(0).float().to(dev)
+            x = torch.from_numpy(np.asarray(state_vector, dtype=np.float32)).unsqueeze(0).to(dev)
             logits, val = self(x)
             probs_t = F.softmax(logits, dim=-1)
             out = torch.cat([probs_t, val], dim=-1).cpu().numpy()[0]
@@ -279,17 +263,17 @@ class FaBCardTransformerNetwork(nn.Module):
         Avalia múltiplos vetores de estado simultaneamente em batch.
         Retorna (probs, values) com probs [N, action_dim] e values [N, 1] em transferência única.
         """
-        if not state_vectors:
+        if not state_vectors if not isinstance(state_vectors, np.ndarray) else state_vectors.size == 0:
             return np.zeros((0, self.action_dim), dtype=np.float32), np.zeros((0, 1), dtype=np.float32)
 
         if self.training:
             self.eval()
-        dev = torch.device(device) if device else next(self.parameters()).device
+        dev = torch.device(device) if device else self.slot_zones.device
         with torch.inference_mode():
             if isinstance(state_vectors, np.ndarray):
-                batch_arr = state_vectors.astype(np.float32)
+                batch_arr = np.asarray(state_vectors, dtype=np.float32)
             else:
-                batch_arr = np.stack(state_vectors, axis=0).astype(np.float32)
+                batch_arr = np.stack(state_vectors, axis=0).astype(np.float32, copy=False)
             x = torch.from_numpy(batch_arr).to(dev)
             logits, val = self(x)
             probs_t = F.softmax(logits, dim=-1)
@@ -313,7 +297,7 @@ class FaBCardTransformerNetwork(nn.Module):
             _, val = self.predict_state(state_vector, device=device)
             return val, 0.0
 
-        dev = torch.device(device) if device else next(self.parameters()).device
+        dev = torch.device(device) if device else self.slot_zones.device
         was_training = self.training
         was_val_dropout_training = self.value_dropout.training
 
@@ -324,9 +308,13 @@ class FaBCardTransformerNetwork(nn.Module):
 
         try:
             with torch.no_grad():
-                x = torch.from_numpy(state_vector).float().unsqueeze(0).to(dev)
-                x_rep = x.repeat(num_samples, 1)
-                _, vals = self(x_rep)
+                arr = np.asarray(state_vector, dtype=np.float32)
+                x = torch.from_numpy(arr if arr.ndim == 2 else np.expand_dims(arr, 0)).to(dev)
+                if "forward" in self.__dict__:
+                    _, vals = self(x.repeat(num_samples, 1))
+                else:
+                    fused = self._encode_fused(x)
+                    vals = self.value_head(self.value_dropout(fused.expand(num_samples, -1)))
                 vals_sq = vals.squeeze(-1)
                 mean_val = float(vals_sq.mean().item())
                 sigma = float(vals_sq.std(unbiased=True).item()) if num_samples > 1 else 0.0
@@ -363,7 +351,11 @@ class FaBCardTransformerNetwork(nn.Module):
             return vec
 
         table, c2idx = _get_card_embeddings_table()
-        table_np = table.numpy() if isinstance(table, torch.Tensor) else table
+        global _CARD_EMBEDDINGS_NP, _CARD_EMBEDDINGS_LAST_TENSOR
+        if _CARD_EMBEDDINGS_NP is None or _CARD_EMBEDDINGS_LAST_TENSOR is not table:
+            _CARD_EMBEDDINGS_NP = table.numpy() if isinstance(table, torch.Tensor) else np.asarray(table, dtype=np.float32)
+            _CARD_EMBEDDINGS_LAST_TENSOR = table
+        table_np = _CARD_EMBEDDINGS_NP
 
         # ── 1. Contexto Global (Índices 0 a 31) ───────────────────────
         p_hp = float(state.get("playerHealth", state.get("yourHealth", 40)))
@@ -380,8 +372,7 @@ class FaBCardTransformerNetwork(nn.Module):
 
         # Fases do Turno (Índices 4 a 13)
         phase = str(state.get("turnPhase", state.get("phase", ""))).upper()
-        phases = ["M", "B", "A", "D", "P", "PDECK", "ARS", "STARTTURN", "INSTANT", "RESOLUTIONSTEP"]
-        for idx, p in enumerate(phases):
+        for idx, p in enumerate(_PHASES_TUPLE):
             if p in phase:
                 vec[4 + idx] = 1.0
 

@@ -44,31 +44,41 @@ def test_scan_php_engine_error():
     assert anomalies[0]["code"] == "PHP_ENGINE_FATAL"
 
 
-def test_record_and_query_anomaly():
+def test_record_and_query_anomaly(monkeypatch, tmp_path):
     test_room = "TestRoom_Sim2Real_99"
     test_hero = "Kassai"
     test_msg = "The targeted dagger is no longer there, the layer fails to resolve"
 
-    record_anomaly(
-        room_id=test_room,
-        hero=test_hero,
-        turn=4,
-        phase="M",
-        anomaly_type="LAYER_TARGET_LOST",
-        message=test_msg,
-        opponent_hero="Dorinthea",
-        last_action={"mode": 27, "card_id": "flick_knives"},
-        extra_context={"test": True},
-    )
+    fake_log = tmp_path / "sim2real_anomalies.jsonl"
+    monkeypatch.setattr("ai.sim2real_detector.LOG_FILE", str(fake_log))
 
-    recent = get_recent_sim2real_anomalies(limit=10)
-    matched = [a for a in recent if a["room_id"] == test_room]
-    assert len(matched) >= 1
-    item = matched[0]
-    assert item["hero"] == test_hero
-    assert item["anomaly_type"] == "LAYER_TARGET_LOST"
-    assert item["raw_message"] == test_msg
-    assert "flick_knives" in item["last_action_json"]
+    try:
+        record_anomaly(
+            room_id=test_room,
+            hero=test_hero,
+            turn=4,
+            phase="M",
+            anomaly_type="LAYER_TARGET_LOST",
+            message=test_msg,
+            opponent_hero="Dorinthea",
+            last_action={"mode": 27, "card_id": "flick_knives"},
+            extra_context={"test": True},
+        )
+
+        recent = get_recent_sim2real_anomalies(limit=10)
+        matched = [a for a in recent if a["room_id"] == test_room]
+        assert len(matched) >= 1
+        item = matched[0]
+        assert item["hero"] == test_hero
+        assert item["anomaly_type"] == "LAYER_TARGET_LOST"
+        assert item["raw_message"] == test_msg
+        assert "flick_knives" in item["last_action_json"]
+        assert fake_log.exists()
+    finally:
+        from stats.db import get_connection
+        with get_connection() as conn:
+            conn.execute("DELETE FROM sim2real_anomalies WHERE room_id = ?", (test_room,))
+            conn.commit()
 
 
 def test_shadow_mode_card_unconsumed():

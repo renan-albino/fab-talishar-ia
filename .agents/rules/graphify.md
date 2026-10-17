@@ -5,10 +5,11 @@ description: Consult the graphify knowledge graph at graphify-out/ for codebase 
 
 ## graphify
 
-This project has a graphify knowledge graph at graphify-out/.
+This project has a graphify knowledge graph at `graphify-out/`.
 
 Rules:
-- For codebase or architecture questions, when `graphify-out/graph.json` exists, first run `graphify query "<question>"` (CLI) or `query_graph` (MCP). Use `graphify path "<A>" "<B>"` / `shortest_path` for relationships and `graphify explain "<concept>"` / `get_node` for focused concepts. These return a scoped subgraph, usually much smaller than `GRAPH_REPORT.md` or raw grep output.
-- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context
-- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+- For codebase or architecture questions, when `graphify-out/graph.json` exists, you can query the graph directly or, if the CLI is installed in the venv, run `wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia bash -c "test -x ./venv/bin/graphify && ./venv/bin/graphify query '<question>' || true"` (CLI) or `query_graph` (MCP). If `graphify` CLI is not installed, inspect `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`.
+- Never pass unquoted `|` in PowerShell commands invoking WSL (`git grep` or `graphify`); if searching multiple terms with `git grep`, use multiple `-e` flags (`git grep -n -e "termA" -e "termB"`).
+- If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files.
+- Read `graphify-out/GRAPH_REPORT.md` for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code files in this session, run `wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia bash -c "test -x ./venv/bin/graphify && ./venv/bin/graphify update . || true"` to keep the graph current when installed.

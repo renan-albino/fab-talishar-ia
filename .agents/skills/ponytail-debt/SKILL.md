@@ -14,10 +14,9 @@ can't quietly become permanent.
 
 ## Scan
 
-Grep the repo for comment markers, skipping `node_modules`, `.git`, and build
-output:
+Search the tracked files in the repository via `git grep` inside WSL2 (never run a blind `grep -r .` on the workspace root):
 
-`grep -rnE '(#|//) ?ponytail:' .`  (add other comment prefixes if your stack uses them)
+`wsl -d Ubuntu-22.04 --cd /home/renan/fab-talishar-ia git grep -nE '(#|//) ?ponytail:'`
 
 Each hit is one ledger row. The comment prefix keeps prose that merely mentions
 the convention out of the ledger.

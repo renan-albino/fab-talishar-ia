@@ -779,20 +779,59 @@ O agente executa nativamente no Linux/Container no diretório `{linux_repo_path}
             else:
                 new_content = content.rstrip() + f"\n\n{section}\n"
 
-        # Atualiza a regra 4 de sincronização de templates com o comando correto
+        # Atualiza comandos operacionais para o runtime detectado (WSL2 vs Linux Nativo)
+        import re
         if is_wsl:
-            export_cmd = f'wsl -d {distro_name} --cd {linux_repo_path} ./venv/bin/python scripts/prepare_environment.py --export-templates'
+            wsl_pfx = f"wsl -d {distro_name} --cd {linux_repo_path}"
+            export_cmd = f"{wsl_pfx} ./venv/bin/python scripts/prepare_environment.py --export-templates"
+            pytest_cmd = f"{wsl_pfx} ./venv/bin/python -m pytest --collect-only -q"
+            graphify_cmd = f'{wsl_pfx} bash -c "test -x ./venv/bin/graphify && ./venv/bin/graphify update . || true"'
+            
+            new_content = re.sub(
+                r'via `\./venv/bin/python -m pytest --collect-only -q`',
+                f'via `{pytest_cmd}`',
+                new_content
+            )
+            new_content = re.sub(
+                r'atualize o grafo se a ferramenta estiver instalada \(`[^`]+`\)',
+                f'atualize o grafo se a ferramenta estiver instalada (`{graphify_cmd}`)',
+                new_content
+            )
+            new_content = re.sub(
+                r'\*\*SEMPRE utilize métodos cirúrgicos:\*\*',
+                '**SEMPRE utilize via WSL2:**',
+                new_content
+            )
+            new_content = re.sub(
+                r'`git grep -n "termo"`',
+                f'`{wsl_pfx} git grep -n "termo"`',
+                new_content
+            )
+            new_content = re.sub(
+                r'`\./venv/bin/python scripts/fast_search\.py "termo" \[pasta\]`',
+                f'`{wsl_pfx} ./venv/bin/python scripts/fast_search.py "termo" [pasta]`',
+                new_content
+            )
+            new_content = re.sub(
+                r'`grep -rn "termo" ai/ tests/ scripts/ deck_manager/ stats/ ui/`',
+                f'`{wsl_pfx} grep -rn "termo" ai/ tests/ scripts/ deck_manager/ stats/ ui/`',
+                new_content
+            )
+            new_content = re.sub(
+                r'`grep -rn --exclude-dir=\{[^}]+\} "termo" \.`',
+                f'`{wsl_pfx} grep -rn --exclude-dir={{node_modules,venv,Talishar,Talishar-FE,logs,data,build,dist,.git,__pycache__}} "termo" .`',
+                new_content
+            )
         else:
             export_cmd = './venv/bin/python scripts/prepare_environment.py --export-templates'
 
-        import re
         new_content = re.sub(
-            r'execute `[^`]*prepare_environment\.py --export-templates`',
-            f'execute `{export_cmd}`',
+            r'(?:execute|exporte os templates \(?)`?\./venv/bin/python scripts/prepare_environment\.py --export-templates`?\)?',
+            f'exporte os templates (`{export_cmd}`)',
             new_content
         )
         new_content = re.sub(
-            r'execute \./venv/bin/python scripts/prepare_environment\.py --export-templates',
+            r'execute `[^`]*prepare_environment\.py --export-templates`',
             f'execute `{export_cmd}`',
             new_content
         )
