@@ -88,7 +88,7 @@ ESSENTIAL_TEST_FILES = [
     "tests/test_stats_manager.py",
     "tests/test_game_simulator.py",
     "tests/test_bot_modules.py",
-    "tests/test_multichoose_and_arsenal.py",
+    "tests/test_choice_handler_and_modals.py",
 ]
 
 

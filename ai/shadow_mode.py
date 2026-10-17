@@ -13,6 +13,54 @@ from ai.game_simulator import GameSimulator
 from stats.db import get_connection
 
 
+def _is_layer_card(card_name: str, card_obj: Optional[dict] = None) -> bool:
+    """Retorna True se a carta é Instant, Reaction ou habilidade retida em camada no Talishar."""
+    if not card_name:
+        return False
+    name_clean = str(card_name).lower().strip()
+    if any(k in name_clean for k in (
+        "blizzard", "sigil_of_solace", "oasis_respite", "take_the_lead", "sink_below",
+        "fate_foreseen", "pummel", "razor_reflex", "ironsong_response", "whisper_of_the_oracle"
+    )):
+        return True
+    if isinstance(card_obj, dict):
+        c_type = str(card_obj.get("type") or card_obj.get("cardType", "")).upper()
+        if any(t in c_type for t in ("I", "INSTANT", "AR", "DR", "REACTION")):
+            return True
+    try:
+        from ai.game_simulator import _get_cards_db
+        db = _get_cards_db()
+        entry = db.get(name_clean)
+        if entry:
+            t = str(entry.get("type", "")).upper()
+            if t in ("I", "INSTANT") or "REACTION" in str(entry.get("subtype", "")).upper():
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def _is_draw_or_cantrip(card_name: str) -> bool:
+    """Retorna True se a carta compra, repõe ou substitui cartas na mão."""
+    if not card_name:
+        return False
+    name = str(card_name).lower().strip()
+    if any(kw in name for kw in (
+        "draw", "glint", "tome", "spoils", "cash", "lead", "snatch",
+        "plunder", "rouse", "belittle", "sink", "fate", "blood_on_her_hands"
+    )):
+        return True
+    try:
+        from ai.game_simulator import _get_cards_db
+        db = _get_cards_db()
+        entry = db.get(name) or {}
+        if "draw" in str(entry).lower():
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Optional[dict]:
     """
     Constrói a ação a partir do estado e pede para o simulador prever os campos próprios.
@@ -36,7 +84,10 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
         if mode == 5:
             act_type = "arsenal"
             zone = "arsenal"
-        elif mode in (1, 3) or card_id_str.startswith(("EQ-", "MYCHAR-")):
+        elif mode == 3:
+            act_type = "weapon"
+            zone = "equipment"
+        elif mode == 1 or card_id_str.startswith(("EQ-", "MYCHAR-")):
             act_type = "equipment_ability"
             zone = "equipment"
         else:
@@ -65,9 +116,19 @@ def predict(pre_state: dict, card_id: str, mode: Optional[int] = None) -> Option
         if mode in (1, 3):
             zone = "equipment"
             equips = pre_state.get("playerEquipment", [])
-            if 0 <= idx < len(equips) and isinstance(equips[idx], dict):
+            for eq in equips:
+                if isinstance(eq, dict) and str(eq.get("actionDataOverride", "") or eq.get("uniqueID", "") or eq.get("id", "")) == card_id_str:
+                    card_obj = eq
+                    actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
+                    break
+            if card_obj is None and 0 <= idx < len(equips) and isinstance(equips[idx], dict):
                 card_obj = equips[idx]
                 actual_card_name = str(card_obj.get("cardNumber", card_obj.get("name", ""))).lower().strip()
+            if card_obj:
+                eq_type = str(card_obj.get("type", "")).upper()
+                eq_slot = str(card_obj.get("slot", "")).lower()
+                if mode == 3 or eq_type in ("W", "WEAPON") or eq_slot in ("weapon", "1h", "2h"):
+                    act_type = "weapon"
         else:
             hand = pre_state.get("playerHand", [])
             for c in hand:
@@ -170,8 +231,11 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
             # Cartas com custo adicional / modais (ex: Enlightened Strike): retidas na mão/arsenal pelo Talishar até a resolução do modal
             if "enlightened_strike" in card_consumed and k in ("hand_count", "arsenal_count", "action_points"):
                 continue
-            # Instants jogados durante a defesa (Phase B): retidos na camada até a passagem de prioridade
-            if pre_tp in ("B", "DEFENSE") and k == "hand_count" and any(inst in card_consumed for inst in ("blizzard", "sigil_of_solace", "oasis_respite")):
+            # Cartas que compram/substituem cartas na mão (cantrips/draws):
+            if k == "hand_count" and actual["hand_count"] > expected["hand_count"] and _is_draw_or_cantrip(card_consumed):
+                continue
+            # Instants/Reactions retidos na camada até a passagem de prioridade / resolução:
+            if k == "hand_count" and _is_layer_card(card_consumed):
                 continue
             # Timing de cura em resolução de Instants (ex: Sigil of Solace cura 3 HP após resolução de camada):
             if k in ("player_health", "opponent_health") and "sigil_of_solace" in card_consumed and abs(actual[k] - expected[k]) <= 3:
@@ -182,8 +246,8 @@ def compare(expected: dict, pre_state: dict, post_state: dict) -> Tuple[Dict[str
     card_id = expected.get("card_consumed")
     zone = expected.get("zone", "hand")
     if card_id and not confounded:
-        # Cartas com modais de custo adicional ou Instants em camada defensiva não disparam falso positivo de card_unconsumed
-        if "enlightened_strike" in str(card_id).lower() or (pre_tp in ("B", "DEFENSE") and any(inst in str(card_id).lower() for inst in ("blizzard", "sigil_of_solace", "oasis_respite"))):
+        # Cartas com modais de custo adicional ou Instants/Reactions retidas em camada não disparam falso positivo de card_unconsumed
+        if "enlightened_strike" in str(card_id).lower() or _is_layer_card(str(card_id)):
             pass
         elif zone == "arsenal":
             post_ars = [
